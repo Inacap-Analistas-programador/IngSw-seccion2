@@ -13,6 +13,6 @@ para usar vue como cliente se tendra que usar consultar HTTP a la APi, para cont
 # Como usarlo
 
 1. Configura el Visual Studio Code para clonar el repositivo en una carpeta donde tengas el entorno virtual y cada vez que hagas un Fetch origin este se actualize a lo ultimo.
-2. Ejecuta 'python -m ven [Nombre Del Entorno Virtual]'
+2. Ejecuta `python -m ven [Nombre Del Entorno Virtual]`
 3. Entra al entorno virtual
-4. Ejecuta 'pip install -r requirements.txt'
+4. Ejecuta `pip install -r requirements.txt`
