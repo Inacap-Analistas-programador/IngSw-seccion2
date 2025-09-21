@@ -7,9 +7,9 @@ La comunicación se realiza mediante consultas HTTP seguras para realizar operac
 ---
 
 ## 🚀 Tecnologías principales
-- **Python / Django** + **Django REST Framework** – API REST.
-- **Vue 3 + Vite** – Cliente web.
-- **Arquitectura MVC** – Separación clara entre modelo, vista y controlador.
+* **Python / Django** + **Django REST Framework** – API REST.
+* **Vue 3 + Vite** – Cliente web.
+* **Arquitectura MVC** – Separación clara entre modelo, vista y controlador.
 
 ---
 
@@ -84,7 +84,7 @@ cd SistemaScouts
    npm run dev
    ```
 4. **El cliente estará disponible en:**  
-    👉 `http://localhost:5173/`
+   👉 `http://localhost:5173/`
 
 ---
 
