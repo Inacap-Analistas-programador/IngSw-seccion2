@@ -104,3 +104,4 @@ La API usa **Django REST Framework** para:
   git pull origin main
   ```
   para mantener el repositorio sincronizado.
+
