@@ -104,9 +104,3 @@ La API usa **Django REST Framework** para:
   git pull origin main
   ```
   para mantener el repositorio sincronizado.
-
----
-
-## 📜 Licencia
-Este proyecto es de uso interno para fines académicos/organizacionales.  
-Adapta la licencia según tus necesidades.
