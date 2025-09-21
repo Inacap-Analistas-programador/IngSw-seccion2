@@ -64,7 +64,7 @@ cd SistemaScouts
    ```bash
    python manage.py runserver
    ```
-   La API estará disponible en:  
+5. **La API estará disponible en:**
    👉 `http://127.0.0.1:8000/`
 
 ---
