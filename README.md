@@ -15,10 +15,10 @@ La comunicación se realiza mediante consultas HTTP seguras para realizar operac
 
 ## ⚙️ Requisitos previos
 Asegúrate de tener instalados en tu sistema:
-- [Python 3.x](https://www.python.org/downloads/)
-- [Node.js (LTS)](https://nodejs.org/) (incluye npm)
-- [Git](https://git-scm.com/) para clonar el repositorio
-- Visual Studio Code (opcional pero recomendado)
+* [Python 3.x](https://www.python.org/downloads/)
+* [Node.js (LTS)](https://nodejs.org/) (incluye npm)
+* [Git](https://git-scm.com/) para clonar el repositorio
+* Visual Studio Code (opcional pero recomendado)
 
 ---
 
@@ -97,11 +97,10 @@ La API usa **Django REST Framework** para:
 ---
 
 ## 💡 Recomendaciones de desarrollo
-- Mantén los **entornos virtuales** separados para **Python** y **Node**.  
+* Mantén los **entornos virtuales** separados para **Python** y **Node**.  
   Esto evita problemas de compatibilidad en futuros *push*.
-- Antes de cada `git push`, asegúrate de:
-  ```bash
+* Antes de cada ``` git push ```, asegúrate de:
+```bash
   git pull origin main
-  ```
-  para mantener el repositorio sincronizado.
-
+```
+para mantener el repositorio sincronizado.
