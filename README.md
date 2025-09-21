@@ -83,9 +83,9 @@ cd SistemaScouts
    ```bash
    npm run dev
    ```
-   El cliente estará disponible en:  
+4. **El cliente estará disponible en:**  
    👉 `http://localhost:5173/`
-
+   
 ---
 
 ## 🔒 Seguridad de la API
