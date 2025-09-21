@@ -97,9 +97,9 @@ La API usa **Django REST Framework** para:
 ---
 
 ## 💡 Recomendaciones de desarrollo
-* Mantén los **entornos virtuales** separados para **Python** y **Node**.  
+1. Mantén los **entornos virtuales** separados para **Python** y **Node**.  
   Esto evita problemas de compatibilidad en futuros *push*.
-* Antes de cada ``` git push ```, asegúrate de:
+2. Antes de cada ``` git push ```, asegúrate de:
 ```bash
   git pull origin main
 ```
