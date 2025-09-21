@@ -65,7 +65,7 @@ cd SistemaScouts
    python manage.py runserver
    ```
 5. **La API estará disponible en:**
-   👉 `http://127.0.0.1:8000/`
+    👉 `http://127.0.0.1:8000/`
 
 ---
 
@@ -84,8 +84,8 @@ cd SistemaScouts
    npm run dev
    ```
 4. **El cliente estará disponible en:**  
-   👉 `http://localhost:5173/`
-   
+    👉 `http://localhost:5173/`
+
 ---
 
 ## 🔒 Seguridad de la API
