@@ -35,7 +35,7 @@ SistemaScouts/
 
 ## 🔹 1. Clonar el repositorio
 ```bash
-git clone <URL-del-repositorio>
+git clone https://github.com/Inacap-Analistas-programador/IngSw-seccion2.git
 cd SistemaScouts
 ```
 
