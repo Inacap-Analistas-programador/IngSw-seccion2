@@ -1,63 +1,58 @@
 <template>
-  <div class="layout-root">
-    <NavBar />
+  <div class="panel-container">
+    <header class="panel-header">
+      <h1>Panel de Control<br><span class="panel-sub">Segmentado por Curso</span></h1>
+    </header>
 
-    <div class="layout-content">
-      <main class="main">
-        <div class="panel-container">
-          <header class="panel-header">
-            <h1>Panel de Control<br><span class="panel-sub">Segmentado por Curso</span></h1>
-          </header>
+    <!-- Tarjetas resumen -->
+    <section class="cards-row">
+      <DataCard
+        v-for="card in resumenCards"
+        :key="card.title"
+        :title="card.title"
+        :value="card.value"
+        :icon="card.icon"
+        :color="card.color"
+        @click="card.title === 'Total Inscripciones' ? mostrarTabla('clases') : card.title === 'Acreditados' ? mostrarTabla('ramas') : card.title === 'Pendientes' ? mostrarTabla('pendientes') : null"
+        style="cursor:pointer;"
+      />
+    </section>
 
-          <!-- Tarjetas resumen -->
-          <section class="cards-row">
-            <DataCard
-              v-for="card in resumenCards"
-              :key="card.title"
-              :title="card.title"
-              :value="card.value"
-              :icon="card.icon"
-              :color="card.color"
-              @click="card.title === 'Total Inscripciones' ? mostrarTabla('clases') : card.title === 'Acreditados' ? mostrarTabla('ramas') : card.title === 'Pendientes' ? mostrarTabla('pendientes') : null"
-              style="cursor:pointer;"
-            />
-          </section>
+    <!-- Tabla de Clases -->
+    <section v-if="tablaVisible === 'clases'" class="stats-row">
+      <div class="tabla-header">
+        <h2>Totales por Clases</h2>
+        <button @click="cerrarTabla" class="close-btn">Cerrar</button>
+      </div>
+      <table class="stats-table">
+        <thead>
+          <tr>
+            <th>Clase</th>
+            <th>Inscritos</th>
+            <th>Acreditados</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="clase in clasesStats" :key="clase.clase">
+            <td>{{ clase.clase }}</td>
+            <td>{{ clase.inscritos }}</td>
+            <td>{{ clase.acreditados }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
 
-          <!-- Tabla de Clases -->
-          <section v-if="tablaVisible === 'clases'" class="stats-row">
-            <div class="tabla-header">
-              <h2>Totales por Clases</h2>
-              <button @click="cerrarTabla" class="close-btn">Cerrar</button>
-            </div>
-            <table class="stats-table">
-              <thead>
-                <tr>
-                  <th>Clase</th>
-                  <th>Inscritos</th>
-                  <th>Acreditados</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="clase in clasesStats" :key="clase.clase">
-                  <td>{{ clase.clase }}</td>
-                  <td>{{ clase.inscritos }}</td>
-                  <td>{{ clase.acreditados }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </section>
-
-          <!-- Tabla de Ramas -->
-          <section v-if="tablaVisible === 'ramas'" class="stats-row">
-            <div class="tabla-header">
-              <h2>Totales por Ramas</h2>
-              <button @click="cerrarTabla" class="close-btn">Cerrar</button>
-            </div>
-            <table class="stats-table">
-              <thead>
-                <tr>
-                  <th>Rama</th>
-                  <th>Inscritos</th>
+    <!-- Tabla de Ramas -->
+    <section v-if="tablaVisible === 'ramas'" class="stats-row">
+      <div class="tabla-header">
+        <h2>Totales por Ramas</h2>
+        <button @click="cerrarTabla" class="close-btn">Cerrar</button>
+      </div>
+      <table class="stats-table">
+        <thead>
+          <tr>
+            <th>Rama</th>
+            <th>Inscritos</th>
                   <th>Acreditados</th>
                 </tr>
               </thead>
@@ -131,19 +126,16 @@
             <DataTable :columns="tableColumns" :rows="inscripciones" />
           </section>
         </div>
-      </main>
-    </div>
-  </div>
+      
 </template>
 
 <script setup>
-const sidebarOpen = ref(true)
 import { ref, onMounted } from 'vue'
+const sidebarOpen = ref(true)
 import DataCard from '@/components/Reutilizables/DataCard.vue'
 import DataCardList from '@/components/Reutilizables/DataCardList.vue'
 import DataTable from '@/components/Reutilizables/DataTable.vue'
 import DataRow from '@/components/Reutilizables/DataRow.vue'
-import NavBar from '@/components/Reutilizables/NavBar.vue'
 const resumenCards = ref([
   { title: 'Total Inscripciones', value: 120, icon: 'mdi-account-multiple', color: '#3498db' },
   { title: 'Acreditados', value: 85, icon: 'mdi-check-circle', color: '#2ecc71' },
@@ -169,7 +161,6 @@ const inscripciones = ref([])
 const dataRowObject = ref({
   Usuario: 'JUAN PÉREZ GONZÁLEZ',
   Curso: 'SCOUTS',
-  Estado: 'Acreditado'
 })
 
 // Simula llamada a API
@@ -356,6 +347,11 @@ function cerrarTabla() {
   flex-direction: column;
   align-items: center;
   gap: 1.5rem;
+}
+
+/* Ensure readable text inside the white panel even if global theme sets light text */
+.panel-container, .panel-container * {
+  color: #222 !important;
 }
 
 
