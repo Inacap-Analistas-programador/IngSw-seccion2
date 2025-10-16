@@ -58,6 +58,17 @@
   font-weight: normal;
 }
 
+/* Normalize root elements to avoid unexpected scroll/offset */
+html, body, #app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Debugging helper: uncomment to see which element overflows
+html, body, #app, .correos-bg, .correos-container { outline: 1px solid rgba(255,0,0,0.12); }
+*/
+
 body {
   min-height: 100vh;
   color: var(--color-text);
