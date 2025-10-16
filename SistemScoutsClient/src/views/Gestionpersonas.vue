@@ -1,15 +1,11 @@
 <template>
   <div class="gestion-personas">
-    <div class="header">
-      <h2>Gestión Centralizada de Participantes</h2>
-    </div>
+  <!-- Vista: la NavBar se renderiza globalmente en App.vue, no incluirla aquí -->
 
     <!-- Barra de búsqueda y filtros -->
     <div class="filtros">
       <InputBase v-model="searchQuery" placeholder="Buscar por nombre, RUT, email..." />
-  <select v-model="selectedRole">
-    <option v-for="opt in roleOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-  </select>
+      <BaseSelect v-model="selectedRole" :options="roleOptions" placeholder="Todos los roles" />
       <BaseSelect v-model="selectedRama" :options="ramaOptions" placeholder="Todas las ramas" />
       <BaseButton variant="primary" @click="filtrar">Buscar</BaseButton>
       <BaseButton variant="secondary" @click="exportarExcel">📊 Exportar</BaseButton>
@@ -53,9 +49,7 @@
             </span>
           </td>
           <td>
-            <button class="editar" @click="seleccionar(p)">
-              Ver/Editar
-            </button>
+            <BaseButton class="editar" variant="secondary" @click="seleccionar(p)">Ver/Editar</BaseButton>
           </td>
         </tr>
         <!-- Placeholder...-->
@@ -113,10 +107,10 @@
       <!-- Datos ejemplo para pruebas -->
 
 <script>
-import InputBase from '@/components/InputBase.vue'
-import BaseSelect from '@/components/BaseSelect.vue'
-import BaseButton from '@/components/BaseButton.vue'
-import BaseAlert from '@/components/BaseAlert.vue'
+import InputBase from '@/components/Reutilizables/InputBase.vue'
+import BaseSelect from '@/components/Reutilizables/BaseSelect.vue'
+import BaseButton from '@/components/Reutilizables/BaseButton.vue'
+import BaseAlert from '@/components/Reutilizables/BaseAlert.vue'
 
 export default {
   name: 'GestionPersonas',
@@ -246,19 +240,16 @@ export default {
 
 <style>
 .gestion-personas {
-  position: fixed;
-  inset: 0; 
   box-sizing: border-box;
-  margin: 0;
+  margin: 18px auto;
   padding: 18px 28px;
   background: #ffffff;
-  color: #111; 
+  color: #111;
   display: flex;
   flex-direction: column;
   gap: 12px;
   font-family: Arial, sans-serif;
-  overflow: hidden; 
-  z-index: 1000;
+  max-width: 1100px;
 }
 
 .header h2 {
