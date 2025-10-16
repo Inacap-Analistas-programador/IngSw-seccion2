@@ -137,10 +137,10 @@
 </template>
 
 <script>
-import DataCard from './DataCard.vue'
-import DataTable from './DataTable.vue'
-import BaseButton from './BaseButton.vue'
-import BaseAlert from './BaseAlert.vue'
+import DataCard from '@/components/Reutilizables/DataCard.vue'
+import DataTable from '@/components/Reutilizables/DataTable.vue'
+import BaseButton from '@/components/Reutilizables/BaseButton.vue'
+import BaseAlert from '@/components/Reutilizables/BaseAlert.vue'
 
 export default {
   name: 'ManualAcreditation',

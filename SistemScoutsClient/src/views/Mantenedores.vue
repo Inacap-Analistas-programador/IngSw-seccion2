@@ -486,13 +486,13 @@
 
 <script setup>
 import { ref, computed, reactive } from 'vue'
-import BaseAlert from './BaseAlert.vue'
-import BaseButton from './BaseButton.vue'
-import BaseModal from './BaseModal.vue'
-import BaseSelect from './BaseSelect.vue'
-import InputBase from './InputBase.vue'
-import DataTable from './DataTable.vue'
-import DataCard from './DataCard.vue'
+import BaseAlert from '@/components/Reutilizables/BaseAlert.vue'
+import BaseButton from '@/components/Reutilizables/BaseButton.vue'
+import BaseModal from '@/components/Reutilizables/BaseModal.vue'
+import BaseSelect from '@/components/Reutilizables/BaseSelect.vue'
+import InputBase from '@/components/Reutilizables/InputBase.vue'
+import DataTable from '@/components/Reutilizables/DataTable.vue'
+import DataCard from '@/components/Reutilizables/DataCard.vue'
 
 // Estado reactivo
 const activeTab = ref('zonas')
