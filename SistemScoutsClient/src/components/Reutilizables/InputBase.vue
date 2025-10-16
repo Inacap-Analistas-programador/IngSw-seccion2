@@ -17,7 +17,9 @@ const inputId = computed(() => props.id || `base-input-${Math.random().toString(
 
 function validarRut(rut) {
     if (!rut || !/^[0-9]+-[0-9kK]{1}$/.test(rut)) return false
-    const [num, dv] = rut.split("-")
+    // num will be mutated in the algorithm so use let and convert to Number
+    let [num, dv] = rut.split("-")
+    num = Number(num) || 0
     let M = 0, S = 1
     for (; num; num = Math.floor(num / 10)) S = (S + num % 10 * (9 - M++ % 6)) % 11
     return String(S ? S - 1 : "k") === dv.toLowerCase()
