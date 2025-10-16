@@ -18,32 +18,26 @@
   <div class="pagos-container">
     <!-- ENCABEZADO PRINCIPAL -->
     <div class="pagos-header">
-      <h2>7. Gestión de Pagos</h2>
-      <p>Gestión de Comprobantes de Pago</p>
     </div>
 
     <!-- SECCIÓN 1: CARGA INDIVIDUAL -->
     <section class="pagos-individual">
-      <h3>Carga Individual</h3>
+      <h3>Carga individual de comprobantes</h3>
 
-      <!-- Buscador por RUT -->
-      <div class="pagos-individual-row">
-        <input 
-          type="text" 
-          placeholder="Buscar por RUT (ej: 12.345.678-9)" 
-          class="pagos-input" 
-        />
-        <button class="btn-buscar">Buscar</button>
-      </div>
+        <!-- Buscador por RUT -->
+        <div class="pagos-individual-row">
+          <InputBase v-model="rutBusqueda" placeholder="Buscar por RUT" class="pagos-input" />
+          <BaseButton variant="primary" @click="buscarPorRut">Buscar</BaseButton>
+        </div>
 
       <!-- Resultado y carga de comprobante -->
       <div class="pagos-individual-content">
         <div class="pagos-datos-personales">
-          <strong>Datos del Participante</strong><br>
-          <span>Nombre:</span> JUAN PÉREZ GONZÁLEZ<br>
+          <strong>Datos del participante</strong><br>
+          <span>Nombre:</span> Juan Pérez González<br>
           <span>RUT:</span> 12.345.678-9<br>
-          <span>Curso:</span> Formación de Dirigentes<br>
-          <span>Estado Pago:</span>
+          <span>Curso:</span> Formación de dirigentes<br>
+          <span>Estado de pago:</span>
           <span class="badge-pendiente">Pendiente</span>
         </div>
 
@@ -53,7 +47,7 @@
           <div class="upload-box">
             <span>📎 Arrastra el archivo aquí o haz clic para seleccionar</span><br>
             <input type="file" id="fileIndividual" style="margin:10px 0;" />
-            <button class="btn-file">Subir Comprobante</button>
+            <BaseButton @click="cargarComprobanteIndividual">Cargar comprobante</BaseButton>
           </div>
         </div>
       </div>
@@ -61,9 +55,9 @@
 
     <!-- SECCIÓN 2: CARGA GRUPAL -->
     <section class="pagos-grupal">
-      <h3>Carga Grupal</h3>
+  <h3>Carga masiva de comprobantes</h3>
 
-      <!-- Tabla de participantes -->
+  <!-- Tabla de participantes -->
       <table>
         <thead>
           <tr>
@@ -101,19 +95,19 @@
 
       <!-- Subida de comprobante grupal -->
       <div class="upload-box-grupal">
-        <span>📎 Comprobante grupal - Arrastra el archivo aquí</span><br />
+        <span>📎 Comprobante grupal — arrastre el archivo aquí o selecciónelo</span><br />
         <input type="file" id="fileGrupal" style="margin:10px 0;" />
-        <button class="btn-file">Asociar Comprobante a Seleccionados</button>
+        <BaseButton @click="asociarComprobanteGrupal">Asociar comprobante a seleccionados</BaseButton>
       </div>
     </section>
 
     <!-- SECCIÓN 3: ACCIONES DE ADMINISTRADOR -->
     <section class="pagos-acciones">
-      <h3>Acciones de Pago</h3>
-      <button class="btn-confirmar">Confirmar Pagos</button>
-      <button class="btn-rechazar">Rechazar Pagos</button>
-      <button class="btn-pendiente">Marcar como Pendiente</button>
-      <button class="btn-exportar">Exportar Lista de Pagos</button>
+  <h3>Acciones administrativas</h3>
+  <BaseButton class="btn-confirmar" @click="confirmarSeleccion">Confirmar</BaseButton>
+  <BaseButton class="btn-rechazar" @click="rechazarSeleccion">Rechazar</BaseButton>
+  <BaseButton class="btn-pendiente" @click="marcarPendiente">Marcar como pendiente</BaseButton>
+  <BaseButton class="btn-exportar" @click="exportarLista">Exportar lista</BaseButton>
     </section>
   </div>
 </template>
@@ -293,3 +287,44 @@ h3 {
   filter: brightness(0.93);
 }
 </style>
+
+<script>
+import InputBase from '@/components/Reutilizables/InputBase.vue'
+import BaseButton from '@/components/Reutilizables/BaseButton.vue'
+
+export default {
+  name: 'PagosView',
+  components: { InputBase, BaseButton },
+  data() {
+    return {
+      rutBusqueda: '',
+    }
+  },
+  methods: {
+    buscarPorRut() {
+      // Implementar búsqueda real contra API cuando esté disponible
+      console.log('Buscar por RUT:', this.rutBusqueda)
+    },
+    cargarComprobanteIndividual() {
+      const input = document.getElementById('fileIndividual')
+      if (input && input.files && input.files.length) {
+        console.log('Archivo individual seleccionado:', input.files[0].name)
+      } else {
+        console.log('No hay archivo seleccionado para individual')
+      }
+    },
+    asociarComprobanteGrupal() {
+      const input = document.getElementById('fileGrupal')
+      if (input && input.files && input.files.length) {
+        console.log('Archivo grupal seleccionado:', input.files[0].name)
+      } else {
+        console.log('No hay archivo seleccionado para grupal')
+      }
+    },
+    confirmarSeleccion() { console.log('Confirmar seleccionados') },
+    rechazarSeleccion() { console.log('Rechazar seleccionados') },
+    marcarPendiente() { console.log('Marcar como pendiente') },
+    exportarLista() { console.log('Exportar lista de pagos') }
+  }
+}
+</script>
