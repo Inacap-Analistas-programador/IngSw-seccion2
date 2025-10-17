@@ -1,1153 +1,1436 @@
 <template>
-  <div class="app-container">
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <ul>
-        <li v-for="item in menuItems" :key="item.id">
-          <button 
-            class="sidebar-link" 
-            :class="{ active: activeMenu === item.id }"
-            @click="setActiveMenu(item.id)"
-          >
-            <span class="icon">{{ item.icon }}</span>
-            <span class="label">{{ item.label }}</span>
-          </button>
-        </li>
-      </ul>
-    </aside>
-
-    <!-- Contenido principal -->
-    <main class="main-content">
-      <!-- Navbar -->
-      <nav class="navbar">
-        <div class="navbar-left">
-          <img :src="logo" alt="Logo Scouts" class="logo" />
-          <span class="title">Sistema Scouts Región del Biobío</span>
-        </div>
-
-        <ul :class="['navbar-links', { active: mobileMenuOpen }]">
-          <li v-for="link in navbarLinks" :key="link.text">
-            <a :href="link.href">{{ link.text }}</a>
-          </li>
-        </ul>
-
-        <button 
-          class="navbar-menu" 
-          @click="toggleMobileMenu"
-          aria-label="Alternar menú"
-        >
-          ☰
-        </button>
-      </nav>
-
-      <!-- Formulario de Pre-inscripción -->
-      <div class="form-container">
-        <h1 class="form-title">Formulario de Pre-inscripción - Curso Medio</h1>
-        
-        <!-- Alerta informativa -->
-        <div class="alert alert-info">
-          <span class="alert-icon">ℹ️</span>
-          <span>Complete todos los campos obligatorios (*) para realizar la pre-inscripción. Los datos serán verificados antes de la confirmación final.</span>
-        </div>
-
-        <div v-if="showErrorAlert" class="alert alert-error">
-          <span class="alert-icon">⚠️</span>
-          <span>Por favor, corrija los errores en el formulario antes de enviarlo.</span>
-        </div>
-        
-        <!-- Selección de Curso -->
-        <div class="form-section">
-          <h2 class="section-title">
-            <span class="icon">📚</span>
-            Selección de Curso
-          </h2>
-          
-          <div class="form-group">
-            <label for="curso" class="form-label required">¿A qué curso se va a inscribir?</label>
-            <select 
-              id="curso" 
-              v-model="formData.curso"
-              class="form-select" 
-              required
-              @blur="validateField('curso')"
-            >
-              <option value="">Seleccione un curso</option>
-              <option value="curso-inicial">Curso Inicial</option>
-              <option value="curso-medio">Curso Medio</option>
-              <option value="curso-avanzado">Curso Avanzado</option>
-            </select>
-            <span class="form-error">{{ errors.curso }}</span>
-          </div>
-        </div>
-        
-        <!-- Información Personal -->
-        <div class="form-section">
-          <h2 class="section-title">
-            <span class="icon">👤</span>
-            Información Personal
-          </h2>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label for="nombres" class="form-label required">Nombres</label>
-              <input 
-                type="text" 
-                id="nombres" 
-                v-model="formData.nombres"
-                class="form-input" 
-                placeholder="INGRESE SUS NOMBRES" 
-                required 
-                @blur="validateField('nombres')"
-                style="text-transform: uppercase;"
-              >
-              <span class="form-error">{{ errors.nombres }}</span>
-            </div>
-            
-            <div class="form-group">
-              <label for="apellidos" class="form-label required">Apellidos</label>
-              <input 
-                type="text" 
-                id="apellidos" 
-                v-model="formData.apellidos"
-                class="form-input" 
-                placeholder="INGRESE SUS APELLIDOS" 
-                required 
-                @blur="validateField('apellidos')"
-                style="text-transform: uppercase;"
-              >
-              <span class="form-error">{{ errors.apellidos }}</span>
-            </div>
-          </div>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label for="rut" class="form-label required">RUT</label>
-              <input 
-                type="text" 
-                id="rut" 
-                v-model="formData.rut"
-                class="form-input" 
-                placeholder="EJ: 12.345.678-9" 
-                required 
-                @blur="validateRUT"
-              >
-              <span class="form-error">{{ errors.rut }}</span>
-            </div>
-            
-            <div class="form-group">
-              <label for="fecha-nacimiento" class="form-label required">Fecha de Nacimiento</label>
-              <input 
-                type="date" 
-                id="fecha-nacimiento" 
-                v-model="formData.fechaNacimiento"
-                class="form-input" 
-                required 
-                @blur="validateField('fechaNacimiento')"
-              >
-              <span class="form-error">{{ errors.fechaNacimiento }}</span>
-            </div>
-          </div>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label for="genero" class="form-label required">Género</label>
-              <select 
-                id="genero" 
-                v-model="formData.genero"
-                class="form-select" 
-                required 
-                @blur="validateField('genero')"
-              >
-                <option value="">Seleccione una opción</option>
-                <option value="masculino">Masculino</option>
-                <option value="femenino">Femenino</option>
-                <option value="otro">Otro</option>
-                <option value="prefiero-no-decir">Prefiero no decir</option>
-              </select>
-              <span class="form-error">{{ errors.genero }}</span>
-            </div>
-            
-            <div class="form-group">
-              <label for="nacionalidad" class="form-label required">Nacionalidad</label>
-              <input 
-                type="text" 
-                id="nacionalidad" 
-                v-model="formData.nacionalidad"
-                class="form-input" 
-                placeholder="EJ: CHILENA" 
-                required 
-                @blur="validateField('nacionalidad')"
-                style="text-transform: uppercase;"
-              >
-              <span class="form-error">{{ errors.nacionalidad }}</span>
-            </div>
-          </div>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label for="estado-civil" class="form-label">Estado Civil</label>
-              <select 
-                id="estado-civil" 
-                v-model="formData.estadoCivil"
-                class="form-select"
-              >
-                <option value="">Seleccione una opción</option>
-                <option value="soltero">Soltero/a</option>
-                <option value="casado">Casado/a</option>
-                <option value="divorciado">Divorciado/a</option>
-                <option value="viudo">Viudo/a</option>
-                <option value="union-civil">Unión Civil</option>
-              </select>
-            </div>
-            
-            <div class="form-group">
-              <label for="profesion" class="form-label">Profesión</label>
-              <input 
-                type="text" 
-                id="profesion" 
-                v-model="formData.profesion"
-                class="form-input" 
-                placeholder="EJ: PROFESOR, INGENIERO, ETC." 
-                style="text-transform: uppercase;"
-              >
-            </div>
-          </div>
-          
-          <div class="form-group">
-            <label for="apodo" class="form-label">Apodo para credencial</label>
-            <input 
-              type="text" 
-              id="apodo" 
-              v-model="formData.apodo"
-              class="form-input" 
-              placeholder="APODO QUE APARECERÁ EN SU CREDENCIAL"
-            >
-          </div>
-        </div>
-        
-        <!-- Información de Contacto -->
-        <div class="form-section">
-          <h2 class="section-title">
-            <span class="icon">📞</span>
-            Información de Contacto
-          </h2>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label for="email" class="form-label required">Correo Electrónico</label>
-              <input 
-                type="email" 
-                id="email" 
-                v-model="formData.email"
-                class="form-input" 
-                placeholder="ejemplo@correo.com" 
-                required 
-                @blur="validateEmail"
-              >
-              <span class="form-error">{{ errors.email }}</span>
-            </div>
-            
-            <div class="form-group">
-              <label for="telefono" class="form-label required">Teléfono Celular</label>
-              <input 
-                type="tel" 
-                id="telefono" 
-                v-model="formData.telefono"
-                class="form-input" 
-                placeholder="+56 9 1234 5678" 
-                required 
-                @blur="validateField('telefono')"
-              >
-              <span class="form-error">{{ errors.telefono }}</span>
-            </div>
-          </div>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label for="telefono-casa" class="form-label">Teléfono Casa</label>
-              <input 
-                type="tel" 
-                id="telefono-casa" 
-                v-model="formData.telefonoCasa"
-                class="form-input" 
-                placeholder="+56 41 234 5678"
-              >
-            </div>
-            
-            <div class="form-group">
-              <label for="telefono-trabajo" class="form-label">Teléfono Trabajo</label>
-              <input 
-                type="tel" 
-                id="telefono-trabajo" 
-                v-model="formData.telefonoTrabajo"
-                class="form-input" 
-                placeholder="+56 41 345 6789"
-              >
-            </div>
-          </div>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label for="direccion" class="form-label required">Dirección</label>
-              <input 
-                type="text" 
-                id="direccion" 
-                v-model="formData.direccion"
-                class="form-input" 
-                placeholder="CALLE, NÚMERO, DEPARTAMENTO" 
-                required 
-                @blur="validateField('direccion')"
-                style="text-transform: uppercase;"
-              >
-              <span class="form-error">{{ errors.direccion }}</span>
-            </div>
-            
-            <div class="form-group">
-              <label for="comuna" class="form-label required">Comuna</label>
-              <select 
-                id="comuna" 
-                v-model="formData.comuna"
-                class="form-select" 
-                required 
-                @blur="validateField('comuna')"
-              >
-                <option value="">Seleccione una comuna</option>
-                <option value="concepcion">Concepción</option>
-                <option value="talcahuano">Talcahuano</option>
-                <option value="chiguayante">Chiguayante</option>
-                <option value="san-pedro">San Pedro de la Paz</option>
-                <option value="hualpen">Hualpén</option>
-                <option value="coronel">Coronel</option>
-                <option value="lota">Lota</option>
-                <option value="penco">Penco</option>
-                <option value="tome">Tomé</option>
-                <option value="arauco">Arauco</option>
-                <option value="lebu">Lebu</option>
-                <option value="cañete">Cañete</option>
-                <option value="los-alamos">Los Álamos</option>
-                <option value="curanilahue">Curanilahue</option>
-              </select>
-              <span class="form-error">{{ errors.comuna }}</span>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Información del Scout -->
-        <div class="form-section">
-          <h2 class="section-title">
-            <span class="icon">🏕️</span>
-            Información del Scout
-          </h2>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label for="rol" class="form-label required">Rol dentro del curso</label>
-              <select 
-                id="rol" 
-                v-model="formData.rol"
-                class="form-select" 
-                required 
-                @blur="validateField('rol')"
-              >
-                <option value="">Seleccione su rol</option>
-                <option value="participante">Participante</option>
-                <option value="apoyo-formadores">Apoyo a Formadores</option>
-                <option value="formador">Formador</option>
-                <option value="director">Director</option>
-                <option value="coordinador">Coordinador</option>
-                <option value="administrativo">Personal Administrativo</option>
-                <option value="logistica">Personal de Logística</option>
-                <option value="salud">Personal de Salud</option>
-              </select>
-              <span class="form-error">{{ errors.rol }}</span>
-            </div>
-            
-            <div class="form-group">
-              <label for="grupo-scout" class="form-label required">Grupo Scout</label>
-              <select 
-                id="grupo-scout" 
-                v-model="formData.grupoScout"
-                class="form-select" 
-                required 
-                @blur="validateField('grupoScout')"
-              >
-                <option value="">Seleccione su grupo scout</option>
-                <option v-for="grupo in gruposScout" :key="grupo" :value="grupo">{{ grupo }}</option>
-              </select>
-              <span class="form-error">{{ errors.grupoScout }}</span>
-            </div>
-          </div>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label for="distrito" class="form-label required">Distrito</label>
-              <select 
-                id="distrito" 
-                v-model="formData.distrito"
-                class="form-select" 
-                required 
-                @blur="validateField('distrito')"
-              >
-                <option value="">Seleccione su distrito</option>
-                <option value="distrito-1">Distrito 1</option>
-                <option value="distrito-2">Distrito 2</option>
-                <option value="distrito-3">Distrito 3</option>
-                <option value="distrito-4">Distrito 4</option>
-                <option value="distrito-5">Distrito 5</option>
-                <option value="distrito-6">Distrito 6</option>
-              </select>
-              <span class="form-error">{{ errors.distrito }}</span>
-            </div>
-            
-            <div class="form-group">
-              <label for="rama" class="form-label required">Rama</label>
-              <select 
-                id="rama" 
-                v-model="formData.rama"
-                class="form-select" 
-                required 
-                @blur="validateField('rama')"
-              >
-                <option value="">Seleccione su rama</option>
-                <option value="manada">Manada (7-10 años)</option>
-                <option value="tropa">Tropa (11-14 años)</option>
-                <option value="comunidad">Comunidad (15-17 años)</option>
-                <option value="clan">Clan (18-20 años)</option>
-                <option value="dirigente">Dirigente</option>
-              </select>
-              <span class="form-error">{{ errors.rama }}</span>
-            </div>
-          </div>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label for="nivel" class="form-label required">Nivel de Formación</label>
-              <select 
-                id="nivel" 
-                v-model="formData.nivel"
-                class="form-select" 
-                required 
-                @blur="validateField('nivel')"
-              >
-                <option value="">Seleccione su nivel</option>
-                <option value="inicial">Inicial</option>
-                <option value="medio">Medio</option>
-                <option value="avanzado">Avanzado</option>
-                <option value="ninguno">Ninguno</option>
-              </select>
-              <span class="form-error">{{ errors.nivel }}</span>
-            </div>
-            
-            <div class="form-group">
-              <label for="cargo" class="form-label">Cargo en la Unidad/Asociación</label>
-              <input 
-                type="text" 
-                id="cargo" 
-                v-model="formData.cargo"
-                class="form-input" 
-                placeholder="EJ: GUÍA DE PATRULLA, SUBJEFE, ETC." 
-                style="text-transform: uppercase;"
-              >
-            </div>
-          </div>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label for="fecha-ingreso" class="form-label">Fecha de Ingreso al Movimiento Scout</label>
-              <input 
-                type="date" 
-                id="fecha-ingreso" 
-                v-model="formData.fechaIngreso"
-                class="form-input"
-              >
-            </div>
-            
-            <div class="form-group">
-              <label for="miembro-activo" class="form-label">Número de Miembro Activo (MMAA)</label>
-              <input 
-                type="text" 
-                id="miembro-activo" 
-                v-model="formData.miembroActivo"
-                class="form-input" 
-                placeholder="EJ: 5208"
-              >
-            </div>
-          </div>
-        </div>
-        
-        <!-- Información de Salud -->
-        <div class="form-section">
-          <h2 class="section-title">
-            <span class="icon">🏥</span>
-            Información de Salud
-          </h2>
-          
-          <div class="form-group">
-            <label for="alergias" class="form-label">Alergias (medicamentos, alimentos, etc.)</label>
-            <textarea 
-              id="alergias" 
-              v-model="formData.alergias"
-              class="form-textarea" 
-              placeholder="DESCRIBA SUS ALERGIAS, SI NO TIENE ESCRIBA 'NINGUNA'"
-              rows="3"
-              style="text-transform: uppercase;"
-            ></textarea>
-          </div>
-          
-          <div class="form-group">
-            <label for="condiciones-medicas" class="form-label">Condiciones Médicas (asma, diabetes, epilepsia, etc.)</label>
-            <textarea 
-              id="condiciones-medicas" 
-              v-model="formData.condicionesMedicas"
-              class="form-textarea" 
-              placeholder="DESCRIBA SUS CONDICIONES MÉDICAS, SI NO TIENE ESCRIBA 'NINGUNA'"
-              rows="3"
-              style="text-transform: uppercase;"
-            ></textarea>
-          </div>
-          
-          <div class="form-group">
-            <label for="medicamentos" class="form-label">Medicamentos que toma regularmente</label>
-            <textarea 
-              id="medicamentos" 
-              v-model="formData.medicamentos"
-              class="form-textarea" 
-              placeholder="DESCRIBA LOS MEDICAMENTOS QUE TOMA, SI NO TOMA ESCRIBA 'NINGUNO'"
-              rows="3"
-              style="text-transform: uppercase;"
-            ></textarea>
-          </div>
-          
-          <div class="form-group">
-            <label for="seguro-medico" class="form-label">Seguro Médico</label>
-            <select 
-              id="seguro-medico" 
-              v-model="formData.seguroMedico"
-              class="form-select"
-            >
-              <option value="">Seleccione una opción</option>
-              <option value="fonasa">FONASA</option>
-              <option value="isapre">ISAPRE</option>
-              <option value="particular">Particular</option>
-              <option value="ninguno">Ninguno</option>
-            </select>
-          </div>
-          
-          <div class="form-group">
-            <label for="contacto-emergencia" class="form-label required">Nombre de Contacto de Emergencia</label>
-            <input 
-              type="text" 
-              id="contacto-emergencia" 
-              v-model="formData.contactoEmergencia"
-              class="form-input" 
-              placeholder="NOMBRE COMPLETO" 
-              required 
-              @blur="validateField('contactoEmergencia')"
-              style="text-transform: uppercase;"
-            >
-            <span class="form-error">{{ errors.contactoEmergencia }}</span>
-          </div>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label for="telefono-emergencia" class="form-label required">Teléfono de Emergencia</label>
-              <input 
-                type="tel" 
-                id="telefono-emergencia" 
-                v-model="formData.telefonoEmergencia"
-                class="form-input" 
-                placeholder="+56 9 1234 5678" 
-                required 
-                @blur="validateField('telefonoEmergencia')"
-              >
-              <span class="form-error">{{ errors.telefonoEmergencia }}</span>
-            </div>
-            
-            <div class="form-group">
-              <label for="parentesco-emergencia" class="form-label required">Parentesco</label>
-              <input 
-                type="text" 
-                id="parentesco-emergencia" 
-                v-model="formData.parentescoEmergencia"
-                class="form-input" 
-                placeholder="EJ: MADRE, PADRE, HERMANO/A, ETC." 
-                required 
-                @blur="validateField('parentescoEmergencia')"
-                style="text-transform: uppercase;"
-              >
-              <span class="form-error">{{ errors.parentescoEmergencia }}</span>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Botones de acción -->
-        <div class="form-actions">
-          <button 
-            type="button" 
-            class="btn btn-secondary"
-            @click="resetForm"
-          >
-            Limpiar Formulario
-          </button>
-          
-          <button 
-            type="button" 
-            class="btn btn-primary"
-            @click="submitForm"
-            :disabled="isSubmitting"
-          >
-            {{ isSubmitting ? 'Enviando...' : 'Enviar Pre-inscripción' }}
-          </button>
+  <div class="formulario-scouts">
+    <!-- Header del Formulario -->
+    <div class="form-header">
+      <div class="header-logo">
+        <img src="@/assets/Logo_Boyscout_Chile.png" alt="Logo Scouts Chile" class="logo">
+        <div class="header-text">
+          <h1 class="page-title">Formulario de Inscripción</h1>
+          <p class="page-subtitle">Curso Medio - Zona Biobío</p>
+          <p class="institution">Asociación de Guías y Scouts de Chile</p>
         </div>
       </div>
-    </main>
+    </div>
+
+    <!-- Alertas del Sistema -->
+    <BaseAlert
+      v-if="systemAlert.visible"
+      :type="systemAlert.type"
+      :title="systemAlert.title"
+      :message="systemAlert.message"
+      :dismissible="true"
+      @close="clearSystemAlert"
+      class="form-alert"
+    />
+
+    <!-- Progreso del Formulario -->
+    <div class="form-progress">
+      <div class="progress-steps">
+        <div 
+          v-for="(step, index) in steps" 
+          :key="index"
+          :class="['step', { 
+            active: currentStep === index, 
+            completed: currentStep > index,
+            disabled: currentStep < index
+          }]"
+        >
+          <div class="step-number">
+            <span v-if="currentStep <= index">{{ index + 1 }}</span>
+            <span v-else>✓</span>
+          </div>
+          <div class="step-label">{{ step.label }}</div>
+          <div class="step-line" v-if="index < steps.length - 1"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenido del Formulario -->
+    <div class="form-container">
+      <form @submit.prevent="submitForm" class="scouts-form">
+        <!-- Paso 1: Selección de Curso -->
+        <div v-if="currentStep === 0" class="form-step">
+          <h2 class="step-title">Selección de Curso</h2>
+          <p class="step-description">Seleccione el curso al que desea inscribirse</p>
+          
+          <div class="courses-grid">
+            <div 
+              v-for="curso in cursosDisponibles" 
+              :key="curso.id"
+              :class="['course-option', { selected: formData.cursoId === curso.id }]"
+              @click="selectCurso(curso)"
+            >
+              <div class="course-icon">{{ curso.icono }}</div>
+              <div class="course-info">
+                <h3 class="course-name">{{ curso.nombre }}</h3>
+                <p class="course-dates">{{ curso.fechas }}</p>
+                <p class="course-location">📍 {{ curso.ubicacion }}</p>
+                <div class="course-meta">
+                  <span class="course-cupo">Cupos: {{ curso.inscritos }}/{{ curso.cupoMaximo }}</span>
+                  <span class="course-costo">${{ curso.costo.toLocaleString('es-CL') }}</span>
+                </div>
+              </div>
+              <div class="course-status" :class="curso.estado">
+                {{ curso.estado === 'disponible' ? 'Disponible' : 'Lleno' }}
+              </div>
+            </div>
+          </div>
+
+          <div v-if="formData.cursoId" class="selected-course-info">
+            <h4>Curso seleccionado:</h4>
+            <p><strong>{{ getCursoSeleccionado().nombre }}</strong></p>
+            <p>{{ getCursoSeleccionado().fechas }} - {{ getCursoSeleccionado().ubicacion }}</p>
+          </div>
+        </div>
+
+        <!-- Paso 2: Datos Personales -->
+        <div v-if="currentStep === 1" class="form-step">
+          <h2 class="step-title">Datos Personales</h2>
+          
+          <div class="form-section">
+            <h3 class="section-title">Información Básica</h3>
+            <div class="form-grid">
+              <InputBase
+                v-model="formData.nombres"
+                label="Nombres *"
+                placeholder="Ingrese sus nombres"
+                :required="true"
+                class="form-field"
+              />
+              
+              <InputBase
+                v-model="formData.apellidos"
+                label="Apellidos *"
+                placeholder="Ingrese sus apellidos"
+                :required="true"
+                class="form-field"
+              />
+              
+              <InputBase
+                v-model="formData.rut"
+                label="RUT *"
+                placeholder="12345678-9"
+                :required="true"
+                rules="rut"
+                class="form-field"
+              />
+              
+              <InputBase
+                v-model="formData.fechaNacimiento"
+                label="Fecha de Nacimiento *"
+                type="date"
+                :required="true"
+                class="form-field"
+              />
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3 class="section-title">Contacto</h3>
+            <div class="form-row">
+              <InputBase
+                v-model="formData.email"
+                label="Correo Electrónico *"
+                placeholder="ejemplo@correo.com"
+                :required="true"
+                rules="email"
+                type="email"
+                class="form-field"
+              />
+              
+              <InputBase
+                v-model="formData.telefono"
+                label="Teléfono *"
+                placeholder="+56 9 1234 5678"
+                :required="true"
+                rules="number"
+                class="form-field"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Paso 3: Información Scout -->
+        <div v-if="currentStep === 2" class="form-step">
+          <h2 class="step-title">Información Scout</h2>
+          
+          <div class="form-section">
+            <h3 class="section-title">Pertenencia Scout</h3>
+            <div class="form-grid">
+              <BaseSelect
+                v-model="formData.region"
+                :options="regiones"
+                label="Región *"
+                placeholder="Seleccione su región"
+                :required="true"
+                class="form-field"
+              />
+              
+              <BaseSelect
+                v-model="formData.distrito"
+                :options="distritos"
+                label="Distrito *"
+                placeholder="Seleccione su distrito"
+                :required="true"
+                class="form-field"
+              />
+              
+              <BaseSelect
+                v-model="formData.grupo"
+                :options="grupos"
+                label="Grupo Scout *"
+                placeholder="Seleccione su grupo"
+                :required="true"
+                class="form-field"
+              />
+              
+              <BaseSelect
+                v-model="formData.rama"
+                :options="ramas"
+                label="Rama *"
+                placeholder="Seleccione su rama"
+                :required="true"
+                class="form-field"
+              />
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3 class="section-title">Rol y Formación</h3>
+            <div class="form-row">
+              <BaseSelect
+                v-model="formData.rol"
+                :options="roles"
+                label="Rol en el Curso *"
+                placeholder="Seleccione su rol"
+                :required="true"
+                class="form-field"
+              />
+              
+              <BaseSelect
+                v-model="formData.nivel"
+                :options="niveles"
+                label="Nivel de Formación *"
+                placeholder="Seleccione su nivel"
+                :required="true"
+                class="form-field"
+              />
+            </div>
+            
+            <InputBase
+              v-model="formData.numeroMMAA"
+              label="Número MMAA"
+              placeholder="Ej: 5208"
+              rules="number"
+              class="form-field"
+            />
+          </div>
+        </div>
+
+        <!-- Paso 4: Salud y Alimentación -->
+        <div v-if="currentStep === 3" class="form-step">
+          <h2 class="step-title">Salud y Alimentación</h2>
+          
+          <div class="form-section">
+            <h3 class="section-title">Preferencias y Restricciones</h3>
+            
+            <BaseSelect
+              v-model="formData.alimentacion"
+              :options="tiposAlimentacion"
+              label="Tipo de Alimentación *"
+              placeholder="Seleccione su tipo de alimentación"
+              :required="true"
+              class="form-field"
+            />
+
+            <div class="form-row">
+              <InputBase
+                v-model="formData.alergias"
+                label="Alergias o Enfermedades"
+                placeholder="Describa sus alergias o enfermedades"
+                class="form-field"
+              />
+              
+              <InputBase
+                v-model="formData.limitaciones"
+                label="Limitaciones Físicas"
+                placeholder="Describa sus limitaciones físicas"
+                class="form-field"
+              />
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3 class="section-title">Contacto de Emergencia</h3>
+            <div class="form-grid">
+              <InputBase
+                v-model="formData.contactoEmergenciaNombre"
+                label="Nombre Contacto Emergencia *"
+                placeholder="Nombre completo"
+                :required="true"
+                class="form-field"
+              />
+              
+              <InputBase
+                v-model="formData.contactoEmergenciaTelefono"
+                label="Teléfono Emergencia *"
+                placeholder="+56 9 1234 5678"
+                :required="true"
+                rules="number"
+                class="form-field"
+              />
+              
+              <InputBase
+                v-model="formData.contactoEmergenciaParentesco"
+                label="Parentesco *"
+                placeholder="Ej: Padre, Madre, etc."
+                :required="true"
+                class="form-field"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Paso 5: Información Adicional -->
+        <div v-if="currentStep === 4" class="form-step">
+          <h2 class="step-title">Información Adicional</h2>
+          
+          <div class="form-section">
+            <h3 class="section-title">Información Personal</h3>
+            
+            <div class="form-row">
+              <InputBase
+                v-model="formData.profesion"
+                label="Profesión u Oficio"
+                placeholder="Su profesión u oficio"
+                class="form-field"
+              />
+              
+              <InputBase
+                v-model="formData.estadoCivil"
+                label="Estado Civil"
+                placeholder="Su estado civil"
+                class="form-field"
+              />
+            </div>
+
+            <InputBase
+              v-model="formData.apodo"
+              label="Apodo para Credencial"
+              placeholder="Apodo que aparecerá en su credencial"
+              class="form-field"
+            />
+          </div>
+
+          <div class="form-section">
+            <h3 class="section-title">Logística</h3>
+            
+            <div class="checkbox-group">
+              <BaseCheckBox
+                v-model="formData.tieneVehiculo"
+                label="¿Tiene vehículo disponible para el curso?"
+                class="checkbox-field"
+              />
+              
+              <BaseCheckBox
+                v-model="formData.requiereAlojamiento"
+                label="¿Requiere alojamiento durante el curso?"
+                class="checkbox-field"
+              />
+              
+              <BaseCheckBox
+                v-model="formData.trabajaConNNAJ"
+                label="¿Ha trabajado con Niños, Niñas y Jóvenes?"
+                class="checkbox-field"
+              />
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3 class="section-title">Términos y Condiciones</h3>
+            
+            <div class="terms-container">
+              <div class="terms-content">
+                <p><strong>Términos y Condiciones del Curso</strong></p>
+                <p>Al enviar este formulario, acepta los términos y condiciones del curso, incluyendo:</p>
+                <ul>
+                  <li>Compromiso de asistencia completa al curso</li>
+                  <li>Cumplimiento del código de conducta scout</li>
+                  <li>Autorización para uso de datos personales según ley 19.628</li>
+                  <li>Compromiso de pago oportuno de la cuota del curso</li>
+                </ul>
+              </div>
+              
+              <BaseCheckBox
+                v-model="formData.aceptaTerminos"
+                label="Acepto los términos y condiciones del curso *"
+                :required="true"
+                class="checkbox-field terms-checkbox"
+              />
+            </div>
+
+            <InputBase
+              v-model="formData.consideraciones"
+              label="Consideraciones Adicionales"
+              placeholder="Otra información que considere importante"
+              type="textarea"
+              class="form-field"
+            />
+          </div>
+        </div>
+
+        <!-- Paso 6: Resumen y Confirmación -->
+        <div v-if="currentStep === 5" class="form-step">
+          <h2 class="step-title">Resumen y Confirmación</h2>
+          
+          <div class="summary-container">
+            <div class="summary-section">
+              <h3 class="summary-title">Resumen de Inscripción</h3>
+              
+              <div class="summary-grid">
+                <div class="summary-item">
+                  <strong>Curso:</strong>
+                  <span>{{ getCursoSeleccionado().nombre }}</span>
+                </div>
+                <div class="summary-item">
+                  <strong>Fecha:</strong>
+                  <span>{{ getCursoSeleccionado().fechas }}</span>
+                </div>
+                <div class="summary-item">
+                  <strong>Ubicación:</strong>
+                  <span>{{ getCursoSeleccionado().ubicacion }}</span>
+                </div>
+                <div class="summary-item">
+                  <strong>Costo:</strong>
+                  <span>${{ getCursoSeleccionado().costo.toLocaleString('es-CL') }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="summary-section">
+              <h3 class="summary-title">Datos del Participante</h3>
+              
+              <div class="summary-grid">
+                <div class="summary-item">
+                  <strong>Nombre:</strong>
+                  <span>{{ formData.nombres }} {{ formData.apellidos }}</span>
+                </div>
+                <div class="summary-item">
+                  <strong>RUT:</strong>
+                  <span>{{ formData.rut }}</span>
+                </div>
+                <div class="summary-item">
+                  <strong>Email:</strong>
+                  <span>{{ formData.email }}</span>
+                </div>
+                <div class="summary-item">
+                  <strong>Grupo Scout:</strong>
+                  <span>{{ getLabel(grupos, formData.grupo) }}</span>
+                </div>
+                <div class="summary-item">
+                  <strong>Rama:</strong>
+                  <span>{{ getLabel(ramas, formData.rama) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="payment-info">
+              <h3 class="summary-title">Información de Pago</h3>
+              <div class="payment-details">
+                <p><strong>Transferencia Bancaria</strong></p>
+                <p>Banco: Scout Chile</p>
+                <p>Cuenta Corriente: 123456789</p>
+                <p>RUT: 12.345.678-9</p>
+                <p>Email: tesoreria@scoutsbiobio.cl</p>
+                <p class="payment-note">⚠️ Envíe su comprobante de transferencia al email indicado</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Navegación del Formulario -->
+        <div class="form-navigation">
+          <BaseButton
+            v-if="currentStep > 0 && currentStep < steps.length - 1"
+            type="button"
+            variant="secondary"
+            @click="previousStep"
+            :disabled="submitting"
+            class="nav-button"
+          >
+            ← Anterior
+          </BaseButton>
+          
+          <div class="nav-spacer"></div>
+          
+          <BaseButton
+            v-if="currentStep < steps.length - 1"
+            type="button"
+            variant="primary"
+            @click="nextStep"
+            :disabled="!currentStepValid"
+            class="nav-button"
+          >
+            {{ currentStep === steps.length - 2 ? 'Revisar' : 'Siguiente' }} →
+          </BaseButton>
+          
+          <BaseButton
+            v-if="currentStep === steps.length - 1"
+            type="submit"
+            variant="success"
+            :disabled="!formValid || submitting"
+            :loading="submitting"
+            class="nav-button submit-button"
+          >
+            {{ submitting ? 'Enviando...' : '✅ Confirmar Inscripción' }}
+          </BaseButton>
+        </div>
+      </form>
+    </div>
+
+    <!-- Modal de Éxito -->
+    <BaseModal
+      v-model="showSuccessModal"
+      @close="handleModalClose"
+    >
+      <div class="success-modal">
+        <div class="success-icon">🎉</div>
+        <h3>¡Inscripción Exitosa!</h3>
+        <p>Su formulario ha sido registrado correctamente en el sistema Scouts Biobío.</p>
+        
+        <div class="success-details">
+          <div class="detail-item">
+            <strong>Número de Inscripción:</strong>
+            <span class="inscription-number">#{{ numeroInscripcion }}</span>
+          </div>
+          <div class="detail-item">
+            <strong>Curso:</strong>
+            <span>{{ getCursoSeleccionado().nombre }}</span>
+          </div>
+          <div class="detail-item">
+            <strong>Participante:</strong>
+            <span>{{ formData.nombres }} {{ formData.apellidos }}</span>
+          </div>
+        </div>
+        
+        <div class="success-actions">
+          <BaseButton
+            variant="primary"
+            @click="handleModalClose"
+            class="action-button"
+          >
+            Aceptar
+          </BaseButton>
+          <BaseButton
+            variant="outline"
+            @click="imprimirComprobante"
+            class="action-button"
+          >
+            📄 Imprimir Comprobante
+          </BaseButton>
+        </div>
+      </div>
+    </BaseModal>
   </div>
 </template>
 
 <script>
+import { ref, reactive, computed, onMounted } from 'vue'
+import BaseAlert from '@/components/BaseAlert.vue'
+import BaseButton from '@/components/BaseButton.vue'
+import BaseCheckBox from '@/components/BaseCheckBox.vue'
+import BaseModal from '@/components/BaseModal.vue'
+import BaseSelect from '@/components/BaseSelect.vue'
+import InputBase from '@/components/InputBase.vue'
+
 export default {
-  name: 'FormularioPreinscripcion',
-  data() {
-    return {
-      activeMenu: 4,
-      mobileMenuOpen: false,
-      isSubmitting: false,
-      showErrorAlert: false,
-      logo: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjYwIiBoZWlnaHQ9IjYwIiByeD0iMzAiIGZpbGw9IiMyQzVBQTAiLz4KPHBhdGggZD0iTTMwIDQwQzM1LjUyMjggNDAgNDAgMzUuNTIyOCA0MCAzMEM0MCAyNC40NzcyIDM1LjUyMjggMjAgMzAgMjBDMjQuNDc3MiAyMCAyMCAyNC40NzcyIDIwIDMwQzIwIDM1LjUyMjggMjQuNDc3MiA0MCAzMCA0MFoiIGZpbGw9IiNGRkNDMDAiLz4KPHBhdGggZD0iTTMwIDM0QzMyLjIwOTEgMzQgMzQgMzIuMjA5MSAzNCAzMEMzNCAyNy43OTA5IDMyLjIwOTEgMjYgMzAgMjZDMjcuNzkwOSAyNiAyNiAyNy43OTA5IDI2IDMwQzI2IDMyLjIwOTEgMjcuNzkwOSAzNCAzMCAzNFoiIGZpbGw9IiMyQzVBQTAiLz4KPC9zdmc+',
-      menuItems: [
-        { id: 1, label: "Dashboard", icon: "📊" },
-        { id: 2, label: "Usuarios", icon: "👥" },
-        { id: 3, label: "Cursos", icon: "📚" },
-        { id: 4, label: "Inscripción", icon: "📝" },
-        { id: 5, label: "Personas", icon: "👤" },
-        { id: 6, label: "Habilitación", icon: "✅" },
-        { id: 7, label: "Pagos", icon: "💰" },
-        { id: 8, label: "Gestión", icon: "⚙️" },
-        { id: 9, label: "Correos", icon: "📧" },
-        { id: 10, label: "Acreditación", icon: "🎟️" }
-      ],
-      navbarLinks: [
-        { text: "Inicio", href: "#" },
-        { text: "Panel de Control", href: "#" },
-        { text: "Usuarios y Roles", href: "#" },
-        { text: "Cursos y Capacitaciones", href: "#" },
-        { text: "Inscripciones", href: "#" },
-        { text: "Gestión de Personas", href: "#" },
-        { text: "Pagos", href: "#" },
-        { text: "Envío de Correos", href: "#" },
-        { text: "Reportes", href: "#" },
-        { text: "Acreditación QR", href: "#" }
-      ],
-      gruposScout: [
-        "Grupo Scout Andalien",
-        "Grupo Scout Ainil",
-        "Grupo Scout Lautaro",
-        "Grupo Scout Quinchamalí",
-        "Grupo Scout Galvarino",
-        "Grupo Scout Calafquén",
-        "Grupo Scout Alerce",
-        "Grupo Scout Araucanía",
-        "Grupo Scout Pucón",
-        "Grupo Scout Villarrica",
-        "Grupo Scout Temuco",
-        "Grupo Scout Padre Hurtado",
-        "Grupo Scout San Francisco",
-        "Grupo Scout Santa Rosa",
-        "Grupo Scout San José",
-        "Grupo Scout San Juan",
-        "Grupo Scout San Pedro",
-        "Grupo Scout San Mateo",
-        "Grupo Scout San Lucas",
-        "Grupo Scout San Marcos"
-      ],
-      formData: {
-        curso: '',
-        nombres: '',
-        apellidos: '',
-        rut: '',
-        fechaNacimiento: '',
-        genero: '',
-        nacionalidad: '',
-        estadoCivil: '',
-        profesion: '',
-        apodo: '',
-        email: '',
-        telefono: '',
-        telefonoCasa: '',
-        telefonoTrabajo: '',
-        direccion: '',
-        comuna: '',
-        rol: '',
-        grupoScout: '',
-        distrito: '',
-        rama: '',
-        nivel: '',
-        cargo: '',
-        fechaIngreso: '',
-        miembroActivo: '',
-        alergias: '',
-        condicionesMedicas: '',
-        medicamentos: '',
-        seguroMedico: '',
-        contactoEmergencia: '',
-        telefonoEmergencia: '',
-        parentescoEmergencia: ''
-      },
-      errors: {}
-    }
+  name: 'FormularioInscripcion',
+  components: {
+    BaseAlert,
+    BaseButton,
+    BaseCheckBox,
+    BaseModal,
+    BaseSelect,
+    InputBase
   },
-  methods: {
-    setActiveMenu(menuId) {
-      this.activeMenu = menuId
-    },
-    toggleMobileMenu() {
-      this.mobileMenuOpen = !this.mobileMenuOpen
-    },
-    validateField(field) {
-      if (!this.formData[field]) {
-        this.errors[field] = 'Este campo es obligatorio'
-      } else {
-        delete this.errors[field]
+  setup() {
+    const currentStep = ref(0)
+    const submitting = ref(false)
+    const showSuccessModal = ref(false)
+    const numeroInscripcion = ref('')
+
+    const steps = [
+      { label: 'Curso', valid: false },
+      { label: 'Datos Personales', valid: false },
+      { label: 'Información Scout', valid: false },
+      { label: 'Salud', valid: false },
+      { label: 'Adicional', valid: false },
+      { label: 'Confirmación', valid: false }
+    ]
+
+    const formData = reactive({
+      // Paso 1
+      cursoId: '',
+      
+      // Paso 2
+      nombres: '',
+      apellidos: '',
+      rut: '',
+      fechaNacimiento: '',
+      email: '',
+      telefono: '',
+      
+      // Paso 3
+      region: '',
+      distrito: '',
+      grupo: '',
+      rama: '',
+      rol: '',
+      nivel: '',
+      numeroMMAA: '',
+      
+      // Paso 4
+      alimentacion: '',
+      alergias: '',
+      limitaciones: '',
+      contactoEmergenciaNombre: '',
+      contactoEmergenciaTelefono: '',
+      contactoEmergenciaParentesco: '',
+      
+      // Paso 5
+      profesion: '',
+      estadoCivil: '',
+      apodo: '',
+      tieneVehiculo: false,
+      requiereAlojamiento: false,
+      trabajaConNNAJ: false,
+      aceptaTerminos: false,
+      consideraciones: ''
+    })
+
+    const systemAlert = reactive({
+      visible: false,
+      type: 'informacion',
+      title: 'Bienvenido al Sistema de Inscripción',
+      message: 'Complete el formulario para inscribirse en los cursos de la Zona Biobío.'
+    })
+
+    // Datos para selects y opciones
+    const cursosDisponibles = [
+      {
+        id: 1,
+        nombre: 'Curso Medio - Liderazgo Scout',
+        fechas: '01-03 Feb 2024',
+        ubicacion: 'Campamento Los Pinos, Concepción',
+        cupoMaximo: 26,
+        inscritos: 18,
+        costo: 85000,
+        estado: 'disponible',
+        icono: '🏕️'
+      },
+      {
+        id: 2,
+        nombre: 'Primeros Auxilios en Terreno',
+        fechas: '10-11 Feb 2024',
+        ubicacion: 'Sede Scouts Talcahuano',
+        cupoMaximo: 20,
+        inscritos: 20,
+        costo: 45000,
+        estado: 'lleno',
+        icono: '🩹'
+      },
+      {
+        id: 3,
+        nombre: 'Educación Ambiental Scout',
+        fechas: '15-16 Feb 2024',
+        ubicacion: 'Reserva Nacional Nonguén',
+        cupoMaximo: 25,
+        inscritos: 12,
+        costo: 55000,
+        estado: 'disponible',
+        icono: '🌿'
       }
-    },
-    validateEmail() {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (!this.formData.email) {
-        this.errors.email = 'Este campo es obligatorio'
-      } else if (!emailRegex.test(this.formData.email)) {
-        this.errors.email = 'Ingrese un correo electrónico válido'
-      } else {
-        delete this.errors.email
+    ]
+
+    const regiones = [
+      { value: 'biobio', label: 'Región del Biobío' },
+      { value: 'nuble', label: 'Región de Ñuble' },
+      { value: 'araucania', label: 'Región de La Araucanía' }
+    ]
+
+    const distritos = [
+      { value: 'norte', label: 'Distrito Norte' },
+      { value: 'sur', label: 'Distrito Sur' },
+      { value: 'centro', label: 'Distrito Centro' },
+      { value: 'costa', label: 'Distrito Costa' }
+    ]
+
+    const grupos = [
+      { value: 'grupo1', label: 'Grupo Scout 1 - Concepción' },
+      { value: 'grupo2', label: 'Grupo Scout 2 - Talcahuano' },
+      { value: 'grupo3', label: 'Grupo Scout 3 - Chiguayante' },
+      { value: 'grupo4', label: 'Grupo Scout 4 - San Pedro' }
+    ]
+
+    const ramas = [
+      { value: 'manada', label: 'Manada (7-10 años)' },
+      { value: 'tropa', label: 'Tropa (11-14 años)' },
+      { value: 'comunidad', label: 'Comunidad (15-17 años)' },
+      { value: 'clan', label: 'Clan (18-20 años)' }
+    ]
+
+    const roles = [
+      { value: 'participante', label: 'Participante' },
+      { value: 'formador', label: 'Formador' },
+      { value: 'director', label: 'Director de Rama' },
+      { value: 'apoyo', label: 'Personal de Apoyo' }
+    ]
+
+    const niveles = [
+      { value: 'inicial', label: 'Nivel Inicial' },
+      { value: 'medio', label: 'Nivel Medio' },
+      { value: 'avanzado', label: 'Nivel Avanzado' },
+      { value: 'ninguno', label: 'Sin formación previa' }
+    ]
+
+    const tiposAlimentacion = [
+      { value: 'normal', label: 'Alimentación Normal' },
+      { value: 'vegetariano', label: 'Vegetariano' },
+      { value: 'vegano', label: 'Vegano' },
+      { value: 'celiaco', label: 'Celíaco' },
+      { value: 'diabetico', label: 'Diabético' }
+    ]
+
+    // Computed properties
+    const currentStepValid = computed(() => {
+      const validations = {
+        0: () => formData.cursoId !== '',
+        1: () => formData.nombres && formData.apellidos && formData.rut && formData.email && formData.telefono,
+        2: () => formData.region && formData.distrito && formData.grupo && formData.rama && formData.rol && formData.nivel,
+        3: () => formData.alimentacion && formData.contactoEmergenciaNombre && formData.contactoEmergenciaTelefono && formData.contactoEmergenciaParentesco,
+        4: () => formData.aceptaTerminos,
+        5: () => true // Paso de confirmación siempre es válido
       }
-    },
-    validateRUT() {
-      if (!this.formData.rut) {
-        this.errors.rut = 'Este campo es obligatorio'
+      return validations[currentStep.value] ? validations[currentStep.value]() : false
+    })
+
+    const formValid = computed(() => {
+      return currentStepValid.value && formData.aceptaTerminos
+    })
+
+    // Methods
+    const showAlert = (type, title, message) => {
+      systemAlert.type = type
+      systemAlert.title = title
+      systemAlert.message = message
+      systemAlert.visible = true
+    }
+
+    const clearSystemAlert = () => {
+      systemAlert.visible = false
+    }
+
+    const selectCurso = (curso) => {
+      if (curso.estado === 'disponible') {
+        formData.cursoId = curso.id
+      } else {
+        showAlert('error', 'Curso no disponible', 'Este curso ya ha alcanzado su cupo máximo. Por favor seleccione otro curso.')
+      }
+    }
+
+    const getCursoSeleccionado = () => {
+      return cursosDisponibles.find(curso => curso.id === formData.cursoId) || {}
+    }
+
+    const getLabel = (options, value) => {
+      const option = options.find(opt => opt.value === value)
+      return option ? option.label : ''
+    }
+
+    const nextStep = () => {
+      if (currentStepValid.value) {
+        currentStep.value++
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      } else {
+        showAlert('error', 'Campos incompletos', 'Por favor complete todos los campos requeridos antes de continuar.')
+      }
+    }
+
+    const previousStep = () => {
+      currentStep.value--
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+
+    const submitForm = async () => {
+      if (!formValid.value) {
+        showAlert('error', 'Formulario incompleto', 'Por favor complete todos los campos requeridos y acepte los términos y condiciones.')
         return
       }
-      
-      // Validación básica de formato RUT chileno
-      const rutRegex = /^[0-9]{1,2}\.?[0-9]{3}\.?[0-9]{3}-[0-9kK]{1}$/
-      if (!rutRegex.test(this.formData.rut)) {
-        this.errors.rut = 'Formato de RUT inválido (ej: 12.345.678-9)'
-      } else {
-        delete this.errors.rut
-      }
-    },
-    validateForm() {
-      // Validar todos los campos obligatorios
-      const requiredFields = [
-        'curso', 'nombres', 'apellidos', 'rut', 'fechaNacimiento',
-        'genero', 'nacionalidad', 'email', 'telefono', 'direccion',
-        'comuna', 'rol', 'grupoScout', 'distrito', 'rama', 'nivel',
-        'contactoEmergencia', 'telefonoEmergencia', 'parentescoEmergencia'
-      ]
-      
-      requiredFields.forEach(field => {
-        this.validateField(field)
-      })
-      
-      this.validateEmail()
-      this.validateRUT()
-      
-      return Object.keys(this.errors).length === 0
-    },
-    async submitForm() {
-      if (!this.validateForm()) {
-        this.showErrorAlert = true
-        // Scroll al primer error
-        const firstErrorField = Object.keys(this.errors)[0]
-        const element = document.getElementById(firstErrorField)
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        }
-        return
-      }
-      
-      this.showErrorAlert = false
-      this.isSubmitting = true
-      
+
+      submitting.value = true
+
       try {
-        // Simular envío de datos
-        await new Promise(resolve => setTimeout(resolve, 2000))
+        // Simulación de envío a API Django
+        await new Promise(resolve => setTimeout(resolve, 3000))
         
-        // Mostrar mensaje de éxito
-        alert('¡Pre-inscripción enviada exitosamente! Recibirá un correo de confirmación en breve.')
+        // Generar número de inscripción
+        const timestamp = new Date().getTime().toString().slice(-6)
+        numeroInscripcion.value = `SC${timestamp}`
         
-        // Resetear formulario
-        this.resetForm()
+        showSuccessModal.value = true
+        showAlert('exito', 'Inscripción exitosa', `Su inscripción #${numeroInscripcion.value} ha sido registrada correctamente.`)
         
       } catch (error) {
-        alert('Error al enviar el formulario. Por favor, intente nuevamente.')
+        showAlert('error', 'Error en la inscripción', 'Ha ocurrido un error al procesar su solicitud. Por favor intente nuevamente.')
       } finally {
-        this.isSubmitting = false
+        submitting.value = false
       }
-    },
-    resetForm() {
-      if (confirm('¿Está seguro de que desea limpiar todo el formulario? Se perderán todos los datos ingresados.')) {
-        Object.keys(this.formData).forEach(key => {
-          this.formData[key] = ''
-        })
-        this.errors = {}
-        this.showErrorAlert = false
-      }
+    }
+
+    const handleModalClose = () => {
+      showSuccessModal.value = false
+      // Resetear formulario para nueva inscripción
+      Object.keys(formData).forEach(key => {
+        if (typeof formData[key] === 'boolean') {
+          formData[key] = false
+        } else {
+          formData[key] = ''
+        }
+      })
+      currentStep.value = 0
+    }
+
+    const imprimirComprobante = () => {
+      showAlert('informacion', 'Imprimir comprobante', 'La funcionalidad de impresión se implementará en la siguiente versión.')
+    }
+
+    onMounted(() => {
+      // Inicialización cuando el componente se monta
+      console.log('Formulario de inscripción Scouts Biobío montado')
+    })
+
+    return {
+      currentStep,
+      steps,
+      formData,
+      systemAlert,
+      submitting,
+      showSuccessModal,
+      numeroInscripcion,
+      cursosDisponibles,
+      regiones,
+      distritos,
+      grupos,
+      ramas,
+      roles,
+      niveles,
+      tiposAlimentacion,
+      currentStepValid,
+      formValid,
+      clearSystemAlert,
+      selectCurso,
+      getCursoSeleccionado,
+      getLabel,
+      nextStep,
+      previousStep,
+      submitForm,
+      handleModalClose,
+      imprimirComprobante
     }
   }
 }
 </script>
 
 <style scoped>
-/* Estilos generales - Reutilizados del Dashboard */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: "Segoe UI", Arial, sans-serif;
-}
-
-body {
-  background-color: #f5f7fa;
-  color: #333;
-}
-
-.app-container {
-  display: flex;
+.formulario-scouts {
   min-height: 100vh;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
 }
 
-/* Sidebar */
-.sidebar {
-  width: 220px;
-  background: #2c3e50;
-  padding: 10px 0;
-  height: 100vh;
-  position: fixed;
-  overflow-y: auto;
-  z-index: 100;
-}
-
-.sidebar ul {
-  list-style: none;
-  padding: 0;
-}
-
-.sidebar-link {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  background: none;
-  border: none;
-  color: #ecf0f1;
-  padding: 12px 15px;
-  cursor: pointer;
-  text-align: left;
-}
-
-.sidebar-link:hover {
-  background: #34495e;
-}
-
-.sidebar-link.active {
-  background: #1abc9c;
-}
-
-.icon {
-  margin-right: 10px;
-}
-
-/* Contenido principal */
-.main-content {
-  flex: 1;
-  margin-left: 220px;
-  padding: 20px;
-}
-
-/* Navbar */
-.navbar {
-  background: #2c5aa0;
+.form-header {
+  background: linear-gradient(135deg, #2c5aa0 0%, #1e3a8a 100%);
   color: white;
-  padding: 14px 26px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.15);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: relative;
-  margin-bottom: 20px;
-  z-index: 10;
+  padding: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.navbar-left {
+.header-logo {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .logo {
-  width: 60px;
-  height: 60px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
   border: 3px solid #ffcc00;
   background: white;
   object-fit: cover;
-  box-shadow: 0 3px 6px rgba(0,0,0,0.18);
 }
 
-.title {
-  font-size: 1.35rem;
-  font-weight: bold;
-  color: #ffffff;
-  letter-spacing: 0.6px;
+.header-text {
+  flex: 1;
 }
 
-.navbar-links {
-  display: flex;
-  gap: 26px;
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.page-title {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
 }
 
-.navbar-links a {
-  font-weight: 600;
-  text-decoration: none;
-  color: white;
-  transition: color 0.3s, border-bottom 0.3s;
-  border-bottom: 2px solid transparent;
+.page-subtitle {
+  font-size: 1.3rem;
+  opacity: 0.9;
+  margin-bottom: 0.25rem;
 }
 
-.navbar-links a:hover {
-  color: #ffcc00;
-  border-bottom: 2px solid #ffcc00;
+.institution {
+  font-size: 1rem;
+  opacity: 0.8;
 }
 
-.navbar-menu {
-  display: none;
-  background: #ffcc00;
-  color: #2c5aa0;
-  font-size: 1.6rem;
-  border: none;
-  border-radius: 8px;
-  padding: 6px 14px;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-  margin-left: 14px;
+.form-alert {
+  max-width: 1200px;
+  margin: 2rem auto 0 auto;
+  padding: 0 2rem;
 }
 
-/* Contenedor del formulario */
-.form-container {
-  max-width: 1000px;
-  margin: 0 auto;
+.form-progress {
   background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  padding: 30px;
+  padding: 1.5rem 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.form-title {
-  color: #2c5aa0;
-  text-align: center;
-  margin-bottom: 20px;
-  font-size: 1.8rem;
-}
-
-/* Alertas */
-.alert {
-  padding: 12px 16px;
-  border-radius: 4px;
-  margin-bottom: 20px;
+.progress-steps {
   display: flex;
-  align-items: flex-start;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
 }
 
-.alert-info {
-  background-color: #d1ecf1;
-  color: #0c5460;
-  border: 1px solid #bee5eb;
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+  flex: 1;
 }
 
-.alert-error {
-  background-color: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
+.step-number {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #e9ecef;
+  color: #6c757d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+  transition: all 0.3s ease;
+  border: 3px solid transparent;
 }
 
-.alert-icon {
-  margin-right: 10px;
-  font-size: 18px;
+.step.active .step-number {
+  background: #2c5aa0;
+  color: white;
+  border-color: #1e3a8a;
+  transform: scale(1.1);
 }
 
-/* Secciones del formulario */
-.form-section {
-  margin-bottom: 30px;
-  padding: 20px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
+.step.completed .step-number {
+  background: #28a745;
+  color: white;
+  border-color: #1e7e34;
+}
+
+.step.disabled .step-number {
   background: #f8f9fa;
+  color: #dee2e6;
+}
+
+.step-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #6c757d;
+  text-align: center;
+}
+
+.step.active .step-label {
+  color: #2c5aa0;
+}
+
+.step.completed .step-label {
+  color: #28a745;
+}
+
+.step-line {
+  position: absolute;
+  top: 25px;
+  right: -50%;
+  width: 100%;
+  height: 3px;
+  background: #e9ecef;
+  z-index: 1;
+}
+
+.step.active .step-line,
+.step.completed .step-line {
+  background: #2c5aa0;
+}
+
+.form-container {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 2rem;
+}
+
+.scouts-form {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.form-step {
+  padding: 2rem;
+  animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.step-title {
+  color: #2c5aa0;
+  font-size: 1.8rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 3px solid #2c5aa0;
+  padding-bottom: 0.5rem;
+}
+
+.step-description {
+  color: #6c757d;
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+}
+
+.form-section {
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.form-section:last-of-type {
+  border-bottom: none;
 }
 
 .section-title {
-  color: #2c5aa0;
-  margin-bottom: 20px;
+  color: #495057;
   font-size: 1.3rem;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  margin-bottom: 1.5rem;
+  padding-left: 0.5rem;
+  border-left: 4px solid #2c5aa0;
 }
 
-/* Grupos de formulario */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
 .form-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  margin-bottom: 15px;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
-.form-group {
-  margin-bottom: 15px;
+.form-field {
+  margin-bottom: 1rem;
 }
 
-.form-label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: 600;
-  color: #333;
+/* Estilos para la selección de cursos */
+.courses-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
 }
 
-.form-label.required::after {
-  content: " *";
-  color: #e74c3c;
-}
-
-.form-input,
-.form-select,
-.form-textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-  transition: border-color 0.3s, box-shadow 0.3s;
-}
-
-.form-input:focus,
-.form-select:focus,
-.form-textarea:focus {
-  outline: none;
-  border-color: #2c5aa0;
-  box-shadow: 0 0 0 2px rgba(44, 90, 160, 0.2);
-}
-
-.form-textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
-.form-error {
-  color: #e74c3c;
-  font-size: 12px;
-  margin-top: 5px;
-  display: block;
-}
-
-/* Botones */
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 15px;
-  margin-top: 30px;
-  padding-top: 20px;
-  border-top: 1px solid #e0e0e0;
-}
-
-.btn {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 4px;
-  font-size: 14px;
-  font-weight: 600;
+.course-option {
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  padding: 1.5rem;
   cursor: pointer;
-  transition: background-color 0.3s, transform 0.2s;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  position: relative;
 }
 
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.course-option:hover {
+  border-color: #2c5aa0;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(44, 90, 160, 0.1);
 }
 
-.btn-primary {
-  background-color: #2c5aa0;
-  color: white;
+.course-option.selected {
+  border-color: #2c5aa0;
+  background: linear-gradient(135deg, #f8fbff 0%, #e3f2fd 100%);
 }
 
-.btn-primary:hover:not(:disabled) {
-  background-color: #1e3d73;
-  transform: translateY(-1px);
+.course-icon {
+  font-size: 2.5rem;
+  flex-shrink: 0;
 }
 
-.btn-secondary {
-  background-color: #6c757d;
-  color: white;
+.course-info {
+  flex: 1;
 }
 
-.btn-secondary:hover {
-  background-color: #545b62;
-  transform: translateY(-1px);
+.course-name {
+  color: #2c5aa0;
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.course-dates {
+  color: #495057;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.course-location {
+  color: #6c757d;
+  font-size: 0.9rem;
+  margin-bottom: 0.75rem;
+}
+
+.course-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.course-cupo {
+  color: #495057;
+  font-size: 0.9rem;
+}
+
+.course-costo {
+  color: #28a745;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.course-status {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.course-status.disponible {
+  background: #d4edda;
+  color: #155724;
+}
+
+.course-status.lleno {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.selected-course-info {
+  background: #e7f3ff;
+  border: 1px solid #b3d9ff;
+  border-radius: 8px;
+  padding: 1rem 1.5rem;
+  margin-top: 1rem;
+}
+
+.selected-course-info h4 {
+  color: #2c5aa0;
+  margin-bottom: 0.5rem;
+}
+
+/* Estilos para checkboxes */
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.checkbox-field {
+  margin-bottom: 0;
+}
+
+.terms-container {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.terms-content {
+  margin-bottom: 1.5rem;
+}
+
+.terms-content p {
+  margin-bottom: 0.75rem;
+}
+
+.terms-content ul {
+  margin-left: 1.5rem;
+  color: #495057;
+}
+
+.terms-content li {
+  margin-bottom: 0.5rem;
+}
+
+.terms-checkbox {
+  font-weight: 600;
+}
+
+/* Estilos para el resumen */
+.summary-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.summary-section {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.summary-title {
+  color: #2c5aa0;
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid #2c5aa0;
+  padding-bottom: 0.5rem;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 6px;
+  border-left: 4px solid #2c5aa0;
+}
+
+.summary-item strong {
+  color: #495057;
+}
+
+.payment-info {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.payment-details {
+  color: #856404;
+}
+
+.payment-details p {
+  margin-bottom: 0.5rem;
+}
+
+.payment-note {
+  font-weight: 600;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #ffeaa7;
+}
+
+/* Navegación */
+.form-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2rem;
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+}
+
+.nav-button {
+  min-width: 150px;
+}
+
+.submit-button {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  border: none;
+}
+
+.nav-spacer {
+  flex: 1;
+}
+
+/* Modal de éxito */
+.success-modal {
+  text-align: center;
+  padding: 1rem;
+}
+
+.success-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.success-modal h3 {
+  color: #28a745;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+.success-details {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  text-align: left;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.detail-item:last-child {
+  margin-bottom: 0;
+  border-bottom: none;
+}
+
+.inscription-number {
+  color: #2c5aa0;
+  font-weight: 700;
+  font-size: 1.2rem;
+}
+
+.success-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+.action-button {
+  min-width: 180px;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-  .app-container {
+  .form-header {
+    padding: 1rem;
+  }
+  
+  .header-logo {
     flex-direction: column;
+    text-align: center;
+    gap: 1rem;
   }
   
-  .sidebar {
-    width: 100%;
-    height: auto;
-    position: relative;
+  .page-title {
+    font-size: 2rem;
   }
   
-  .main-content {
-    margin-left: 0;
+  .form-progress {
+    padding: 1rem;
   }
   
-  .navbar {
+  .progress-steps {
     flex-direction: column;
-    align-items: flex-start;
-    padding: 15px 20px;
+    gap: 1rem;
   }
   
-  .navbar-links {
-    flex-direction: column;
-    gap: 10px;
-    width: 100%;
+  .step-line {
     display: none;
-    margin-top: 12px;
-  }
-  
-  .navbar-links.active {
-    display: flex;
-  }
-  
-  .navbar-menu {
-    display: block;
-    align-self: flex-end;
   }
   
   .form-container {
-    padding: 15px;
+    padding: 0 1rem;
+    margin: 1rem auto;
   }
   
+  .form-step {
+    padding: 1rem;
+  }
+  
+  .courses-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .form-grid,
   .form-row {
     grid-template-columns: 1fr;
-    gap: 0;
   }
   
-  .form-actions {
+  .form-navigation {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .nav-button {
+    width: 100%;
+  }
+  
+  .success-actions {
     flex-direction: column;
   }
   
-  .btn {
+  .action-button {
     width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .course-option {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .course-meta {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
   }
 }
 </style>

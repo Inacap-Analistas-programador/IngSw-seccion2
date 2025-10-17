@@ -33,10 +33,10 @@ SistemaScouts/
 
 ---
 
-## 🔹 1. Clonar el repositorio
+## 🔹 1. Clonar el repositorio (Abrir una nueva terminal)
 ```bash
 git clone https://github.com/Inacap-Analistas-programador/IngSw-seccion2.git
-cd IngSw-seccion2
+cd IngSw-seccion2/SistemScoutsApi
 ```
 
 ---
@@ -71,19 +71,23 @@ cd IngSw-seccion2
 
 ## 🔹 3. Frontend – Vue Cliente
 
-1. Entrar en la carpeta del cliente:
+1. Desactivar el entorno virtual:
    ```bash
-   cd SistemScoutsClient
+   deactivate 
    ```
-2. Instalar dependencias:
+2. Entrar en la carpeta del cliente:
+   ```bash
+   cd ../SistemScoutsClient
+   ```
+3. Instalar dependencias:
    ```bash
    npm install
    ```
-3. Ejecutar servidor de desarrollo:
+4. Ejecutar servidor de desarrollo:
    ```bash
    npm run dev
    ```
-4. **El cliente estará disponible en:**  
+5. **El cliente estará disponible en:**  
    👉 `http://localhost:5173/`
 
 ---
@@ -104,3 +108,33 @@ La API usa **Django REST Framework** para:
   git pull origin main
 ```
 para mantener el repositorio sincronizado.
+
+
+## Acciones recomendadas:
+
+1. Ir a la ruta de tu carpeta raíz del proyecto en una nueva terminal
+```bash
+  cd IngSw-seccion2
+```
+(O con click derecho en tu carpeta IngSw-seccion2 > Open in Integrated Terminal)
+
+2. Proceder a ejecutar git pull
+```bash
+  git pull origin main
+```
+3. Revisar el estado de los cambios
+```bash
+  git status
+```
+4. Agregar los cambios (Agregar todos los cambios)
+```bash
+  git add .
+```
+5. Hacer commit de los cambios
+```bash
+  git commit -m "Descripción de los cambios realizados"
+```
+6. Subir los cambios
+```bash
+  git push origin main
+```
