@@ -1,330 +1,268 @@
-<!-- 
-=========================================
- VISTA PRINCIPAL: Gestión de Pagos
- Sistema Scouts Región del Biobío
- Desarrollado con Vue 3 + Vite
------------------------------------------
- Descripción:
- Pantalla que permite la carga individual y grupal 
- de comprobantes de pago, así como la validación 
- de estados por parte de los administradores.
-
- Autor: [Tu Nombre o Equipo]
- Fecha: [Actualizar según entrega]
-=========================================
--->
-
 <template>
-  <div class="pagos-container">
-    <!-- ENCABEZADO PRINCIPAL -->
-    <div class="pagos-header">
+  <div class="pagos-view">
+    <h2>💰 Gestión de Pagos</h2>
+    <p>Filtre, registre y administre los pagos del Sistema Scouts Biobío</p>
+
+    <!-- ==================== -->
+    <!-- FILTRO INICIAL -->
+    <!-- ==================== -->
+    <section class="filtros">
+      <BaseInput v-model="filtro.nombreRut" label="Buscar por Nombre o RUT" placeholder="Ej: Juan Pérez o 12.345.678-9" />
+      <BaseSelect
+        v-model="modoPago"
+        label="Seleccione modo de pago"
+        :options="['Individual', 'Masivo']"
+      />
+    </section>
+
+    <!-- ==================== -->
+    <!-- PAGO INDIVIDUAL -->
+    <!-- ==================== -->
+    <section v-if="modoPago === 'Individual'" class="pago-individual">
+      <h3>Pago Individual</h3>
+      <BaseInput v-model="nuevoPago.nombre" label="Nombre del Participante" />
+      <BaseInput v-model="nuevoPago.rut" label="RUT" />
+      <BaseSelect v-model="nuevoPago.curso" :options="cursosDisponibles" label="Curso" />
+      <BaseSelect v-model="nuevoPago.alimentacion" :options="['Completa','Vegetariana','Sin restricción']" label="Tipo de Alimentación" />
+      <BaseInput v-model="nuevoPago.valorPagado" label="Valor Pagado ($)" type="number" />
+      
+      <FileUploader @upload="handleFileUpload" />
+      <BaseButton label="Registrar Pago Individual" color="verde" @click="registrarPagoIndividual" />
+    </section>
+
+    <!-- ==================== -->
+    <!-- PAGO MASIVO -->
+    <!-- ==================== -->
+    <section v-if="modoPago === 'Masivo'" class="pago-masivo">
+      <h3>Pago Masivo</h3>
+      <div class="filtros-masivo">
+        <BaseSelect v-model="filtrosMasivo.grupo" :options="gruposDisponibles" label="Grupo" />
+        <BaseSelect v-model="filtrosMasivo.curso" :options="cursosDisponibles" label="Curso Activo" />
+        <BaseInput v-model="filtrosMasivo.persona" label="Filtrar por persona (opcional)" />
+      </div>
+
+      <DataTable
+        :columns="columnas"
+        :rows="pagosFiltrados"
+        @view="cargarPersona"
+        @edit="editarPago"
+        @delete="eliminarPago"
+        @anular="anularPago"
+        @refund="abrirModalDevolucion"
+      />
+
+      <FileUploader @upload="handleFileUploadMasivo" />
+      <BaseButton label="Asociar Comprobante a Seleccionados" color="azul" />
+    </section>
+
+    <!-- ==================== -->
+    <!-- MODAL: DEVOLUCIÓN DE DINERO -->
+    <!-- ==================== -->
+    <BaseModal v-if="mostrarModalDevolucion" title="Registrar Devolución de Dinero" @close="mostrarModalDevolucion = false">
+      <form @submit.prevent="registrarDevolucion">
+        <p><strong>Pago asociado:</strong> {{ pagoSeleccionado?.nombre }} ({{ pagoSeleccionado?.rut }})</p>
+        <BaseInput v-model="datosDevolucion.monto" label="Monto devuelto ($)" type="number" />
+        <BaseInput v-model="datosDevolucion.motivo" label="Motivo de la devolución" />
+        <BaseButton type="submit" label="Registrar Devolución" color="verde" />
+      </form>
+    </BaseModal>
+
+    <!-- ==================== -->
+    <!-- EXPORTAR -->
+    <!-- ==================== -->
+    <div class="acciones-finales">
+      <BaseButton label="📤 Exportar Lista de Pagos por Grupo" color="azul" @click="exportarPagosGrupo" />
     </div>
 
-    <!-- SECCIÓN 1: CARGA INDIVIDUAL -->
-    <section class="pagos-individual">
-      <h3>Carga individual de comprobantes</h3>
-
-        <!-- Buscador por RUT -->
-        <div class="pagos-individual-row">
-          <InputBase v-model="rutBusqueda" placeholder="Buscar por RUT" class="pagos-input" />
-          <BaseButton variant="primary" @click="buscarPorRut">Buscar</BaseButton>
-        </div>
-
-      <!-- Resultado y carga de comprobante -->
-      <div class="pagos-individual-content">
-        <div class="pagos-datos-personales">
-          <strong>Datos del participante</strong><br>
-          <span>Nombre:</span> Juan Pérez González<br>
-          <span>RUT:</span> 12.345.678-9<br>
-          <span>Curso:</span> Formación de dirigentes<br>
-          <span>Estado de pago:</span>
-          <span class="badge-pendiente">Pendiente</span>
-        </div>
-
-        <!-- Subida de comprobante -->
-        <div class="pagos-comprobante">
-          <strong>Cargar Comprobante</strong>
-          <div class="upload-box">
-            <span>📎 Arrastra el archivo aquí o haz clic para seleccionar</span><br>
-            <input type="file" id="fileIndividual" style="margin:10px 0;" />
-            <BaseButton @click="cargarComprobanteIndividual">Cargar comprobante</BaseButton>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- SECCIÓN 2: CARGA GRUPAL -->
-    <section class="pagos-grupal">
-  <h3>Carga masiva de comprobantes</h3>
-
-  <!-- Tabla de participantes -->
-      <table>
-        <thead>
-          <tr>
-            <th></th>
-            <th>Nombre</th>
-            <th>RUT</th>
-            <th>Curso</th>
-            <th>Estado Pago</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><input type="checkbox" /></td>
-            <td>MARÍA GONZÁLEZ LÓPEZ</td>
-            <td>98.765.432-1</td>
-            <td>Formación de Dirigentes</td>
-            <td><span class="badge-pendiente">Pendiente</span></td>
-          </tr>
-          <tr>
-            <td><input type="checkbox" /></td>
-            <td>CARLOS RAMÍREZ SOTO</td>
-            <td>11.222.333-4</td>
-            <td>Formación de Dirigentes</td>
-            <td><span class="badge-pendiente">Pendiente</span></td>
-          </tr>
-          <tr>
-            <td><input type="checkbox" /></td>
-            <td>ANA TORRES MUÑOZ</td>
-            <td>22.333.444-5</td>
-            <td>Formación de Dirigentes</td>
-            <td><span class="badge-confirmado">Confirmado</span></td>
-          </tr>
-        </tbody>
-      </table>
-
-      <!-- Subida de comprobante grupal -->
-      <div class="upload-box-grupal">
-        <span>📎 Comprobante grupal — arrastre el archivo aquí o selecciónelo</span><br />
-        <input type="file" id="fileGrupal" style="margin:10px 0;" />
-        <BaseButton @click="asociarComprobanteGrupal">Asociar comprobante a seleccionados</BaseButton>
-      </div>
-    </section>
-
-    <!-- SECCIÓN 3: ACCIONES DE ADMINISTRADOR -->
-    <section class="pagos-acciones">
-  <h3>Acciones administrativas</h3>
-  <BaseButton class="btn-confirmar" @click="confirmarSeleccion">Confirmar</BaseButton>
-  <BaseButton class="btn-rechazar" @click="rechazarSeleccion">Rechazar</BaseButton>
-  <BaseButton class="btn-pendiente" @click="marcarPendiente">Marcar como pendiente</BaseButton>
-  <BaseButton class="btn-exportar" @click="exportarLista">Exportar lista</BaseButton>
-    </section>
+    <NotificationToast v-if="notificacion" :message="notificacion" @close="notificacion = ''" />
   </div>
 </template>
 
-<!-- ============================================================= -->
-<!-- ======================= ESTILOS CSS ========================== -->
-<!-- ============================================================= -->
-<style scoped>
-/* ======== Contenedor general ======== */
-.pagos-container {
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 9px rgba(44, 90, 160, 0.12);
-  font-family: 'Segoe UI', Arial, sans-serif;
-  margin: 20px auto;
-  padding: 20px 18px 32px 18px;
-  max-width: 900px;
-}
+<script setup>
+import { ref, computed, onMounted } from 'vue'
 
-/* ======== Encabezado ======== */
-.pagos-header h2 {
-  background: #2c5aa0;
-  color: white;
-  padding: 7px 16px;
-  border-radius: 9px;
-  font-size: 1.16rem;
-}
-.pagos-header p {
-  margin: 8px 0 12px;
-  font-size: 1.1em;
-  font-weight: 600;
-}
-
-/* ======== Secciones ======== */
-section {
-  margin-bottom: 20px;
-}
-h3 {
-  font-size: 1.07em;
-  color: #2c5aa0;
-  border-bottom: 2px solid #bddafc;
-  margin-bottom: 12px;
-  padding-bottom: 4px;
-  font-weight: 700;
-}
-
-/* ======== Carga individual ======== */
-.pagos-individual-row {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-.pagos-input {
-  flex: 1;
-  padding: 7px 10px;
-  border: 1px solid #bbcde7;
-  border-radius: 6px;
-}
-.btn-buscar,
-.btn-file {
-  background: #2c5aa0;
-  color: white;
-  padding: 7px 18px;
-  border: none;
-  border-radius: 6px;
-  margin-left: 8px;
-  font-size: 1em;
-}
-
-/* ======== Bloques internos ======== */
-.pagos-individual-content {
-  display: flex;
-  gap: 24px;
-  margin-bottom: 10px;
-  flex-wrap: wrap;
-}
-.pagos-datos-personales,
-.pagos-comprobante {
-  background: #f7faff;
-  border-radius: 8px;
-  padding: 15px 12px;
-  min-width: 260px;
-  font-size: 1em;
-  border: 1px solid #bddafc;
-}
-
-/* ======== Badges de estado ======== */
-.badge-pendiente {
-  background: #fff4d9;
-  color: #d3a001;
-  padding: 2px 12px;
-  border-radius: 14px;
-  font-weight: bold;
-  font-size: 0.95em;
-}
-.badge-confirmado {
-  background: #d7ffe0;
-  color: #209c40;
-  padding: 2px 12px;
-  border-radius: 14px;
-  font-weight: bold;
-  font-size: 0.95em;
-}
-
-/* ======== Cuadro de carga ======== */
-.upload-box {
-  background: #e5edf7;
-  border: 1.5px dashed #bac7dc;
-  border-radius: 9px;
-  text-align: center;
-  padding: 18px 10px;
-  margin-top: 7px;
-}
-
-/* ======== Tabla grupal ======== */
-.pagos-grupal table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 10px;
-}
-.pagos-grupal th,
-.pagos-grupal td {
-  padding: 7px 2px;
-  text-align: left;
-  background: #fff;
-  font-size: 15px;
-}
-.pagos-grupal th {
-  background: #e8eefa;
-  font-weight: bold;
-}
-.pagos-grupal td {
-  border-bottom: 1px solid #e3e3e3;
-}
-.upload-box-grupal {
-  background: #e5edf7;
-  border: 1.5px dashed #bac7dc;
-  border-radius: 9px;
-  text-align: center;
-  padding: 14px 10px 18px 10px;
-}
-
-/* ======== Acciones ======== */
-.pagos-acciones {
-  display: flex;
-  gap: 16px;
-  margin-top: 12px;
-  flex-wrap: wrap;
-}
-.btn-confirmar {
-  background: #2cab53;
-  color: white;
-}
-.btn-rechazar {
-  background: #c12020;
-  color: white;
-}
-.btn-pendiente {
-  background: #e7b325;
-  color: white;
-}
-.btn-exportar {
-  background: #2c5aa0;
-  color: white;
-}
-.pagos-acciones button {
-  padding: 11px 26px;
-  border: none;
-  border-radius: 7px;
-  font-weight: bold;
-  font-size: 1em;
-  margin-bottom: 6px;
-  cursor: pointer;
-  transition: filter 0.15s;
-}
-.pagos-acciones button:hover {
-  filter: brightness(0.93);
-}
-</style>
-
-<script>
-import InputBase from '@/components/Reutilizables/InputBase.vue'
+// Componentes
+import BaseInput from '@/components/Reutilizables/InputBase.vue'
+import BaseSelect from '@/components/Reutilizables/BaseSelect.vue'
 import BaseButton from '@/components/Reutilizables/BaseButton.vue'
+import BaseModal from '@/components/Reutilizables/BaseModal.vue'
+import DataTable from '@/components/Reutilizables/DataTable.vue'
+import FileUploader from '@/components/Reutilizables/FileUploader.vue'
+import NotificationToast from '@/components/Reutilizables/NotificationToast.vue'
 
-export default {
-  name: 'PagosView',
-  components: { InputBase, BaseButton },
-  data() {
-    return {
-      rutBusqueda: '',
-    }
-  },
-  methods: {
-    buscarPorRut() {
-      // Implementar búsqueda real contra API cuando esté disponible
-      console.log('Buscar por RUT:', this.rutBusqueda)
-    },
-    cargarComprobanteIndividual() {
-      const input = document.getElementById('fileIndividual')
-      if (input && input.files && input.files.length) {
-        console.log('Archivo individual seleccionado:', input.files[0].name)
-      } else {
-        console.log('No hay archivo seleccionado para individual')
-      }
-    },
-    asociarComprobanteGrupal() {
-      const input = document.getElementById('fileGrupal')
-      if (input && input.files && input.files.length) {
-        console.log('Archivo grupal seleccionado:', input.files[0].name)
-      } else {
-        console.log('No hay archivo seleccionado para grupal')
-      }
-    },
-    confirmarSeleccion() { console.log('Confirmar seleccionados') },
-    rechazarSeleccion() { console.log('Rechazar seleccionados') },
-    marcarPendiente() { console.log('Marcar como pendiente') },
-    exportarLista() { console.log('Exportar lista de pagos') }
+// Servicio
+import pagosService from '@/services/pagosService.js'
+
+// Variables reactivas
+// Mostrar la tabla por defecto: modo "Masivo"
+const modoPago = ref('Masivo')
+const filtro = ref({ nombreRut: '' })
+const nuevoPago = ref({ nombre: '', rut: '', curso: '', alimentacion: '', valorPagado: 0, email: '', direccion: '', telefono: '' })
+const filtrosMasivo = ref({ grupo: '', curso: '', persona: '' })
+const notificacion = ref('')
+
+// Modal de devolución
+const mostrarModalDevolucion = ref(false)
+const pagoSeleccionado = ref(null)
+const datosDevolucion = ref({ monto: 0, motivo: '' })
+
+// Datos simulados
+const cursosDisponibles = ['Formación Dirigentes', 'Campamento Avanzado', 'Primeros Auxilios']
+const gruposDisponibles = ['Grupo Ñuble', 'Grupo Hualpén', 'Grupo Talcahuano']
+
+const pagos = ref([])
+
+const columnas = [
+  { key: 'id', label: 'ID', sortable: true },
+  { key: 'nombre', label: 'Nombre', sortable: true },
+  { key: 'rut', label: 'RUT', sortable: true },
+  { key: 'email', label: 'Email' },
+  { key: 'direccion', label: 'Dirección' },
+  { key: 'telefono', label: 'Teléfono' }
+]
+
+onMounted(async () => {
+  try {
+    pagos.value = await pagosService.obtenerPagos()
+  } catch (err) {
+    console.error('Error cargando pagos:', err)
+    notificacion.value = 'Error cargando datos del servidor.'
   }
+})
+
+// Filtrar pagos por nombre o RUT
+const pagosFiltrados = computed(() => {
+  const term = filtro.value.nombreRut.toLowerCase()
+  return pagos.value.filter(p =>
+    p.nombre.toLowerCase().includes(term) || p.rut.includes(term)
+  )
+})
+
+// Funciones principales
+function registrarPagoIndividual() {
+  // preparar payload simplificado para create_persona en backend
+  const parts = nuevoPago.value.nombre.trim().split(' ')
+  const nombres = parts.slice(0, parts.length - 2).join(' ') || parts[0] || ''
+  const apelpt = parts.length >= 2 ? parts[parts.length - 2] : ''
+  const apelmat = parts.length >= 1 ? parts[parts.length - 1] : ''
+  const rutParts = (nuevoPago.value.rut || '').split('-')
+  const payload = {
+    nombres,
+    apelpt,
+    apelmat,
+    run: (rutParts[0] || '').replace(/\D/g, ''),
+    dv: (rutParts[1] || '').replace(/\D/g, ''),
+    mail: nuevoPago.value.email || '',
+    direccion: nuevoPago.value.direccion || '',
+    fono: nuevoPago.value.telefono || ''
+  }
+
+  pagosService.createPersona(payload).then(res => {
+    notificacion.value = '✅ Persona creada correctamente.'
+    // recargar lista
+    return pagosService.obtenerPagos()
+  }).then(list => {
+    pagos.value = list
+  }).catch(err => {
+    console.error(err)
+    notificacion.value = 'Error creando persona.'
+  })
+}
+
+function editarPago(p) {
+  alert(`Editar pago de ${p.nombre}`)
+  // implementar edición si se requiere
+}
+
+function cargarPersona(p) {
+  // prefilling form fields with persona data
+  nuevoPago.value.nombre = p.nombre || ''
+  nuevoPago.value.rut = p.rut || ''
+  nuevoPago.value.email = p.email || ''
+  nuevoPago.value.direccion = p.direccion || ''
+  nuevoPago.value.telefono = p.telefono || ''
+  modoPago.value = 'Individual'
+}
+
+function eliminarPago(p) {
+  pagosService.eliminarPago(p.id).then(() => {
+    pagos.value = pagos.value.filter(x => x.id !== p.id)
+    notificacion.value = '🗑 Pago eliminado correctamente.'
+  }).catch(err => {
+    console.error(err)
+    notificacion.value = 'Error eliminando pago.'
+  })
+}
+
+function anularPago(p) {
+  pagosService.anularPago(p.id).then(() => {
+    notificacion.value = '⚠️ Pago anulado. Puede registrar devolución si aplica.'
+  }).catch(err => {
+    console.error(err)
+    notificacion.value = 'Error al anular pago.'
+  })
+}
+
+function abrirModalDevolucion(p) {
+  pagoSeleccionado.value = p
+  mostrarModalDevolucion.value = true
+}
+
+function registrarDevolucion() {
+  pagosService.registrarDevolucion(pagoSeleccionado.value.id, datosDevolucion.value)
+  pagosService.registrarAuditoria('devolucion', {
+    ...pagoSeleccionado.value,
+    devolucion: datosDevolucion.value
+  })
+  mostrarModalDevolucion.value = false
+  notificacion.value = '💸 Devolución registrada correctamente.'
+}
+
+function handleFileUpload(file) {
+  console.log('Archivo individual:', file.name)
+}
+
+function handleFileUploadMasivo(file) {
+  console.log('Archivo masivo:', file.name)
+}
+
+function exportarPagosGrupo() {
+  alert('Exportando lista de pagos del grupo...')
 }
 </script>
+
+<style scoped>
+.pagos-view {
+  padding: 20px;
+  background: #fff;
+  color: #2c5aa0;
+  border-radius: 10px;
+  max-width: 1000px;
+  margin: auto;
+}
+
+h2 {
+  color: #2c5aa0;
+  font-size: 1.5rem;
+  margin-bottom: 8px;
+}
+
+.filtros, .pago-individual, .pago-masivo {
+  margin-bottom: 22px;
+  padding: 14px;
+  border: 1px solid #d8e3f7;
+  border-radius: 8px;
+  background: #f9fbff;
+}
+
+.filtros-masivo {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.acciones-finales {
+  text-align: right;
+  margin-top: 20px;
+}
+</style>

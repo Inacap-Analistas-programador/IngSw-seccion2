@@ -6,7 +6,7 @@ const Mantenedores = () => import('@/views/Mantenedores.vue')
 const Gestionpersonas = () => import('@/views/Gestionpersonas.vue')
 const PagosView = () => import('@/views/PagosView.vue')
 const Correos = () => import('@/views/Correos.vue')
-/**const ManualAcreditation = () => import('@/views/ManualAcreditation.vue')**/
+const ManualAcreditation = () => import('@/views/ManualAcreditation.vue')
 const VerificadorQR = () => import('@/views/VerificadorQR.vue')
 
 const router = createRouter({

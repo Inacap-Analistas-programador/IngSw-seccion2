@@ -12,5 +12,4 @@ import NavBar from './components/Reutilizables/NavBar.vue'
 </template>
 
 <style>
-
 </style>

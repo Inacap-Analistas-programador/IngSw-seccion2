@@ -40,6 +40,8 @@
               <button @click="$emit('view', row)">👁 Ver</button>
               <button @click="$emit('edit', row)">✏ Editar</button>
               <button @click="$emit('delete', row)">🗑 Eliminar</button>
+              <button @click="$emit('anular', row)">⚠️ Anular</button>
+              <button @click="$emit('refund', row)">💸 Devolver</button>
             </td>
           </tr>
           <tr v-if="paginatedData.length === 0">
