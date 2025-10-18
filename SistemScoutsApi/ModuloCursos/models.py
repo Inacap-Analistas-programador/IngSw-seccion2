@@ -21,50 +21,66 @@ class Curso(models.Model):
     #CUR_ESTADO = 
 
 class Curso_Cuota(models.Model):
-    CUU_ID = models.CharField(max_length=10, unique=True, primary_key=True)
-    CUR_ID = models.ForeignKey('Curso', on_delete=models.CASCADE)
-    CUU_TIPO = models.IntegerField()
-    CUU_FECHA = models.DateField()
-    CUU_VALOR = models.IntegerField()
+    CUU_ID = models.BigAutoField(primary_key=True)
+    CUR_ID = models.ForeignKey('Curso', on_delete=models.PROTECT, null=False)
+    CUU_TIPO_OPCION = [
+        (1, 'Con Almuerzo'),
+        (2, 'Sin Almuerzo'),
+    ]
+    CUU_TIPO = models.IntegerField(choices=CUU_TIPO_OPCION, null=False)
+    CUU_FECHA = models.DateField(null=False)
+    CUU_VALOR = models.DecimalField(max_digits=21,decimal_places=6, null=False)
 
 class Curso_Fecha(models.Model):
-    CUF_ID = models.CharField(max_length=10, unique=True, primary_key=True)
-    CUR_ID = models.ForeignKey('Curso', on_delete=models.CASCADE)
-    CUF_FECHA_INICIO = models.DateField()
-    CUF_FECHA_TERMINO = models.DateField()
-    CUF_TIPO = models.IntegerField()
+    CUF_ID = models.BigAutoField(primary_key=True)
+    CUR_ID = models.ForeignKey('Curso', on_delete=models.PROTECT, null=False)
+    CUF_FECHA_INICIO = models.DateField(null=False)
+    CUF_FECHA_TERMINO = models.DateField(null=False)
+    CUF_TIPO_OPCION = [
+        (1, 'Presencial'),
+        (2, 'Online'),
+        (3, 'Hibrido'),
+    ]
+    CUF_TIPO = models.IntegerField(choices=CUF_TIPO_OPCION, null=False)
 
 class Curso_Alimentacion(models.Model):
-    CUA_ID = models.CharField(max_length=10, unique=True, primary_key=True)
-    CUR_ID = models.ForeignKey('Curso', on_delete=models.CASCADE)
-    ALI_ID = models.ForeignKey('ModuloMantenedores.Alimentacion', on_delete=models.CASCADE)
+    CUA_ID = models.BigAutoField(primary_key=True)
+    CUR_ID = models.ForeignKey('Curso', on_delete=models.PROTECT, null=False)
+    ALI_ID = models.ForeignKey('ModuloMantenedores.Alimentacion', on_delete=models.PROTECT, null=False)
     CUA_FECHA = models.DateField()
-    CUA_TIEMPO = models.IntegerField()
-    CUA_DESCRIPCION = models.CharField(max_length=100)
-    CUA_CANTIDAD_ADICIONAL = models.IntegerField(default=0)
-    CUA_VIGENTE = models.BooleanField(default=True)
+    CUA_TIEMPO_OPCION = [
+        (1, 'Desayuno'),
+        (2, 'Almuerzo'),
+        (3, 'Once'),
+        (4, 'Cena'),
+        (5, 'Once/Cena'),
+    ]
+    CUA_TIEMPO = models.IntegerField(choices=CUA_TIEMPO_OPCION, null=False)
+    CUA_DESCRIPCION = models.CharField(max_length=100, null=False)
+    CUA_CANTIDAD_ADICIONAL = models.IntegerField(default=0, null=False)
+    CUA_VIGENTE = models.BooleanField(default=True, null=False)
 
 class Curso_Coordinador(models.Model):
-    CUC_ID = models.CharField(max_length=10, unique=True, primary_key=True)
-    CUR_ID = models.ForeignKey('Curso', on_delete=models.CASCADE)
-    PER_ID = models.ForeignKey('ModuloUsuarios.Persona', on_delete=models.CASCADE)
-    CAR_ID = models.ForeignKey('ModuloMantenedores.Cargo', on_delete=models.CASCADE)
-    CUC_CARGO = models.CharField(max_length=100)
+    CUC_ID = models.BigAutoField(primary_key=True)
+    CUR_ID = models.ForeignKey('Curso', on_delete=models.PROTECT, null=False)
+    PER_ID = models.ForeignKey('ModuloUsuarios.Persona', on_delete=models.PROTECT, null=False)
+    CAR_ID = models.ForeignKey('ModuloMantenedores.Cargo', on_delete=models.PROTECT, null=False)
+    CUC_CARGO = models.CharField(max_length=100, null=True)
 
 class Curso_Seccion(models.Model):
-    CUS_ID = models.CharField(max_length=10, unique=True, primary_key=True)
-    CUR_ID = models.ForeignKey('Curso', on_delete=models.CASCADE)
-    RAM_ID = models.ForeignKey('ModuloMantenedores.Rama', on_delete=models.CASCADE)
-    CUS_SECCION = models.IntegerField()
-    CUS_CANT_PARTICIPANTE = models.IntegerField()
+    CUS_ID = models.BigAutoField(primary_key=True)
+    CUR_ID = models.ForeignKey('Curso', on_delete=models.PROTECT, null=False)
+    RAM_ID = models.ForeignKey('ModuloMantenedores.Rama', on_delete=models.PROTECT, null=True)
+    CUS_SECCION = models.IntegerField(null=False)
+    CUS_CANT_PARTICIPANTE = models.IntegerField(null=False)
 
 class Curso_Formador(models.Model):
-    CUF_ID = models.CharField(max_length=10, unique=True, primary_key=True)
-    CUR_ID = models.ForeignKey('Curso', on_delete=models.CASCADE)
-    PER_ID = models.ForeignKey('ModuloUsuarios.Persona', on_delete=models.CASCADE)
-    ROL_ID = models.ForeignKey('ModuloMantenedores.Rol', on_delete=models.CASCADE)
-    CUS_ID = models.ForeignKey('Curso_Seccion', on_delete=models.CASCADE, blank=True, null=True)
-    CUO_DIRECTOR = models.IntegerField()
+    CUF_ID = models.BigAutoField(primary_key=True)
+    CUR_ID = models.ForeignKey('Curso', on_delete=models.PROTECT, null=False)
+    PER_ID = models.ForeignKey('ModuloUsuarios.Persona', on_delete=models.PROTECT, null=False)
+    ROL_ID = models.ForeignKey('ModuloMantenedores.Rol', on_delete=models.PROTECT, null=False)
+    CUS_ID = models.ForeignKey('Curso_Seccion', on_delete=models.PROTECT, null=False)
+    CUO_DIRECTOR = models.BooleanField(default=False, null=False)
 
 class Tipo_Curso(models.Model):
     TCU_ID = models.BigAutoField(primary_key=True)
@@ -78,5 +94,5 @@ class Tipo_Curso(models.Model):
         (6, 'Institucional'),
     ]
     TCU_TIPO = models.CharField(choices=TCU_TIPO_OPCION, null=False)
-    TCU_CANT_PARTICIPANTE = models.IntegerField(null=False)
+    TCU_CANT_PARTICIPANTE = models.IntegerField(null=True)
     TCU_VIGENTE = models.BooleanField(default=True, null=False)

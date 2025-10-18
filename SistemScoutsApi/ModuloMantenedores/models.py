@@ -3,7 +3,15 @@ from django.db import models
 class Rol(models.Model):
     ROL_ID = models.BigAutoField(primary_key=True)
     ROL_DESCRIPCION = models.CharField(max_length=50, null=False)
-    ROL_TIPO = models.IntegerField(null=False)
+    ROL_TIPO_OPTIONS = [
+        (1, 'Participante'),
+        (2, 'Formadores'),
+        (3, 'Apoyo Formadores'),
+        (4, 'Organización'),
+        (5, 'Servicio'),
+        (6, 'Salud'),
+    ]
+    ROL_TIPO = models.IntegerField(choices=ROL_TIPO_OPTIONS, null=False)
     ROL_VIGENTE = models.BooleanField(default=True, null=False)
 
 class Cargo(models.Model):
@@ -12,38 +20,38 @@ class Cargo(models.Model):
     CAR_VIGENTE = models.BooleanField(default=True, null=False)
 
 class Rama(models.Model):
-    RAM_ID = models.CharField(max_length=10, unique=True, primary_key=True)
-    RAM_DESCRIPCION = models.CharField(max_length=50)
-    RAM_VIGENTE = models.BooleanField(default=True)
+    RAM_ID = models.BigAutoField(primary_key=True)
+    RAM_DESCRIPCION = models.CharField(max_length=50, null=False)
+    RAM_VIGENTE = models.BooleanField(default=True, null=False)
 
 class Estado_Civil(models.Model):
-    ESC_ID = models.CharField(max_length=10, unique=True, primary_key=True)
-    ESC_DESCRIPCION = models.CharField(max_length=50)
-    ESC_VIGENTE = models.BooleanField(default=True)
+    ESC_ID = models.BigAutoField(primary_key=True)
+    ESC_DESCRIPCION = models.CharField(max_length=50, null=False)
+    ESC_VIGENTE = models.BooleanField(default=True, null=False)
 
 class Nivel(models.Model):
-    NIV_ID = models.CharField(max_length=10, unique=True, primary_key=True)
-    NIV_DESCRIPCION = models.CharField(max_length=100)
-    NIV_ORDEN = models.IntegerField()
-    NIV_VIGENTE = models.BooleanField(default=True)
+    NIV_ID = models.BigAutoField(primary_key=True)
+    NIV_DESCRIPCION = models.CharField(max_length=50, null=False)
+    NIV_ORDEN = models.IntegerField(null=False)
+    NIV_VIGENTE = models.BooleanField(default=True, null=False)
 
 class Zona(models.Model):
-    ZON_ID = models.CharField(max_length=10, unique=True, primary_key=True)
-    ZON_DESCRIPCION = models.CharField(max_length=100)
-    ZON_UNILATERAL = models.BooleanField(default=False)
-    ZON_VIGENTE = models.BooleanField(default=True)
+    ZON_ID = models.BigAutoField(primary_key=True)
+    ZON_DESCRIPCION = models.CharField(max_length=100, null=False)
+    ZON_UNILATERAL = models.BooleanField(default=False, null=False)
+    ZON_VIGENTE = models.BooleanField(default=True, null=False)
 
 class Distrito(models.Model):
-    DIS_ID = models.CharField(max_length=10, unique=True, primary_key=True)
-    ZON_ID = models.ForeignKey('Zona', on_delete=models.CASCADE)
-    DIS_DESCRIPCION = models.CharField(max_length=100)
-    DIS_VIGENTE = models.BooleanField(default=True)
+    DIS_ID = models.BigAutoField(primary_key=True)
+    ZON_ID = models.ForeignKey('Zona', on_delete=models.PROTECT, null=False)
+    DIS_DESCRIPCION = models.CharField(max_length=100, null=False)
+    DIS_VIGENTE = models.BooleanField(default=True, null=False)
 
 class Grupo(models.Model):
-    GRU_ID = models.CharField(max_length=10, unique=True, primary_key=True)
-    DIS_ID = models.ForeignKey('Distrito', on_delete=models.CASCADE)
-    GRU_DESCRIPCION = models.CharField(max_length=100)
-    GRU_VIGENTE = models.BooleanField(default=True)
+    GRU_ID = models.BigAutoField(primary_key=True)
+    DIS_ID = models.ForeignKey('Distrito', on_delete=models.PROTECT, null=False)
+    GRU_DESCRIPCION = models.CharField(max_length=100, null=False)
+    GRU_VIGENTE = models.BooleanField(default=True, null=False)
 
 class Region(models.Model):
     REG_ID = models.BigAutoField(primary_key=True)
