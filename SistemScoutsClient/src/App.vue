@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <template>
   <div class="gestion-personas">
     <div class="header">
@@ -521,4 +522,20 @@ th {
 td[data-label="Nombre"] { text-transform: uppercase; font-weight:600; }
 
 
+=======
+<script setup>
+import NavBar from './components/Reutilizables/NavBar.vue'
+</script>
+
+<template>
+		<div class="app-root">
+			<NavBar />
+			<main class="main-full">
+				<router-view />
+			</main>
+		</div>
+</template>
+
+<style>
+>>>>>>> fe3ca806e3592a744d4e2b2f7b27c752cbbeef0d
 </style>

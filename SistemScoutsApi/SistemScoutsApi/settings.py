@@ -37,7 +37,19 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+<<<<<<< HEAD
     'ApiScouts',
+=======
+
+    'ApiCore',
+
+    'ModuloUsuarios',
+    'ModuloMantenedores',
+    'ModuloPagos',
+    'ModuloCursos',
+    'ModuloArchivos',
+    
+>>>>>>> fe3ca806e3592a744d4e2b2f7b27c752cbbeef0d
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
