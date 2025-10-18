@@ -44,20 +44,6 @@ export default {
 }
 </style>
 
-<template>
-  <BaseModal ref="modal" @close="onClose">
-    <header class="modal-header">
-      <h3>{{ title }}</h3>
-      <button @click="onClose">✖</button>
-    </header>
-    <form @submit.prevent="handleSubmit">
-      <!--campos y validaciones aquí-->
-    </form>
-  </BaseModal>
-</template>
-
 <script setup>
-import { ref } from 'vue'
-import BaseModal from './BaseModal.vue'
-// lógica de validación aquí
+
 </script>
