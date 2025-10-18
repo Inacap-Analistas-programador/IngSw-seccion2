@@ -17,7 +17,7 @@ class Proveedor(models.Model):
 class Comprobante_Pago(models.Model):
     CPA_ID = models.BigAutoField(primary_key=True)
     USU_ID = models.ForeignKey('ModuloUsuarios.Usuario', on_delete=models.PROTECT, null=False)
-    PEC_ID = models.ForeignKey('Persona_Curso', on_delete=models.PROTECT, null=False)
+    PEC_ID = models.ForeignKey('ModuloUsuarios.Persona_Curso', on_delete=models.PROTECT, null=False)
     COC_ID = models.ForeignKey('Concepto_Contable', on_delete=models.PROTECT, null=False)
     CPA_FECHA_HORA = models.DateTimeField(null=False)
     CPA_FECHA = models.DateField(auto_now_add=True, null=False)
