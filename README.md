@@ -24,7 +24,7 @@ Asegúrate de tener instalados en tu sistema:
 
 ## 📂 Estructura del proyecto
 ```
-SistemaScouts/
+IngSw-seccion2/
 │
 ├─ SistemScoutsApi/       # Backend Django (API REST)
 ├─ SistemScoutsClient/    # Frontend Vue (Vite)
