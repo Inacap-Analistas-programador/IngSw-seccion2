@@ -1,15 +1,9 @@
 <script setup>
-<<<<<<< HEAD
-import { ref } from 'vue'
-=======
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
->>>>>>> fe3ca806e3592a744d4e2b2f7b27c752cbbeef0d
 import logoSrc from '@/assets/Logo_Boyscout_Chile.png' // asegúrate de que el archivo exista
 
 // Estado reactivo del menú (para móviles)
 const menuActive = ref(false)
-<<<<<<< HEAD
-=======
 // Dropdown "Más"
 const moreOpen = ref(false)
 
@@ -71,7 +65,6 @@ function onNavClick() {
   menuActive.value = false
   moreOpen.value = false
 }
->>>>>>> fe3ca806e3592a744d4e2b2f7b27c752cbbeef0d
 </script>
 
 <template>
@@ -79,27 +72,11 @@ function onNavClick() {
     <!-- Logo y título -->
     <div class="navbar-left">
       <img :src="logoSrc" alt="Logo Scouts" class="logo" />
-<<<<<<< HEAD
-      <span class="title">Sistema Scouts Región del Biobío</span>
-=======
       <span class="title">Scouts Biobío System</span>
->>>>>>> fe3ca806e3592a744d4e2b2f7b27c752cbbeef0d
     </div>
 
     <!-- Enlaces de navegación -->
     <ul :class="['navbar-links', { active: menuActive }]">
-<<<<<<< HEAD
-      <li><a href="#">Inicio</a></li>
-      <li><a href="#">Panel de Control</a></li>
-      <li><a href="#">Usuarios y Roles</a></li>
-      <li><a href="#">Cursos y Capacitaciones</a></li>
-      <li><a href="#">Inscripciones</a></li>
-      <li><a href="#">Gestión de Personas</a></li>
-      <li><a href="#">Pagos</a></li>
-      <li><a href="#">Envío de Correos</a></li>
-      <li><a href="#">Reportes</a></li>
-      <li><a href="#">Acreditación QR</a></li>
-=======
       <template v-for="(link, idx) in displayedLinks" :key="link.label">
         <li :class="{ 'has-submenu': link.submenu }">
           <template v-if="link.submenu">
@@ -132,7 +109,6 @@ function onNavClick() {
           </li>
         </ul>
       </li>
->>>>>>> fe3ca806e3592a744d4e2b2f7b27c752cbbeef0d
     </ul>
 
     <!-- Botón para menú móvil -->
@@ -192,18 +168,12 @@ function onNavClick() {
   padding: 0;
 }
 
-<<<<<<< HEAD
-.navbar-links a {
-=======
 .navbar-links a, .nav-button {
->>>>>>> fe3ca806e3592a744d4e2b2f7b27c752cbbeef0d
   font-weight: 600;
   text-decoration: none;
   color: white;
   transition: color 0.3s, border-bottom 0.3s;
   border-bottom: 2px solid transparent;
-<<<<<<< HEAD
-=======
   background: none;
   border: none;
   padding: 0;
@@ -239,7 +209,6 @@ function onNavClick() {
   background: #f0f4f8;
   color: #2c5aa0;
   border-bottom: none;
->>>>>>> fe3ca806e3592a744d4e2b2f7b27c752cbbeef0d
 }
 
 .navbar-links a:hover {
@@ -261,8 +230,6 @@ function onNavClick() {
   margin-left: 14px;
 }
 
-<<<<<<< HEAD
-=======
 /* Más dropdown */
 .more-cell { position: relative; }
 .more-button {
@@ -295,7 +262,6 @@ function onNavClick() {
 }
 .more-dropdown a:hover, .more-dropdown router-link:hover { background: rgba(22,58,89,0.06) }
 
->>>>>>> fe3ca806e3592a744d4e2b2f7b27c752cbbeef0d
 /* ====== Modo responsive ====== */
 @media (max-width: 768px) {
   .navbar {

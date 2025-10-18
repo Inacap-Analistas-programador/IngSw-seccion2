@@ -1,12 +1,6 @@
 @import './base.css';
 
 #app {
-<<<<<<< HEAD
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  font-weight: normal;
-=======
   /* Fill the entire body to avoid gaps on the sides */
   width: 100%;
   height: 100%;
@@ -14,7 +8,6 @@
   padding: 0;
   font-weight: normal;
   box-sizing: border-box;
->>>>>>> fe3ca806e3592a744d4e2b2f7b27c752cbbeef0d
 }
 
 a,
@@ -32,19 +25,6 @@ a,
 }
 
 @media (min-width: 1024px) {
-<<<<<<< HEAD
-  body {
-    display: flex;
-    place-items: center;
-  }
-
-  #app {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    padding: 0 2rem;
-  }
-}
-=======
   /* On wide screens allow internal components to use grid, but keep #app full-bleed */
   #app {
     display: block;
@@ -59,4 +39,3 @@ html, body, #app, .app-root {
   /* Ensure text remains dark when we force a light background (prevents OS dark-mode vars from making text light) */
   color: #111111 !important;
 }
->>>>>>> fe3ca806e3592a744d4e2b2f7b27c752cbbeef0d

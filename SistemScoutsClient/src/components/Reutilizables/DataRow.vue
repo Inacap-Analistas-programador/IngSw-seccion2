@@ -1,11 +1,7 @@
 <template>
   <tr class="data-row" :class="{ 'selected': isSelected }">
     <td v-if="selectable" class="select-cell">
-<<<<<<< HEAD
-      <BaseInput
-=======
       <InputBase
->>>>>>> fe3ca806e3592a744d4e2b2f7b27c752cbbeef0d
         type="checkbox"
         :modelValue="isSelected"
         @update:modelValue="$emit('selectionChange', $event)"
@@ -19,11 +15,7 @@
       @click="$emit('cellClick', { field: key, value: value, row: rowData })"
     >
       <template v-if="editableFields.includes(key) && isEditing">
-<<<<<<< HEAD
-        <BaseInput
-=======
         <InputBase
->>>>>>> fe3ca806e3592a744d4e2b2f7b27c752cbbeef0d
           :type="getInputType(key)"
           :modelValue="editedData[key]"
           @update:modelValue="handleFieldUpdate(key, $event)"
@@ -80,11 +72,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-<<<<<<< HEAD
-import BaseInput from './BaseInput.vue'
-=======
 import InputBase from './InputBase.vue'
->>>>>>> fe3ca806e3592a744d4e2b2f7b27c752cbbeef0d
 import BaseButton from './BaseButton.vue'
 
 const props = defineProps({
