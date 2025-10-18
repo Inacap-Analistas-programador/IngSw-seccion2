@@ -58,7 +58,8 @@
               v-for="curso in cursosDisponibles" 
               :key="curso.id"
               :class="['course-option', { selected: formData.cursoId === curso.id }]"
-              @click="selectCurso(curso)">
+              @click="selectCurso(curso)"
+            >
               <div class="course-icon">{{ curso.icono }}</div>
               <div class="course-info">
                 <h3 class="course-name">{{ curso.nombre }}</h3>

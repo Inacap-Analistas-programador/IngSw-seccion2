@@ -12,6 +12,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+<<<<<<< HEAD
+=======
+    "html5-qrcode": "^2.3.8",
+>>>>>>> fe3ca806e3592a744d4e2b2f7b27c752cbbeef0d
     "leaflet": "^1.9.4",
     "vue": "^3.5.18",
     "vue-router": "^4.5.1"
