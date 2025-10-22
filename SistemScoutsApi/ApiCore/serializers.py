@@ -1,10 +1,10 @@
 from rest_framework import serializers
 
-from ModuloUsuarios.models import (Usuario, Perfil, Persona_Curso, Persona, Persona_Grupo, Persona_Formador, Persona_Individual, Persona_Nivel, Persona_Estado_Curso, Persona_Vehiculo)
+from ModuloUsuarios.models import (Aplicacion, Perfil_Aplicacion, Usuario, Perfil, Persona_Curso, Persona, Persona_Grupo, Persona_Formador, Persona_Individual, Persona_Nivel, Persona_Estado_Curso, Persona_Vehiculo)
 from ModuloCursos.models import (Curso, Tipo_Curso,  Curso_Cuota, Curso_Fecha, Curso_Alimentacion, Curso_Coordinador, Curso_Seccion, Curso_Formador)
 from ModuloArchivos.models import (Archivo, Archivo_Curso, Archivo_Persona, Tipo_Archivo)
-from ModuloMantenedores.models import (Rol, Cargo, Rama, Estado_Civil, Nivel, Zona, Distrito, Grupo, Region, Provincia, Comuna)
-from ModuloPagos.models import (Concepto_Contable, Proveedor)
+from ModuloMantenedores.models import (Alimentacion, Rol, Cargo, Rama, Estado_Civil, Nivel, Zona, Distrito, Grupo, Region, Provincia, Comuna)
+from ModuloPagos.models import (Comprobante_Pago, Concepto_Contable, Pago_Comprobante, Pago_Persona, Prepago, Proveedor)
 
 # ======================================================
 # MÓDULO USUARIOS
@@ -16,6 +16,11 @@ class ModuloUsuariosSerializers:
             fields = '__all__'
 
 
+    class AplicacionSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = Aplicacion
+            fields = '__all__'
+            
     class PerfilSerializer(serializers.ModelSerializer):
         class Meta:
             model = Perfil
@@ -67,6 +72,10 @@ class ModuloUsuariosSerializers:
             model = Persona_Vehiculo
             fields = '__all__'
 
+    class perfilAplicacionSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = Perfil_Aplicacion
+            fields = '__all__'
 # ======================================================
 # MÓDULO CURSOS
 # ======================================================
@@ -214,6 +223,10 @@ class ModuloMantenedoresSerializers:
             model = Comuna
             fields = '__all__'
 
+    class AlimentacionSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = Alimentacion
+            fields = '__all__' 
 # ======================================================
 # MÓDULO PAGOS  
 # ======================================================
@@ -223,12 +236,32 @@ class ModuloPagosSerializers:
             model = Proveedor
             fields = '__all__'
 
-
     class ConceptoContableSerializer(serializers.ModelSerializer):
         class Meta:
             model = Concepto_Contable
             fields = '__all__'
 
+    class ComprobantePagoSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = Comprobante_Pago
+            fields = '__all__'
+        
+    class PagoComprobanteSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = Pago_Comprobante
+            fields = '__all__'
+        
+    class PagoPersonaSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = Pago_Persona
+            fields = '__all__'
+        
+    class PrepagoSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = Prepago
+            fields = '__all__'
+        
+    
 # ======================================================
 # DICCIONARIO DE SERIALIZERS PARA DynamicModelViewSet
 # ======================================================
