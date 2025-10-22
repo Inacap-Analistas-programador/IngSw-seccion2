@@ -2,13 +2,12 @@
   <div class="manual-acreditation">
     <!-- Título -->
     <div class="acreditation-header">
-      <h1>Acreditación Manual</h1>
-      <p>Sistema de acreditación para eventos scouts</p>
+  <h1>Acreditación Manual</h1>
     </div>
 
     <!-- Barra de búsqueda -->
     <div class="search-section">
-      <div class="search-box">z
+      <div class="search-box">
         <input 
           v-model="searchTerm"
           type="text" 
@@ -34,19 +33,12 @@
     </div>
 
     <!-- Alertas -->
-    <BaseAlert
-      v-if="acreditationSuccess"
-      type="exito"
-      title="Acreditación Exitosa"
-      :message="`${selectedParticipant?.name} ha sido acreditado correctamente`"
-      @close="acreditationSuccess = false"
-    />
+    <NotificationToast v-if="acreditationSuccess" :message="acreditationSuccessMessage" @close="acreditationSuccess = false" />
+    <NotificationToast v-if="paymentSuccess" :message="paymentSuccessMessage" @close="paymentSuccess = false" />
 
     <!-- Información del participante -->
     <div v-if="selectedParticipant" class="participant-info">
       <div class="status-header">
-        <!-- Luz indicadora -->
-        <div class="status-light" :class="statusLightClass"></div>
         <h2>Información del Participante</h2>
       </div>
       
@@ -124,26 +116,15 @@
       </div>
     </div>
 
-    <!-- Acreditaciones recientes -->
-    <div class="recent-acreditations">
-      <h2>Acreditaciones Recientes</h2>
-      <DataTable
-        :columns="tableColumns"
-        :rows="recentAcreditations"
-        :paginated="true"
-        :page-size="5"
-        search-placeholder="Buscar en acreditaciones..."
-        empty-message="No hay acreditaciones recientes"
-      />
-    </div>
   </div>
 </template>
 
 <script>
-import DataCard from './DataCard.vue'
-import DataTable from './DataTable.vue'
-import BaseButton from './BaseButton.vue'
-import BaseAlert from './BaseAlert.vue'
+import DataCard from '@/components/Reutilizables/DataCard.vue'
+import DataTable from '@/components/Reutilizables/DataTable.vue'
+import BaseButton from '@/components/Reutilizables/BaseButton.vue'
+import BaseAlert from '@/components/Reutilizables/BaseAlert.vue'
+import NotificationToast from '@/components/Reutilizables/NotificationToast.vue'
 
 export default {
   name: 'ManualAcreditation',
@@ -151,7 +132,8 @@ export default {
     DataCard,
     DataTable,
     BaseButton,
-    BaseAlert
+    BaseAlert,
+    NotificationToast
   },
   data() {
     return {
@@ -159,31 +141,9 @@ export default {
       selectedParticipant: null,
       acreditationSuccess: false,
       isMobile: window.innerWidth <= 768,
-      recentAcreditations: [
-        {
-          id: 1,
-          time: '14:35',
-          name: 'MARÍA GONZÁLEZ LÓPEZ',
-          rut: '98.765.432-1',
-          course: 'Formación de Dirigentes',
-          status: 'Acreditado'
-        },
-        {
-          id: 2,
-          time: '14:28',
-          name: 'CARLOS RAMÍREZ SOTO',
-          rut: '11.222.333-4',
-          course: 'Curso de Especialidades',
-          status: 'Acreditado'
-        }
-      ],
-      tableColumns: [
-        { key: 'time', label: 'Hora', sortable: true },
-        { key: 'name', label: 'Nombre', sortable: true },
-        { key: 'rut', label: 'RUT', sortable: true },
-        { key: 'course', label: 'Curso', sortable: true },
-        { key: 'status', label: 'Estado', sortable: true }
-      ]
+      paymentSuccess: false,
+      paymentSuccessMessage: ''
+      ,acreditationSuccessMessage: ''
     }
   },
   computed: {
@@ -193,13 +153,6 @@ export default {
              this.selectedParticipant.acreditationStatus === 'Pendiente';
     },
     
-    statusLightClass() {
-      if (!this.selectedParticipant) return 'status-light-gray';
-      if (this.selectedParticipant.acreditationStatus === 'Acreditado') return 'status-light-green';
-      if (this.selectedParticipant.paymentStatus === 'Confirmado') return 'status-light-yellow';
-      return 'status-light-red';
-    },
-
     statusMessage() {
       if (!this.selectedParticipant) return '';
       
@@ -291,18 +244,15 @@ export default {
     acreditarParticipante() {
       if (this.canAcredit) {
         this.selectedParticipant.acreditationStatus = 'Acreditado';
-        
-        // Agregar a recientes
-        this.recentAcreditations.unshift({
-          id: Date.now(),
-          time: new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
-          name: this.selectedParticipant.name,
-          rut: this.selectedParticipant.rut,
-          course: this.selectedParticipant.currentCourse,
-          status: 'Acreditado'
-        });
-
+        // Mostrar toast en lugar de BaseAlert grande
+        const msg = `${this.selectedParticipant.name} acreditado correctamente`;
+        this.acreditationSuccessMessage = msg;
         this.acreditationSuccess = true;
+        // Auto-dismiss
+        setTimeout(() => {
+          this.acreditationSuccess = false;
+          this.acreditationSuccessMessage = '';
+        }, 3500);
       }
     },
 
@@ -310,11 +260,19 @@ export default {
       // Marcar como pagado
       this.selectedParticipant.paymentStatus = 'Confirmado';
       this.selectedParticipant.paymentConfirmed = true;
-      
-      // Podrías mostrar alerta de éxito aquí
+
+      // Mostrar notificación interna en lugar del alert nativo (evita que aparezca el origen localhost)
+      const notification = `✅ ${this.selectedParticipant.name} marcado como pagado. Ahora puede ser acreditado.`;
+      console.log(notification);
+      // Mostrar BaseAlert controlado por estado
+      this.paymentSuccessMessage = notification;
+      this.paymentSuccess = true;
+
+      // Auto-dismiss del toast después de 3.5 segundos
       setTimeout(() => {
-        alert(`✅ ${this.selectedParticipant.name} marcado como pagado. Ahora puede ser acreditado.`);
-      }, 100);
+        this.paymentSuccess = false;
+        this.paymentSuccessMessage = '';
+      }, 3500);
     },
 
     showQR() {
@@ -373,37 +331,6 @@ export default {
   align-items: center;
   gap: 12px;
   margin-bottom: 20px;
-}
-
-.status-light {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 2px solid white;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-.status-light-green {
-  background: #27ae60;
-  animation: pulse-green 2s infinite;
-}
-
-.status-light-yellow {
-  background: #f39c12;
-}
-
-.status-light-red {
-  background: #e74c3c;
-}
-
-.status-light-gray {
-  background: #95a5a6;
-}
-
-@keyframes pulse-green {
-  0% { opacity: 1; }
-  50% { opacity: 0.7; }
-  100% { opacity: 1; }
 }
 
 .info-grid {
@@ -491,11 +418,6 @@ export default {
   border-radius: 8px;
   font-weight: bold;
   font-size: 16px;
-}
-
-.recent-acreditations h2 {
-  margin-bottom: 16px;
-  color: #2c3e50;
 }
 
 .status-confirmado {
