@@ -1,7 +1,6 @@
 from rest_framework import serializers
 
-from ModuloUsuarios.models import (Aplicacion, Perfil_Aplicacion, Usuario, Perfil, Persona_Curso, Persona, Persona_Grupo, Persona_Formador, Persona_Individual, Persona_Nivel, Persona_Estado_Curso, Persona_Vehiculo)
-from ModuloCursos.models import (Curso, Tipo_Curso,  Curso_Cuota, Curso_Fecha, Curso_Alimentacion, Curso_Coordinador, Curso_Seccion, Curso_Formador)
+from ModuloUsuarioCurso.models import (Aplicacion, Perfil_Aplicacion, Usuario, Perfil, Persona_Curso, Persona, Persona_Grupo, Persona_Formador, Persona_Individual, Persona_Nivel, Persona_Estado_Curso, Persona_Vehiculo,Curso, Tipo_Curso,  Curso_Cuota, Curso_Fecha, Curso_Alimentacion, Curso_Coordinador, Curso_Seccion, Curso_Formador)
 from ModuloArchivos.models import (Archivo, Archivo_Curso, Archivo_Persona, Tipo_Archivo)
 from ModuloMantenedores.models import (Alimentacion, Rol, Cargo, Rama, Estado_Civil, Nivel, Zona, Distrito, Grupo, Region, Provincia, Comuna)
 from ModuloPagos.models import (Comprobante_Pago, Concepto_Contable, Pago_Comprobante, Pago_Persona, Prepago, Proveedor)
@@ -9,7 +8,7 @@ from ModuloPagos.models import (Comprobante_Pago, Concepto_Contable, Pago_Compro
 # ======================================================
 # MÓDULO USUARIOS
 # ======================================================
-class ModuloUsuariosSerializers:
+class ModuloUsuarioCursoSerializers:
     class UsuarioSerializer(serializers.ModelSerializer):
         class Meta:
             model = Usuario
@@ -56,6 +55,11 @@ class ModuloUsuariosSerializers:
             model = Persona_Nivel
             fields = '__all__'
 
+    class CursoSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = Curso
+            fields = '__all__'
+
     class PersonaCursoSerializer(serializers.ModelSerializer):
         class Meta:
             model = Persona_Curso
@@ -72,19 +76,10 @@ class ModuloUsuariosSerializers:
             model = Persona_Vehiculo
             fields = '__all__'
 
-    class perfilAplicacionSerializer(serializers.ModelSerializer):
+    class PerfilAplicacionSerializer(serializers.ModelSerializer):
         class Meta:
             model = Perfil_Aplicacion
             fields = '__all__'
-# ======================================================
-# MÓDULO CURSOS
-# ======================================================
-class ModuloCursosSerializers:
-    class CursoSerializer(serializers.ModelSerializer):
-        class Meta:
-            model = Curso
-            fields = '__all__'
-
 
     class TipoCursoSerializer(serializers.ModelSerializer):
         class Meta:
@@ -267,30 +262,26 @@ class ModuloPagosSerializers:
 # ======================================================
 serializers_dict = {
     # ==========================================
-    # USUARIOS
+    # USUARIOS y CURSOS
     # ==========================================
-    'Usuario': ModuloUsuariosSerializers.UsuarioSerializer,
-    'Perfil': ModuloUsuariosSerializers.PerfilSerializer,
-    'Persona': ModuloUsuariosSerializers.PersonaSerializer,
-    'Persona_Grupo': ModuloUsuariosSerializers.PersonaGrupoSerializer,
-    'Persona_Formador': ModuloUsuariosSerializers.PersonaFormadorSerializer,
-    'Persona_Curso': ModuloUsuariosSerializers.PersonaCursoSerializer,
-    'Persona_Individual': ModuloUsuariosSerializers.PersonaIndividualSerializer,
-    'Persona_Nivel': ModuloUsuariosSerializers.PersonaNivelSerializer,
-    'Persona_Estado_Curso': ModuloUsuariosSerializers.PersonaEstadoCursoSerializer,
-    'Persona_Vehiculo': ModuloUsuariosSerializers.PersonaVehiculoSerializer,
-
-    # ==========================================
-    # CURSOS
-    # ==========================================
-    'Curso': ModuloCursosSerializers.CursoSerializer,
-    'Tipo_Curso': ModuloCursosSerializers.TipoCursoSerializer,
-    'Curso_Cuota': ModuloCursosSerializers.CursoCuotaSerializer,
-    'Curso_Fecha': ModuloCursosSerializers.CursoFechaSerializer,
-    'Curso_Alimentacion': ModuloCursosSerializers.CursoAlimentacionSerializer,
-    'Curso_Coordinador': ModuloCursosSerializers.CursoCoordinadorSerializer,
-    'Curso_Seccion': ModuloCursosSerializers.CursoSeccionSerializer,
-    'Curso_Formador': ModuloCursosSerializers.CursoFormadorSerializer,
+    'Usuario': ModuloUsuarioCursoSerializers.UsuarioSerializer,
+    'Perfil': ModuloUsuarioCursoSerializers.PerfilSerializer,
+    'Persona': ModuloUsuarioCursoSerializers.PersonaSerializer,
+    'Persona_Grupo': ModuloUsuarioCursoSerializers.PersonaGrupoSerializer,
+    'Persona_Formador': ModuloUsuarioCursoSerializers.PersonaFormadorSerializer,
+    'Persona_Curso': ModuloUsuarioCursoSerializers.PersonaCursoSerializer,
+    'Persona_Individual': ModuloUsuarioCursoSerializers.PersonaIndividualSerializer,
+    'Persona_Nivel': ModuloUsuarioCursoSerializers.PersonaNivelSerializer,
+    'Persona_Estado_Curso': ModuloUsuarioCursoSerializers.PersonaEstadoCursoSerializer,
+    'Persona_Vehiculo': ModuloUsuarioCursoSerializers.PersonaVehiculoSerializer,
+    'Curso': ModuloUsuarioCursoSerializers.CursoSerializer,
+    'Tipo_Curso': ModuloUsuarioCursoSerializers.TipoCursoSerializer,
+    'Curso_Cuota': ModuloUsuarioCursoSerializers.CursoCuotaSerializer,
+    'Curso_Fecha': ModuloUsuarioCursoSerializers.CursoFechaSerializer,
+    'Curso_Alimentacion': ModuloUsuarioCursoSerializers.CursoAlimentacionSerializer,
+    'Curso_Coordinador': ModuloUsuarioCursoSerializers.CursoCoordinadorSerializer,
+    'Curso_Seccion': ModuloUsuarioCursoSerializers.CursoSeccionSerializer,
+    'Curso_Formador': ModuloUsuarioCursoSerializers.CursoFormadorSerializer,
 
     # ==========================================
     # ARCHIVOS

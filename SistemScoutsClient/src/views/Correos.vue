@@ -123,7 +123,7 @@
 import { reactive, computed, ref, onMounted, nextTick } from 'vue'
 import BaseButton from '../components/Reutilizables/BaseButton.vue'
 import QRCode from 'qrcode'
-import { obtenerPersonas } from '../services/dataService'
+import { obtenerPersonas } from '../UsuarioCurso/Usuario'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api/core'
 

@@ -11,13 +11,13 @@ class Proveedor(models.Model):
     PRV_CELULAR1 = models.CharField(max_length=15, blank=True, null=False)
     PRV_CELULAR2 = models.CharField(max_length=15, blank=True, null=True)
     PRV_DIRECCION = models.CharField(max_length=100, blank=True, null=False)
-    PRV_OBSERVACION = models.CharField(blank=True, null=True)
+    PRV_OBSERVACION = models.CharField(max_length=500, blank=True, null=True)
     PRV_VIGENTE = models.BooleanField(default=True, null=False)
 
 class Comprobante_Pago(models.Model):
     CPA_ID = models.BigAutoField(primary_key=True)
-    USU_ID = models.ForeignKey('ModuloUsuarios.Usuario', on_delete=models.PROTECT, null=False)
-    PEC_ID = models.ForeignKey('ModuloUsuarios.Persona_Curso', on_delete=models.PROTECT, null=False)
+    USU_ID = models.ForeignKey('ModuloUsuarioCurso.Usuario', on_delete=models.PROTECT, null=False)
+    PEC_ID = models.ForeignKey('ModuloUsuarioCurso.Persona_Curso', on_delete=models.PROTECT, null=False)
     COC_ID = models.ForeignKey('Concepto_Contable', on_delete=models.PROTECT, null=False)
     CPA_FECHA_HORA = models.DateTimeField(null=False)
     CPA_FECHA = models.DateField(auto_now_add=True, null=False)
@@ -31,9 +31,9 @@ class Pago_Comprobante(models.Model):
 
 class Pago_Persona(models.Model):
     PAP_ID = models.BigAutoField(primary_key=True)
-    PER_ID = models.ForeignKey('ModuloUsuarios.Persona', on_delete=models.PROTECT, null=False)
-    CUR_ID = models.ForeignKey('ModuloCursos.Curso', on_delete=models.PROTECT, null=False)
-    USU_ID = models.ForeignKey('ModuloUsuarios.Usuario', on_delete=models.PROTECT, null=False)
+    PER_ID = models.ForeignKey('ModuloUsuarioCurso.Persona', on_delete=models.PROTECT, null=False)
+    CUR_ID = models.ForeignKey('ModuloUsuarioCurso.Curso', on_delete=models.PROTECT, null=False)
+    USU_ID = models.ForeignKey('ModuloUsuarioCurso.Usuario', on_delete=models.PROTECT, null=False)
     PAP_FECHA_HORA = models.DateTimeField(null=False)
     PAP_TIPO_OPCION = [
         (1, 'Ingreso'),
@@ -44,8 +44,8 @@ class Pago_Persona(models.Model):
 
 class Prepago(models.Model):
     PPA_ID = models.BigAutoField(primary_key=True)
-    PER_ID = models.ForeignKey('ModuloUsuarios.Persona', on_delete=models.PROTECT, null=False)
-    CUR_ID = models.ForeignKey('ModuloCursos.Curso', on_delete=models.PROTECT, null=False)
+    PER_ID = models.ForeignKey('ModuloUsuarioCurso.Persona', on_delete=models.PROTECT, null=False)
+    CUR_ID = models.ForeignKey('ModuloUsuarioCurso.Curso', on_delete=models.PROTECT, null=False)
     PAP_ID = models.ForeignKey('Pago_Persona', on_delete=models.PROTECT, null=True)
     PPA_VALOR = models.DecimalField(max_digits=21, decimal_places=6, null=False)
     PPA_OBSERVACION = models.CharField(max_length=500, null=True)

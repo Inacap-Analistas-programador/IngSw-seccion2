@@ -10,11 +10,13 @@ const ManualAcreditation = () => import('@/views/ManualAcreditation.vue')
 const VerificadorQR = () => import('@/views/VerificadorQR.vue')
 const Usuarios = () => import('@/views/Gestionpersonas.vue')
 const CursosCapacitaciones = () => import('@/views/CRUDcursos.vue')
+const Login = () => import('@/views/Login.vue')
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    { path: '/', name: 'dashboard', component: Dashboard },
+    { path: '/', name: 'login', component: Login },
+    { path: '/dashboard', name: 'dashboard', component: Dashboard },
     { path: '/usuarios', name: 'usuarios', component: Usuarios },
     { path: '/mantenedores', name: 'mantenedores', component: Mantenedores },
     { path: '/gestionpersonas', name: 'gestionpersonas', component: Gestionpersonas },
