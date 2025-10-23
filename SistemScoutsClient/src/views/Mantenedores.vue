@@ -24,7 +24,7 @@
       <!-- Zonas -->
       <div v-if="activeTab === 'zonas'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>🗺️ Gestión de Zonas Scout</h2>
+          <h2>🗺️ Gestión de Zonas</h2>
           <BaseButton variant="primary" @click="abrirModal('crear-zona')">
             + Nueva Zona
           </BaseButton>
@@ -33,23 +33,31 @@
         <BaseAlert 
           type="info" 
           title="Información" 
-          message="Las zonas son agrupaciones geográficas de distritos scouts. Cada zona agrupa varios distritos de la región."
+          message="Las zonas son agrupaciones geográficas de distritos scouts."
         />
         
         <div class="stats-cards">
           <DataCard 
-            v-for="stat in zonaStats" 
-            :key="stat.title"
-            :title="stat.title" 
-            :value="stat.value" 
-            :description="stat.description"
+            title="Zonas Activas"
+            :value="zonas.filter(z => z.vigente).length"
+            description="Total registrado"
+          />
+          <DataCard 
+            title="Distritos Asociados"
+            :value="distritos.length"
+            description="En todas las zonas"
+          />
+          <DataCard 
+            title="Grupos Totales"
+            :value="grupos.length"
+            description="Distribuidos por zona"
           />
         </div>
         
         <div class="search-bar">
           <InputBase 
             v-model="searchZonas"
-            placeholder="Buscar zona por nombre o código..."
+            placeholder="Buscar zona por descripción..."
             class="search-input"
           />
           <BaseButton variant="primary">🔍 Buscar</BaseButton>
@@ -61,7 +69,7 @@
           :pageSize="5"
           @view="verZona"
           @edit="editarZona"
-          @delete="eliminarZona"
+          @delete="anularZona"
         />
       </div>
       
@@ -100,7 +108,7 @@
           :pageSize="5"
           @view="verDistrito"
           @edit="editarDistrito"
-          @delete="eliminarDistrito"
+          @delete="anularDistrito"
         />
       </div>
       
@@ -139,31 +147,32 @@
           :pageSize="5"
           @view="verGrupo"
           @edit="editarGrupo"
-          @delete="eliminarGrupo"
+          @delete="anularGrupo"
         />
       </div>
       
-      <!-- Secciones -->
-      <div v-if="activeTab === 'secciones'" class="mantenedor-section">
+      <!-- Ramas -->
+      <div v-if="activeTab === 'ramas'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>🏕️ Gestión de Secciones</h2>
-          <BaseButton variant="primary" @click="abrirModal('crear-seccion')">
-            + Nueva Sección
+          <h2>🏕️ Gestión de Ramas</h2>
+          <BaseButton variant="primary" @click="abrirModal('crear-rama')">
+            + Nueva Rama
           </BaseButton>
         </div>
         
         <BaseAlert 
           type="info" 
           title="Información" 
-          message="Las secciones son las divisiones por edad dentro del movimiento scout."
+          message="Las ramas definen las divisiones por edad dentro del movimiento scout."
         />
         
         <DataTable 
-          :columns="columnsSecciones"
-          :rows="secciones"
+          :columns="columnsRamas"
+          :rows="ramas"
           :pageSize="10"
-          @view="verSeccion"
-          @edit="editarSeccion"
+          @view="verRama"
+          @edit="editarRama"
+          @delete="anularRama"
         />
       </div>
       
@@ -188,107 +197,90 @@
           :pageSize="5"
           @view="verTipoCurso"
           @edit="editarTipoCurso"
-          @delete="eliminarTipoCurso"
+          @delete="anularTipoCurso"
         />
       </div>
       
-      <!-- Modalidades -->
-      <div v-if="activeTab === 'modalidades'" class="mantenedor-section">
+      <!-- Cargos -->
+      <div v-if="activeTab === 'cargos'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>💻 Gestión de Modalidades</h2>
-          <BaseButton variant="primary" @click="abrirModal('crear-modalidad')">
-            + Nueva Modalidad
+          <h2>👔 Gestión de Cargos</h2>
+          <BaseButton variant="primary" @click="abrirModal('crear-cargo')">
+            + Nuevo Cargo
           </BaseButton>
         </div>
         
         <BaseAlert 
           type="info" 
           title="Información" 
-          message="Las modalidades definen el formato de realización de los cursos."
+          message="Los cargos definen las responsabilidades dentro de la organización scout."
         />
         
         <DataTable 
-          :columns="columnsModalidades"
-          :rows="modalidades"
-          :pageSize="5"
-          @view="verModalidad"
-          @edit="editarModalidad"
-          @delete="eliminarModalidad"
-        />
-      </div>
-      
-      <!-- Estados -->
-      <div v-if="activeTab === 'estados'" class="mantenedor-section">
-        <div class="mantenedor-header">
-          <h2>🔄 Gestión de Estados del Sistema</h2>
-          <BaseButton variant="primary" @click="abrirModal('crear-estado')">
-            + Nuevo Estado
-          </BaseButton>
-        </div>
-        
-        <BaseAlert 
-          type="info" 
-          title="Información" 
-          message="Los estados definen el flujo de trabajo de inscripciones y participantes en el sistema."
-        />
-        
-        <DataTable 
-          :columns="columnsEstados"
-          :rows="estados"
+          :columns="columnsCargos"
+          :rows="cargos"
           :pageSize="10"
-          @view="verEstado"
-          @edit="editarEstado"
+          @view="verCargo"
+          @edit="editarCargo"
+          @delete="anularCargo"
+        />
+      </div>
+      
+      <!-- Alimentación -->
+      <div v-if="activeTab === 'alimentacion'" class="mantenedor-section">
+        <div class="mantenedor-header">
+          <h2>🍽️ Gestión de Alimentación</h2>
+          <BaseButton variant="primary" @click="abrirModal('crear-alimentacion')">
+            + Nueva Alimentación
+          </BaseButton>
+        </div>
+        
+        <BaseAlert 
+          type="info" 
+          title="Información" 
+          message="Tipos de alimentación disponibles para los participantes de cursos."
+        />
+        
+        <DataTable 
+          :columns="columnsAlimentacion"
+          :rows="alimentacion"
+          :pageSize="5"
+          @view="verAlimentacion"
+          @edit="editarAlimentacion"
+          @delete="anularAlimentacion"
         />
       </div>
     </div>
     
     <!-- Modales -->
+    
+    <!-- Modal: Zona -->
     <BaseModal 
       v-if="modalActivo === 'crear-zona'" 
       @close="cerrarModal"
-      :title="`${editando ? 'Editar' : 'Nueva'} Zona Scout`"
+      :title="`${editando ? 'Editar' : 'Nueva'} Zona`"
     >
       <form @submit.prevent="guardarZona">
         <div class="form-group">
           <InputBase 
-            v-model="formZona.codigo"
-            label="Código de Zona:"
-            placeholder="Ej: ZN-005"
-            required
-          />
-        </div>
-        
-        <div class="form-group">
-          <InputBase 
-            v-model="formZona.nombre"
-            label="Nombre de la Zona:"
-            placeholder="Ej: ZONA CENTRAL BIOBÍO"
-            required
-          />
-        </div>
-        
-        <div class="form-group">
-          <BaseSelect 
-            v-model="formZona.region"
-            :options="regiones"
-            label="Región:"
-            required
-          />
-        </div>
-        
-        <div class="form-group">
-          <InputBase 
             v-model="formZona.descripcion"
-            label="Descripción:"
-            type="textarea"
-            placeholder="Descripción de la zona..."
+            label="Descripción de la Zona:"
+            placeholder="Ej: ZONA NORTE BIOBÍO"
+            required
+          />
+        </div>
+        
+        <div class="form-group">
+          <BaseCheckBox 
+            v-model="formZona.unilateral"
+            label="Zona Unilateral"
           />
         </div>
         
         <div class="form-group">
           <BaseSelect 
-            v-model="formZona.estado"
-            :options="estadosSistema"
+            v-model="formZona.vigente"
+            :options="estadosBooleanos"
             label="Estado:"
             required
           />
@@ -305,7 +297,7 @@
       </form>
     </BaseModal>
     
-    <!-- Modal Distrito -->
+    <!-- Modal: Distrito -->
     <BaseModal 
       v-if="modalActivo === 'crear-distrito'" 
       @close="cerrarModal"
@@ -314,25 +306,16 @@
       <form @submit.prevent="guardarDistrito">
         <div class="form-group">
           <InputBase 
-            v-model="formDistrito.codigo"
-            label="Código de Distrito:"
-            placeholder="Ej: DT-004"
-            required
-          />
-        </div>
-        
-        <div class="form-group">
-          <InputBase 
-            v-model="formDistrito.nombre"
-            label="Nombre del Distrito:"
-            placeholder="Ej: DISTRITO CHILLÁN"
+            v-model="formDistrito.descripcion"
+            label="Descripción del Distrito:"
+            placeholder="Ej: DISTRITO CONCEPCIÓN"
             required
           />
         </div>
         
         <div class="form-group">
           <BaseSelect 
-            v-model="formDistrito.zona"
+            v-model="formDistrito.zona_id"
             :options="opcionesZonasSelect"
             label="Zona:"
             required
@@ -340,27 +323,9 @@
         </div>
         
         <div class="form-group">
-          <InputBase 
-            v-model="formDistrito.responsable"
-            label="Responsable del Distrito:"
-            placeholder="Nombre del responsable"
-          />
-        </div>
-        
-        <div class="form-group">
-          <InputBase 
-            v-model="formDistrito.email"
-            label="Email Contacto:"
-            type="email"
-            placeholder="contacto@distrito.cl"
-            rules="email"
-          />
-        </div>
-        
-        <div class="form-group">
           <BaseSelect 
-            v-model="formDistrito.estado"
-            :options="estadosSistema"
+            v-model="formDistrito.vigente"
+            :options="estadosBooleanos"
             label="Estado:"
             required
           />
@@ -377,7 +342,7 @@
       </form>
     </BaseModal>
     
-    <!-- Modal Grupo -->
+    <!-- Modal: Grupo -->
     <BaseModal 
       v-if="modalActivo === 'crear-grupo'" 
       @close="cerrarModal"
@@ -386,25 +351,16 @@
       <form @submit.prevent="guardarGrupo">
         <div class="form-group">
           <InputBase 
-            v-model="formGrupo.numero"
-            label="Número de Grupo:"
-            placeholder="Ej: GP-004"
-            required
-          />
-        </div>
-        
-        <div class="form-group">
-          <InputBase 
-            v-model="formGrupo.nombre"
-            label="Nombre del Grupo:"
-            placeholder="Ej: GRUPO GALVARINO"
+            v-model="formGrupo.descripcion"
+            label="Descripción del Grupo:"
+            placeholder="Ej: GRUPO ARAUCO"
             required
           />
         </div>
         
         <div class="form-group">
           <BaseSelect 
-            v-model="formGrupo.distrito"
+            v-model="formGrupo.distrito_id"
             :options="opcionesDistritosSelect"
             label="Distrito:"
             required
@@ -412,60 +368,182 @@
         </div>
         
         <div class="form-group">
+          <BaseSelect 
+            v-model="formGrupo.vigente"
+            :options="estadosBooleanos"
+            label="Estado:"
+            required
+          />
+        </div>
+        
+        <div class="form-actions">
+          <BaseButton type="button" variant="secondary" @click="cerrarModal">
+            Cancelar
+          </BaseButton>
+          <BaseButton type="submit" variant="primary">
+            💾 {{ editando ? 'Actualizar' : 'Guardar' }}
+          </BaseButton>
+        </div>
+      </form>
+    </BaseModal>
+    
+    <!-- Modal: Rama -->
+    <BaseModal 
+      v-if="modalActivo === 'crear-rama'" 
+      @close="cerrarModal"
+      :title="`${editando ? 'Editar' : 'Nueva'} Rama`"
+    >
+      <form @submit.prevent="guardarRama">
+        <div class="form-group">
           <InputBase 
-            v-model="formGrupo.comuna"
-            label="Comuna:"
-            placeholder="Ej: CONCEPCIÓN"
+            v-model="formRama.descripcion"
+            label="Descripción de la Rama:"
+            placeholder="Ej: LOBATOS"
+            required
+          />
+        </div>
+        
+        <div class="form-group">
+          <BaseSelect 
+            v-model="formRama.vigente"
+            :options="estadosBooleanos"
+            label="Estado:"
+            required
+          />
+        </div>
+        
+        <div class="form-actions">
+          <BaseButton type="button" variant="secondary" @click="cerrarModal">
+            Cancelar
+          </BaseButton>
+          <BaseButton type="submit" variant="primary">
+            💾 {{ editando ? 'Actualizar' : 'Guardar' }}
+          </BaseButton>
+        </div>
+      </form>
+    </BaseModal>
+    
+    <!-- Modal: Tipo Curso -->
+    <BaseModal 
+      v-if="modalActivo === 'crear-tipo-curso'" 
+      @close="cerrarModal"
+      :title="`${editando ? 'Editar' : 'Nuevo'} Tipo de Curso`"
+    >
+      <form @submit.prevent="guardarTipoCurso">
+        <div class="form-group">
+          <InputBase 
+            v-model="formTipoCurso.descripcion"
+            label="Descripción del Tipo:"
+            placeholder="Ej: CURSO BÁSICO"
             required
           />
         </div>
         
         <div class="form-group">
           <InputBase 
-            v-model="formGrupo.direccion"
-            label="Dirección:"
-            placeholder="Dirección de la sede"
+            v-model="formTipoCurso.tipo"
+            label="Tipo:"
+            type="number"
+            placeholder="Ej: 1"
+            required
           />
         </div>
         
         <div class="form-group">
           <InputBase 
-            v-model="formGrupo.jefe"
-            label="Jefe de Grupo:"
-            placeholder="Nombre del jefe de grupo"
-          />
-        </div>
-        
-        <div class="form-group">
-          <InputBase 
-            v-model="formGrupo.email"
-            label="Email Contacto:"
-            type="email"
-            placeholder="contacto@grupo.cl"
-            rules="email"
-          />
-        </div>
-        
-        <div class="form-group">
-          <InputBase 
-            v-model="formGrupo.telefono"
-            label="Teléfono:"
-            placeholder="+56 9 1234 5678"
-          />
-        </div>
-        
-        <div class="form-group">
-          <InputBase 
-            v-model="formGrupo.fechaFundacion"
-            label="Fecha de Fundación:"
-            type="date"
+            v-model="formTipoCurso.cant_participante"
+            label="Cantidad de Participantes:"
+            type="number"
+            placeholder="Ej: 30"
           />
         </div>
         
         <div class="form-group">
           <BaseSelect 
-            v-model="formGrupo.estado"
-            :options="estadosSistema"
+            v-model="formTipoCurso.vigente"
+            :options="estadosBooleanos"
+            label="Estado:"
+            required
+          />
+        </div>
+        
+        <div class="form-actions">
+          <BaseButton type="button" variant="secondary" @click="cerrarModal">
+            Cancelar
+          </BaseButton>
+          <BaseButton type="submit" variant="primary">
+            💾 {{ editando ? 'Actualizar' : 'Guardar' }}
+          </BaseButton>
+        </div>
+      </form>
+    </BaseModal>
+    
+    <!-- Modal: Cargo -->
+    <BaseModal 
+      v-if="modalActivo === 'crear-cargo'" 
+      @close="cerrarModal"
+      :title="`${editando ? 'Editar' : 'Nuevo'} Cargo`"
+    >
+      <form @submit.prevent="guardarCargo">
+        <div class="form-group">
+          <InputBase 
+            v-model="formCargo.descripcion"
+            label="Descripción del Cargo:"
+            placeholder="Ej: JEFE DE GRUPO"
+            required
+          />
+        </div>
+        
+        <div class="form-group">
+          <BaseSelect 
+            v-model="formCargo.vigente"
+            :options="estadosBooleanos"
+            label="Estado:"
+            required
+          />
+        </div>
+        
+        <div class="form-actions">
+          <BaseButton type="button" variant="secondary" @click="cerrarModal">
+            Cancelar
+          </BaseButton>
+          <BaseButton type="submit" variant="primary">
+            💾 {{ editando ? 'Actualizar' : 'Guardar' }}
+          </BaseButton>
+        </div>
+      </form>
+    </BaseModal>
+    
+    <!-- Modal: Alimentación -->
+    <BaseModal 
+      v-if="modalActivo === 'crear-alimentacion'" 
+      @close="cerrarModal"
+      :title="`${editando ? 'Editar' : 'Nueva'} Alimentación`"
+    >
+      <form @submit.prevent="guardarAlimentacion">
+        <div class="form-group">
+          <InputBase 
+            v-model="formAlimentacion.descripcion"
+            label="Descripción de la Alimentación:"
+            placeholder="Ej: DIETA VEGETARIANA"
+            required
+          />
+        </div>
+        
+        <div class="form-group">
+          <InputBase 
+            v-model="formAlimentacion.tipo"
+            label="Tipo:"
+            type="number"
+            placeholder="Ej: 1"
+            required
+          />
+        </div>
+        
+        <div class="form-group">
+          <BaseSelect 
+            v-model="formAlimentacion.vigente"
+            :options="estadosBooleanos"
             label="Estado:"
             required
           />
@@ -486,13 +564,14 @@
 
 <script setup>
 import { ref, computed, reactive } from 'vue'
-import BaseAlert from '@/components/Reutilizables/BaseAlert.vue'
-import BaseButton from '@/components/Reutilizables/BaseButton.vue'
-import BaseModal from '@/components/Reutilizables/BaseModal.vue'
-import BaseSelect from '@/components/Reutilizables/BaseSelect.vue'
-import InputBase from '@/components/Reutilizables/InputBase.vue'
-import DataTable from '@/components/Reutilizables/DataTable.vue'
-import DataCard from '@/components/Reutilizables/DataCard.vue'
+import BaseAlert from './BaseAlert.vue'
+import BaseButton from './BaseButton.vue'
+import BaseModal from './BaseModal.vue'
+import BaseSelect from './BaseSelect.vue'
+import BaseCheckBox from './BaseCheckBox.vue'
+import InputBase from './InputBase.vue'
+import DataTable from './DataTable.vue'
+import DataCard from './DataCard.vue'
 
 // Estado reactivo
 const activeTab = ref('zonas')
@@ -501,188 +580,175 @@ const editando = ref(false)
 const searchZonas = ref('')
 const searchDistritos = ref('')
 const searchGrupos = ref('')
-const filtroZona = ref('')
-const filtroDistrito = ref('')
 
-// Tabs de navegación
+// Tabs de navegación - Actualizadas según BD
 const tabs = [
   { id: 'zonas', label: 'Zonas', icon: '🗺️' },
   { id: 'distritos', label: 'Distritos', icon: '📍' },
   { id: 'grupos', label: 'Grupos Scout', icon: '👥' },
-  { id: 'secciones', label: 'Secciones', icon: '🏕️' },
-  { id: 'tipos-curso', label: 'Tipos de Curso', icon: '📚' },
-  { id: 'modalidades', label: 'Modalidades', icon: '💻' },
-  { id: 'estados', label: 'Estados', icon: '🔄' }
+  { id: 'ramas', label: 'Ramas', icon: '🏕️' },
+  { id: 'tipos-curso', label: 'Tipos Curso', icon: '📚' },
+  { id: 'cargos', label: 'Cargos', icon: '👔' },
+  { id: 'alimentacion', label: 'Alimentación', icon: '🍽️' }
 ]
 
-// Datos de ejemplo
+// Datos de ejemplo según estructura de BD
 const zonas = ref([
-  { id: 1, codigo: 'ZN-001', nombre: 'ZONA NORTE BIOBÍO', region: 'Biobío', distritos: 3, estado: 'Activo' },
-  { id: 2, codigo: 'ZN-002', nombre: 'ZONA SUR BIOBÍO', region: 'Biobío', distritos: 4, estado: 'Activo' },
-  { id: 3, codigo: 'ZN-003', nombre: 'ZONA COSTA BIOBÍO', region: 'Biobío', distritos: 2, estado: 'Activo' },
-  { id: 4, codigo: 'ZN-004', nombre: 'ZONA CORDILLERA BIOBÍO', region: 'Biobío', distritos: 3, estado: 'Activo' }
+  { id: 1, descripcion: 'ZONA NORTE BIOBÍO', unilateral: true, vigente: true },
+  { id: 2, descripcion: 'ZONA SUR BIOBÍO', unilateral: false, vigente: true },
+  { id: 3, descripcion: 'ZONA COSTA BIOBÍO', unilateral: true, vigente: true },
+  { id: 4, descripcion: 'ZONA CORDILLERA BIOBÍO', unilateral: false, vigente: true }
 ])
 
 const distritos = ref([
-  { id: 1, codigo: 'DT-001', nombre: 'DISTRITO CONCEPCIÓN', zona: 'ZONA NORTE BIOBÍO', grupos: 15, responsable: 'Juan Pérez', estado: 'Activo' },
-  { id: 2, codigo: 'DT-002', nombre: 'DISTRITO TALCAHUANO', zona: 'ZONA NORTE BIOBÍO', grupos: 8, responsable: 'María González', estado: 'Activo' },
-  { id: 3, codigo: 'DT-003', nombre: 'DISTRITO LOS ÁNGELES', zona: 'ZONA SUR BIOBÍO', grupos: 10, responsable: 'Carlos Ramírez', estado: 'Activo' }
+  { id: 1, descripcion: 'DISTRITO CONCEPCIÓN', zona_id: 1, vigente: true },
+  { id: 2, descripcion: 'DISTRITO TALCAHUANO', zona_id: 1, vigente: true },
+  { id: 3, descripcion: 'DISTRITO LOS ÁNGELES', zona_id: 2, vigente: true }
 ])
 
 const grupos = ref([
-  { id: 1, numero: 'GP-001', nombre: 'GRUPO ARAUCO', distrito: 'DISTRITO CONCEPCIÓN', comuna: 'Concepción', integrantes: 85, estado: 'Activo' },
-  { id: 2, numero: 'GP-002', nombre: 'GRUPO LAUTARO', distrito: 'DISTRITO TALCAHUANO', comuna: 'Talcahuano', integrantes: 72, estado: 'Activo' },
-  { id: 3, numero: 'GP-003', nombre: 'GRUPO CAUPOLICÁN', distrito: 'DISTRITO LOS ÁNGELES', comuna: 'Los Ángeles', integrantes: 68, estado: 'Activo' }
+  { id: 1, descripcion: 'GRUPO ARAUCO', distrito_id: 1, vigente: true },
+  { id: 2, descripcion: 'GRUPO LAUTARO', distrito_id: 2, vigente: true },
+  { id: 3, descripcion: 'GRUPO CAUPOLICÁN', distrito_id: 3, vigente: true }
 ])
 
-const secciones = ref([
-  { id: 1, codigo: 'SC-001', nombre: '🦫 CASTORES', edad: '5 - 7 años', color: 'Café', estado: 'Activo' },
-  { id: 2, codigo: 'SC-002', nombre: '🐺 LOBATOS', edad: '7 - 11 años', color: 'Amarillo', estado: 'Activo' },
-  { id: 3, codigo: 'SC-003', nombre: '🏕️ SCOUTS', edad: '11 - 15 años', color: 'Verde', estado: 'Activo' },
-  { id: 4, codigo: 'SC-004', nombre: '⛺ PIONEROS', edad: '15 - 17 años', color: 'Rojo', estado: 'Activo' },
-  { id: 5, codigo: 'SC-005', nombre: '🎒 ROVERS', edad: '17 - 21 años', color: 'Rojo Oscuro', estado: 'Activo' }
+const ramas = ref([
+  { id: 1, descripcion: 'LOBATOS', vigente: true },
+  { id: 2, descripcion: 'SCOUTS', vigente: true },
+  { id: 3, descripcion: 'PIONEROS', vigente: true },
+  { id: 4, descripcion: 'ROVERS', vigente: true }
 ])
 
 const tiposCurso = ref([
-  { id: 1, codigo: 'TC-001', nombre: 'BÁSICO', descripcion: 'Curso de formación inicial', duracion: '3 días', estado: 'Activo' },
-  { id: 2, codigo: 'TC-002', nombre: 'INTERMEDIO', descripcion: 'Curso de profundización', duracion: '4 días', estado: 'Activo' },
-  { id: 3, codigo: 'TC-003', nombre: 'AVANZADO', descripcion: 'Curso de especialización', duracion: '5 días', estado: 'Activo' },
-  { id: 4, codigo: 'TC-004', nombre: 'ESPECIALIZACIÓN', descripcion: 'Cursos temáticos específicos', duracion: '2 días', estado: 'Activo' }
+  { id: 1, descripcion: 'CURSO BÁSICO', tipo: 1, cant_participante: 30, vigente: true },
+  { id: 2, descripcion: 'CURSO INTERMEDIO', tipo: 2, cant_participante: 25, vigente: true },
+  { id: 3, descripcion: 'CURSO AVANZADO', tipo: 3, cant_participante: 20, vigente: true }
 ])
 
-const modalidades = ref([
-  { id: 1, codigo: 'MD-001', nombre: 'PRESENCIAL', descripcion: 'Curso realizado completamente en formato presencial', estado: 'Activo' },
-  { id: 2, codigo: 'MD-002', nombre: 'ONLINE', descripcion: 'Curso realizado completamente en formato virtual', estado: 'Activo' },
-  { id: 3, codigo: 'MD-003', nombre: 'HÍBRIDO', descripcion: 'Curso con sesiones presenciales y virtuales', estado: 'Activo' }
+const cargos = ref([
+  { id: 1, descripcion: 'JEFE DE GRUPO', vigente: true },
+  { id: 2, descripcion: 'SUBJEFE', vigente: true },
+  { id: 3, descripcion: 'TESORERO', vigente: true },
+  { id: 4, descripcion: 'SECRETARIO', vigente: true }
 ])
 
-const estados = ref([
-  { id: 1, codigo: 'EST-001', nombre: 'PREINSCRITO', modulo: 'Inscripciones', descripcion: 'Solicitud de inscripción recibida', color: 'Amarillo' },
-  { id: 2, codigo: 'EST-002', nombre: 'INSCRITO', modulo: 'Inscripciones', descripcion: 'Inscripción confirmada por administrador', color: 'Verde' },
-  { id: 3, codigo: 'EST-003', nombre: 'REGISTRADO', modulo: 'Inscripciones', descripcion: 'Pago confirmado, registro completo', color: 'Azul' },
-  { id: 4, codigo: 'EST-004', nombre: 'VIGENTE', modulo: 'Inscripciones', descripcion: 'Participante validado y asistiendo', color: 'Verde Oscuro' },
-  { id: 5, codigo: 'EST-005', nombre: 'FINALIZADO', modulo: 'Inscripciones', descripcion: 'Curso completado por el participante', color: 'Gris' },
-  { id: 6, codigo: 'EST-006', nombre: 'ANULADO', modulo: 'Inscripciones', descripcion: 'Inscripción cancelada (requiere justificación)', color: 'Rojo' },
-  { id: 7, codigo: 'EST-007', nombre: 'LISTA DE ESPERA', modulo: 'Inscripciones', descripcion: 'En espera por cupos completos', color: 'Gris Claro' }
+const alimentacion = ref([
+  { id: 1, descripcion: 'DIETA REGULAR', tipo: 1, vigente: true },
+  { id: 2, descripcion: 'DIETA VEGETARIANA', tipo: 2, vigente: true },
+  { id: 3, descripcion: 'DIETA VEGANA', tipo: 3, vigente: true }
 ])
 
 // Formularios
 const formZona = reactive({
   id: null,
-  codigo: '',
-  nombre: '',
-  region: '',
   descripcion: '',
-  estado: 'Activo'
+  unilateral: false,
+  vigente: true
 })
 
 const formDistrito = reactive({
   id: null,
-  codigo: '',
-  nombre: '',
-  zona: '',
-  responsable: '',
-  email: '',
-  estado: 'Activo'
+  descripcion: '',
+  zona_id: null,
+  vigente: true
 })
 
 const formGrupo = reactive({
   id: null,
-  numero: '',
-  nombre: '',
-  distrito: '',
-  comuna: '',
-  direccion: '',
-  jefe: '',
-  email: '',
-  telefono: '',
-  fechaFundacion: '',
-  estado: 'Activo'
+  descripcion: '',
+  distrito_id: null,
+  vigente: true
+})
+
+const formRama = reactive({
+  id: null,
+  descripcion: '',
+  vigente: true
+})
+
+const formTipoCurso = reactive({
+  id: null,
+  descripcion: '',
+  tipo: '',
+  cant_participante: '',
+  vigente: true
+})
+
+const formCargo = reactive({
+  id: null,
+  descripcion: '',
+  vigente: true
+})
+
+const formAlimentacion = reactive({
+  id: null,
+  descripcion: '',
+  tipo: '',
+  vigente: true
 })
 
 // Opciones para selects
-const regiones = ref(['Biobío', 'Ñuble', 'Araucanía'])
-const estadosSistema = ref(['Activo', 'Inactivo'])
+const estadosBooleanos = ref([
+  { value: true, label: 'Activo' },
+  { value: false, label: 'Inactivo' }
+])
 
 const opcionesZonas = computed(() => {
-  return ['Todas las zonas', ...new Set(zonas.value.map(z => z.nombre))]
+  return ['Todas las zonas', ...new Set(zonas.value.map(z => z.descripcion))]
 })
 
 const opcionesDistritos = computed(() => {
-  return ['Todos los distritos', ...new Set(distritos.value.map(d => d.nombre))]
+  return ['Todos los distritos', ...new Set(distritos.value.map(d => d.descripcion))]
 })
 
 const opcionesZonasSelect = computed(() => {
-  return zonas.value.map(z => ({ value: z.nombre, label: z.nombre }))
+  return zonas.value.map(z => ({ value: z.id, label: z.descripcion }))
 })
 
 const opcionesDistritosSelect = computed(() => {
-  return distritos.value.map(d => ({ value: d.nombre, label: d.nombre }))
+  return distritos.value.map(d => ({ value: d.id, label: d.descripcion }))
 })
 
-// Estadísticas
-const zonaStats = ref([
-  { title: 'Zonas Activas', value: '4', description: 'Total registrado' },
-  { title: 'Distritos Asociados', value: '12', description: 'En todas las zonas' },
-  { title: 'Grupos Totales', value: '45', description: 'Distribuidos por zona' }
-])
-
-// Columnas para DataTable
+// Columnas para DataTable - Actualizadas según BD
 const columnsZonas = ref([
-  { key: 'codigo', label: 'Código', sortable: true },
-  { key: 'nombre', label: 'Nombre Zona', sortable: true },
-  { key: 'region', label: 'Región', sortable: true },
-  { key: 'distritos', label: 'N° Distritos', sortable: true },
-  { key: 'estado', label: 'Estado', sortable: true }
+  { key: 'descripcion', label: 'Descripción', sortable: true },
+  { key: 'unilateral', label: 'Unilateral', sortable: true },
+  { key: 'vigente', label: 'Estado', sortable: true }
 ])
 
 const columnsDistritos = ref([
-  { key: 'codigo', label: 'Código', sortable: true },
-  { key: 'nombre', label: 'Nombre Distrito', sortable: true },
-  { key: 'zona', label: 'Zona', sortable: true },
-  { key: 'grupos', label: 'N° Grupos', sortable: true },
-  { key: 'responsable', label: 'Responsable', sortable: true },
-  { key: 'estado', label: 'Estado', sortable: true }
+  { key: 'descripcion', label: 'Descripción', sortable: true },
+  { key: 'zona_id', label: 'Zona', sortable: true },
+  { key: 'vigente', label: 'Estado', sortable: true }
 ])
 
 const columnsGrupos = ref([
-  { key: 'numero', label: 'N° Grupo', sortable: true },
-  { key: 'nombre', label: 'Nombre', sortable: true },
-  { key: 'distrito', label: 'Distrito', sortable: true },
-  { key: 'comuna', label: 'Comuna', sortable: true },
-  { key: 'integrantes', label: 'N° Integrantes', sortable: true },
-  { key: 'estado', label: 'Estado', sortable: true }
+  { key: 'descripcion', label: 'Descripción', sortable: true },
+  { key: 'distrito_id', label: 'Distrito', sortable: true },
+  { key: 'vigente', label: 'Estado', sortable: true }
 ])
 
-const columnsSecciones = ref([
-  { key: 'codigo', label: 'Código', sortable: true },
-  { key: 'nombre', label: 'Nombre Sección', sortable: true },
-  { key: 'edad', label: 'Rango de Edad', sortable: true },
-  { key: 'color', label: 'Color Distintivo', sortable: true },
-  { key: 'estado', label: 'Estado', sortable: true }
+const columnsRamas = ref([
+  { key: 'descripcion', label: 'Descripción', sortable: true },
+  { key: 'vigente', label: 'Estado', sortable: true }
 ])
 
 const columnsTiposCurso = ref([
-  { key: 'codigo', label: 'Código', sortable: true },
-  { key: 'nombre', label: 'Nombre Tipo', sortable: true },
   { key: 'descripcion', label: 'Descripción', sortable: true },
-  { key: 'duracion', label: 'Duración Típica', sortable: true },
-  { key: 'estado', label: 'Estado', sortable: true }
+  { key: 'tipo', label: 'Tipo', sortable: true },
+  { key: 'cant_participante', label: 'Cant. Participantes', sortable: true },
+  { key: 'vigente', label: 'Estado', sortable: true }
 ])
 
-const columnsModalidades = ref([
-  { key: 'codigo', label: 'Código', sortable: true },
-  { key: 'nombre', label: 'Nombre Modalidad', sortable: true },
+const columnsCargos = ref([
   { key: 'descripcion', label: 'Descripción', sortable: true },
-  { key: 'estado', label: 'Estado', sortable: true }
+  { key: 'vigente', label: 'Estado', sortable: true }
 ])
 
-const columnsEstados = ref([
-  { key: 'codigo', label: 'Código', sortable: true },
-  { key: 'nombre', label: 'Nombre Estado', sortable: true },
-  { key: 'modulo', label: 'Módulo', sortable: true },
+const columnsAlimentacion = ref([
   { key: 'descripcion', label: 'Descripción', sortable: true },
-  { key: 'color', label: 'Color', sortable: true }
+  { key: 'tipo', label: 'Tipo', sortable: true },
+  { key: 'vigente', label: 'Estado', sortable: true }
 ])
 
 // Computed para filtros
@@ -690,8 +756,7 @@ const filteredZonas = computed(() => {
   if (!searchZonas.value) return zonas.value
   const term = searchZonas.value.toLowerCase()
   return zonas.value.filter(zona => 
-    zona.nombre.toLowerCase().includes(term) || 
-    zona.codigo.toLowerCase().includes(term)
+    zona.descripcion.toLowerCase().includes(term)
   )
 })
 
@@ -701,12 +766,8 @@ const filteredDistritos = computed(() => {
   if (searchDistritos.value) {
     const term = searchDistritos.value.toLowerCase()
     filtered = filtered.filter(distrito => 
-      distrito.nombre.toLowerCase().includes(term)
+      distrito.descripcion.toLowerCase().includes(term)
     )
-  }
-  
-  if (filtroZona.value && filtroZona.value !== 'Todas las zonas') {
-    filtered = filtered.filter(distrito => distrito.zona === filtroZona.value)
   }
   
   return filtered
@@ -718,12 +779,8 @@ const filteredGrupos = computed(() => {
   if (searchGrupos.value) {
     const term = searchGrupos.value.toLowerCase()
     filtered = filtered.filter(grupo => 
-      grupo.nombre.toLowerCase().includes(term)
+      grupo.descripcion.toLowerCase().includes(term)
     )
-  }
-  
-  if (filtroDistrito.value && filtroDistrito.value !== 'Todos los distritos') {
-    filtered = filtered.filter(grupo => grupo.distrito === filtroDistrito.value)
   }
   
   return filtered
@@ -733,10 +790,30 @@ const filteredGrupos = computed(() => {
 const abrirModal = (tipo) => {
   modalActivo.value = tipo
   editando.value = false
-  // Limpiar formularios
-  Object.keys(formZona).forEach(key => formZona[key] = '')
-  Object.keys(formDistrito).forEach(key => formDistrito[key] = '')
-  Object.keys(formGrupo).forEach(key => formGrupo[key] = '')
+  // Limpiar formularios según el tipo
+  const forms = {
+    'crear-zona': formZona,
+    'crear-distrito': formDistrito,
+    'crear-grupo': formGrupo,
+    'crear-rama': formRama,
+    'crear-tipo-curso': formTipoCurso,
+    'crear-cargo': formCargo,
+    'crear-alimentacion': formAlimentacion
+  }
+  
+  const form = forms[tipo]
+  if (form) {
+    Object.keys(form).forEach(key => {
+      if (key === 'vigente') {
+        form[key] = true
+      } else if (key === 'unilateral') {
+        form[key] = false
+      } else {
+        form[key] = ''
+      }
+    })
+    form.id = null
+  }
 }
 
 const cerrarModal = () => {
@@ -744,17 +821,16 @@ const cerrarModal = () => {
   editando.value = false
 }
 
+// Métodos de guardado
 const guardarZona = () => {
   if (editando.value) {
-    // Actualizar zona existente
     const index = zonas.value.findIndex(z => z.id === formZona.id)
     if (index !== -1) {
       zonas.value[index] = { ...formZona }
     }
   } else {
-    // Crear nueva zona
     const nuevaZona = {
-      id: zonas.value.length + 1,
+      id: Math.max(...zonas.value.map(z => z.id)) + 1,
       ...formZona
     }
     zonas.value.push(nuevaZona)
@@ -764,15 +840,13 @@ const guardarZona = () => {
 
 const guardarDistrito = () => {
   if (editando.value) {
-    // Actualizar distrito existente
     const index = distritos.value.findIndex(d => d.id === formDistrito.id)
     if (index !== -1) {
       distritos.value[index] = { ...formDistrito }
     }
   } else {
-    // Crear nuevo distrito
     const nuevoDistrito = {
-      id: distritos.value.length + 1,
+      id: Math.max(...distritos.value.map(d => d.id)) + 1,
       ...formDistrito
     }
     distritos.value.push(nuevoDistrito)
@@ -782,15 +856,13 @@ const guardarDistrito = () => {
 
 const guardarGrupo = () => {
   if (editando.value) {
-    // Actualizar grupo existente
     const index = grupos.value.findIndex(g => g.id === formGrupo.id)
     if (index !== -1) {
       grupos.value[index] = { ...formGrupo }
     }
   } else {
-    // Crear nuevo grupo
     const nuevoGrupo = {
-      id: grupos.value.length + 1,
+      id: Math.max(...grupos.value.map(g => g.id)) + 1,
       ...formGrupo
     }
     grupos.value.push(nuevoGrupo)
@@ -798,7 +870,71 @@ const guardarGrupo = () => {
   cerrarModal()
 }
 
-// Métodos para acciones
+const guardarRama = () => {
+  if (editando.value) {
+    const index = ramas.value.findIndex(r => r.id === formRama.id)
+    if (index !== -1) {
+      ramas.value[index] = { ...formRama }
+    }
+  } else {
+    const nuevaRama = {
+      id: Math.max(...ramas.value.map(r => r.id)) + 1,
+      ...formRama
+    }
+    ramas.value.push(nuevaRama)
+  }
+  cerrarModal()
+}
+
+const guardarTipoCurso = () => {
+  if (editando.value) {
+    const index = tiposCurso.value.findIndex(t => t.id === formTipoCurso.id)
+    if (index !== -1) {
+      tiposCurso.value[index] = { ...formTipoCurso }
+    }
+  } else {
+    const nuevoTipoCurso = {
+      id: Math.max(...tiposCurso.value.map(t => t.id)) + 1,
+      ...formTipoCurso
+    }
+    tiposCurso.value.push(nuevoTipoCurso)
+  }
+  cerrarModal()
+}
+
+const guardarCargo = () => {
+  if (editando.value) {
+    const index = cargos.value.findIndex(c => c.id === formCargo.id)
+    if (index !== -1) {
+      cargos.value[index] = { ...formCargo }
+    }
+  } else {
+    const nuevoCargo = {
+      id: Math.max(...cargos.value.map(c => c.id)) + 1,
+      ...formCargo
+    }
+    cargos.value.push(nuevoCargo)
+  }
+  cerrarModal()
+}
+
+const guardarAlimentacion = () => {
+  if (editando.value) {
+    const index = alimentacion.value.findIndex(a => a.id === formAlimentacion.id)
+    if (index !== -1) {
+      alimentacion.value[index] = { ...formAlimentacion }
+    }
+  } else {
+    const nuevaAlimentacion = {
+      id: Math.max(...alimentacion.value.map(a => a.id)) + 1,
+      ...formAlimentacion
+    }
+    alimentacion.value.push(nuevaAlimentacion)
+  }
+  cerrarModal()
+}
+
+// Métodos para acciones - Cambiados a "Anular"
 const verZona = (zona) => {
   console.log('Ver zona:', zona)
 }
@@ -809,9 +945,12 @@ const editarZona = (zona) => {
   editando.value = true
 }
 
-const eliminarZona = (zona) => {
-  if (confirm(`¿Está seguro que desea eliminar la zona ${zona.nombre}?`)) {
-    zonas.value = zonas.value.filter(z => z.id !== zona.id)
+const anularZona = (zona) => {
+  if (confirm(`¿Está seguro que desea anular la zona ${zona.descripcion}?`)) {
+    const index = zonas.value.findIndex(z => z.id === zona.id)
+    if (index !== -1) {
+      zonas.value[index].vigente = false
+    }
   }
 }
 
@@ -825,9 +964,12 @@ const editarDistrito = (distrito) => {
   editando.value = true
 }
 
-const eliminarDistrito = (distrito) => {
-  if (confirm(`¿Está seguro que desea eliminar el distrito ${distrito.nombre}?`)) {
-    distritos.value = distritos.value.filter(d => d.id !== distrito.id)
+const anularDistrito = (distrito) => {
+  if (confirm(`¿Está seguro que desea anular el distrito ${distrito.descripcion}?`)) {
+    const index = distritos.value.findIndex(d => d.id === distrito.id)
+    if (index !== -1) {
+      distritos.value[index].vigente = false
+    }
   }
 }
 
@@ -841,18 +983,32 @@ const editarGrupo = (grupo) => {
   editando.value = true
 }
 
-const eliminarGrupo = (grupo) => {
-  if (confirm(`¿Está seguro que desea eliminar el grupo ${grupo.nombre}?`)) {
-    grupos.value = grupos.value.filter(g => g.id !== grupo.id)
+const anularGrupo = (grupo) => {
+  if (confirm(`¿Está seguro que desea anular el grupo ${grupo.descripcion}?`)) {
+    const index = grupos.value.findIndex(g => g.id === grupo.id)
+    if (index !== -1) {
+      grupos.value[index].vigente = false
+    }
   }
 }
 
-const verSeccion = (seccion) => {
-  console.log('Ver sección:', seccion)
+const verRama = (rama) => {
+  console.log('Ver rama:', rama)
 }
 
-const editarSeccion = (seccion) => {
-  console.log('Editar sección:', seccion)
+const editarRama = (rama) => {
+  Object.assign(formRama, rama)
+  modalActivo.value = 'crear-rama'
+  editando.value = true
+}
+
+const anularRama = (rama) => {
+  if (confirm(`¿Está seguro que desea anular la rama ${rama.descripcion}?`)) {
+    const index = ramas.value.findIndex(r => r.id === rama.id)
+    if (index !== -1) {
+      ramas.value[index].vigente = false
+    }
+  }
 }
 
 const verTipoCurso = (tipoCurso) => {
@@ -860,35 +1016,56 @@ const verTipoCurso = (tipoCurso) => {
 }
 
 const editarTipoCurso = (tipoCurso) => {
-  console.log('Editar tipo curso:', tipoCurso)
+  Object.assign(formTipoCurso, tipoCurso)
+  modalActivo.value = 'crear-tipo-curso'
+  editando.value = true
 }
 
-const eliminarTipoCurso = (tipoCurso) => {
-  if (confirm(`¿Está seguro que desea eliminar el tipo de curso ${tipoCurso.nombre}?`)) {
-    tiposCurso.value = tiposCurso.value.filter(t => t.id !== tipoCurso.id)
+const anularTipoCurso = (tipoCurso) => {
+  if (confirm(`¿Está seguro que desea anular el tipo de curso ${tipoCurso.descripcion}?`)) {
+    const index = tiposCurso.value.findIndex(t => t.id === tipoCurso.id)
+    if (index !== -1) {
+      tiposCurso.value[index].vigente = false
+    }
   }
 }
 
-const verModalidad = (modalidad) => {
-  console.log('Ver modalidad:', modalidad)
+const verCargo = (cargo) => {
+  console.log('Ver cargo:', cargo)
 }
 
-const editarModalidad = (modalidad) => {
-  console.log('Editar modalidad:', modalidad)
+const editarCargo = (cargo) => {
+  Object.assign(formCargo, cargo)
+  modalActivo.value = 'crear-cargo'
+  editando.value = true
 }
 
-const eliminarModalidad = (modalidad) => {
-  if (confirm(`¿Está seguro que desea eliminar la modalidad ${modalidad.nombre}?`)) {
-    modalidades.value = modalidades.value.filter(m => m.id !== modalidad.id)
+const anularCargo = (cargo) => {
+  if (confirm(`¿Está seguro que desea anular el cargo ${cargo.descripcion}?`)) {
+    const index = cargos.value.findIndex(c => c.id === cargo.id)
+    if (index !== -1) {
+      cargos.value[index].vigente = false
+    }
   }
 }
 
-const verEstado = (estado) => {
-  console.log('Ver estado:', estado)
+const verAlimentacion = (alimentacion) => {
+  console.log('Ver alimentación:', alimentacion)
 }
 
-const editarEstado = (estado) => {
-  console.log('Editar estado:', estado)
+const editarAlimentacion = (alimentacion) => {
+  Object.assign(formAlimentacion, alimentacion)
+  modalActivo.value = 'crear-alimentacion'
+  editando.value = true
+}
+
+const anularAlimentacion = (alimentacion) => {
+  if (confirm(`¿Está seguro que desea anular la alimentación ${alimentacion.descripcion}?`)) {
+    const index = alimentacion.value.findIndex(a => a.id === alimentacion.id)
+    if (index !== -1) {
+      alimentacion.value[index].vigente = false
+    }
+  }
 }
 </script>
 
