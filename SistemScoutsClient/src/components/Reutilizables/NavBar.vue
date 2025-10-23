@@ -10,8 +10,9 @@ const moreOpen = ref(false)
 // Full list provided by user
 const allLinks = [
   { label: 'Panel de Control', to: { name: 'dashboard' } },
-  { label: 'Usuarios y Roles', to: { name: 'mantenedores' } },
-  { label: 'Cursos y Capacitaciones', to: '#' },
+  { label: 'Usuarios y Roles', to: { name: 'usuarios' } },
+  { label: 'Mantenedores', to: { name: 'mantenedores' } },
+  { label: 'Cursos y Capacitaciones', to: { name: 'cursoscapacitaciones' } },
   { label: 'Inscripciones', to: '#' },
   { label: 'Gestión de Personas', to: { name: 'gestionpersonas' } },
   { label: 'Pagos', to: { name: 'pagosview' } },
