@@ -70,7 +70,7 @@
       </div>
 
   <!-- Ver/Editar persona -->
-  <BaseModal ref="baseModal" @close="cancelarEdicion">
+  <BaseModal v-model="editModalVisible" @close="cancelarEdicion">
         <template #default>
           <div class="modal-edit">
                 <header class="modal-header">
@@ -181,7 +181,7 @@
   </div>
 </template>
 
-      <!-- Datos ejemplo para pruebas -->
+      <!-- Datos ejemplo para pruebas/Remover después de las pruebas -->
 
 <script>
 import InputBase from '@/components/Reutilizables/InputBase.vue'
@@ -279,17 +279,9 @@ export default {
       // también mantener referencia al elemento original para la lógica de guardado
       this.personaSeleccionada = persona;
   this.pendingSave = false;
-      this.$nextTick(() => {
-        if (this.$refs.baseModal && typeof this.$refs.baseModal.openModal === 'function') {
-          this.$refs.baseModal.openModal();
-        }
-      });
     },
     cancelarEdicion() {
-      // cerrar BaseModal si está abierto
-      if (this.$refs.baseModal && typeof this.$refs.baseModal.closeModal === 'function') {
-        this.$refs.baseModal.closeModal();
-      }
+      // cerrar modal usando la propiedad reactiva
       this.editModalVisible = false;
       this.personaEditada = null;
       this.personaSeleccionada = null;
@@ -477,16 +469,14 @@ export default {
         }
       }
 
-      if (this.$refs.baseModal && typeof this.$refs.baseModal.closeModal === 'function') {
-        this.$refs.baseModal.closeModal();
-      }
+      // cerrar modal mediante la propiedad reactiva
       this.editModalVisible = false;
       this.personaSeleccionada = null;
       this.personaEditada = null;
       this.pendingSave = false;
     },
     prepararGuardado() {
-      // Marcar pendingSave para que el usuario confirme
+      // Marcar pendingSave para que el usuario confirme al guardar
       this.pendingSave = true;
       this.$nextTick(() => {
         const m = document.querySelector('.modal-edit');
