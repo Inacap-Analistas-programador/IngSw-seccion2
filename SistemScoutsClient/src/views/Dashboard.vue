@@ -1,141 +1,148 @@
 <template>
+  <div class="layout-root">
+    <div class="layout-content">
+      <main class="main">
   <div class="panel-container">
-    <header class="panel-header">
-      <h1>Panel de Control<br><span class="panel-sub">Segmentado por Curso</span></h1>
-    </header>
+          <header class="panel-header">
+            <h1>Panel de Control<br><span class="panel-sub">Segmentado por Curso</span></h1>
+          </header>
 
-    <!-- Tarjetas resumen -->
-    <section class="cards-row">
-      <DataCard
-        v-for="card in resumenCards"
-        :key="card.title"
-        :title="card.title"
-        :value="card.value"
-        :icon="card.icon"
-        :color="card.color"
-        @click="card.title === 'Total Inscripciones' ? mostrarTabla('clases') : card.title === 'Acreditados' ? mostrarTabla('ramas') : card.title === 'Pendientes' ? mostrarTabla('pendientes') : null"
-        style="cursor:pointer;"
-      />
-    </section>
-
-    <!-- Tabla de Clases -->
-    <section v-if="tablaVisible === 'clases'" class="stats-row">
-      <div class="tabla-header">
-        <h2>Totales por Clases</h2>
-        <button @click="cerrarTabla" class="close-btn">Cerrar</button>
-      </div>
-      <table class="stats-table">
-        <thead>
-          <tr>
-            <th>Clase</th>
-            <th>Inscritos</th>
-            <th>Acreditados</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="clase in clasesStats" :key="clase.clase">
-            <td>{{ clase.clase }}</td>
-            <td>{{ clase.inscritos }}</td>
-            <td>{{ clase.acreditados }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
-
-    <!-- Tabla de Ramas -->
-    <section v-if="tablaVisible === 'ramas'" class="stats-row">
-      <div class="tabla-header">
-        <h2>Totales por Ramas</h2>
-        <button @click="cerrarTabla" class="close-btn">Cerrar</button>
-      </div>
-      <table class="stats-table">
-        <thead>
-          <tr>
-            <th>Rama</th>
-            <th>Inscritos</th>
-                  <th>Acreditados</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="rama in ramasStats" :key="rama.rama">
-                  <td>{{ rama.rama }}</td>
-                  <td>{{ rama.inscritos }}</td>
-                  <td>{{ rama.acreditados }}</td>
-                </tr>
-              </tbody>
-            </table>
+          <!-- Tarjetas resumen -->
+          <section class="cards-row">
+            <DataCard
+              v-for="card in resumenCards"
+              :key="card.title"
+              :title="card.title"
+              :value="card.value"
+              :icon="card.icon"
+              :color="card.color"
+              @click="handleCardClick(card.title)"
+              style="cursor:pointer;"
+            />
           </section>
 
-          <!-- Tabla de Pendientes -->
-          <section v-if="tablaVisible === 'pendientes'" class="stats-row">
-            <div class="tabla-header">
+          <!-- Modals (appear as overlays; close by clicking outside) -->
+          <div class="collapsible-table" v-show="tablaVisible === 'clases'">
+            <div class="table-box">
+              <h2>Totales por Clases</h2>
+              <table class="stats-table compact">
+                <thead>
+                  <tr>
+                    <th>Clase</th>
+                    <th>Inscritos</th>
+                    <th>Acreditados</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="clase in clasesStats" :key="clase.clase">
+                    <td>{{ clase.clase }}</td>
+                    <td>{{ clase.inscritos }}</td>
+                    <td>{{ clase.acreditados }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="collapsible-table" v-show="tablaVisible === 'ramas'">
+            <div class="table-box">
+              <h2>Totales por Ramas</h2>
+              <table class="stats-table compact">
+                <thead>
+                  <tr>
+                    <th>Rama</th>
+                    <th>Inscritos</th>
+                    <th>Acreditados</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="rama in ramasStats" :key="rama.rama">
+                    <td>{{ rama.rama }}</td>
+                    <td>{{ rama.inscritos }}</td>
+                    <td>{{ rama.acreditados }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="collapsible-table" v-show="tablaVisible === 'pendientes'">
+            <div class="table-box">
               <h2>Pendientes por Grupo o Individuo</h2>
-              <button @click="cerrarTabla" class="close-btn">Cerrar</button>
-            </div>
-            <table class="stats-table">
-              <thead>
-                <tr>
-                  <th>Tipo</th>
-                  <th>Nombre</th>
-                  <th>Cantidad</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="pendiente in pendientesStats" :key="pendiente.tipo + '-' + pendiente.nombre">
-                  <td>{{ pendiente.tipo }}</td>
-                  <td>
-                    <span v-if="pendiente.tipo === 'Grupo'" class="grupo-link" @click="verMiembrosGrupo(pendiente)">{{ pendiente.nombre }}</span>
-                    <span v-else>{{ pendiente.nombre }}</span>
-                  </td>
-                  <td>{{ pendiente.cantidad }}</td>
-                </tr>
-              </tbody>
-            </table>
+              <table class="stats-table compact">
+                <thead>
+                  <tr>
+                    <th>Tipo</th>
+                    <th>Nombre</th>
+                    <th>Cantidad</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="pendiente in pendientesStats" :key="pendiente.tipo + '-' + pendiente.nombre">
+                    <td>{{ pendiente.tipo }}</td>
+                    <td>
+                      <span v-if="pendiente.tipo === 'Grupo'" class="grupo-link" @click.stop="verMiembrosGrupo(pendiente)">{{ pendiente.nombre }}</span>
+                      <span v-else>{{ pendiente.nombre }}</span>
+                    </td>
+                    <td>{{ pendiente.cantidad }}</td>
+                  </tr>
+                </tbody>
+              </table>
 
-            <!-- Miembros del grupo -->
-            <div v-if="grupoSeleccionado" class="miembros-modal">
-              <div class="tabla-header">
+              <!-- Miembros del grupo -->
+              <div v-if="grupoSeleccionado" class="miembros-modal">
                 <h3>Miembros de {{ grupoSeleccionado.nombre }}</h3>
-                <button @click="cerrarMiembrosGrupo" class="close-btn">Cerrar</button>
+                <ul class="miembros-list">
+                  <li v-for="miembro in grupoSeleccionado.miembros" :key="miembro">{{ miembro }}</li>
+                </ul>
               </div>
-              <ul class="miembros-list">
-                <li v-for="miembro in grupoSeleccionado.miembros" :key="miembro">{{ miembro }}</li>
-              </ul>
             </div>
-          </section>
+          </div>
 
-          <!-- Lista de cursos -->
-          <section class="list-row">
+          <!-- Cursos: botón que abre modal resumida -->
+          <section class="list-row compact-list">
             <h2>Cursos Disponibles</h2>
-            <DataCardList :items="cursosList" />
+            <button class="courses-btn" @click="toggleCursos">Ver cursos</button>
           </section>
 
-          <!-- Fila de datos (DataRow) -->
-          <section class="datarow-row">
-            <h2>Detalle Seleccionado</h2>
-            <table style="width:100%">
-              <tbody>
-                <DataRow :rowData="dataRowObject" :fields="['Usuario','Curso','Estado']" />
-              </tbody>
-            </table>
-          </section>
-
-          <!-- Tabla de inscripciones -->
-          <section class="table-row wide-table-row">
-            <h2>Últimas Inscripciones</h2>
-            <DataTable :columns="tableColumns" :rows="inscripciones" />
-          </section>
+          <!-- Cursos modal -->
+          <div class="collapsible-table" v-show="cursosVisible">
+            <div class="table-box">
+              <h2>Cursos Disponibles</h2>
+              <div class="courses-list">
+                <table class="stats-table compact">
+                  <thead>
+                    <tr>
+                      <th>Curso</th>
+                      <th>Inscritos</th>
+                      <th>Capacidad</th>
+                      <th>Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="curso in cursosList" :key="curso.title">
+                      <td>{{ curso.title }}</td>
+                      <td>{{ curso.inscritos }}</td>
+                      <td>{{ curso.capacidad }}</td>
+                      <td><span :class="['badge-dot', cursoAlert(curso)]" aria-hidden="true"></span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
-      
+      </main>
+    </div>
+  </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
 const sidebarOpen = ref(true)
+import { ref, onMounted, onUnmounted } from 'vue'
 import DataCard from '@/components/Reutilizables/DataCard.vue'
-import DataCardList from '@/components/Reutilizables/DataCardList.vue'
-import DataTable from '@/components/Reutilizables/DataTable.vue'
-import DataRow from '@/components/Reutilizables/DataRow.vue'
+// DataCardList removed: courses shown via modal button
+import NavBar from '@/components/Reutilizables/NavBar.vue'
 const resumenCards = ref([
   { title: 'Total Inscripciones', value: 120, icon: 'mdi-account-multiple', color: '#3498db' },
   { title: 'Acreditados', value: 85, icon: 'mdi-check-circle', color: '#2ecc71' },
@@ -143,53 +150,39 @@ const resumenCards = ref([
 ])
 
 const cursosList = ref([
-  { title: 'Formación de Dirigentes', description: 'Curso para líderes scouts', icon: 'mdi-school', color: '#2980b9' },
-  { title: 'Curso de Especialidades', description: 'Especialidades scouts', icon: 'mdi-star', color: '#8e44ad' },
-  { title: 'Curso Básico Scout', description: 'Curso inicial para scouts', icon: 'mdi-campfire', color: '#16a085' }
+  { title: 'Formación de Dirigentes', inscritos: 22, capacidad: 25, icon: 'mdi-school', color: '#2980b9' },
+  { title: 'Curso de Especialidades', inscritos: 10, capacidad: 20, icon: 'mdi-star', color: '#8e44ad' },
+  { title: 'Curso Básico Scout', inscritos: 28, capacidad: 30, icon: 'mdi-campfire', color: '#16a085' }
 ])
 
-const tableColumns = [
-  { label: 'FechaHora', field: 'fecha' },
-  { label: 'Nombre', field: 'nombre' },
-  { label: 'Curso', field: 'curso' },
-  { label: 'Estado', field: 'estado' }
-]
+// Removed detailed inscripciones and DataRow: dashboard is summarized
 
-const inscripciones = ref([])
-
-// Ejemplo de datos para DataRow
-const dataRowObject = ref({
-  Usuario: 'JUAN PÉREZ GONZÁLEZ',
-  Curso: 'SCOUTS',
-})
-
-// Simula llamada a API
-async function fetchInscripciones() {
-  // Aquí iría la llamada real a la API
-  await new Promise(resolve => setTimeout(resolve, 500))
-  inscripciones.value = [
-    { fecha: '26/09/2015 12:55', nombre: 'JUAN PÉREZ GONZÁLEZ', curso: 'SCOUTS', estado: 'Acreditado' },
-    { fecha: '26/09/2015 12:52', nombre: 'MARÍA RAMÍREZ LÓPEZ', curso: 'ROVERS', estado: 'Pendiente' },
-    { fecha: '26/09/2015 12:50', nombre: 'CARLOS RAMÍREZ SOTO', curso: 'PIONEROS', estado: 'Acreditado' }
-  ]
+// Cursos modal state
+const cursosVisible = ref(false)
+function toggleCursos() {
+  cursosVisible.value = !cursosVisible.value
 }
 
-onMounted(() => {
-  fetchInscripciones()
-})
+function handleCardClick(title) {
+  if (title === 'Total Inscripciones') return mostrarTabla('clases')
+  if (title === 'Acreditados') return mostrarTabla('ramas')
+  if (title === 'Pendientes') {
+    // Toggle the pendientes inline popup; allow closing by clicking outside
+    if (tablaVisible.value === 'pendientes') {
+      cerrarTabla()
+    } else {
+      mostrarTabla('pendientes')
+    }
+  }
+}
 
-// Totales combinados por clase y rama (ejemplo básico)
-const totalesCombinados = ref([
-  { clase: 'Clase 1', rama: 'Rama Lobatos', inscritos: 15, acreditados: 10 },
-  { clase: 'Clase 1', rama: 'Rama Scouts', inscritos: 15, acreditados: 12 },
-  { clase: 'Clase 1', rama: 'Rama Rovers', inscritos: 10, acreditados: 8 },
-  { clase: 'Clase 2', rama: 'Rama Lobatos', inscritos: 10, acreditados: 8 },
-  { clase: 'Clase 2', rama: 'Rama Scouts', inscritos: 25, acreditados: 20 },
-  { clase: 'Clase 2', rama: 'Rama Rovers', inscritos: 15, acreditados: 12 },
-  { clase: 'Clase 3', rama: 'Rama Lobatos', inscritos: 5, acreditados: 4 },
-  { clase: 'Clase 3', rama: 'Rama Scouts', inscritos: 15, acreditados: 13 },
-  { clase: 'Clase 3', rama: 'Rama Rovers', inscritos: 10, acreditados: 8 }
-])
+function cursoAlert(curso) {
+  if (curso.inscritos >= curso.capacidad) return 'full'
+  if (curso.inscritos >= curso.capacidad * 0.7) return 'near'
+  return 'ok'
+}
+
+// Removed combined totals to keep dashboard summarized
 
 const clasesStats = ref([
   { clase: 'Clase 1', inscritos: 40, acreditados: 30 },
@@ -220,12 +213,128 @@ function cerrarMiembrosGrupo() {
 }
 
 const tablaVisible = ref(null) // 'clases' | 'ramas' | null
+const modalContentRef = ref(null)
+
 function mostrarTabla(tipo) {
   tablaVisible.value = tipo
+  // lock scroll only for full-screen modals (clases, ramas)
+  if (tipo === 'clases' || tipo === 'ramas') {
+    document.body.style.overflow = 'hidden'
+  } else {
+    document.body.style.overflow = ''
+  }
+  // next tick focus modal
+  setTimeout(() => {
+    if (modalContentRef.value) modalContentRef.value.focus()
+  }, 0)
 }
 function cerrarTabla() {
   tablaVisible.value = null
+  grupoSeleccionado.value = null
+  cursosVisible.value = false
+  document.body.style.overflow = ''
 }
+
+// Close on Escape
+function onKeydown(e) {
+  if (e.key === 'Escape') cerrarTabla()
+}
+onMounted(() => {
+  window.addEventListener('keydown', onKeydown)
+  // Try to load real data from the API. If the API is not available or CORS blocks us,
+  // the dashboard will keep the sample data defined above.
+  const API_BASE = '/api/' // project urls.py registers ApiScouts under /api/
+
+  async function safeFetchModel(modelName) {
+    try {
+      const res = await fetch(API_BASE + encodeURIComponent(modelName) + '/')
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      return data
+    } catch (err) {
+      // silent fallback: return null so caller keeps sample data
+      console.warn('Failed to fetch', modelName, err)
+      return null
+    }
+  }
+
+  ;(async () => {
+    // Fetch Cursos
+    const cursos = await safeFetchModel('Curso')
+    if (cursos && Array.isArray(cursos)) {
+      // Map minimal fields into cursosList shape used by the UI
+      cursosList.value = cursos.map(c => ({
+        title: c.CUR_DESCRIPCION || c.CUR_CODIGO || c.CURS_ID || 'Curso',
+        inscritos: parseInt(c._inscritos_count || 0) || 0,
+        capacidad: parseInt(c.CUR_COTA_CON_ALMUERZO || c.CUR_COTA_SIN_ALMUERZO || c.CUR_CANT_PARTICIPANTE || 0) || 0
+      }))
+    }
+
+    // Fetch Curso_Seccion to derive ramas or capacities if available
+    const secciones = await safeFetchModel('Curso_Seccion')
+    if (secciones && Array.isArray(secciones) && secciones.length > 0) {
+      // Try to compute inscritos per rama if persona-curso links are present
+      // We'll fetch Persona_Curso to compute counts
+      const perCurso = await safeFetchModel('Persona_Curso')
+      if (perCurso && Array.isArray(perCurso)) {
+        // Build counts by curso-seccion id
+        const countsByCus = {}
+        perCurso.forEach(pc => {
+          const cus = pc.CUS_ID || pc.cus_id || null
+          if (!cus) return
+          countsByCus[cus] = (countsByCus[cus] || 0) + 1
+        })
+
+        // augment cursosList with counts if CURS_ID/CUS_ID mapping available
+        cursosList.value = cursosList.value.map(c => {
+          // try find matching section by description or id
+          const match = secciones.find(s => (s.CUS_ID === c.title || s.CUR_ID === c.CUR_ID))
+          const inscritos = match ? (countsByCus[match.CUS_ID] || 0) : c.inscritos
+          return { ...c, inscritos }
+        })
+      }
+    }
+
+    // Fetch Rama and Grupo lists to power ramasStats and pendientes
+    const ramas = await safeFetchModel('Rama')
+    if (ramas && Array.isArray(ramas)) {
+      // map to ramasStats if not already present
+      ramasStats.value = ramas.map(r => ({ rama: r.RAM_DESCRIPCION || r.RAM_ID, inscritos: 0, acreditados: 0 }))
+    }
+
+    const grupos = await safeFetchModel('Grupo')
+    if (grupos && Array.isArray(grupos)) {
+      // map a pendientes groups
+      const gruposPend = grupos.slice(0, 6).map(g => ({ tipo: 'Grupo', nombre: g.GRU_DESCRIPCION || g.GRU_ID, cantidad: 0, miembros: [] }))
+      // Try fetch Persona_Grupo to get members
+      const pg = await safeFetchModel('Persona_Grupo')
+      if (pg && Array.isArray(pg)) {
+        const membersByGroup = {}
+        pg.forEach(item => {
+          const gru = item.GRU_ID || item.gru_id || null
+          const per = item.PER_ID || item.per_id || null
+          if (!gru) return
+          membersByGroup[gru] = membersByGroup[gru] || []
+          membersByGroup[gru].push(per)
+        })
+        gruposPend.forEach(g => {
+          // match group by id or description
+          const match = grupos.find(x => x.GRU_DESCRIPCION === g.nombre || x.GRU_ID === g.nombre)
+          if (match) {
+            const id = match.GRU_ID
+            g.miembros = (membersByGroup[id] || []).slice(0, 12)
+            g.cantidad = (membersByGroup[id] || []).length
+          }
+        })
+      }
+      pendientesStats.value = gruposPend.concat(pendientesStats.value.filter(p => p.tipo !== 'Grupo'))
+    }
+  })()
+})
+onUnmounted(() => {
+  window.removeEventListener('keydown', onKeydown)
+  document.body.style.overflow = ''
+})
 </script>
 
 <style scoped>
@@ -347,11 +456,7 @@ function cerrarTabla() {
   flex-direction: column;
   align-items: center;
   gap: 1.5rem;
-}
-
-/* Ensure readable text inside the white panel even if global theme sets light text */
-.panel-container, .panel-container * {
-  color: #222 !important;
+  position: relative; /* anchor popups */
 }
 
 
@@ -467,15 +572,122 @@ h2 {
   align-items: center;
   width: 100%;
 }
-.close-btn {
-  background: #e74c3c;
+
+/* collapsible inline tables */
+.collapsible-table { overflow: hidden; max-height: 0; transition: max-height 260ms ease, opacity 200ms ease; opacity: 0; }
+.collapsible-table[style], .collapsible-table[aria-expanded='true'], .collapsible-table[v-cloak] { opacity: 1 }
+.collapsible-table[style] { /* v-show adds inline style display:block; so this helps animate */ max-height: 1200px; }
+.table-box { background: #fff; border-radius: 12px; padding: 1rem; width: 100%; box-shadow: 0 6px 18px rgba(0,0,0,0.04); }
+
+/* Inline popups anchored to panel-container */
+.panel-container { position: relative; }
+.inline-popup {
+  position: absolute;
+  inset: auto 1.5rem auto 1.5rem;
+  display: block;
+  background: transparent;
+  align-items: flex-start;
+  justify-content: flex-start;
+  /* allow clicks on overlay so clicking outside popup will close it */
+  pointer-events: auto;
+}
+.inline-popup .modal-content.popup {
+  pointer-events: auto;
+  position: absolute;
+  right: 1.5rem;
+  top: 4.2rem;
+  width: 420px;
+  max-width: calc(100% - 3rem);
+  transform-origin: top right;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+  opacity: 0;
+  transform: translateY(-8px) scale(0.98);
+  transition: transform 260ms cubic-bezier(.2,.9,.2,1), opacity 220ms ease;
+  padding: 0.8rem;
+}
+.inline-popup .modal-content.popup {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.inline-popup .modal-content.popup::after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  right: 18px;
+  width: 12px;
+  height: 12px;
+  transform: rotate(45deg);
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+
+/* small card hover/focus animation */
+.cards-row .data-card { transition: transform 180ms ease, box-shadow 180ms ease; }
+.cards-row .data-card:hover, .cards-row .data-card:focus { transform: translateY(-6px); box-shadow: 0 12px 26px rgba(0,0,0,0.08); }
+
+/* badge pulse for near/full */
+.badge { transition: transform 240ms ease, box-shadow 240ms ease; }
+.badge.near { animation: pulse 2.4s infinite; }
+.badge.full { animation: pulse-strong 2s infinite; }
+
+/* badge-dot: small circular indicator (no text) */
+.badge-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; }
+.badge-dot.ok { background: #2ecc71; }
+.badge-dot.near { background: #e67e22; box-shadow: 0 6px 18px rgba(230,126,34,0.08); animation: pulse 2.4s infinite; }
+.badge-dot.full { background: #e74c3c; box-shadow: 0 8px 20px rgba(231,76,60,0.1); animation: pulse-strong 2s infinite; }
+
+@keyframes pulse {
+  0% { transform: scale(1); box-shadow: none }
+  50% { transform: scale(1.04); box-shadow: 0 6px 18px rgba(230,126,34,0.12) }
+  100% { transform: scale(1); box-shadow: none }
+}
+@keyframes pulse-strong {
+  0% { transform: scale(1); box-shadow: none }
+  50% { transform: scale(1.06); box-shadow: 0 8px 20px rgba(231,76,60,0.14) }
+  100% { transform: scale(1); box-shadow: none }
+}
+.stats-table.compact th, .stats-table.compact td {
+  padding: 0.4rem 0.6rem;
+}
+.miembros-modal {
+  margin-top: 0.6rem;
+  background: #fafafa;
+  padding: 0.6rem;
+  border-radius: 6px;
+}
+
+/* Courses modal */
+.courses-btn {
+  background: linear-gradient(90deg,#2980b9,#16a085);
   color: #fff;
   border: none;
-  border-radius: 4px;
-  padding: 0.3rem 0.7rem;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 0.9rem;
 }
+.courses-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.course-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem;
+  background: #fff;
+  border: 1px solid #eef3f7;
+  border-radius: 6px;
+}
+.badge {
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  color: #fff;
+}
+.badge.full { background: #e74c3c; }
+.badge.near { background: #e67e22; }
+.badge.ok { background: #2ecc71; }
 
 @media (max-width: 900px) {
   .main {
