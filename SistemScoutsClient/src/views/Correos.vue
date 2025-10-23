@@ -47,11 +47,15 @@
 						<div class="correos-card-header">
 							<span class="correos-card-title blue-bar">Lista de Participantes</span>
 							<div class="correos-card-actions">
-								<BaseButton variant="primary">📧 Exportar Correos</BaseButton>
-								<BaseButton variant="success">✅ Marcar Enviado</BaseButton>
+								<BaseButton variant="primary" @click="exportarCorreos">Exportar Correos</BaseButton>
+								<BaseButton variant="success" @click="marcarEnviado">Marcar Enviado</BaseButton>
+								<BaseButton variant="warning" @click="enviarPorCorreo">Enviar por correo</BaseButton>
 							</div>
 						</div>
-						<div class="correos-card-desc">Lista completa — aplica filtros para reducir resultados</div>
+						<div class="correos-card-desc">
+							<span v-if="loading" style="color: #3a8dde; font-weight: 600;"> (Cargando...)</span>
+							<span v-if="error" style="color: #d32f2f; font-weight: 600;"> ⚠️ {{ error }}</span>
+						</div>
 						<div class="datatable-visual">
 							<table class="datatable-table">
 								<thead>
@@ -59,22 +63,35 @@
 										<th></th>
 										<th>Nombre</th>
 										<th>Email</th>
+										<th>Vigente</th>
 										<th>Curso</th>
 										<th>Cargo</th>
 										<th>Pago</th>
-										<th>Días Pend.</th>
 										<th>Estado correo</th>
 									</tr>
 								</thead>
 								<tbody>
-									<tr v-for="row in rowsFiltered" :key="row.id">
-										<td><input type="checkbox" /></td>
+									<tr v-if="loading">
+										<td colspan="8" style="text-align: center; padding: 20px;">Cargando personas...</td>
+									</tr>
+									<tr v-else-if="error">
+										<td colspan="8" style="text-align: center; padding: 20px; color: #d32f2f;">{{ error }}</td>
+									</tr>
+									<tr v-else-if="!rowsFiltered.length">
+										<td colspan="8" style="text-align: center; padding: 20px;">No hay personas que coincidan con los filtros</td>
+									</tr>
+									<tr v-else v-for="row in rowsFiltered" :key="row.id">
+										<td><input type="checkbox" v-model="seleccion[row.id]" /></td>
 										<td class="cell-name">{{ row.nombre }}</td>
-										<td class="cell-email">{{ row.email }}</td>
+										<td class="cell-email">{{ row.email || '(sin email)' }}</td>
+										<td>
+											<span :class="['badge', row.vigente ? 'badge-success' : 'badge-pending']">
+												{{ row.vigente ? 'Vigente' : 'No vigente' }}
+											</span>
+										</td>
 										<td>{{ row.curso }}</td>
 										<td>{{ row.cargo }}</td>
 										<td>{{ row.estadoPago }}</td>
-										<td>{{ row.diasPendiente ?? '-' }}</td>
 										<td>
 											<span :class="['badge', row.estadoCorreo === 'Enviado' ? 'badge-success' : (row.estadoCorreo === 'Pendiente' ? 'badge-warning' : 'badge-pending')]">
 												{{ row.estadoCorreo }}
@@ -85,34 +102,71 @@
 							</table>
 						</div>
 					</section>
+
+					<!-- Modal QR simple -->
+					<div v-if="mostrarQR" class="qr-modal">
+						<div class="qr-modal-content">
+							<h3>Código QR generado</h3>
+							<p>Escanea para verificar el envío</p>
+							<canvas ref="qrCanvas"></canvas>
+							<div class="qr-actions">
+								<BaseButton variant="secondary" @click="cerrarQR">Cerrar</BaseButton>
+							</div>
+						</div>
+					</div>
 		</div>
 	</div>
 </template>
 
 
 <script setup>
-import { reactive, computed } from 'vue'
+import { reactive, computed, ref, onMounted, nextTick } from 'vue'
 import BaseButton from '../components/Reutilizables/BaseButton.vue'
+import QRCode from 'qrcode'
+import { obtenerPersonas } from '../services/dataService'
 
-// Datos de ejemplo. En producción esto vendría desde la API.
-const rowsCirculares = [
-	{ id: 1, nombre: 'JUAN PÉREZ', email: 'juan.perez@email.com', curso: 'Formación', cargo: 'Participante', estadoPago: 'Pagado', estadoCorreo: 'Enviado' },
-	{ id: 2, nombre: 'MARÍA GONZÁLEZ', email: 'maria.gonzalez@email.com', curso: 'Formación', cargo: 'Formador', estadoPago: 'Pendiente', estadoCorreo: 'Pendiente' },
-	{ id: 4, nombre: 'ANA LÓPEZ', email: 'ana.lopez@email.com', curso: 'Taller', cargo: 'Participante', estadoPago: 'Pagado', estadoCorreo: 'Enviado' }
-]
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api/core'
 
-const rowsCobranza = [
-	{ id: 3, nombre: 'CARLOS RAMÍREZ', email: 'carlos.ramirez@email.com', curso: 'Formación', cargo: 'Participante', estadoPago: 'Pendiente', estadoCorreo: 'No enviado', diasPendiente: '15 días' }
-]
-
-// Lista combinada
-const rows = [...rowsCirculares, ...rowsCobranza]
+// Datos reales desde la API
+const rows = ref([])
+const loading = ref(true)
+const error = ref(null)
 
 const filters = reactive({ curso: 'Todos', cargo: 'Todos', estadoPago: 'Todos', estadoCorreo: 'Todos' })
+const seleccion = reactive({})
+const mostrarQR = ref(false)
+const qrCanvas = ref(null)
+
+// Cargar personas desde la API
+onMounted(async () => {
+	try {
+		loading.value = true
+		error.value = null
+		// Consumir la API usando el dataService (maneja base URL y formato)
+		const personas = await obtenerPersonas()
+		rows.value = personas.map(p => ({
+			id: p.id,
+			nombre: p.nombre,
+			email: p.email || '',
+			curso: 'Formación', // TODO: obtener desde relación Persona_Curso
+			cargo: 'Participante', // TODO: obtener desde relación
+			estadoPago: 'Pendiente', // TODO: obtener desde módulo pagos
+			estadoCorreo: 'Pendiente',
+			diasPendiente: null,
+			vigente: p.vigente
+		}))
+		loading.value = false
+	} catch (e) {
+		console.error('Error cargando personas:', e)
+		// Muestra un mensaje más informativo para depurar (mantenerlo brevemente)
+		error.value = `No se pudieron cargar las personas${e?.message ? `: ${e.message}` : ''}`
+		loading.value = false
+	}
+})
 
 const cursos = computed(() => {
 	const s = new Set()
-	rows.forEach(r => s.add(r.curso))
+	rows.value.forEach(r => s.add(r.curso))
 	return Array.from(s)
 })
 
@@ -124,7 +178,106 @@ function matchesFilter(row) {
 	return true
 }
 
-const rowsFiltered = computed(() => rows.filter(matchesFilter))
+const rowsFiltered = computed(() => {
+	if (!rows.value) return []
+	return rows.value.filter(matchesFilter)
+})
+
+function exportarCorreos() {
+	const selIds = Object.keys(seleccion).filter(k => seleccion[k])
+	const items = rows.value.filter(r => selIds.includes(String(r.id)))
+	const correos = items.map(i => i.email).filter(e => e).join(', ')
+	if (!correos) {
+		alert('Selecciona al menos un destinatario con correo')
+		return
+	}
+	navigator.clipboard?.writeText(correos)
+	alert('Correos copiados al portapapeles')
+}
+
+async function marcarEnviado() {
+	const selIds = Object.keys(seleccion).filter(k => seleccion[k])
+	if (!selIds.length) {
+		alert('Selecciona al menos un registro')
+		return
+	}
+	
+	// Marca localmente como enviado
+	for (const r of rows.value) {
+		if (selIds.includes(String(r.id))) {
+			r.estadoCorreo = 'Enviado'
+		}
+	}
+	
+	// Llamar al backend para generar token firmado y persistirlo
+	try {
+		const response = await fetch(`${API_BASE}/qr-token/`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				ids: selIds.map(id => Number(id)),
+				tipo: 'correo-enviado',
+				expSeconds: 24 * 3600,
+				usuId: 1  // TODO: usar usuario autenticado
+			})
+		})
+		
+		if (!response.ok) {
+			const err = await response.json()
+			throw new Error(err.detail || 'Error al generar QR')
+		}
+		
+		const result = await response.json()
+		const token = result.token
+		
+		// Renderizar QR con el token del backend
+		mostrarQR.value = true
+		await nextTick()
+		await QRCode.toCanvas(qrCanvas.value, token, { width: 220 })
+	} catch (e) {
+		console.error('Error generando QR desde backend:', e)
+		alert('No se pudo generar el QR: ' + e.message)
+	}
+}
+
+function cerrarQR() {
+	mostrarQR.value = false
+}
+
+async function enviarPorCorreo() {
+	const selIds = Object.keys(seleccion).filter(k => seleccion[k])
+	if (!selIds.length) {
+		alert('Selecciona al menos un registro')
+		return
+	}
+
+	try {
+		const response = await fetch(`${API_BASE}/qr-email/`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				ids: selIds.map(id => Number(id)),
+				tipo: 'correo-enviado',
+				expSeconds: 24 * 3600,
+				usuId: 1
+			})
+		})
+		const result = await response.json()
+		if (!response.ok) throw new Error(result.detail || 'Error al enviar correos')
+
+		// Marcar como enviados localmente
+		for (const r of rows.value) {
+			if (selIds.includes(String(r.id)) && r.vigente && r.email) {
+				r.estadoCorreo = 'Enviado'
+			}
+		}
+
+		alert(`✅ Envío completado\n\nSolicitados: ${result.solicitados}\nProcesados (vigentes con email): ${result.procesados}\nEnviados: ${result.enviados}\n\nRevisa la consola del servidor para ver los correos.`)
+	} catch (e) {
+		console.error('Error enviando correos:', e)
+		alert('❌ No se pudieron enviar los correos: ' + e.message)
+	}
+}
 </script>
 
 <style scoped>
@@ -198,36 +351,42 @@ const rowsFiltered = computed(() => rows.filter(matchesFilter))
 }
 .correos-card-actions {
 	display: flex;
-	flex-wrap: wrap;
+	flex-wrap: nowrap;
 	gap: 12px;
-	width: 100%;
-	max-width: 420px;
 	justify-content: flex-end;
 }
 .correos-card-actions :deep(button),
 .correos-card-actions button {
-	min-width: 150px;
+	min-width: 160px;
+	padding: 10px 16px;
 	font-size: 1rem;
 	font-weight: 600;
 	border-radius: 8px;
 	box-shadow: 0 2px 8px rgba(40,92,168,0.08);
 	border: none;
-	transition: background 0.2s, box-shadow 0.2s;
+	transition: all 0.3s ease;
 }
 .correos-card-actions :deep(.bg-blue-600),
 .correos-card-actions button[variant="primary"] {
-	background: linear-gradient(90deg, #3a8dde 0%, #6ec6ff 100%);
+	background: #285ca8;
 	color: #fff;
 }
 .correos-card-actions :deep(.bg-green-600),
 .correos-card-actions button[variant="success"] {
-	background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%);
+	background: #1a7f37;
 	color: #fff;
 }
 .correos-card-actions :deep(.bg-yellow-400),
 .correos-card-actions button[variant="warning"] {
-	background: linear-gradient(90deg, #f7971e 0%, #ffd200 100%);
-	color: #333;
+	background: #b85c0b;
+	color: #fff;
+}
+.correos-card-actions button[variant="success"]:hover,
+.correos-card-actions button[variant="success"]:focus {
+	background: #34d058 !important; /* verde más brillante */
+	transform: translateY(-3px) scale(1.02);
+	box-shadow: 0 10px 24px rgba(46, 164, 79, 0.55), 0 0 0 3px rgba(46, 164, 79, 0.25) !important;
+	filter: none !important;
 }
 .correos-card-actions button:hover {
 	filter: brightness(0.95);
@@ -287,14 +446,14 @@ const rowsFiltered = computed(() => rows.filter(matchesFilter))
 	border: 1px solid #b6e2c7;
 }
 .badge-warning {
-	background: #fffbe6;
-	color: #b8860b;
-	border: 1px solid #ffe58f;
+	background: #fff9e6;
+	color: #b85c0b;
+	border: 1px solid #ffd966;
 }
 .badge-pending {
-	background: #fff3e6;
-	color: #b85c0b;
-	border: 1px solid #ffd8b3;
+	background: #ffe6e6;
+	color: #d32f2f;
+	border: 1px solid #ffb3b3;
 }
 input[type="checkbox"] {
 	width: 18px;
@@ -305,7 +464,9 @@ input[type="checkbox"] {
 	display: flex;
 	gap: 12px;
 	align-items: center;
-	margin: 10px 0 18px 0;
+	justify-content: flex-start;
+	margin: 10px 0 0 0;
+	padding: 0 8px 12px 50px;
 	flex-wrap: wrap;
 }
 .filters-bar label {
@@ -344,4 +505,24 @@ input[type="checkbox"] {
 		font-size: 0.97em;
 	}
 }
+</style>
+
+<style scoped>
+.qr-modal {
+	position: fixed;
+	inset: 0;
+	background: rgba(0,0,0,0.45);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.qr-modal-content {
+	background: #fff;
+	border-radius: 10px;
+	padding: 16px 20px;
+	box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+	min-width: 280px;
+	text-align: center;
+}
+.qr-actions { margin-top: 10px; display:flex; justify-content:center; }
 </style>
