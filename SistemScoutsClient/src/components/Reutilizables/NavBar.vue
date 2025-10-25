@@ -73,7 +73,7 @@ function onNavClick() {
     <!-- Logo y título -->
     <div class="navbar-left">
       <img :src="logoSrc" alt="Logo Scouts" class="logo" />
-      <span class="title">Scouts Biobío System</span>
+      <span class="title">SSB</span>
     </div>
 
     <!-- Enlaces de navegación -->
