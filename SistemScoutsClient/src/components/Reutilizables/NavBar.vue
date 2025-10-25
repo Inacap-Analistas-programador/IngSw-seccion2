@@ -73,7 +73,7 @@ function onNavClick() {
     <!-- Logo y título -->
     <div class="navbar-left">
       <img :src="logoSrc" alt="Logo Scouts" class="logo" />
-      <span class="title">SSB</span>
+      <span class="title">S.S.B</span>
     </div>
 
     <!-- Enlaces de navegación -->

@@ -97,8 +97,13 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'ssb',
+<<<<<<< HEAD:SystemScoutsApi/SystemScoutsApi/settings.py
         'USER': 'Alan',
         'PASSWORD': 'CDEFGAB1357.',
+=======
+        'USER': 'root',
+        'PASSWORD': '',
+>>>>>>> 768a88d1cb5ad30fa13c75f42a7f91564d42f1bc:SistemScoutsApi/SistemScoutsApi/settings.py
         'HOST': '127.0.0.1',
         'PORT': '3306',
         'OPTIONS': {
