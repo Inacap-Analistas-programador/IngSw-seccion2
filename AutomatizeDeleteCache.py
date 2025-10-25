@@ -2,7 +2,7 @@ import os
 import shutil
 
 # Ruta raíz desde donde quieres limpiar
-root_dir = r"D:\SistemaScoutsCursoMedio\IngSw-seccion2\SistemScoutsApi"  # Cambia esto a tu proyecto
+root_dir = r"D:\SistemaScoutsCursoMedio\IngSw-seccion2\SystemScoutsApi"  # Cambia esto a tu proyecto
 
 for dirpath, dirnames, filenames in os.walk(root_dir, topdown=False):
     # Eliminar __pycache__ si existe
