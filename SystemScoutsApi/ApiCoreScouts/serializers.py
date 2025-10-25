@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ..ModuloArchivos import models
+from .Models import models
 
 serializers_dict = {}
 

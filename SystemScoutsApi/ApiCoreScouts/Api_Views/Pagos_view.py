@@ -2,10 +2,6 @@ from rest_framework import viewsets
 from ..Serializers import Pagos_serializers as MP_S
 from ..Models.ModuloPagos import *
 
-class ConceptoViewSet(viewsets.ModelViewSet):
-    queryset = Concepto_Contable.objects.all()
-    serializer_class = MP_S.ConceptoContableSerializer
-
 class ProveedorViewSet(viewsets.ModelViewSet):
     queryset = Proveedor.objects.all()
     serializer_class = MP_S.ProveedorSerializer

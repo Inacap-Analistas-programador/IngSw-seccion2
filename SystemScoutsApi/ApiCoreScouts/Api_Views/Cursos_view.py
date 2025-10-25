@@ -29,7 +29,3 @@ class CursoSeccionViewSet(viewsets.ModelViewSet):
 class CursoFormadorViewSet(viewsets.ModelViewSet):
     queryset = Curso_Formador.objects.all()
     serializer_class = MC_S.CursoFormadorSerializer
-
-class TipoCursoViewSet(viewsets.ModelViewSet):
-    queryset = Tipo_Curso.objects.all()
-    serializer_class = MC_S.TipoCursoSerializer

@@ -1,54 +1,65 @@
 from django.db import models
-from .ModuloUsuarios import *
+from .ModuloPersonas import *
 from .ModuloCursos import *
-
-class Concepto_Contable(models.Model):
-    COC_ID = models.BigAutoField(primary_key=True)
-    COC_DESCRIPCION = models.CharField(max_length=50, null=False)
-    COC_VIGENTE = models.BooleanField(default=True, null=False)
+from .ModuloMantenedores import *
 
 class Proveedor(models.Model):
-    PRV_ID = models.BigAutoField(primary_key=True)
-    PRV_DESCRIPCION = models.CharField(max_length=100, null=False)
-    PRV_CELULAR1 = models.CharField(max_length=15, blank=True, null=False)
-    PRV_CELULAR2 = models.CharField(max_length=15, blank=True, null=True)
-    PRV_DIRECCION = models.CharField(max_length=100, blank=True, null=False)
-    PRV_OBSERVACION = models.CharField(max_length=500, blank=True, null=True)
-    PRV_VIGENTE = models.BooleanField(default=True, null=False)
+    PRV_ID = models.BigAutoField(primary_key=True, db_column='PRV_ID')
+    PRV_DESCRIPCION = models.CharField(max_length=100, null=False, db_column='PRV_DESCRIPCION')
+    PRV_CELULAR1 = models.CharField(max_length=15, blank=True, null=False, db_column='PRV_CELULAR1')
+    PRV_CELULAR2 = models.CharField(max_length=15, blank=True, null=True, db_column='PRV_CELULAR2')
+    PRV_DIRECCION = models.CharField(max_length=100, blank=True, null=False, db_column='PRV_DIRECCION')
+    PRV_OBSERVACION = models.CharField(max_length=500, blank=True, null=True, db_column='PRV_OBSERVACION')
+    PRV_VIGENTE = models.BooleanField(default=True, null=False, db_column='PRV_VIGENTE')
+
+    class Meta:
+        db_table = 'PROVEEDOR'
 
 class Comprobante_Pago(models.Model):
-    CPA_ID = models.BigAutoField(primary_key=True)
-    USU_ID = models.ForeignKey(Usuario, on_delete=models.PROTECT, null=False)
-    PEC_ID = models.ForeignKey(Curso, on_delete=models.PROTECT, null=False)
-    COC_ID = models.ForeignKey('Concepto_Contable', on_delete=models.PROTECT, null=False)
-    CPA_FECHA_HORA = models.DateTimeField(null=False)
-    CPA_FECHA = models.DateField(auto_now_add=True, null=False)
-    CPA_NUMERO = models.IntegerField(null=False)
-    CPA_VALOR = models.DecimalField(max_digits=21, decimal_places=2, null=False)
+    CPA_ID = models.BigAutoField(primary_key=True, db_column='CPA_ID')
+    USU_ID = models.ForeignKey(Usuario, on_delete=models.PROTECT, null=False, db_column='USU_ID')
+    PEC_ID = models.ForeignKey(Curso, on_delete=models.PROTECT, null=False, db_column='PEC_ID')
+    COC_ID = models.ForeignKey(Concepto_Contable, on_delete=models.PROTECT, null=False, db_column='COC_ID')
+    CPA_FECHA_HORA = models.DateTimeField(null=False, db_column='CPA_FECHA_HORA')
+    CPA_FECHA = models.DateField(auto_now_add=True, null=False, db_column='CPA_FECHA')
+    CPA_NUMERO = models.IntegerField(null=False, db_column='CPA_NUMERO')
+    CPA_VALOR = models.DecimalField(max_digits=21, decimal_places=2, null=False, db_column='CPA_VALOR')
+
+    class Meta:
+        db_table = 'COMPROBANTE_PAGO'
 
 class Pago_Comprobante(models.Model):
-    PCO_ID = models.BigAutoField(primary_key=True)
-    PAP_ID = models.ForeignKey('Pago_Persona', on_delete=models.PROTECT, null=False)
-    CPA_ID = models.ForeignKey('Comprobante_Pago', on_delete=models.PROTECT, null=False)
+    PCO_ID = models.BigAutoField(primary_key=True, db_column='PCO_ID')
+    PAP_ID = models.ForeignKey('Pago_Persona', on_delete=models.PROTECT, null=False, db_column='PAP_ID')
+    CPA_ID = models.ForeignKey('Comprobante_Pago', on_delete=models.PROTECT, null=False, db_column='CPA_ID')
+
+    class Meta:
+        db_table = 'PAGO_COMPROBANTE'
 
 class Pago_Persona(models.Model):
-    PAP_ID = models.BigAutoField(primary_key=True)
-    PER_ID = models.ForeignKey(Persona, on_delete=models.PROTECT, null=False)
-    CUR_ID = models.ForeignKey(Curso, on_delete=models.PROTECT, null=False)
-    USU_ID = models.ForeignKey(Usuario, on_delete=models.PROTECT, null=False)
-    PAP_FECHA_HORA = models.DateTimeField(null=False)
+    PAP_ID = models.BigAutoField(primary_key=True, db_column='PAP_ID')
+    PER_ID = models.ForeignKey(Persona, on_delete=models.PROTECT, null=False, db_column='PER_ID')
+    CUR_ID = models.ForeignKey(Curso, on_delete=models.PROTECT, null=False, db_column='CUR_ID')
+    USU_ID = models.ForeignKey(Usuario, on_delete=models.PROTECT, null=False, db_column='USU_ID')
+    PAP_FECHA_HORA = models.DateTimeField(null=False, db_column='PAP_FECHA_HORA')
     PAP_TIPO_OPCION = [
         (1, 'Ingreso'),
         (2, 'Egreso'),
     ]
-    PAP_VALOR = models.DecimalField(max_digits=21, decimal_places=6, null=False)
+    PAP_VALOR = models.DecimalField(max_digits=21, decimal_places=6, null=False, db_column='PAP_VALOR')
     PAP_OBSERVACION = models.CharField(max_length=500, null=True)
 
+    class Meta:
+        db_table = 'PAGO_PERSONA'
+
 class Prepago(models.Model):
-    PPA_ID = models.BigAutoField(primary_key=True)
-    PER_ID = models.ForeignKey(Persona, on_delete=models.PROTECT, null=False)
-    CUR_ID = models.ForeignKey(Curso, on_delete=models.PROTECT, null=False)
-    PAP_ID = models.ForeignKey('Pago_Persona', on_delete=models.PROTECT, null=True)
-    PPA_VALOR = models.DecimalField(max_digits=21, decimal_places=6, null=False)
-    PPA_OBSERVACION = models.CharField(max_length=500, null=True)
-    PPA_VIGENTE = models.BooleanField(default=True, null=False)
+    PPA_ID = models.BigAutoField(primary_key=True, db_column='PPA_ID')
+    PER_ID = models.ForeignKey(Persona, on_delete=models.PROTECT, null=False, db_column='PER_ID')
+    CUR_ID = models.ForeignKey(Curso, on_delete=models.PROTECT, null=False, db_column='CUR_ID')
+    PAP_ID = models.ForeignKey('Pago_Persona', on_delete=models.PROTECT, null=True, db_column='PAP_ID')
+    PPA_VALOR = models.DecimalField(max_digits=21, decimal_places=6, null=False, db_column='PPA_VALOR')
+    PPA_OBSERVACION = models.CharField(max_length=500, null=True, db_column='PPA_OBSERVACION')
+    PPA_VIGENTE = models.BooleanField(default=True, null=False, db_column='PPA_VIGENTE')
+
+    class Meta:
+        db_table = 'PREPAGO'

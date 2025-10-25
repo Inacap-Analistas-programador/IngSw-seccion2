@@ -6,11 +6,6 @@ class ProveedorSerializer(serializers.ModelSerializer):
             model = Proveedor
             fields = '__all__'
 
-class ConceptoContableSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Concepto_Contable
-        fields = '__all__'
-
 class ComprobantePagoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comprobante_Pago

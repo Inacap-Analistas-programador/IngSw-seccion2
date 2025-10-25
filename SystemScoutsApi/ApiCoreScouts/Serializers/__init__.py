@@ -3,6 +3,7 @@ from .Cursos_serializers import *
 from .Mantenedores_serializers import *
 from .Pagos_serializers import *
 from .Archivos_serializers import *
+from .Personas_serializers import *
 
 serializers_dict = {
     # USUARIOS y CURSOS

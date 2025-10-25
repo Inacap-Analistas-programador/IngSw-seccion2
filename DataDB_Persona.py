@@ -5,7 +5,7 @@ import random
 fake = Faker('es_CL')
 # ==== Variable const de los Modulos ====
 
-modulo = "modulousuariocurso"
+modulo = ""
 password_db = ""
 
 # ==== Conexión a la base de datos ====

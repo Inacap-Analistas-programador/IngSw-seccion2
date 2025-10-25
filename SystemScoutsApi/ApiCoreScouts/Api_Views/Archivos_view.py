@@ -13,7 +13,3 @@ class ArchivoCursoViewSet(viewsets.ModelViewSet):
 class ArchivoPersonaViewSet(viewsets.ModelViewSet):
     queryset = Archivo_Persona.objects.all()
     serializer_class = MA_S.ArchivoPersonaSerializer
-
-class TipoArchivoViewSet(viewsets.ModelViewSet):
-    queryset = Tipo_Archivo.objects.all()
-    serializer_class = MA_S.TipoArchivoSerializer

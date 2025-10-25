@@ -6,12 +6,11 @@ router = DefaultRouter()
 
 router = DefaultRouter()
 router.register(r'cursos', CursoViewSet, basename='curso')
-router.register(r'curso-cuotas', CursoCuotaViewSet, basename='curso-cuota')
-router.register(r'curso-fechas', CursoFechaViewSet, basename='curso-fecha')
-router.register(r'curso-alimentaciones', CursoAlimentacionViewSet, basename='curso-alimentacion')
-router.register(r'curso-coordinadores', CursoCoordinadorViewSet, basename='curso-coordinador')
-router.register(r'curso-secciones', CursoSeccionViewSet, basename='curso-seccion')
-router.register(r'curso-formadores', CursoFormadorViewSet, basename='curso-formador')
-router.register(r'tipo-cursos', TipoCursoViewSet, basename='tipo-curso')
+router.register(r'cuotas', CursoCuotaViewSet, basename='curso-cuota')
+router.register(r'fechas', CursoFechaViewSet, basename='curso-fecha')
+router.register(r'alimentaciones', CursoAlimentacionViewSet, basename='curso-alimentacion')
+router.register(r'coordinadores', CursoCoordinadorViewSet, basename='curso-coordinador')
+router.register(r'secciones', CursoSeccionViewSet, basename='curso-seccion')
+router.register(r'formadores', CursoFormadorViewSet, basename='curso-formador')
 
 urlpatterns = router.urls

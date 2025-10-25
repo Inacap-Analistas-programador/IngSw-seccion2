@@ -3,7 +3,6 @@ from rest_framework.routers import DefaultRouter
 from ..Api_Views.Pagos_view import *
 
 router = DefaultRouter()
-router.register(r'concepto-contable', ConceptoViewSet, basename='concepto-contable')
 router.register(r'proveedor', ProveedorViewSet, basename='proveedor')
 router.register(r'comprobante-pago', ComprobantePagoViewSet, basename='comprobante-pago')
 router.register(r'pago-comprobante', PagoComprobanteViewSet, basename='pago-comprobante')
