@@ -142,7 +142,6 @@ const sidebarOpen = ref(true)
 import { ref, onMounted, onUnmounted } from 'vue'
 import DataCard from '@/components/Reutilizables/DataCard.vue'
 // DataCardList removed: courses shown via modal button
-import NavBar from '@/components/Reutilizables/NavBar.vue'
 const resumenCards = ref([
   { title: 'Total Inscripciones', value: 120, icon: 'mdi-account-multiple', color: '#3498db' },
   { title: 'Acreditados', value: 85, icon: 'mdi-check-circle', color: '#2ecc71' },
