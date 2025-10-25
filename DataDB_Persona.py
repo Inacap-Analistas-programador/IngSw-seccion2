@@ -6,7 +6,7 @@ fake = Faker('es_CL')
 # ==== Variable const de los Modulos ====
 
 modulo = "modulousuariocurso"
-password_db = "27735378Hent@i"
+password_db = ""
 
 # ==== Conexión a la base de datos ====
 
