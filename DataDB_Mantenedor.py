@@ -6,15 +6,17 @@ fake = Faker('es_CL')
 # ==== Variable const de los Modulos ====
 
 modulo = "modulomantenedores"
+password_db = "27735378Hent@i"
 
 # ==== Conexión a la base de datos ====
 
 db = mysql.connector.connect(
     host="127.0.0.1",
     user="root",             # cambia esto
-    password="27735378Hent@i", # cambia esto
+    password=password_db,
     database="ssb"
 )
+
 cursor = db.cursor()
 
 # ==== Función para insertar múltiples registros ====
@@ -142,7 +144,7 @@ VALUES (%s, %s, %s)
 
 # ==== INDICADOR DE ÉXITO ====
 
-print("✅ Base de datos poblada con datos de ejemplo correctamente.")
+print(f"Datos de Persona y tablas relacionadas insertados correctamente con prefijo {modulo}")
 
 # ==== Cierre de conexión ====
 
