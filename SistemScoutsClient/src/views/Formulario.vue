@@ -5,7 +5,7 @@
       <div class="header-logo">
         <img src="@/assets/Logo_Boyscout_Chile.png" alt="Logo Scouts Chile" class="logo">
         <div class="header-text">
-          <h1 class="page-title">Formulario de Inscripción</h1>
+          <h1 class="page-title">Formulario de Pre-Inscripción</h1>
           <p class="page-subtitle">Curso Medio - Zona Biobío</p>
           <p class="institution">Asociación de Guías y Scouts de Chile</p>
         </div>
@@ -51,7 +51,7 @@
         <!-- Paso 1: Selección de Curso -->
         <div v-if="currentStep === 0" class="form-step">
           <h2 class="step-title">Selección de Curso</h2>
-          <p class="step-description">Seleccione el curso al que desea inscribirse</p>
+          <p class="step-description">Seleccione el curso al que desea pre-inscribirse</p>
           
           <div class="courses-grid">
             <div 
@@ -67,7 +67,6 @@
                 <p class="course-location">📍 {{ curso.ubicacion }}</p>
                 <div class="course-meta">
                   <span class="course-cupo">Cupos: {{ curso.inscritos }}/{{ curso.cupoMaximo }}</span>
-                  <span class="course-costo">${{ curso.costo.toLocaleString('es-CL') }}</span>
                 </div>
               </div>
               <div class="course-status" :class="curso.estado">
@@ -126,6 +125,18 @@
           </div>
 
           <div class="form-section">
+            <h3 class="section-title">Foto para Credencial</h3>
+            <FileUploader
+              v-model="formData.fotoParticipante"
+              label="Foto de cara del participante *"
+              accept="image/jpeg,image/png"
+              :required="true"
+              class="form-field"
+            />
+            <p class="field-note">Formato: JPEG o PNG. Foto frontal clara para la credencial.</p>
+          </div>
+
+          <div class="form-section">
             <h3 class="section-title">Contacto</h3>
             <div class="form-row">
               <InputBase
@@ -143,10 +154,13 @@
                 label="Teléfono *"
                 placeholder="+56 9 1234 5678"
                 :required="true"
-                rules="number"
-                class="form-field"
+                :rules="telefonoRules"
+                class="form-field telefono-field"
+                @focus="initializeTelefono"
+                @input="formatTelefono"
               />
             </div>
+            <p class="field-note">Formato requerido: +56 9 XXXXXXXX</p>
           </div>
         </div>
 
@@ -276,8 +290,10 @@
                 label="Teléfono Emergencia *"
                 placeholder="+56 9 1234 5678"
                 :required="true"
-                rules="number"
+                :rules="telefonoRules"
                 class="form-field"
+                @focus="initializeTelefonoEmergencia"
+                @input="formatTelefonoEmergencia"
               />
               
               <InputBase
@@ -332,6 +348,16 @@
                 class="checkbox-field"
               />
               
+              <div v-if="formData.tieneVehiculo" class="vehicle-info">
+                <InputBase
+                  v-model="formData.patenteVehiculo"
+                  label="Patente del vehículo *"
+                  placeholder="Ej: AB123CD"
+                  :required="formData.tieneVehiculo"
+                  class="form-field"
+                />
+              </div>
+              
               <BaseCheckBox
                 v-model="formData.requiereAlojamiento"
                 label="¿Requiere alojamiento durante el curso?"
@@ -357,7 +383,7 @@
                   <li>Compromiso de asistencia completa al curso</li>
                   <li>Cumplimiento del código de conducta scout</li>
                   <li>Autorización para uso de datos personales según ley 19.628</li>
-                  <li>Compromiso de pago oportuno de la cuota del curso</li>
+                  <li>Compromiso de completar el proceso de inscripción</li>
                 </ul>
               </div>
               
@@ -385,7 +411,7 @@
           
           <div class="summary-container">
             <div class="summary-section">
-              <h3 class="summary-title">Resumen de Inscripción</h3>
+              <h3 class="summary-title">Resumen de Pre-Inscripción</h3>
               
               <div class="summary-grid">
                 <div class="summary-item">
@@ -399,10 +425,6 @@
                 <div class="summary-item">
                   <strong>Ubicación:</strong>
                   <span>{{ getCursoSeleccionado().ubicacion }}</span>
-                </div>
-                <div class="summary-item">
-                  <strong>Costo:</strong>
-                  <span>${{ getCursoSeleccionado().costo.toLocaleString('es-CL') }}</span>
                 </div>
               </div>
             </div>
@@ -424,6 +446,10 @@
                   <span>{{ formData.email }}</span>
                 </div>
                 <div class="summary-item">
+                  <strong>Teléfono:</strong>
+                  <span>{{ formData.telefono }}</span>
+                </div>
+                <div class="summary-item">
                   <strong>Grupo Scout:</strong>
                   <span>{{ getLabel(grupos, formData.grupo) }}</span>
                 </div>
@@ -431,18 +457,27 @@
                   <strong>Rama:</strong>
                   <span>{{ getLabel(ramas, formData.rama) }}</span>
                 </div>
+                <div v-if="formData.tieneVehiculo" class="summary-item">
+                  <strong>Patente Vehículo:</strong>
+                  <span>{{ formData.patenteVehiculo }}</span>
+                </div>
+                <div class="summary-item">
+                  <strong>Foto:</strong>
+                  <span>{{ formData.fotoParticipante ? '✓ Subida' : '❌ Pendiente' }}</span>
+                </div>
               </div>
             </div>
 
-            <div class="payment-info">
-              <h3 class="summary-title">Información de Pago</h3>
-              <div class="payment-details">
-                <p><strong>Transferencia Bancaria</strong></p>
-                <p>Banco: Scout Chile</p>
-                <p>Cuenta Corriente: 123456789</p>
-                <p>RUT: 12.345.678-9</p>
-                <p>Email: tesoreria@scoutsbiobio.cl</p>
-                <p class="payment-note">⚠️ Envíe su comprobante de transferencia al email indicado</p>
+            <!-- Sección de Verificación -->
+            <div class="verification-section">
+              <div class="verification-badge">
+                <img src="@/assets/Logo_Boyscout_Chile.png" alt="Logo Scouts Chile" class="verification-logo">
+                <div class="verification-content">
+                  <div class="verified-tick">✓</div>
+                  <h3>¡Pre-inscripción Completada!</h3>
+                  <p>El participante ya está pre-inscrito en el sistema</p>
+                  <p class="verification-note">Recibirá un correo de confirmación con los siguientes pasos</p>
+                </div>
               </div>
             </div>
           </div>
@@ -482,7 +517,7 @@
             :loading="submitting"
             class="nav-button submit-button"
           >
-            {{ submitting ? 'Enviando...' : '✅ Confirmar Inscripción' }}
+            {{ submitting ? 'Enviando...' : '✅ Confirmar Pre-Inscripción' }}
           </BaseButton>
         </div>
       </form>
@@ -495,12 +530,12 @@
     >
       <div class="success-modal">
         <div class="success-icon">🎉</div>
-        <h3>¡Inscripción Exitosa!</h3>
+        <h3>¡Pre-Inscripción Exitosa!</h3>
         <p>Su formulario ha sido registrado correctamente en el sistema Scouts Biobío.</p>
         
         <div class="success-details">
           <div class="detail-item">
-            <strong>Número de Inscripción:</strong>
+            <strong>Número de Pre-Inscripción:</strong>
             <span class="inscription-number">#{{ numeroInscripcion }}</span>
           </div>
           <div class="detail-item">
@@ -510,6 +545,15 @@
           <div class="detail-item">
             <strong>Participante:</strong>
             <span>{{ formData.nombres }} {{ formData.apellidos }}</span>
+          </div>
+        </div>
+
+        <!-- Logo y verificación en el modal -->
+        <div class="modal-verification">
+          <img src="@/assets/Logo_Boyscout_Chile.png" alt="Logo Scouts Chile" class="modal-logo">
+          <div class="modal-verified">
+            <span class="modal-tick">✓</span>
+            <span>Pre-inscripción verificada</span>
           </div>
         </div>
         
@@ -537,22 +581,24 @@
 <script>
 import { ref, reactive, computed, onMounted } from 'vue'
 
-import BaseAlert from './components/reutilizables/BaseAlert.vue'
-import BaseButton from './components/reutilizables/BaseButton.vue'
-import BaseCheckBox from './components/reutilizables/BaseCheckBox.vue'
-import BaseModal from './components/reutilizables/BaseModal.vue'
-import BaseSelect from './components/reutilizables/BaseSelect.vue'
-import InputBase from './components/reutilizables/InputBase.vue'
+import BaseAlert from '@/components/Reutilizables/BaseAlert.vue'
+import BaseButton from '@/components/Reutilizables/BaseButton.vue'
+import BaseCheckBox from '@/components/Reutilizables/BaseCheckBox.vue'
+import BaseModal from '@/components/Reutilizables/BaseModal.vue'
+import BaseSelect from '@/components/Reutilizables/BaseSelect.vue'
+import InputBase from '@/components/Reutilizables/InputBase.vue'
+import FileUploader from '@/components/Reutilizables/FileUploader.vue'
 
 export default {
-  name: 'FormularioInscripcion',
+  name: 'FormularioPreInscripcion',
   components: {
     BaseAlert,
     BaseButton,
     BaseCheckBox,
     BaseModal,
     BaseSelect,
-    InputBase
+    InputBase,
+    FileUploader
   },
   setup() {
     const currentStep = ref(0)
@@ -579,7 +625,8 @@ export default {
       rut: '',
       fechaNacimiento: '',
       email: '',
-      telefono: '',
+      telefono: '+56 9 ',
+      fotoParticipante: null,
       
       // Paso 3
       region: '',
@@ -595,7 +642,7 @@ export default {
       alergias: '',
       limitaciones: '',
       contactoEmergenciaNombre: '',
-      contactoEmergenciaTelefono: '',
+      contactoEmergenciaTelefono: '+56 9 ',
       contactoEmergenciaParentesco: '',
       
       // Paso 5
@@ -603,6 +650,7 @@ export default {
       estadoCivil: '',
       apodo: '',
       tieneVehiculo: false,
+      patenteVehiculo: '',
       requiereAlojamiento: false,
       trabajaConNNAJ: false,
       aceptaTerminos: false,
@@ -612,8 +660,8 @@ export default {
     const systemAlert = reactive({
       visible: false,
       type: 'informacion',
-      title: 'Bienvenido al Sistema de Inscripción',
-      message: 'Complete el formulario para inscribirse en los cursos de la Zona Biobío.'
+      title: 'Bienvenido al Sistema de Pre-Inscripción',
+      message: 'Complete el formulario para pre-inscribirse en los cursos de la Zona Biobío.'
     })
 
     // Datos para selects y opciones
@@ -625,7 +673,6 @@ export default {
         ubicacion: 'Campamento Los Pinos, Concepción',
         cupoMaximo: 26,
         inscritos: 18,
-        costo: 85000,
         estado: 'disponible',
         icono: '🏕️'
       },
@@ -636,7 +683,6 @@ export default {
         ubicacion: 'Sede Scouts Talcahuano',
         cupoMaximo: 20,
         inscritos: 20,
-        costo: 45000,
         estado: 'lleno',
         icono: '🩹'
       },
@@ -647,7 +693,6 @@ export default {
         ubicacion: 'Reserva Nacional Nonguén',
         cupoMaximo: 25,
         inscritos: 12,
-        costo: 55000,
         estado: 'disponible',
         icono: '🌿'
       }
@@ -702,14 +747,30 @@ export default {
       { value: 'diabetico', label: 'Diabético' }
     ]
 
+    // Validación personalizada para teléfono chileno
+    const telefonoRules = (value) => {
+      if (!value) return 'Teléfono es requerido'
+      const telefonoRegex = /^\+56\s9\s\d{4}\s\d{4}$/
+      if (!telefonoRegex.test(value)) {
+        return 'Formato requerido: +56 9 XXXXXXXX'
+      }
+      return true
+    }
+
     // Computed properties
     const currentStepValid = computed(() => {
       const validations = {
         0: () => formData.cursoId !== '',
-        1: () => formData.nombres && formData.apellidos && formData.rut && formData.email && formData.telefono,
-        2: () => formData.region && formData.distrito && formData.grupo && formData.rama && formData.rol && formData.nivel,
-        3: () => formData.alimentacion && formData.contactoEmergenciaNombre && formData.contactoEmergenciaTelefono && formData.contactoEmergenciaParentesco,
-        4: () => formData.aceptaTerminos,
+        1: () => formData.nombres && formData.apellidos && formData.rut && 
+                 formData.email && formData.telefono && formData.fotoParticipante &&
+                 telefonoRules(formData.telefono) === true,
+        2: () => formData.region && formData.distrito && formData.grupo && 
+                 formData.rama && formData.rol && formData.nivel,
+        3: () => formData.alimentacion && formData.contactoEmergenciaNombre && 
+                 formData.contactoEmergenciaTelefono && formData.contactoEmergenciaParentesco &&
+                 telefonoRules(formData.contactoEmergenciaTelefono) === true,
+        4: () => formData.aceptaTerminos && 
+                 (formData.tieneVehiculo ? formData.patenteVehiculo !== '' : true),
         5: () => true // Paso de confirmación siempre es válido
       }
       return validations[currentStep.value] ? validations[currentStep.value]() : false
@@ -748,6 +809,58 @@ export default {
       return option ? option.label : ''
     }
 
+    // Inicializar teléfono con formato
+    const initializeTelefono = () => {
+      if (!formData.telefono || formData.telefono === '+56 9 ') {
+        formData.telefono = '+56 9 '
+      }
+    }
+
+    const initializeTelefonoEmergencia = () => {
+      if (!formData.contactoEmergenciaTelefono || formData.contactoEmergenciaTelefono === '+56 9 ') {
+        formData.contactoEmergenciaTelefono = '+56 9 '
+      }
+    }
+
+    // Formatear teléfono chileno
+    const formatTelefono = () => {
+      let value = formData.telefono.replace(/\D/g, '')
+      
+      // Asegurar que siempre empiece con 569
+      if (!value.startsWith('569')) {
+        value = '569' + value.replace(/^569/, '')
+      }
+      
+      // Mantener solo los primeros 11 dígitos (569 + 8 dígitos)
+      value = value.substring(0, 11)
+      
+      if (value.length > 3) {
+        const parte1 = value.substring(3, 7) // primeros 4 dígitos después de 569
+        const parte2 = value.substring(7, 11) // últimos 4 dígitos
+        
+        formData.telefono = `+56 9 ${parte1}${parte2 ? ' ' + parte2 : ''}`
+      }
+    }
+
+    const formatTelefonoEmergencia = () => {
+      let value = formData.contactoEmergenciaTelefono.replace(/\D/g, '')
+      
+      // Asegurar que siempre empiece con 569
+      if (!value.startsWith('569')) {
+        value = '569' + value.replace(/^569/, '')
+      }
+      
+      // Mantener solo los primeros 11 dígitos (569 + 8 dígitos)
+      value = value.substring(0, 11)
+      
+      if (value.length > 3) {
+        const parte1 = value.substring(3, 7) // primeros 4 dígitos después de 569
+        const parte2 = value.substring(7, 11) // últimos 4 dígitos
+        
+        formData.contactoEmergenciaTelefono = `+56 9 ${parte1}${parte2 ? ' ' + parte2 : ''}`
+      }
+    }
+
     const nextStep = () => {
       if (currentStepValid.value) {
         currentStep.value++
@@ -774,15 +887,15 @@ export default {
         // Simulación de envío a API Django
         await new Promise(resolve => setTimeout(resolve, 3000))
         
-        // Generar número de inscripción
+        // Generar número de pre-inscripción
         const timestamp = new Date().getTime().toString().slice(-6)
         numeroInscripcion.value = `SC${timestamp}`
         
         showSuccessModal.value = true
-        showAlert('exito', 'Inscripción exitosa', `Su inscripción #${numeroInscripcion.value} ha sido registrada correctamente.`)
+        showAlert('exito', 'Pre-inscripción exitosa', `Su pre-inscripción #${numeroInscripcion.value} ha sido registrada correctamente.`)
         
       } catch (error) {
-        showAlert('error', 'Error en la inscripción', 'Ha ocurrido un error al procesar su solicitud. Por favor intente nuevamente.')
+        showAlert('error', 'Error en la pre-inscripción', 'Ha ocurrido un error al procesar su solicitud. Por favor intente nuevamente.')
       } finally {
         submitting.value = false
       }
@@ -790,14 +903,17 @@ export default {
 
     const handleModalClose = () => {
       showSuccessModal.value = false
-      // Resetear formulario para nueva inscripción
+      // Resetear formulario para nueva pre-inscripción
       Object.keys(formData).forEach(key => {
         if (typeof formData[key] === 'boolean') {
           formData[key] = false
+        } else if (key === 'telefono' || key === 'contactoEmergenciaTelefono') {
+          formData[key] = '+56 9 '
         } else {
           formData[key] = ''
         }
       })
+      formData.fotoParticipante = null
       currentStep.value = 0
     }
 
@@ -807,7 +923,7 @@ export default {
 
     onMounted(() => {
       // Inicialización cuando el componente se monta
-      console.log('Formulario de inscripción Scouts Biobío montado')
+      console.log('Formulario de pre-inscripción Scouts Biobío montado')
     })
 
     return {
@@ -826,12 +942,17 @@ export default {
       roles,
       niveles,
       tiposAlimentacion,
+      telefonoRules,
       currentStepValid,
       formValid,
       clearSystemAlert,
       selectCurso,
       getCursoSeleccionado,
       getLabel,
+      initializeTelefono,
+      initializeTelefonoEmergencia,
+      formatTelefono,
+      formatTelefonoEmergencia,
       nextStep,
       previousStep,
       submitForm,
@@ -843,6 +964,9 @@ export default {
 </script>
 
 <style scoped>
+/* Los estilos se mantienen igual que en la versión anterior */
+/* Solo se han eliminado las referencias a costos en los estilos */
+
 .formulario-scouts {
   min-height: 100vh;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
@@ -1066,6 +1190,22 @@ export default {
   margin-bottom: 1rem;
 }
 
+.field-note {
+  font-size: 0.85rem;
+  color: #6c757d;
+  margin-top: -0.5rem;
+  margin-bottom: 1rem;
+  font-style: italic;
+}
+
+.vehicle-info {
+  margin-left: 2rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #2c5aa0;
+}
+
 /* Estilos para la selección de cursos */
 .courses-grid {
   display: grid;
@@ -1134,12 +1274,6 @@ export default {
 .course-cupo {
   color: #495057;
   font-size: 0.9rem;
-}
-
-.course-costo {
-  color: #28a745;
-  font-weight: 600;
-  font-size: 1.1rem;
 }
 
 .course-status {
@@ -1256,26 +1390,53 @@ export default {
   color: #495057;
 }
 
-.payment-info {
-  background: #fff3cd;
-  border: 1px solid #ffeaa7;
-  border-radius: 8px;
-  padding: 1.5rem;
+/* Sección de verificación */
+.verification-section {
+  margin-top: 2rem;
+  padding: 2rem;
+  background: linear-gradient(135deg, #f8fff8 0%, #e8f5e8 100%);
+  border-radius: 12px;
+  border: 2px solid #28a745;
 }
 
-.payment-details {
-  color: #856404;
+.verification-badge {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  text-align: left;
 }
 
-.payment-details p {
+.verification-logo {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 3px solid #28a745;
+  background: white;
+  padding: 0.5rem;
+}
+
+.verification-content {
+  flex: 1;
+}
+
+.verified-tick {
+  width: 40px;
+  height: 40px;
+  background: #28a745;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
   margin-bottom: 0.5rem;
 }
 
-.payment-note {
-  font-weight: 600;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #ffeaa7;
+.verification-note {
+  font-size: 0.9rem;
+  color: #28a745;
+  font-style: italic;
+  margin-top: 0.5rem;
 }
 
 /* Navegación */
@@ -1344,6 +1505,43 @@ export default {
   color: #2c5aa0;
   font-weight: 700;
   font-size: 1.2rem;
+}
+
+.modal-verification {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: #f8fff8;
+  border-radius: 8px;
+  border: 1px solid #28a745;
+}
+
+.modal-logo {
+  width: 50px;
+  height: 50px;
+}
+
+.modal-verified {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #28a745;
+  font-weight: 600;
+}
+
+.modal-tick {
+  width: 25px;
+  height: 25px;
+  background: #28a745;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
 }
 
 .success-actions {
@@ -1420,6 +1618,15 @@ export default {
   .action-button {
     width: 100%;
   }
+  
+  .verification-badge {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .modal-verification {
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1432,6 +1639,10 @@ export default {
     flex-direction: column;
     gap: 0.5rem;
     align-items: flex-start;
+  }
+  
+  .vehicle-info {
+    margin-left: 0;
   }
 }
 </style>

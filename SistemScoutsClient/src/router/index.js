@@ -11,6 +11,7 @@ const VerificadorQR = () => import('@/views/VerificadorQR.vue')
 const Usuarios = () => import('@/views/Gestionpersonas.vue')
 const CursosCapacitaciones = () => import('@/views/CRUDcursos.vue')
 const Login = () => import('@/views/Login.vue')
+const FormularioPreInscripcion = () => import('@/views/Formulario.vue')
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -25,6 +26,7 @@ const router = createRouter({
   { path: '/verificador-qr', name: 'verificadorqr', component: VerificadorQR },
     { path: '/correos', name: 'correos', component: Correos },
     { path: '/cursos-capacitaciones', name: 'cursoscapacitaciones', component: CursosCapacitaciones },
+    { path: '/inscripciones', name: 'formularioPreInscripcion', component: FormularioPreInscripcion },
     // fallback
     { path: '/:catchAll(.*)', redirect: '/' },
   ],

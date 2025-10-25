@@ -13,7 +13,7 @@ const allLinks = [
   { label: 'Usuarios y Roles', to: { name: 'usuarios' } },
   { label: 'Mantenedores', to: { name: 'mantenedores' } },
   { label: 'Cursos y Capacitaciones', to: { name: 'cursoscapacitaciones' } },
-  { label: 'Inscripciones', to: '#' },
+  { label: 'Inscripciones', to: { name: 'formularioPreInscripcion' } },
   { label: 'Gestión de Personas', to: { name: 'gestionpersonas' } },
   { label: 'Pagos', to: { name: 'pagosview' } },
   { label: 'Acreditación', to: { name: 'manualacreditacion' } },
