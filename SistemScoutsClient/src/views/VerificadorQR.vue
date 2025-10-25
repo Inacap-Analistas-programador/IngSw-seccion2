@@ -12,7 +12,8 @@
 </template>
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue' // Hooks de Vue para reactividad y ciclo de vida
-import { Html5QrcodeScanner } from 'html5-qrcode'  // La librería principal para escanear QR
+import { Html5QrcodeScanner, Html5QrcodeScanType } from 'html5-qrcode'  
+// La librería principal para escanear código QR y ScanType para limitar tipos de escaneo
 
 
 // Base de datos simulada. IDs que serán aceptados como válidos.
@@ -138,7 +139,9 @@ onMounted(() => {
       { 
         fps: 10, 
         // qrbox usa la función calcularQrBox de arriba para ajustar el tamaño de manera dinámica
-        qrbox: calcularQrBox 
+        qrbox: calcularQrBox ,
+        // supportedScanTypes limita el escaneo solo a cámara 
+        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
       },
       false 
     )

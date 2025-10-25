@@ -16,4 +16,4 @@ for s in scripts:
     if result.returncode != 0:
         print(f"Error en {s}:")
         print(result.stderr)
-        break  # detener ejecución si hay error
+        break
