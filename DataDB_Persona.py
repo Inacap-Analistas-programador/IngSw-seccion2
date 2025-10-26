@@ -1,128 +1,192 @@
 import mysql.connector
 from faker import Faker
 import random
+from datetime import datetime, timedelta
 
+# ==== Configuración ====
 fake = Faker('es_CL')
-# ==== Variable const de los Modulos ====
-
-modulo = ""
-password_db = ""
+modulo = ""  # Prefijo de tablas si aplica
+password_db = "27735378Hent@i"
 
 # ==== Conexión a la base de datos ====
-
 db = mysql.connector.connect(
     host="127.0.0.1",
-    user="root",             # cambia esto
+    user="root",
     password=password_db,
     database="ssb"
 )
-
-cursor = db.cursor()
+cursor = db.cursor(buffered=True)
 
 # ==== Función para insertar múltiples registros ====
-
 def insert_many(query, data):
     cursor.executemany(query, data)
     db.commit()
 
-# ====== PERSONA ======
-personas = []
+# ==== Validar tablas base ====
+tablas_base = [
+    f"{modulo}usuario",
+    f"{modulo}persona",
+    f"{modulo}rol",
+    f"{modulo}cargo",
+    f"{modulo}comuna",
+    f"{modulo}tipo_curso",
+    f"{modulo}alimentacion",
+    f"{modulo}rama",
+]
+
+cursor.execute("SHOW TABLES")
+tablas_existentes = [t[0] for t in cursor.fetchall()]
+
+if not all(t in tablas_existentes for t in tablas_base):
+    raise Exception("Faltan tablas base en la base de datos.")
+
+# ==== Obtener IDs base ====
+def get_ids(tabla, campo):
+    cursor.execute(f"SELECT {campo} FROM {tabla}")
+    return [row[0] for row in cursor.fetchall()]
+
+usuarios = get_ids(f"{modulo}usuario", "USU_ID")
+personas = get_ids(f"{modulo}persona", "PER_ID")
+roles = get_ids(f"{modulo}rol", "ROL_ID")
+cargos = get_ids(f"{modulo}cargo", "CAR_ID")
+comunas = get_ids(f"{modulo}comuna", "COM_ID")
+tipos_curso = get_ids(f"{modulo}tipo_curso", "TCU_ID")
+alimentaciones = get_ids(f"{modulo}alimentacion", "ALI_ID")
+ramas = get_ids(f"{modulo}rama", "RAM_ID")
+
+if not (usuarios and personas and roles and cargos and comunas and tipos_curso and alimentaciones and ramas):
+    raise Exception("Faltan registros base en una o más tablas relacionadas.")
+
+# ==== CURSO ====
+cursos = []
 for _ in range(10):
-    run = fake.random_int(min=10000000, max=25000000)
-    dv = str(random.randint(0, 9))
-    personas.append((
-        1,                          # ESC_ID ejemplo
-        1,                          # COM_ID ejemplo
-        1,                          # USU_ID ejemplo
-        fake.date_of_birth(minimum_age=18, maximum_age=65),  # PER_FECHA_NAC
-        str(run),                   # PER_RUN
-        dv,                         # PER_DV
-        fake.last_name()[:50],      # PER_APELPTA
-        fake.last_name()[:50],      # PER_APELMAT
-        fake.first_name()[:50],     # PER_NOMBRES
-        fake.email()[:100],         # PER_MAIL
-        fake.address()[:255],       # PER_DIRECCION
-        random.randint(1, 4),       # PER_TIPO_FONO
-        fake.phone_number()[:15],   # PER_FONO
-        None,                       # PER_ALERGIA_ENFERMEDAD
-        None,                       # PER_LIMITACION
-        None,                       # PER_NOM_EMERGENCIA
-        None,                       # PER_FONO_EMERGENCIA
-        None,                       # PER_OTROS
-        None,                       # PER_NUM_MMA
-        None,                       # PER_PROFESION
-        None,                       # PER_TIEMPO_NNAJ
-        None,                       # PER_TIEMPO_ADULTO
-        None,                       # PER_RELIGION
-        fake.first_name()[:50],     # PER_APODO
-        None,                       # PER_FOTO
-        True                        # PER_VIGENTE
+    cursos.append((
+        random.choice(usuarios),
+        random.choice(tipos_curso),
+        random.choice(personas),
+        random.choice(cargos),
+        random.choice(comunas),
+        datetime.now(),
+        fake.date_this_year(),
+        fake.bothify(text='CUR-####'),
+        fake.sentence(nb_words=4),
+        fake.sentence(nb_words=6),
+        random.choice([1, 2]),  # CUR_ADMINISTRA
+        random.randint(10000, 30000),  # COTA CON ALMUERZO
+        random.randint(5000, 15000),   # COTA SIN ALMUERZO
+        random.choice([1, 2, 3]),  # MODALIDAD
+        random.choice([1, 2, 3]),  # TIPO CURSO
+        fake.city(),
+        random.choice([0, 1, 2, 3])  # ESTADO
     ))
 
 insert_many(f"""
-INSERT INTO {modulo}_persona (
-    ESC_ID, COM_ID, USU_ID, PER_FECHA_NAC, PER_RUN, PER_DV, PER_APELPTA, PER_APELMAT, PER_NOMBRES,
-    PER_MAIL, PER_DIRECCION, PER_TIPO_FONO, PER_FONO, PER_ALERGIA_ENFERMEDAD, PER_LIMITACION,
-    PER_NOM_EMERGENCIA, PER_FONO_EMERGENCIA, PER_OTROS, PER_NUM_MMA, PER_PROFESION, PER_TIEMPO_NNAJ,
-    PER_TIEMPO_ADULTO, PER_RELIGION, PER_APODO, PER_FOTO, PER_VIGENTE
-) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-""", personas)
+INSERT INTO {modulo}curso (
+    USU_ID, TCU_ID, PER_ID_RESPONSABLE, CAR_ID_RESPONSABLE, COM_ID_LUGAR,
+    CUR_FECHA_HORA, CUR_FECHA_SOLICITUD, CUR_CODIGO, CUR_DESCRIPCION, CUR_OBSERVACION,
+    CUR_ADMINISTRA, CUR_COTA_CON_ALMUERZO, CUR_COTA_SIN_ALMUERZO, CUR_MODALIDAD,
+    CUR_TIPO_CURSO, CUR_LUGAR, CUR_ESTADO
+) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+""", cursos)
 
-# Obtenemos IDs de las personas insertadas
-cursor.execute(f"SELECT PER_ID FROM {modulo}_persona ORDER BY PER_ID DESC LIMIT 10")
-persona_ids = [row[0] for row in cursor.fetchall()]
-
-# ====== PERSONA_GRUPO ======
-persona_grupo = [(1, pid, True) for pid in persona_ids]  # GRU_ID=1 ejemplo
-insert_many(f"""
-INSERT INTO {modulo}_persona_grupo (GRU_ID, PER_ID, PEG_VIGENTE)
-VALUES (%s, %s, %s)
-""", persona_grupo)
-
-# ====== PERSONA_FORMADOR ======
-persona_formador = [(pid, random.choice([True, False]), random.choice([True, False]), False, None) for pid in persona_ids]
-insert_many(f"""
-INSERT INTO {modulo}_persona_formador (PER_ID, PEF_HAB_1, PEF_HAB_2, PEF_VERIF, PEF_HISTORIAL)
-VALUES (%s, %s, %s, %s, %s)
-""", persona_formador)
-
-# ====== PERSONA_INDIVIDUAL ======
-persona_individual = [(pid, 1, 1, None, True) for pid in persona_ids]  # CAR_ID=1, DIS_ID=1 ejemplo
-insert_many(f"""
-INSERT INTO {modulo}_persona_individual (PER_ID, CAR_ID, DIS_ID, ZON_ID, PEI_VIGENTE)
-VALUES (%s, %s, %s, %s, %s)
-""", persona_individual)
-
-# ====== PERSONA_NIVEL ======
-persona_nivel = [(pid, 1, 1, 1) for pid in persona_ids]  # NIV_ID=1, RAM_ID=1 ejemplo
-insert_many(f"""
-INSERT INTO {modulo}_persona_nivel (PER_ID, NIV_ID, RAM_ID)
-VALUES (%s, %s, %s, %s)
-""", persona_nivel)
-
-# ====== PERSONA_CURSO ======
-persona_curso = [(pid, 1, 1, None, None, None, False, False) for pid in persona_ids]  # CUS_ID=1, ROL_ID=1
-insert_many(f"""
-INSERT INTO {modulo}_persona_curso (PER_ID, CUS_ID, ROL_ID, ALI_ID, NIV_ID, PEC_OBSERVACION, PEC_REGISTRO, PEC_ACREDITACION)
-VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-""", persona_curso)
-
-# Obtenemos IDs de los cursos insertados
-cursor.execute(f"SELECT PEC_ID FROM {modulo}_persona_curso ORDER BY PEC_ID DESC LIMIT 10")
+cursor.execute(f"SELECT CUR_ID FROM {modulo}curso")
 curso_ids = [row[0] for row in cursor.fetchall()]
 
-# ====== PERSONA_ESTADO_CURSO ======
-persona_estado_curso = [(1, cid, fake.date_time_this_year(), random.randint(1, 7), True) for cid in curso_ids]  # USU_ID=1 ejemplo
-insert_many(f"""
-INSERT INTO {modulo}_persona_estado_curso (USU_ID, PEC_ID, PEU_FECHA_HORA, PEU_ESTADO, PEU_VIGENTE)
-VALUES (%s, %s, %s, %s, %s)
-""", persona_estado_curso)
+# ==== CURSO_CUOTA ====
+cuotas = []
+for cid in curso_ids:
+    cuotas.append((cid, 1, fake.date_this_year(), random.uniform(10000, 30000)))
+    cuotas.append((cid, 2, fake.date_this_year(), random.uniform(5000, 15000)))
 
-# ====== PERSONA_VEHICULO ======
-persona_vehiculo = [(cid, fake.company()[:50], fake.word()[:50], fake.bothify(text='??##??')) for cid in curso_ids]
 insert_many(f"""
-INSERT INTO {modulo}_persona_vehiculo (PEC_ID, PEV_MARCA, PEV_MODELO, PEV_PATENTE)
+INSERT INTO {modulo}curso_cuota (CUR_ID, CUU_TIPO, CUU_FECHA, CUU_VALOR)
 VALUES (%s, %s, %s, %s)
-""", persona_vehiculo)
+""", cuotas)
 
-print(f"Datos de Persona y tablas relacionadas insertados correctamente con prefijo {modulo}")
+# ==== CURSO_FECHA ====
+fechas = []
+for cid in curso_ids:
+    inicio = fake.date_this_year()
+    termino = inicio + timedelta(days=random.randint(3, 10))
+    fechas.append((cid, inicio, termino, random.choice([1, 2, 3])))
+
+insert_many(f"""
+INSERT INTO {modulo}curso_fecha (CUR_ID, CUF_FECHA_INICIO, CUF_FECHA_TERMINO, CUF_TIPO)
+VALUES (%s, %s, %s, %s)
+""", fechas)
+
+# ==== CURSO_ALIMENTACION ====
+alimentacion_data = []
+for cid in curso_ids:
+    for _ in range(3):
+        alimentacion_data.append((
+            cid,
+            random.choice(alimentaciones),
+            fake.date_this_year(),
+            random.choice([1, 2, 3, 4, 5]),
+            fake.word(),
+            random.randint(0, 10),
+            True
+        ))
+
+insert_many(f"""
+INSERT INTO {modulo}curso_alimentacion (CUR_ID, ALI_ID, CUA_FECHA, CUA_TIEMPO, CUA_DESCRIPCION, CUA_CANTIDAD_ADICIONAL, CUA_VIGENTE)
+VALUES (%s, %s, %s, %s, %s, %s, %s)
+""", alimentacion_data)
+
+# ==== CURSO_COORDINADOR ====
+coordinadores = []
+for cid in curso_ids:
+    for _ in range(2):
+        coordinadores.append((
+            cid,
+            random.choice(personas),
+            random.choice(cargos),
+            fake.job()
+        ))
+
+insert_many(f"""
+INSERT INTO {modulo}curso_coordinador (CUR_ID, PER_ID, CAR_ID, CUC_CARGO)
+VALUES (%s, %s, %s, %s)
+""", coordinadores)
+
+# ==== CURSO_SECCION ====
+secciones = []
+for cid in curso_ids:
+    for _ in range(random.randint(1, 3)):
+        secciones.append((
+            cid,
+            random.choice(ramas),
+            random.randint(1, 5),
+            random.randint(10, 30)
+        ))
+
+insert_many(f"""
+INSERT INTO {modulo}curso_seccion (CUR_ID, RAM_ID, CUS_SECCION, CUS_CANT_PARTICIPANTE)
+VALUES (%s, %s, %s, %s)
+""", secciones)
+
+cursor.execute(f"SELECT CUS_ID FROM {modulo}curso_seccion")
+seccion_ids = [row[0] for row in cursor.fetchall()]
+
+# ==== CURSO_FORMADOR ====
+formadores = []
+for cid in curso_ids:
+    for _ in range(3):
+        formadores.append((
+            cid,
+            random.choice(personas),
+            random.choice(roles),
+            random.choice(seccion_ids),
+            random.choice([True, False])
+        ))
+
+insert_many(f"""
+INSERT INTO {modulo}curso_formador (CUR_ID, PER_ID, ROL_ID, CUS_ID, CUO_DIRECTOR)
+VALUES (%s, %s, %s, %s, %s)
+""", formadores)
+
+print("✅ Datos de cursos insertados correctamente con Faker")
+
+cursor.close()
+db.close()

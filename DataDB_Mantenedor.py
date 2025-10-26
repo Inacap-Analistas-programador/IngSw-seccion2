@@ -142,6 +142,52 @@ INSERT INTO {modulo}alimentacion (ALI_DESCRIPCION, ALI_TIPO, ALI_VIGENTE)
 VALUES (%s, %s, %s)
 """, alimentaciones)
 
+# ==== MODULO 13 TIPO_CURSO ====
+
+tipos_opcion = [1, 2, 3, 4, 5, 6]
+
+tipo_cursos = []
+for _ in range(10):  # Generar 10 cursos de ejemplo
+    tipo_cursos.append((
+        fake.sentence(nb_words=3)[:100],   # TCU_DESCRIPCION
+        random.choice(tipos_opcion),       # TCU_TIPO
+        random.randint(5, 50),             # TCU_CANT_PARTICIPANTE
+        random.choice([True, True, True, False])  # TCU_VIGENTE (mayor probabilidad True)
+    ))
+
+insert_many(f"""
+INSERT INTO {modulo}tipo_curso (TCU_DESCRIPCION, TCU_TIPO, TCU_CANT_PARTICIPANTE, TCU_VIGENTE)
+VALUES (%s, %s, %s, %s)
+""", tipo_cursos)
+
+# ==== MODULO 14 TIPO_ARCHIVO ====
+
+tipo_archivos = []
+for _ in range(10):  # Generar 10 tipos de archivo de ejemplo
+    tipo_archivos.append((
+        fake.word()[:50],                 # TAR_DESCRIPCION
+        random.choice([True, True, True, False])  # TAR_VIGENTE
+    ))
+
+insert_many(f"""
+INSERT INTO {modulo}tipo_archivo (TAR_DESCRIPCION, TAR_VIGENTE)
+VALUES (%s, %s)
+""", tipo_archivos)
+
+# ==== MODULO 15 CONCEPTO_CONTABLE ====
+
+conceptos = []
+for _ in range(10):  # Crear 10 conceptos de ejemplo
+    conceptos.append((
+        fake.word()[:50],
+        random.choice([True, True, True, False])  # COC_VIGENTE
+    ))
+
+insert_many(f"""
+INSERT INTO {modulo}concepto_contable (COC_DESCRIPCION, COC_VIGENTE)
+VALUES (%s, %s)
+""", conceptos)
+
 # ==== INDICADOR DE ÉXITO ====
 
 print(f"Datos de Persona y tablas relacionadas insertados correctamente con prefijo {modulo}")
