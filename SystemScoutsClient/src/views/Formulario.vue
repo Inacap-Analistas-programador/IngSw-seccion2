@@ -1,1648 +1,847 @@
 <template>
-  <div class="formulario-scouts">
-    <!-- Header del Formulario -->
-    <div class="form-header">
-      <div class="header-logo">
-        <img src="@/assets/Logo_Boyscout_Chile.png" alt="Logo Scouts Chile" class="logo">
-        <div class="header-text">
-          <h1 class="page-title">Formulario de Pre-Inscripción</h1>
-          <p class="page-subtitle">Curso Medio - Zona Biobío</p>
-          <p class="institution">Asociación de Guías y Scouts de Chile</p>
-        </div>
+  <div class="formulario">  
+    <h1>FORMULARIO DE REGISTRO</h1>
+
+    <form>
+  <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+  <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+  <!--:::::::::::::::::::::::::            Datos Personales         ::::::::::::::::::::::::::::::::::-->
+  <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+  <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+
+  <!--::::::::::::::::::::::::::::::::::CURSO DE PARTICIPACIÓN::::::::::::::::::::::::::::::::::::::::-->
+    <div class="seleccioneCurso"></div> <!-- Titulo Eleccion de Cursos-->
+          <h2>Seleccione Curso</h2>
+
+    <label for="curso">¿En qué curso participará?</label>
+    <select id="curso" v-model="cursoSeleccionado" required>
+      <option disabled value="">Seleccione un curso</option>
+      <option value="liderazgoJuvenil">Curso de Liderazgo Juvenil</option>
+      <option value="primerosAuxilios">Curso de Primeros Auxilios en Campamento</option>
+      <option value="gestionAmbiental">Curso de Gestión Ambiental Scout</option>
+    </select>
+
+      <div class="datosPersonales"></div> <!-- titulo Datos Personales-->
+          <h2>Datos Personales</h2>
+  <!-- :::::::::::::::::: INPUTS BÁSICOS ::::::::::::::::::::::::: -->
+        <InputBase v-model="nombre" label="Nombre Completo:" type="text" placeholder="nombre completo" />
+        <InputBase v-model="rut" label="RUT:" type="text" placeholder="XXXXXXXX-X" rules="rut" />
+        <InputBase v-model="fechaNacimiento" label="Fecha de Nacimiento:" type="date" />
+  <!--::::::::::::::::::: NUMERO DE CELULAR CON +569:::::::::::::::::::::::::-->
+              <label for="numeroCelular">Número de Celular:</label>
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <span style="background-color: #f2f2f2; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px;">+569</span>
+        <input
+          id="numeroCelular"
+          v-model="numeroCelular"
+          type="tel"
+          placeholder="97643210"
+          maxlength="8"
+        />
       </div>
+        <InputBase v-model="email" label="Correo Electrónico:" type="email" placeholder="Ingrese EMAIL" />
+        <InputBase v-model="edad" label="Edad" type="number" placeholder="Ingrese su edad" min="0" max="120"/>
+
+<!-- :::::::::::::::::: SELECTOR DE REGIONES ::::::::::::::::::::::::: -->
+<label for="region">Región:</label>
+<select id="region" v-model="regionSeleccionada">
+  <option disabled value="">Seleccione una región</option>
+  <option v-for="region in Object.keys(comunasPorRegion)" :key="region" :value="region">
+    {{ region }}
+  </option>
+</select>
+
+<!-- :::::::::::::::::: SELECTOR DE CIUDADES ::::::::::::::::::::::::: -->
+<transition name="desplegar">
+  <!-- SOLO se renderiza si regionSeleccionada tiene valor -->
+  <div v-if="regionSeleccionada" class="campo" :key="regionSeleccionada">
+    <label for="ciudad">Ciudad:</label>
+    <select id="ciudad" v-model="ciudadSeleccionada">
+      <option disabled value="">Seleccione una ciudad</option>
+      <option v-for="ciudad in Object.keys(ciudadesDisponibles)" :key="ciudad" :value="ciudad">
+        {{ ciudad }}
+      </option>
+    </select>
+  </div>
+</transition>
+
+<!-- :::::::::::::::::: SELECTOR DE COMUNAS ::::::::::::::::::::::::: -->
+<transition name="desplegar">
+  <!-- SOLO se renderiza si ciudadSeleccionada tiene valor -->
+  <div v-if="ciudadSeleccionada" class="campo" :key="ciudadSeleccionada">
+    <label for="comuna">Comuna:</label>
+    <select id="comuna" v-model="comunaSeleccionada">
+      <option disabled value="">Seleccione una comuna</option>
+      <option v-for="comuna in comunasDisponibles" :key="comuna" :value="comuna">
+        {{ comuna }}
+      </option>
+    </select>
+  </div>
+</transition>
+
+
+
+  <!-- :::::::::::::::::: INPUT DIRECCION ::::::::::::::::::::::::: -->
+      <InputBase v-model="direccion" label="Dirección:" type="text" placeholder="Ingrese Dirección" />
+
+  <!-- :::::::::::::::::: SELECTOR DE ESTADO CIVIL ::::::::::::::::::::::::: -->
+      <label for="estadoCivil">Estado Civil:</label>
+      <select id="estadoCivil" v-model="estadoCivil">
+        <option disabled value="">Seleccione su estado civil</option>
+        <option value="soltero">Soltero/a</option>
+        <option value="casado">Casado/a</option>
+        <option value="divorciado">Divorciado/a</option>
+        <option value="viudo">Viudo/a</option>
+        <option value="conviviente_civil">Conviviente Civil</option>
+      </select>
+
+  <!-- :::::::::::::::::: SELECTOR DE RELIGIÓN ::::::::::::::::::::::::: --> 
+        <label for="religion">Religión:</label>
+        <select id="religion" v-model="religion">
+          <option disabled value="">Seleccione su religión</option>
+          <option value="catolica">Católica</option>
+          <option value="evangelica">Evangélica / Protestante</option>
+          <option value="testigos_de_jehova">Testigos de Jehová</option>
+          <option value="mormona">Iglesia de Jesucristo de los Santos de los Últimos Días (Mormona)</option>
+          <option value="adventista">Adventista del Séptimo Día</option>
+          <option value="judia">Judía</option>
+          <option value="islamica">Islámica</option>
+          <option value="budista">Budista</option>
+          <option value="agnostica">Agnóstica</option>
+          <option value="atea">Atea</option>
+          <option value="otra">Otra</option>
+        </select>
+
+  <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+  <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+  <!--:::::::::::::::::::::::::              Datos Scout            ::::::::::::::::::::::::::::::::::-->
+  <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+  <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+    <div class="datosScout"></div> <!-- titulo Datos Scout-->
+          <h2>Datos Scout</h2>
+  <!-- :::::::::::::::::: INPUT APODO CREDENCIAL ::::::::::::::::::::::::: -->
+      <label for="profesion">Apodo para Credencial:</label>
+      <input
+        id="apodoCredencial"
+        v-model="apodoCredencial"
+        type="text"
+        placeholder="Ingrese su apodo o nombre para credencial"
+        maxlength="50"
+        @input="profesion = profesion.toUpperCase()"
+      />
+
+  <!-- :::::::::::::::::: SELECTOR DE ROL EN EL CURSO ::::::::::::::::::::::::: -->
+      <label for="rol">Rol en el curso:</label>
+      <select id="rol" v-model="rolSeleccionado">
+        <option disabled value="">Seleccione su rol</option>
+        <option value="participante">Participante</option>
+        <option value="apoyo_formadores">Apoyo a formadores</option>
+        <option value="formador">Formador(a)</option>
+        <option value="equipo_servicio">Equipo de servicio</option>
+        <option value="equipo_organizador">Equipo organizador</option>
+        <option value="equipo_salud">Equipo de salud</option>
+        <option value="otro">Otro</option>
+      </select>
+
+  <!-- TEXTAREA BLOQUEADO POR DEFECTO, SE HABILITA SI ELIGE "OTRO" -->
+                      <label for="rolOtro">Especifique su rol:</label>
+                      <textarea
+                        id="rolOtro"
+                        v-model="rolOtro"
+                        placeholder="Ingrese su rol aquí..."
+                        rows="3"
+                        maxlength="100"
+                        :disabled="rolSeleccionado !== 'otro'"
+                      ></textarea>
+
+  <!-- :::::::::::::::::: SELECTOR DE GRUPO ::::::::::::::::::::::::: -->
+        <label for="grupo">Grupo al que pertenece:</label>
+        <select id="grupo" v-model="grupoSeleccionado">
+          <option disabled value="">Seleccione su grupo</option>
+          <option value="Alcatipay">Alcatipay</option>
+          <option value="Alfa Cruz">Alfa Cruz</option>
+          <option value="Alpha y Omega">Alpha y Omega</option>
+          <option value="Andalien">Andalien</option>
+          <option value="Axis Mundi">Axis Mundi</option>
+          <option value="Baden Powell - Tome">Baden Powell - Tomé</option>
+          <option value="Buen Pastor">Buen Pastor</option>
+          <option value="Buena Aventura">Buena Aventura</option>
+          <option value="Callaqui">Callaqui</option>
+          <option value="Catiray">Catiray</option>
+          <option value="Elcan Mapu">Elcan Mapu</option>
+          <option value="Enrique Valdebenito">Enrique Valdebenito</option>
+          <option value="Equipo Zonal">Equipo Zonal</option>
+          <option value="Espíritu Santo">Espíritu Santo</option>
+          <option value="Fresia Müller Ruiz">Fresia Müller Ruiz</option>
+          <option value="Halcones Negros">Halcones Negros</option>
+          <option value="Helen Keller">Helen Keller</option>
+          <option value="Huilliche">Huilliche</option>
+          <option value="Inmaculada Concepción de Talcahuano">Inmaculada Concepción de Talcahuano</option>
+          <option value="Kutral Üinkelen">Kutral Üinkelen</option>
+          <option value="La Ascensión">La Ascensión</option>
+          <option value="La Asunción">La Asunción</option>
+          <option value="Lafkenche">Lafkenche</option>
+          <option value="Lemu Inalaf">Lemu Inalaf</option>
+          <option value="Liceo Alemán del Verbo Divino">Liceo Alemán del Verbo Divino</option>
+          <option value="Mahuidanche">Mahuidanche</option>
+          <option value="Manutara">Manutara</option>
+          <option value="Mapu Antu">Mapu Antu</option>
+          <option value="Mapu Ñuke">Mapu Ñuke</option>
+          <option value="Monte Kenya">Monte Kenya</option>
+          <option value="Namuncura">Namuncura</option>
+          <option value="Pehuen">Pehuen</option>
+          <option value="Pellu Wellang - Arauco">Pellu Wellang - Arauco</option>
+          <option value="Peulla">Peulla</option>
+          <option value="Rañileufu">Rañileufu</option>
+          <option value="Rosa de los Vientos">Rosa de los Vientos</option>
+          <option value="Rucapeñihue">Rucapeñihue</option>
+          <option value="Sagrada Familia">Sagrada Familia</option>
+          <option value="Sagrados Corazones">Sagrados Corazones</option>
+          <option value="Salesiano">Salesiano</option>
+          <option value="Salesianos Concepción">Salesianos Concepción</option>
+          <option value="San Ignacio de Loyola">San Ignacio de Loyola</option>
+          <option value="San Pablo">San Pablo</option>
+          <option value="San Rafael">San Rafael</option>
+          <option value="San Sebastian">San Sebastián</option>
+          <option value="Santa Bárbara">Santa Bárbara</option>
+          <option value="Santa Cecilia">Santa Cecilia</option>
+          <option value="Santa María">Santa María</option>
+          <option value="Tricolor Chileno">Tricolor Chileno</option>
+          <option value="Wetripantu">Wetripantu</option>
+          <option value="otro">Otro</option>
+        </select>
+  <!--:::::::::::::: TEXTAREA QUE SE HABILITA SOLO AL ELEGIR "OTRO"::::::::::::::::::::: -->
+                            <label for="grupoOtro">Ingrese el nombre del grupo:</label>
+                            <textarea
+                              id="grupoOtro"
+                              v-model="grupoOtro"
+                              placeholder="Escriba el nombre de su grupo..."
+                              rows="3"
+                              maxlength="100"
+                              :disabled="grupoSeleccionado !== 'otro'"
+                            ></textarea>
+
+      <!-- :::::::::::::::::: SELECTOR DE RAMA / SECCIÓN ::::::::::::::::::::::::: -->
+      <label for="rama">Rama o sección a la que pertenece:</label>
+      <select id="rama" v-model="ramaSeleccionada">
+        <option disabled value="">Seleccione su rama</option>
+        <option value="Lobatos">Lobatos</option>
+        <option value="Golondrinas">Golondrinas</option>
+        <option value="Guias">Guías</option>
+        <option value="Scouts">Scouts</option>
+        <option value="Pioneros">Pioneros</option>
+        <option value="Caminantes">Caminantes</option>
+      </select>
+
+    <!-- :::::::::::::::::: INPUT DE CARGO EN LA UNIDAD ::::::::::::::::::::::::: -->
+      <label for="cargo">¿Qué cargo tienes en tu Unidad?</label>
+      <select id="cargo" v-model="opcionCargo">
+        <option disabled value="">Seleccione una opción</option>
+        <option value="escribir">Sí</option>
+        <option value="ninguno">No</option>
+      </select>
+
+      <label for="cargoTexto">Escriba su cargo:</label>
+      <input
+        id="cargoTexto"
+        type="text"
+        v-model="cargoTexto"
+        placeholder="Ingrese su cargo..."
+        maxlength="50"
+        :disabled="opcionCargo !== 'escribir'"
+      />
+
+  <!-- :::::::::::::::::: INPUT TIEMPO EN LA UNIDAD ::::::::::::::::::::::::: -->
+    <label for="tiempoUnidad">¿Cuánto tiempo lleva en su unidad?</label>
+    <div style="display: flex; gap: 10px; align-items: center;">
+      <!-- AÑOS -->
+      <select id="años" v-model="añosUnidad" style="padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
+        <option disabled value="">Años</option>
+        <option v-for="n in 20" :key="n" :value="n">{{ n }} año{{ n > 1 ? 's' : '' }}</option>
+      </select>
+
+      <!-- MESES -->
+      <select id="meses" v-model="mesesUnidad" style="padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
+        <option disabled value="">Meses</option>
+        <option v-for="m in 11" :key="m" :value="m">{{ m }} mes{{ m > 1 ? 'es' : '' }}</option>
+      </select>
     </div>
 
-    <!-- Alertas del Sistema -->
-    <BaseAlert
-      v-if="systemAlert.visible"
-      :type="systemAlert.type"
-      :title="systemAlert.title"
-      :message="systemAlert.message"
-      :dismissible="true"
-      @close="clearSystemAlert"
-      class="form-alert"
-    />
+  <!--::::::::::::::::::::::SELECTOR DISTRITO:::::::::::::::::::::::::::::::::::::::::::::::-->
+      <label for="distrito">Distrito al que pertenece:</label>
+      <select id="distrito" v-model="distritoSeleccionado">
+        <option disabled value="">Seleccione su distrito</option>
+        <option value="Concepcion">Concepción</option>
+        <option value="Talcahuano - Hualpen">Talcahuano - Hualpén</option>
+        <option value="Rio Andalien">Río Andalién</option>
+        <option value="BioBio">Biobío</option>
+        <option value="Nahuelbuta">Nahuelbuta</option>
+        <option value="Equipo Distrital">Equipo Distrital</option>
+        <option value="Equipo Zonal">Equipo Zonal</option>
+        <option value="Equipo Nacional">Equipo Nacional</option>
+        <option value="Zona Ñuble">Zona Ñuble</option>
+        <option value="Zona Los Lagos">Zona Los Lagos</option>
+        <option value="Zona La Frontera">Zona La Frontera</option>
+        <option value="Zona de los Rios">Zona de los Ríos</option>
+        <option value="Otro">Otro</option>  
+      </select>
 
-    <!-- Progreso del Formulario -->
-    <div class="form-progress">
-      <div class="progress-steps">
-        <div 
-          v-for="(step, index) in steps" 
-          :key="index"
-          :class="['step', { 
-            active: currentStep === index, 
-            completed: currentStep > index,
-            disabled: currentStep < index
-          }]"
-        >
-          <div class="step-number">
-            <span v-if="currentStep <= index">{{ index + 1 }}</span>
-            <span v-else>✓</span>
-          </div>
-          <div class="step-label">{{ step.label }}</div>
-          <div class="step-line" v-if="index < steps.length - 1"></div>
-        </div>
+                      <!-- TEXTAREA QUE SE HABILITA SOLO AL ELEGIR "OTRO" -->
+                      <label for="distritoOtro">Ingrese el nombre del Distrito:</label>
+                      <textarea
+                        id="distritoOtro"
+                        v-model="distritoOtro"
+                        placeholder="Escriba el nombre de su Distrito..."
+                        rows="3"
+                        maxlength="100"
+                        :disabled="distritoSeleccionado !== 'Otro'"
+                      ></textarea>
+  
+<!--::::::::::::::::::::::SELECTOR NIVEL:::::::::::::::::::::::::::::::::::::::::::::::-->
+    <label for="nivel">¿Qué nivel tienes?</label>
+    <select id="nivel" v-model="nivelSeleccionado" required>
+      <option disabled value="">Seleccione su nivel</option>
+      <option value="Inicial">Inicial</option>
+      <option value="Medio">Medio</option>
+      <option value="Avanzado">Avanzado</option>
+      <option value="Ninguno">Ninguno</option>
+    </select>
+
+<!--::::::::::::::::::::::SELECTOR RAMA PARA NIVEL MEDIO:::::::::::::::::::::::::::::::::::::::::::::::-->
+      <label for="ramaMedio">¿En qué rama tienes ese nivel? (solo si tu nivel es Medio)</label>
+      <select
+        id="ramaMedio"
+        v-model="ramaMedioSeleccionada"
+        :disabled="nivelSeleccionado !== 'Medio'"
+      >
+        <option disabled value="">Seleccione la rama</option>
+        <option value="Lobatos">Lobatos</option>
+        <option value="Golondrinas">Golondrinas</option>
+        <option value="Guías">Guías</option>
+        <option value="Scouts">Scouts</option>
+        <option value="Pioneros">Pioneros</option>
+        <option value="Caminantes">Caminantes</option>
+        <option value="Ninguno">Ninguno</option>
+      </select>
+
+  <!--::::::::::::::::::::::SELECTOR RAMA PARA NIVEL AVANZADO:::::::::::::::::::::::::::::::::::::::::::::::-->
+      <label for="ramaAvanzado">¿En qué rama tienes ese nivel? (solo si tu nivel es Avanzado)</label>
+      <select
+        id="ramaAvanzado"
+        v-model="ramaAvanzadoSeleccionada"
+        :disabled="nivelSeleccionado !== 'Avanzado'"
+      >
+        <option disabled value="">Seleccione la rama</option>
+        <option value="Lobatos">Lobatos</option>
+        <option value="Golondrinas">Golondrinas</option>
+        <option value="Guías">Guías</option>
+        <option value="Scouts">Scouts</option>
+        <option value="Pioneros">Pioneros</option>
+        <option value="Caminantes">Caminantes</option>
+        <option value="Ninguno">Ninguno</option>
+      </select>
+
+  <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+  <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+  <!--:::::::::::::::::::::::::            Salud y Logistica        ::::::::::::::::::::::::::::::::::-->
+  <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+  <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+      <div class="saludLogistica"></div> <!-- Salud y Logistica-->
+          <h2>Salud y Logistica</h2>
+  <!--::::::::::::::::::: INPUT DE ALERGIAS/ENFERMEDADES ::::::::::::::::::::::::: -->
+      <label for="salud">¿Tiene alergias o alguna enfermedad a considerar?</label>
+      <select id="salud" v-model="tieneAlergiaEnfermedad">
+        <option disabled value="">Seleccione una opción</option>
+        <option value="si">Sí</option>
+        <option value="no">No</option>
+      </select>
+
+  <!--:::::::::::::::: TEXT AREA BLOQUEADO POR DEFECTO, SE HABILITA AL SELECCIONAR "si" :::::::::::::::::::::::::::::::::-->
+                            <label for="detalleSalud">Detalle de alergias o enfermedades:</label>
+                            <textarea
+                                id="detalleSalud"
+                                v-model="detalleAlergiaEnfermedad"
+                                placeholder="Ingrese la alergia o enfermedad"
+                                rows="4"
+                                maxlength="200"
+                              :disabled="tieneAlergiaEnfermedad !== 'si'"
+                            ></textarea>
+
+  <!-- :::::::::::::::::: SELECTOR DE TIPO DE ALIMENTACIÓN ::::::::::::::::::::::::: -->
+        <label for="alimentacion">Tipo de alimentación:</label>
+        <select id="alimentacion" v-model="tipoAlimentacion">
+          <option disabled value="">Seleccione su tipo de alimentación</option>
+
+                        <!-- Alimentación común -->
+                        <option value="omnivora">Omnívora</option>
+                        <option value="vegetariana">Vegetariana</option>
+                        <option value="vegana">Vegana</option>
+                        <option value="pescetariana">Pescetariana</option>
+                        <option value="flexitariana">Flexitariana</option>
+
+                        <!-- Dietas especiales por enfermedades -->
+                        <option value="diabetica">Dieta para diabetes</option>
+                        <option value="hipertension">Dieta para hipertensión</option>
+                        <option value="celiaca">Dieta sin gluten (celíaca)</option>
+                        <option value="baja_sodio">Dieta baja en sodio</option>
+                        <option value="baja_lipidos">Dieta baja en lípidos/colesterol</option>
+                        <option value="renal">Dieta renal</option>
+                        <option value="intolerancia_lactosa">Dieta sin lactosa</option>
+                        <option value="ninguna">Ninguna</option>
+                      </select>
+
+  <!--::::::::::::::::::::::CONTACTO DE EMERGENCIA:::::::::::::::::::::::::::::::::::::::::::::::-->
+      <label for="nombreEmergencia">Nombre de contacto de emergencia:</label>
+      <InputBase
+        id="nombreEmergencia"
+        v-model="nombreEmergencia"
+        type="text"
+        placeholder="Ej: ALAN DAVE"
+      />
+
+      <label for="numeroEmergencia">Número de contacto de emergencia:</label>
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <span style="background-color: #f2f2f2; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px;">+569</span>
+        <input
+          id="numeroEmergencia"
+          v-model="numeroEmergencia"
+          type="tel"
+          placeholder="97643210"
+          maxlength="8"
+        />
       </div>
-    </div>
 
-    <!-- Contenido del Formulario -->
-    <div class="form-container">
-      <form @submit.prevent="submitForm" class="scouts-form">
-        <!-- Paso 1: Selección de Curso -->
-        <div v-if="currentStep === 0" class="form-step">
-          <h2 class="step-title">Selección de Curso</h2>
-          <p class="step-description">Seleccione el curso al que desea pre-inscribirse</p>
-          
-          <div class="courses-grid">
-            <div 
-              v-for="curso in cursosDisponibles" 
-              :key="curso.id"
-              :class="['course-option', { selected: formData.cursoId === curso.id }]"
-              @click="selectCurso(curso)"
-            >
-              <div class="course-icon">{{ curso.icono }}</div>
-              <div class="course-info">
-                <h3 class="course-name">{{ curso.nombre }}</h3>
-                <p class="course-dates">{{ curso.fechas }}</p>
-                <p class="course-location">📍 {{ curso.ubicacion }}</p>
-                <div class="course-meta">
-                  <span class="course-cupo">Cupos: {{ curso.inscritos }}/{{ curso.cupoMaximo }}</span>
-                </div>
-              </div>
-              <div class="course-status" :class="curso.estado">
-                {{ curso.estado === 'disponible' ? 'Disponible' : 'Lleno' }}
-              </div>
-            </div>
-          </div>
+  <!--::::::::::::::::::::::VEHÍCULO PROPIO:::::::::::::::::::::::::::::::::::::::::::::::-->
+    <label for="vehiculoPropio">¿Viene en vehículo propio?</label>
+    <select id="vehiculoPropio" v-model="vehiculoPropio" required>
+      <option disabled value="">Seleccione una opción</option>
+      <option value="si">Sí</option>
+      <option value="no">No</option>
+    </select>
+  <!--::::::::::::::::::::::CAMPOS SOLO SI SELECCIONA "SI" AL VAHICULO PROPIO:::::::::::::::::::::::::::::::::::::::::::::::-->
+                              <label for="patentePropia">Patente del vehículo (formato: AB-CD-12)</label>
+                              <input
+                                id="patentePropia"
+                                v-model="patentePropia"
+                                type="text"
+                                placeholder="Ej: AB-CD-12"
+                                maxlength="8"
+                                @input="validarPatentePropia"
+                                :disabled="vehiculoPropio !== 'si'"
+                              />
 
-          <div v-if="formData.cursoId" class="selected-course-info">
-            <h4>Curso seleccionado:</h4>
-            <p><strong>{{ getCursoSeleccionado().nombre }}</strong></p>
-            <p>{{ getCursoSeleccionado().fechas }} - {{ getCursoSeleccionado().ubicacion }}</p>
-          </div>
-        </div>
+                              <label for="marcaPropia">Marca del vehículo:</label>
+                              <input
+                                id="marcaPropia"
+                                v-model="marcaPropia"
+                                type="text"
+                                placeholder="Ej: Toyota"
+                                :disabled="vehiculoPropio !== 'si'"
+                              />
 
-        <!-- Paso 2: Datos Personales -->
-        <div v-if="currentStep === 1" class="form-step">
-          <h2 class="step-title">Datos Personales</h2>
-          
-          <div class="form-section">
-            <h3 class="section-title">Información Básica</h3>
-            <div class="form-grid">
-              <InputBase
-                v-model="formData.nombres"
-                label="Nombres *"
-                placeholder="Ingrese sus nombres"
-                :required="true"
-                class="form-field"
-              />
-              
-              <InputBase
-                v-model="formData.apellidos"
-                label="Apellidos *"
-                placeholder="Ingrese sus apellidos"
-                :required="true"
-                class="form-field"
-              />
-              
-              <InputBase
-                v-model="formData.rut"
-                label="RUT *"
-                placeholder="12345678-9"
-                :required="true"
-                rules="rut"
-                class="form-field"
-              />
-              
-              <InputBase
-                v-model="formData.fechaNacimiento"
-                label="Fecha de Nacimiento *"
-                type="date"
-                :required="true"
-                class="form-field"
-              />
-            </div>
-          </div>
+                              <label for="modeloPropio">Modelo del vehículo:</label>
+                              <input
+                                id="modeloPropio"
+                                v-model="modeloPropio"
+                                type="text"
+                                placeholder="Ej: Yaris"
+                                :disabled="vehiculoPropio !== 'si'"
+                              />
 
-          <div class="form-section">
-            <h3 class="section-title">Foto para Credencial</h3>
-            <FileUploader
-              v-model="formData.fotoParticipante"
-              label="Foto de cara del participante *"
-              accept="image/jpeg,image/png"
-              :required="true"
-              class="form-field"
-            />
-            <p class="field-note">Formato: JPEG o PNG. Foto frontal clara para la credencial.</p>
-          </div>
+  <!-- :::::::::::::::::: SELECTOR DE ALOJAMIENTO ::::::::::::::::::::::::: -->
+            <label for="alojamiento">¿Necesita alojamiento?</label>
+            <select id="alojamiento" v-model="necesitaAlojamiento">
+              <option disabled value="">Seleccione una opción</option>
+              <option value="si">Sí</option>
+              <option value="no">No</option>
+            </select>
+  <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+  <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+  <!--:::::::::::::::::::::::::          Informacion Adicional      ::::::::::::::::::::::::::::::::::-->
+  <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+  <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+      <div class="informacionAdicional"></div> <!-- Titulo Informacion Adicional-->
+          <h2>Informacion Adicional</h2>
+  <!-- :::::::::::::::::: INPUT TEXT AREA DE CONSIDERACIONES ::::::::::::::::::::::::: -->
+        <label for="consideraciones">Consideraciones:</label>
+        <textarea            id="consideraciones"
+          v-model="consideraciones"
+          placeholder="Ingrese cualquier comentario o consideración"
+          rows="4"
+          maxlength="200"
+        ></textarea>
 
-          <div class="form-section">
-            <h3 class="section-title">Contacto</h3>
-            <div class="form-row">
-              <InputBase
-                v-model="formData.email"
-                label="Correo Electrónico *"
-                placeholder="ejemplo@correo.com"
-                :required="true"
-                rules="email"
-                type="email"
-                class="form-field"
-              />
-              
-              <InputBase
-                v-model="formData.telefono"
-                label="Teléfono *"
-                placeholder="+56 9 1234 5678"
-                :required="true"
-                :rules="telefonoRules"
-                class="form-field telefono-field"
-                @focus="initializeTelefono"
-                @input="formatTelefono"
-              />
-            </div>
-            <p class="field-note">Formato requerido: +56 9 XXXXXXXX</p>
-          </div>
-        </div>
+  <!-- :::::::::::::::::: INPUT DE PROFESIÓN ::::::::::::::::::::::::: -->
+      <label for="profesion">Profesión:</label>
+      <input
+        id="profesion"
+        v-model="profesion"
+        type="text"
+        placeholder="Ingrese su profesión"
+        maxlength="50"
+        @input="profesion = profesion.toUpperCase()"
+      />
+  <!--::::::::::::::::::::::EXPERIENCIA CON NIÑOS:::::::::::::::::::::::::::::::::::::::::::::::-->
+    <label for="trabajoNinos">¿Ha trabajado con niños?</label>
+    <select id="trabajoNinos" v-model="haTrabajadoConNinos" required>
+      <option disabled value="">Seleccione una opción</option>
+      <option value="si">Sí</option>
+      <option value="no">No</option>
+    </select>
 
-        <!-- Paso 3: Información Scout -->
-        <div v-if="currentStep === 2" class="form-step">
-          <h2 class="step-title">Información Scout</h2>
-          
-          <div class="form-section">
-            <h3 class="section-title">Pertenencia Scout</h3>
-            <div class="form-grid">
-              <BaseSelect
-                v-model="formData.region"
-                :options="regiones"
-                label="Región *"
-                placeholder="Seleccione su región"
-                :required="true"
-                class="form-field"
-              />
-              
-              <BaseSelect
-                v-model="formData.distrito"
-                :options="distritos"
-                label="Distrito *"
-                placeholder="Seleccione su distrito"
-                :required="true"
-                class="form-field"
-              />
-              
-              <BaseSelect
-                v-model="formData.grupo"
-                :options="grupos"
-                label="Grupo Scout *"
-                placeholder="Seleccione su grupo"
-                :required="true"
-                class="form-field"
-              />
-              
-              <BaseSelect
-                v-model="formData.rama"
-                :options="ramas"
-                label="Rama *"
-                placeholder="Seleccione su rama"
-                :required="true"
-                class="form-field"
-              />
-            </div>
-          </div>
+  <!--::::::::::::::::::::::BENEFICIARIO:::::::::::::::::::::::::::::::::::::::::::::::-->
+    <label for="beneficiario">¿Eres o fuiste beneficiario?</label>
+    <select id="beneficiario" v-model="esBeneficiario" required>
+      <option disabled value="">Seleccione una opción</option>
+      <option value="si">Sí</option>
+      <option value="no">No</option>
+    </select>
 
-          <div class="form-section">
-            <h3 class="section-title">Rol y Formación</h3>
-            <div class="form-row">
-              <BaseSelect
-                v-model="formData.rol"
-                :options="roles"
-                label="Rol en el Curso *"
-                placeholder="Seleccione su rol"
-                :required="true"
-                class="form-field"
-              />
-              
-              <BaseSelect
-                v-model="formData.nivel"
-                :options="niveles"
-                label="Nivel de Formación *"
-                placeholder="Seleccione su nivel"
-                :required="true"
-                class="form-field"
-              />
-            </div>
-            
-            <InputBase
-              v-model="formData.numeroMMAA"
-              label="Número MMAA"
-              placeholder="Ej: 5208"
-              rules="number"
-              class="form-field"
-            />
-          </div>
-        </div>
+                      <!-- Input para el tiempo si selecciona "Sí" -->
+                      <label for="tiempoBeneficiario">¿Por cuánto tiempo?</label>
+                      <input
+                        id="tiempoBeneficiario"
+                        v-model="tiempoBeneficiario"
+                        type="text"
+                        placeholder="Ingrese el tiempo"
+                        :disabled="esBeneficiario !== 'si'"
+                      />
+  
+  <!--::::::::::::::::::::::MIEMBRO ACTIVO:::::::::::::::::::::::::::::::::::::::::::::::-->
+      <label for="miembroActivo">¿Es un miembro activo?</label>
+      <select id="miembroActivo" v-model="esMiembroActivo" required>
+        <option disabled value="">Seleccione una opción</option>
+        <option value="si">Sí</option>
+        <option value="no">No</option>
+      </select>
 
-        <!-- Paso 4: Salud y Alimentación -->
-        <div v-if="currentStep === 3" class="form-step">
-          <h2 class="step-title">Salud y Alimentación</h2>
-          
-          <div class="form-section">
-            <h3 class="section-title">Preferencias y Restricciones</h3>
-            
-            <BaseSelect
-              v-model="formData.alimentacion"
-              :options="tiposAlimentacion"
-              label="Tipo de Alimentación *"
-              placeholder="Seleccione su tipo de alimentación"
-              :required="true"
-              class="form-field"
-            />
 
-            <div class="form-row">
-              <InputBase
-                v-model="formData.alergias"
-                label="Alergias o Enfermedades"
-                placeholder="Describa sus alergias o enfermedades"
-                class="form-field"
-              />
-              
-              <InputBase
-                v-model="formData.limitaciones"
-                label="Limitaciones Físicas"
-                placeholder="Describa sus limitaciones físicas"
-                class="form-field"
-              />
-            </div>
-          </div>
 
-          <div class="form-section">
-            <h3 class="section-title">Contacto de Emergencia</h3>
-            <div class="form-grid">
-              <InputBase
-                v-model="formData.contactoEmergenciaNombre"
-                label="Nombre Contacto Emergencia *"
-                placeholder="Nombre completo"
-                :required="true"
-                class="form-field"
-              />
-              
-              <InputBase
-                v-model="formData.contactoEmergenciaTelefono"
-                label="Teléfono Emergencia *"
-                placeholder="+56 9 1234 5678"
-                :required="true"
-                :rules="telefonoRules"
-                class="form-field"
-                @focus="initializeTelefonoEmergencia"
-                @input="formatTelefonoEmergencia"
-              />
-              
-              <InputBase
-                v-model="formData.contactoEmergenciaParentesco"
-                label="Parentesco *"
-                placeholder="Ej: Padre, Madre, etc."
-                :required="true"
-                class="form-field"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- Paso 5: Información Adicional -->
-        <div v-if="currentStep === 4" class="form-step">
-          <h2 class="step-title">Información Adicional</h2>
-          
-          <div class="form-section">
-            <h3 class="section-title">Información Personal</h3>
-            
-            <div class="form-row">
-              <InputBase
-                v-model="formData.profesion"
-                label="Profesión u Oficio"
-                placeholder="Su profesión u oficio"
-                class="form-field"
-              />
-              
-              <InputBase
-                v-model="formData.estadoCivil"
-                label="Estado Civil"
-                placeholder="Su estado civil"
-                class="form-field"
-              />
-            </div>
-
-            <InputBase
-              v-model="formData.apodo"
-              label="Apodo para Credencial"
-              placeholder="Apodo que aparecerá en su credencial"
-              class="form-field"
-            />
-          </div>
-
-          <div class="form-section">
-            <h3 class="section-title">Logística</h3>
-            
-            <div class="checkbox-group">
-              <BaseCheckBox
-                v-model="formData.tieneVehiculo"
-                label="¿Tiene vehículo disponible para el curso?"
-                class="checkbox-field"
-              />
-              
-              <div v-if="formData.tieneVehiculo" class="vehicle-info">
-                <InputBase
-                  v-model="formData.patenteVehiculo"
-                  label="Patente del vehículo *"
-                  placeholder="Ej: AB123CD"
-                  :required="formData.tieneVehiculo"
-                  class="form-field"
-                />
-              </div>
-              
-              <BaseCheckBox
-                v-model="formData.requiereAlojamiento"
-                label="¿Requiere alojamiento durante el curso?"
-                class="checkbox-field"
-              />
-              
-              <BaseCheckBox
-                v-model="formData.trabajaConNNAJ"
-                label="¿Ha trabajado con Niños, Niñas y Jóvenes?"
-                class="checkbox-field"
-              />
-            </div>
-          </div>
-
-          <div class="form-section">
-            <h3 class="section-title">Términos y Condiciones</h3>
-            
-            <div class="terms-container">
-              <div class="terms-content">
-                <p><strong>Términos y Condiciones del Curso</strong></p>
-                <p>Al enviar este formulario, acepta los términos y condiciones del curso, incluyendo:</p>
-                <ul>
-                  <li>Compromiso de asistencia completa al curso</li>
-                  <li>Cumplimiento del código de conducta scout</li>
-                  <li>Autorización para uso de datos personales según ley 19.628</li>
-                  <li>Compromiso de completar el proceso de inscripción</li>
-                </ul>
-              </div>
-              
-              <BaseCheckBox
-                v-model="formData.aceptaTerminos"
-                label="Acepto los términos y condiciones del curso *"
-                :required="true"
-                class="checkbox-field terms-checkbox"
-              />
-            </div>
-
-            <InputBase
-              v-model="formData.consideraciones"
-              label="Consideraciones Adicionales"
-              placeholder="Otra información que considere importante"
-              type="textarea"
-              class="form-field"
-            />
-          </div>
-        </div>
-
-        <!-- Paso 6: Resumen y Confirmación -->
-        <div v-if="currentStep === 5" class="form-step">
-          <h2 class="step-title">Resumen y Confirmación</h2>
-          
-          <div class="summary-container">
-            <div class="summary-section">
-              <h3 class="summary-title">Resumen de Pre-Inscripción</h3>
-              
-              <div class="summary-grid">
-                <div class="summary-item">
-                  <strong>Curso:</strong>
-                  <span>{{ getCursoSeleccionado().nombre }}</span>
-                </div>
-                <div class="summary-item">
-                  <strong>Fecha:</strong>
-                  <span>{{ getCursoSeleccionado().fechas }}</span>
-                </div>
-                <div class="summary-item">
-                  <strong>Ubicación:</strong>
-                  <span>{{ getCursoSeleccionado().ubicacion }}</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="summary-section">
-              <h3 class="summary-title">Datos del Participante</h3>
-              
-              <div class="summary-grid">
-                <div class="summary-item">
-                  <strong>Nombre:</strong>
-                  <span>{{ formData.nombres }} {{ formData.apellidos }}</span>
-                </div>
-                <div class="summary-item">
-                  <strong>RUT:</strong>
-                  <span>{{ formData.rut }}</span>
-                </div>
-                <div class="summary-item">
-                  <strong>Email:</strong>
-                  <span>{{ formData.email }}</span>
-                </div>
-                <div class="summary-item">
-                  <strong>Teléfono:</strong>
-                  <span>{{ formData.telefono }}</span>
-                </div>
-                <div class="summary-item">
-                  <strong>Grupo Scout:</strong>
-                  <span>{{ getLabel(grupos, formData.grupo) }}</span>
-                </div>
-                <div class="summary-item">
-                  <strong>Rama:</strong>
-                  <span>{{ getLabel(ramas, formData.rama) }}</span>
-                </div>
-                <div v-if="formData.tieneVehiculo" class="summary-item">
-                  <strong>Patente Vehículo:</strong>
-                  <span>{{ formData.patenteVehiculo }}</span>
-                </div>
-                <div class="summary-item">
-                  <strong>Foto:</strong>
-                  <span>{{ formData.fotoParticipante ? '✓ Subida' : '❌ Pendiente' }}</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Sección de Verificación -->
-            <div class="verification-section">
-              <div class="verification-badge">
-                <img src="@/assets/Logo_Boyscout_Chile.png" alt="Logo Scouts Chile" class="verification-logo">
-                <div class="verification-content">
-                  <div class="verified-tick">✓</div>
-                  <h3>¡Pre-inscripción Completada!</h3>
-                  <p>El participante ya está pre-inscrito en el sistema</p>
-                  <p class="verification-note">Recibirá un correo de confirmación con los siguientes pasos</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Navegación del Formulario -->
-        <div class="form-navigation">
-          <BaseButton
-            v-if="currentStep > 0 && currentStep < steps.length - 1"
-            type="button"
-            variant="secondary"
-            @click="previousStep"
-            :disabled="submitting"
-            class="nav-button"
-          >
-            ← Anterior
-          </BaseButton>
-          
-          <div class="nav-spacer"></div>
-          
-          <BaseButton
-            v-if="currentStep < steps.length - 1"
-            type="button"
-            variant="primary"
-            @click="nextStep"
-            :disabled="!currentStepValid"
-            class="nav-button"
-          >
-            {{ currentStep === steps.length - 2 ? 'Revisar' : 'Siguiente' }} →
-          </BaseButton>
-          
-          <BaseButton
-            v-if="currentStep === steps.length - 1"
-            type="submit"
-            variant="success"
-            :disabled="!formValid || submitting"
-            :loading="submitting"
-            class="nav-button submit-button"
-          >
-            {{ submitting ? 'Enviando...' : '✅ Confirmar Pre-Inscripción' }}
-          </BaseButton>
-        </div>
-      </form>
-    </div>
-
-    <!-- Modal de Éxito -->
-    <BaseModal
-      v-model="showSuccessModal"
-      @close="handleModalClose"
-    >
-      <div class="success-modal">
-        <div class="success-icon">🎉</div>
-        <h3>¡Pre-Inscripción Exitosa!</h3>
-        <p>Su formulario ha sido registrado correctamente en el sistema Scouts Biobío.</p>
-        
-        <div class="success-details">
-          <div class="detail-item">
-            <strong>Número de Pre-Inscripción:</strong>
-            <span class="inscription-number">#{{ numeroInscripcion }}</span>
-          </div>
-          <div class="detail-item">
-            <strong>Curso:</strong>
-            <span>{{ getCursoSeleccionado().nombre }}</span>
-          </div>
-          <div class="detail-item">
-            <strong>Participante:</strong>
-            <span>{{ formData.nombres }} {{ formData.apellidos }}</span>
-          </div>
-        </div>
-
-        <!-- Logo y verificación en el modal -->
-        <div class="modal-verification">
-          <img src="@/assets/Logo_Boyscout_Chile.png" alt="Logo Scouts Chile" class="modal-logo">
-          <div class="modal-verified">
-            <span class="modal-tick">✓</span>
-            <span>Pre-inscripción verificada</span>
-          </div>
-        </div>
-        
-        <div class="success-actions">
-          <BaseButton
-            variant="primary"
-            @click="handleModalClose"
-            class="action-button"
-          >
-            Aceptar
-          </BaseButton>
-          <BaseButton
-            variant="outline"
-            @click="imprimirComprobante"
-            class="action-button"
-          >
-            📄 Imprimir Comprobante
-          </BaseButton>
-        </div>
-      </div>
-    </BaseModal>
+    </form>
   </div>
 </template>
 
-<script>
-import { ref, reactive, computed, onMounted } from 'vue'
 
-import BaseAlert from '@/components/Reutilizables/BaseAlert.vue'
-import BaseButton from '@/components/Reutilizables/BaseButton.vue'
-import BaseCheckBox from '@/components/Reutilizables/BaseCheckBox.vue'
-import BaseModal from '@/components/Reutilizables/BaseModal.vue'
-import BaseSelect from '@/components/Reutilizables/BaseSelect.vue'
-import InputBase from '@/components/Reutilizables/InputBase.vue'
-import FileUploader from '@/components/Reutilizables/FileUploader.vue'
 
-export default {
-  name: 'FormularioPreInscripcion',
-  components: {
-    BaseAlert,
-    BaseButton,
-    BaseCheckBox,
-    BaseModal,
-    BaseSelect,
-    InputBase,
-    FileUploader
-  },
-  setup() {
-    const currentStep = ref(0)
-    const submitting = ref(false)
-    const showSuccessModal = ref(false)
-    const numeroInscripcion = ref('')
+<script setup>
+import { ref, computed } from 'vue';
+import InputBase from '@/components/Reutilizables/InputBase.vue';
 
-    const steps = [
-      { label: 'Curso', valid: false },
-      { label: 'Datos Personales', valid: false },
-      { label: 'Información Scout', valid: false },
-      { label: 'Salud', valid: false },
-      { label: 'Adicional', valid: false },
-      { label: 'Confirmación', valid: false }
-    ]
 
-    const formData = reactive({
-      // Paso 1
-      cursoId: '',
-      
-      // Paso 2
-      nombres: '',
-      apellidos: '',
-      rut: '',
-      fechaNacimiento: '',
-      email: '',
-      telefono: '+56 9 ',
-      fotoParticipante: null,
-      
-      // Paso 3
-      region: '',
-      distrito: '',
-      grupo: '',
-      rama: '',
-      rol: '',
-      nivel: '',
-      numeroMMAA: '',
-      
-      // Paso 4
-      alimentacion: '',
-      alergias: '',
-      limitaciones: '',
-      contactoEmergenciaNombre: '',
-      contactoEmergenciaTelefono: '+56 9 ',
-      contactoEmergenciaParentesco: '',
-      
-      // Paso 5
-      profesion: '',
-      estadoCivil: '',
-      apodo: '',
-      tieneVehiculo: false,
-      patenteVehiculo: '',
-      requiereAlojamiento: false,
-      trabajaConNNAJ: false,
-      aceptaTerminos: false,
-      consideraciones: ''
-    })
+// :::::::::::::::::: VARIABLES PARA CAPTURAR VALORES :::::::::::::::::::::::::
 
-    const systemAlert = reactive({
-      visible: false,
-      type: 'informacion',
-      title: 'Bienvenido al Sistema de Pre-Inscripción',
-      message: 'Complete el formulario para pre-inscribirse en los cursos de la Zona Biobío.'
-    })
+const nombre = ref("");
+const rut = ref("");
+const fechaNacimiento = ref("");
+const numeroCelular = ref("");
+const email = ref("");
+const estadoCivil = ref("");
+const direccion = ref("");
+const edad = ref(null);
+const religion = ref("");
+const consideraciones = ref("");
+const necesitaAlojamiento = ref("");
+const profesion = ref("");
+const apodoCredencial = ref("");
+const tieneAlergiaEnfermedad = ref("");
+const detalleAlergiaEnfermedad = ref("");
+const tipoAlimentacion = ref("");
+const rolSeleccionado = ref("");
+const rolOtro = ref("");
+const grupoSeleccionado = ref("");
+const grupoOtro = ref("");
+const ramaSeleccionada = ref("");
+const opcionCargo = ref("");
+const cargoTexto = ref("");
+const añosUnidad = ref("");
+const mesesUnidad = ref("");
+const distritoSeleccionado = ref("");
+const distritoOtro = ref("");
+const nivelSeleccionado = ref("");
+const ramaMedioSeleccionada = ref("");
+const ramaAvanzadoSeleccionada = ref("");
+const nombreEmergencia = ref("");
+const numeroEmergencia = ref("");
+const haTrabajadoConNinos = ref("");
+const esBeneficiario = ref("");
+const tiempoBeneficiario = ref("");
+const esMiembroActivo = ref("");
+const patenteVehiculo = ref("");
+const vehiculoPropio = ref("");
+const patentePropia = ref("");
+const marcaPropia = ref("");
+const modeloPropio = ref("");
+const cursoSeleccionado = ref("");
 
-    // Datos para selects y opciones
-    const cursosDisponibles = [
-      {
-        id: 1,
-        nombre: 'Curso Medio - Liderazgo Scout',
-        fechas: '01-03 Feb 2024',
-        ubicacion: 'Campamento Los Pinos, Concepción',
-        cupoMaximo: 26,
-        inscritos: 18,
-        estado: 'disponible',
-        icono: '🏕️'
-      },
-      {
-        id: 2,
-        nombre: 'Primeros Auxilios en Terreno',
-        fechas: '10-11 Feb 2024',
-        ubicacion: 'Sede Scouts Talcahuano',
-        cupoMaximo: 20,
-        inscritos: 20,
-        estado: 'lleno',
-        icono: '🩹'
-      },
-      {
-        id: 3,
-        nombre: 'Educación Ambiental Scout',
-        fechas: '15-16 Feb 2024',
-        ubicacion: 'Reserva Nacional Nonguén',
-        cupoMaximo: 25,
-        inscritos: 12,
-        estado: 'disponible',
-        icono: '🌿'
-      }
-    ]
 
-    const regiones = [
-      { value: 'biobio', label: 'Región del Biobío' },
-      { value: 'nuble', label: 'Región de Ñuble' },
-      { value: 'araucania', label: 'Región de La Araucanía' }
-    ]
+// REGION / CIUDAD / COMUNA
+const regionSeleccionada = ref("");
+const ciudadSeleccionada = ref("");
+const comunaSeleccionada = ref("");
 
-    const distritos = [
-      { value: 'norte', label: 'Distrito Norte' },
-      { value: 'sur', label: 'Distrito Sur' },
-      { value: 'centro', label: 'Distrito Centro' },
-      { value: 'costa', label: 'Distrito Costa' }
-    ]
-
-    const grupos = [
-      { value: 'grupo1', label: 'Grupo Scout 1 - Concepción' },
-      { value: 'grupo2', label: 'Grupo Scout 2 - Talcahuano' },
-      { value: 'grupo3', label: 'Grupo Scout 3 - Chiguayante' },
-      { value: 'grupo4', label: 'Grupo Scout 4 - San Pedro' }
-    ]
-
-    const ramas = [
-      { value: 'manada', label: 'Manada (7-10 años)' },
-      { value: 'tropa', label: 'Tropa (11-14 años)' },
-      { value: 'comunidad', label: 'Comunidad (15-17 años)' },
-      { value: 'clan', label: 'Clan (18-20 años)' }
-    ]
-
-    const roles = [
-      { value: 'participante', label: 'Participante' },
-      { value: 'formador', label: 'Formador' },
-      { value: 'director', label: 'Director de Rama' },
-      { value: 'apoyo', label: 'Personal de Apoyo' }
-    ]
-
-    const niveles = [
-      { value: 'inicial', label: 'Nivel Inicial' },
-      { value: 'medio', label: 'Nivel Medio' },
-      { value: 'avanzado', label: 'Nivel Avanzado' },
-      { value: 'ninguno', label: 'Sin formación previa' }
-    ]
-
-    const tiposAlimentacion = [
-      { value: 'normal', label: 'Alimentación Normal' },
-      { value: 'vegetariano', label: 'Vegetariano' },
-      { value: 'vegano', label: 'Vegano' },
-      { value: 'celiaco', label: 'Celíaco' },
-      { value: 'diabetico', label: 'Diabético' }
-    ]
-
-    // Validación personalizada para teléfono chileno
-    const telefonoRules = (value) => {
-      if (!value) return 'Teléfono es requerido'
-      const telefonoRegex = /^\+56\s9\s\d{4}\s\d{4}$/
-      if (!telefonoRegex.test(value)) {
-        return 'Formato requerido: +56 9 XXXXXXXX'
-      }
-      return true
-    }
-
-    // Computed properties
-    const currentStepValid = computed(() => {
-      const validations = {
-        0: () => formData.cursoId !== '',
-        1: () => formData.nombres && formData.apellidos && formData.rut && 
-                 formData.email && formData.telefono && formData.fotoParticipante &&
-                 telefonoRules(formData.telefono) === true,
-        2: () => formData.region && formData.distrito && formData.grupo && 
-                 formData.rama && formData.rol && formData.nivel,
-        3: () => formData.alimentacion && formData.contactoEmergenciaNombre && 
-                 formData.contactoEmergenciaTelefono && formData.contactoEmergenciaParentesco &&
-                 telefonoRules(formData.contactoEmergenciaTelefono) === true,
-        4: () => formData.aceptaTerminos && 
-                 (formData.tieneVehiculo ? formData.patenteVehiculo !== '' : true),
-        5: () => true // Paso de confirmación siempre es válido
-      }
-      return validations[currentStep.value] ? validations[currentStep.value]() : false
-    })
-
-    const formValid = computed(() => {
-      return currentStepValid.value && formData.aceptaTerminos
-    })
-
-    // Methods
-    const showAlert = (type, title, message) => {
-      systemAlert.type = type
-      systemAlert.title = title
-      systemAlert.message = message
-      systemAlert.visible = true
-    }
-
-    const clearSystemAlert = () => {
-      systemAlert.visible = false
-    }
-
-    const selectCurso = (curso) => {
-      if (curso.estado === 'disponible') {
-        formData.cursoId = curso.id
-      } else {
-        showAlert('error', 'Curso no disponible', 'Este curso ya ha alcanzado su cupo máximo. Por favor seleccione otro curso.')
-      }
-    }
-
-    const getCursoSeleccionado = () => {
-      return cursosDisponibles.find(curso => curso.id === formData.cursoId) || {}
-    }
-
-    const getLabel = (options, value) => {
-      const option = options.find(opt => opt.value === value)
-      return option ? option.label : ''
-    }
-
-    // Inicializar teléfono con formato
-    const initializeTelefono = () => {
-      if (!formData.telefono || formData.telefono === '+56 9 ') {
-        formData.telefono = '+56 9 '
-      }
-    }
-
-    const initializeTelefonoEmergencia = () => {
-      if (!formData.contactoEmergenciaTelefono || formData.contactoEmergenciaTelefono === '+56 9 ') {
-        formData.contactoEmergenciaTelefono = '+56 9 '
-      }
-    }
-
-    // Formatear teléfono chileno
-    const formatTelefono = () => {
-      let value = formData.telefono.replace(/\D/g, '')
-      
-      // Asegurar que siempre empiece con 569
-      if (!value.startsWith('569')) {
-        value = '569' + value.replace(/^569/, '')
-      }
-      
-      // Mantener solo los primeros 11 dígitos (569 + 8 dígitos)
-      value = value.substring(0, 11)
-      
-      if (value.length > 3) {
-        const parte1 = value.substring(3, 7) // primeros 4 dígitos después de 569
-        const parte2 = value.substring(7, 11) // últimos 4 dígitos
-        
-        formData.telefono = `+56 9 ${parte1}${parte2 ? ' ' + parte2 : ''}`
-      }
-    }
-
-    const formatTelefonoEmergencia = () => {
-      let value = formData.contactoEmergenciaTelefono.replace(/\D/g, '')
-      
-      // Asegurar que siempre empiece con 569
-      if (!value.startsWith('569')) {
-        value = '569' + value.replace(/^569/, '')
-      }
-      
-      // Mantener solo los primeros 11 dígitos (569 + 8 dígitos)
-      value = value.substring(0, 11)
-      
-      if (value.length > 3) {
-        const parte1 = value.substring(3, 7) // primeros 4 dígitos después de 569
-        const parte2 = value.substring(7, 11) // últimos 4 dígitos
-        
-        formData.contactoEmergenciaTelefono = `+56 9 ${parte1}${parte2 ? ' ' + parte2 : ''}`
-      }
-    }
-
-    const nextStep = () => {
-      if (currentStepValid.value) {
-        currentStep.value++
-        window.scrollTo({ top: 0, behavior: 'smooth' })
-      } else {
-        showAlert('error', 'Campos incompletos', 'Por favor complete todos los campos requeridos antes de continuar.')
-      }
-    }
-
-    const previousStep = () => {
-      currentStep.value--
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-    }
-
-    const submitForm = async () => {
-      if (!formValid.value) {
-        showAlert('error', 'Formulario incompleto', 'Por favor complete todos los campos requeridos y acepte los términos y condiciones.')
-        return
-      }
-
-      submitting.value = true
-
-      try {
-        // Simulación de envío a API Django
-        await new Promise(resolve => setTimeout(resolve, 3000))
-        
-        // Generar número de pre-inscripción
-        const timestamp = new Date().getTime().toString().slice(-6)
-        numeroInscripcion.value = `SC${timestamp}`
-        
-        showSuccessModal.value = true
-        showAlert('exito', 'Pre-inscripción exitosa', `Su pre-inscripción #${numeroInscripcion.value} ha sido registrada correctamente.`)
-        
-      } catch (error) {
-        showAlert('error', 'Error en la pre-inscripción', 'Ha ocurrido un error al procesar su solicitud. Por favor intente nuevamente.')
-      } finally {
-        submitting.value = false
-      }
-    }
-
-    const handleModalClose = () => {
-      showSuccessModal.value = false
-      // Resetear formulario para nueva pre-inscripción
-      Object.keys(formData).forEach(key => {
-        if (typeof formData[key] === 'boolean') {
-          formData[key] = false
-        } else if (key === 'telefono' || key === 'contactoEmergenciaTelefono') {
-          formData[key] = '+56 9 '
-        } else {
-          formData[key] = ''
-        }
-      })
-      formData.fotoParticipante = null
-      currentStep.value = 0
-    }
-
-    const imprimirComprobante = () => {
-      showAlert('informacion', 'Imprimir comprobante', 'La funcionalidad de impresión se implementará en la siguiente versión.')
-    }
-
-    onMounted(() => {
-      // Inicialización cuando el componente se monta
-      console.log('Formulario de pre-inscripción Scouts Biobío montado')
-    })
-
-    return {
-      currentStep,
-      steps,
-      formData,
-      systemAlert,
-      submitting,
-      showSuccessModal,
-      numeroInscripcion,
-      cursosDisponibles,
-      regiones,
-      distritos,
-      grupos,
-      ramas,
-      roles,
-      niveles,
-      tiposAlimentacion,
-      telefonoRules,
-      currentStepValid,
-      formValid,
-      clearSystemAlert,
-      selectCurso,
-      getCursoSeleccionado,
-      getLabel,
-      initializeTelefono,
-      initializeTelefonoEmergencia,
-      formatTelefono,
-      formatTelefonoEmergencia,
-      nextStep,
-      previousStep,
-      submitForm,
-      handleModalClose,
-      imprimirComprobante
-    }
+// Validación del formato de patente chilena (ej: AB-CD-12)
+function validarPatente() {
+  // Permite formato: AA-BB-11 o AB-CD-12 o similar
+  const formato = /^[A-Z]{2}-[A-Z]{2}-\d{2}$/;
+  if (patenteVehiculo.value && !formato.test(patenteVehiculo.value.toUpperCase())) {
+    patenteVehiculo.value = patenteVehiculo.value
+      .toUpperCase()
+      .replace(/[^A-Z0-9-]/g, ""); // limpia caracteres no válidos
   }
 }
+
+// :::::::::::::::::: LISTA DE REGIONES, CIUDADES Y COMUNAS ::::::::::::::::::::::::: 
+const comunasPorRegion = {
+  "Arica y Parinacota": {
+    "Arica": ["Arica"],
+    "Putre": ["Putre"],
+    "General Lagos": ["General Lagos"],
+    "Camarones": ["Camarones"]
+  },
+  "Tarapacá": {
+    "Iquique": ["Iquique", "Alto Hospicio"],
+    "Tamarugal": ["Pozo Almonte", "Camiña", "Colchane", "Huara", "Pica"]
+  },
+  "Antofagasta": {
+    "Antofagasta": ["Antofagasta", "Mejillones", "Sierra Gorda", "Taltal"],
+    "El Loa": ["Calama", "Ollagüe", "San Pedro de Atacama"],
+    "Tocopilla": ["Tocopilla", "María Elena"]
+  },
+  "Atacama": {
+    "Copiapó": ["Copiapó", "Caldera", "Tierra Amarilla"],
+    "Chañaral": ["Chañaral", "Diego de Almagro"],
+    "Huasco": ["Vallenar", "Alto del Carmen", "Freirina", "Huasco"]
+  },
+  "Coquimbo": {
+    "Elqui": ["La Serena", "Coquimbo", "Andacollo", "La Higuera", "Paihuano", "Vicuña"],
+    "Limarí": ["Ovalle", "Combarbalá", "Monte Patria", "Punitaqui", "Río Hurtado"],
+    "Choapa": ["Illapel", "Canela", "Los Vilos", "Salamanca"]
+  },
+  "Valparaíso": {
+    "Valparaíso": ["Valparaíso", "Viña del Mar", "Concón", "Quintero", "Puchuncaví"],
+    "Isla de Pascua": ["Isla de Pascua"],
+    "Los Andes": ["Los Andes", "Calle Larga", "Rinconada", "San Esteban"],
+    "Petorca": ["La Ligua", "Cabildo", "Papudo", "Petorca", "Zapallar"],
+    "Quillota": ["Quillota", "La Calera", "Hijuelas", "La Cruz", "Nogales"],
+    "San Antonio": ["San Antonio", "Algarrobo", "Cartagena", "El Quisco", "El Tabo", "Santo Domingo"],
+    "San Felipe de Aconcagua": ["San Felipe", "Catemu", "Llay-Llay", "Panquehue", "Putaendo", "Santa María"],
+    "Marga Marga": ["Quilpué", "Limache", "Olmué", "Villa Alemana"]
+  },
+  "Metropolitana de Santiago": {
+    "Santiago": ["Santiago", "Cerrillos", "Cerro Navia", "Conchalí", "El Bosque", "Estación Central", "Huechuraba", "Independencia", "La Cisterna", "La Florida", "La Granja", "La Pintana", "La Reina", "Las Condes", "Lo Barnechea", "Lo Espejo", "Lo Prado", "Macul", "Maipú", "Ñuñoa", "Pedro Aguirre Cerda", "Peñalolén", "Providencia", "Pudahuel", "Puente Alto", "Quilicura", "Quinta Normal", "Recoleta", "Renca", "San Joaquín", "San Miguel", "San Ramón", "Vitacura"],
+    "Cordillera": ["San José de Maipo"],
+    "Chacabuco": ["Colina", "Lampa", "Tiltil"],
+    "Maipo": ["San Bernardo", "Buin", "Calera de Tango", "Paine"],
+    "Talagante": ["Talagante", "El Monte", "Isla de Maipo", "Padre Hurtado", "Peñaflor"],
+    "Melipilla": ["Melipilla", "Alhué", "Curacaví", "María Pinto", "San Pedro"]
+  },
+  "Libertador General Bernardo O'Higgins": {
+    "Cachapoal": ["Rancagua", "Codegua", "Coinco", "Coltauco", "Doñihue", "Graneros", "Las Cabras", "Machalí", "Malloa", "Mostazal", "Olivar", "Peumo", "Pichidegua", "Quinta de Tilcoco", "Rengo", "Requínoa", "San Vicente"],
+    "Cardenal Caro": ["Pichilemu", "La Estrella", "Litueche", "Marchigüe", "Navidad", "Paredones"],
+    "Colchagua": ["San Fernando", "Chépica", "Chimbarongo", "Lolol", "Nancagua", "Palmilla", "Peralillo", "Placilla", "Pumanque", "Santa Cruz"]
+  },
+  "Maule": {
+    "Talca": ["Talca", "Constitución", "Curepto", "Empedrado", "Maule", "Pelarco", "Pencahue", "Río Claro", "San Clemente", "San Rafael"],
+    "Cauquenes": ["Cauquenes", "Chanco", "Pelluhue"],
+    "Curicó": ["Curicó", "Hualañé", "Licantén", "Molina", "Rauco", "Romeral", "Sagrada Familia", "Teno", "Vichuquén"],
+    "Linares": ["Linares", "Colbún", "Longaví", "Parral", "Retiro", "San Javier", "Villa Alegre", "Yerbas Buenas"]
+  },
+  "Ñuble": {
+    "Diguillín": ["Bulnes", "Chillán", "Chillán Viejo", "El Carmen", "Pemuco", "Pinto", "Quillón", "San Ignacio", "Yungay"],
+    "Itata": ["Cobquecura", "Coelemu", "Ninhue", "Portezuelo", "Quirihue", "Ránquil", "Treguaco"],
+    "Punilla": ["Coihueco", "Ñiquén", "San Carlos", "San Fabián", "San Nicolás"]
+  },
+  "Biobío": {
+    "Concepción": ["Concepción", "Coronel", "Chiguayante", "Florida", "Hualqui", "Lota", "Penco", "San Pedro de la Paz", "Santa Juana", "Talcahuano", "Tomé", "Hualpén"],
+    "Arauco": ["Lebu", "Arauco", "Cañete", "Contulmo", "Curanilahue", "Los Álamos", "Tirúa"],
+    "Biobío": ["Los Ángeles", "Antuco", "Cabrero", "Laja", "Mulchén", "Nacimiento", "Negrete", "Quilaco", "Quilleco", "San Rosendo", "Santa Bárbara", "Tucapel", "Yumbel", "Alto Biobío"]
+  },
+  "La Araucanía": {
+    "Cautín": ["Temuco", "Carahue", "Cunco", "Curarrehue", "Freire", "Galvarino", "Gorbea", "Lautaro", "Loncoche", "Melipeuco", "Nueva Imperial", "Padre Las Casas", "Perquenco", "Pitrufquén", "Pucón", "Saavedra", "Teodoro Schmidt", "Toltén", "Vilcún", "Villarrica"],
+    "Malleco": ["Angol", "Collipulli", "Curacautín", "Ercilla", "Lonquimay", "Los Sauces", "Purén", "Renaico", "Traiguén", "Victoria"]
+  },
+  "Los Ríos": {
+    "Valdivia": ["Valdivia", "Corral", "Lanco", "Los Lagos", "Máfil", "Mariquina", "Paillaco", "Panguipulli"],
+    "Ranco": ["La Unión", "Futrono", "Lago Ranco", "Río Bueno"]
+  },
+  "Los Lagos": {
+    "Llanquihue": ["Puerto Montt", "Calbuco", "Cochamó", "Fresia", "Frutillar", "Llanquihue", "Los Muermos", "Maullín", "Puerto Varas"],
+    "Chiloé": ["Castro", "Ancud", "Chonchi", "Curaco de Vélez", "Dalcahue", "Puqueldón", "Queilén", "Quellón", "Quemchi", "Quinchao"],
+    "Osorno": ["Osorno", "Puerto Octay", "Purranque", "Puyehue", "Río Negro", "San Juan de la Costa", "San Pablo"]
+  },
+  "Aysén del General Carlos Ibáñez del Campo": {
+    "Coyhaique": ["Coyhaique", "Lago Verde"],
+    "Aysén": ["Aysén", "Cisnes", "Guaitecas"],
+    "General Carrera": ["Cochrane", "O'Higgins"],
+    "Capitán Prat": ["Tortel"]
+  },
+  "Magallanes y de la Antártica Chilena": {
+    "Magallanes": ["Punta Arenas", "Laguna Blanca", "Río Verde", "San Gregorio"],
+    "Antártica": ["Cabo de Hornos", "Antártica"],
+    "Tierra del Fuego": ["Porvenir", "Primavera", "Timaukel"],
+    "Última Esperanza": ["Puerto Natales", "Torres del Paine"]
+  }
+};
+
+// :::::::::::::::::: LOGICA FILTRO DE LISTA DE CUIDADES Y COMUNAS :::::::::::::::::::::::::
+// Ciudades disponibles según la región elegida
+const ciudadesDisponibles = computed(() => {
+  return regionSeleccionada.value ? comunasPorRegion[regionSeleccionada.value] : {};
+});
+
+// Comunas disponibles según la ciudad elegida
+const comunasDisponibles = computed(() => {
+  if (regionSeleccionada.value && ciudadSeleccionada.value) {
+    return comunasPorRegion[regionSeleccionada.value][ciudadSeleccionada.value] || [];
+  }
+  return [];
+});
 </script>
 
+
+
+
 <style scoped>
-/* Los estilos se mantienen igual que en la versión anterior */
-/* Solo se han eliminado las referencias a costos en los estilos */
 
-.formulario-scouts {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+* {
+  font-family: "Calibri", sans-serif;
 }
 
-.form-header {
-  background: linear-gradient(135deg, #2c5aa0 0%, #1e3a8a 100%);
-  color: white;
-  padding: 2rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
 
-.header-logo {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  max-width: 1200px;
-  margin: 0 auto;
-}
 
-.logo {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  border: 3px solid #ffcc00;
-  background: white;
-  object-fit: cover;
-}
-
-.header-text {
-  flex: 1;
-}
-
-.page-title {
-  font-size: 2.5rem;
-  margin-bottom: 0.5rem;
-  font-weight: 700;
-}
-
-.page-subtitle {
-  font-size: 1.3rem;
-  opacity: 0.9;
-  margin-bottom: 0.25rem;
-}
-
-.institution {
-  font-size: 1rem;
-  opacity: 0.8;
-}
-
-.form-alert {
-  max-width: 1200px;
-  margin: 2rem auto 0 auto;
-  padding: 0 2rem;
-}
-
-.form-progress {
-  background: white;
-  padding: 1.5rem 2rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.progress-steps {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  max-width: 1200px;
-  margin: 0 auto;
-  position: relative;
-}
-
-.step {
+.formulario {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  position: relative;
-  z-index: 2;
-  flex: 1;
+  justify-content: center; /* Centra verticalmente */
+  align-items: center;     /* Centra horizontalmente */
+  min-height: 100vh;       /* Ocupa todo el alto de la ventana */
+  background-color: #f5f5f5; /* (Opcional) fondo suave */
 }
 
-.step-number {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  background: #e9ecef;
-  color: #6c757d;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  font-size: 1.2rem;
-  margin-bottom: 0.5rem;
-  transition: all 0.3s ease;
-  border: 3px solid transparent;
+textarea {
+  resize: none;           /* desactiva el cambio de tamaño con el mouse */
+  height: 100px;          /* ||alto fijo (puedes ajustar a tu gusto) */
+  width: 100%;            /* asegura que ocupe todo el ancho del contenedor */
+  box-sizing: border-box; /* evita desbordes por padding */
 }
 
-.step.active .step-number {
-  background: #2c5aa0;
-  color: white;
-  border-color: #1e3a8a;
-  transform: scale(1.1);
-}
-
-.step.completed .step-number {
-  background: #28a745;
-  color: white;
-  border-color: #1e7e34;
-}
-
-.step.disabled .step-number {
-  background: #f8f9fa;
-  color: #dee2e6;
-}
-
-.step-label {
-  font-size: 0.9rem;
+h2 {
+  font-size: 20px; /* tamaño de los sub titulos */
+  color: #333;
   font-weight: 600;
-  color: #6c757d;
   text-align: center;
+  margin: 1.5rem 0 1rem 0;
+  border-bottom: 2px solid #428ce1;
+  padding-bottom: 6px;
 }
 
-.step.active .step-label {
-  color: #2c5aa0;
-}
-
-.step.completed .step-label {
-  color: #28a745;
-}
-
-.step-line {
-  position: absolute;
-  top: 25px;
-  right: -50%;
+.formulario :deep(input),
+.formulario :deep(select),
+.formulario :deep(textarea) {
+  padding: 10px 5px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 16px;   /* Tamaño de fuente legible dentro de los inputs */
+  background-color: #f9f9f9;
+  color: #333;
+  transition: all 0.2s ease;
   width: 100%;
-  height: 3px;
-  background: #e9ecef;
-  z-index: 1;
+  box-sizing: border-box;
 }
 
-.step.active .step-line,
-.step.completed .step-line {
-  background: #2c5aa0;
+.formulario :deep(input:focus),
+.formulario :deep(select:focus),
+.formulario :deep(textarea:focus) {
+  /*border-color: #3079f0;*/
+
+  box-shadow: 0 0 4px rgba(2, 145, 255, 0.925);
+  outline: none;
 }
 
-.form-container {
-  max-width: 1200px;
-  margin: 2rem auto;
-  padding: 0 2rem;
+.formulario :deep(label) {
+  font-weight: 600;
+  color: #444;
+  margin-bottom: 5px;
+  display: inline-block;
 }
 
-.scouts-form {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 400px;          /* Controla el ancho del formulario */
+  background: rgb(255, 255, 255);         /* Opcional: fondo blanco */
+  padding: 50px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(34, 24, 232, 0.1);
+  border: 2px solid #ffffff;   /* Borde azul claro */
+}
+
+h1 {
+text-align: left; 
+font-family: "Calibri", sans-serif; 
+font-weight: bold; font-size: 30px; 
+background: #202020; 
+-webkit-background-clip: text; 
+-moz-background-clip: text; 
+background-clip: text; 
+color: transparent; 
+}
+
+input, select, textarea {
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  width: 100%;
+  box-sizing: border-box;  /* Asegura que padding no rompa el ancho */
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  transition: all 0.2s ease;
+}
+
+/* Efecto al enfocar (hover o focus) */
+input:focus, select:focus, textarea:focus {
+  border-color: #4CAF50;         /* Verde suave */
+  box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
+  outline: none;
+}
+
+/* Placeholder más suave */
+::placeholder {
+  color: #999;
+}
+
+/* :::::::::::::::::::: EFECTO DESPLEGABLE :::::::::::::::::::: */
+.desplegar-enter-active,
+.desplegar-leave-active {
+  transition: all 0.4s ease;
   overflow: hidden;
 }
 
-.form-step {
-  padding: 2rem;
-  animation: fadeInUp 0.5s ease-out;
+.desplegar-enter-from,
+.desplegar-leave-to {
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-10px);
 }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.desplegar-enter-to,
+.desplegar-leave-from {
+  max-height: 200px;
+  opacity: 1;
+  transform: translateY(0);
 }
 
-.step-title {
-  color: #2c5aa0;
-  font-size: 1.8rem;
-  margin-bottom: 0.5rem;
-  border-bottom: 3px solid #2c5aa0;
-  padding-bottom: 0.5rem;
-}
-
-.step-description {
-  color: #6c757d;
-  font-size: 1.1rem;
-  margin-bottom: 2rem;
-}
-
-.form-section {
-  margin-bottom: 2.5rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid #e9ecef;
-}
-
-.form-section:last-of-type {
-  border-bottom: none;
-}
-
-.section-title {
-  color: #495057;
-  font-size: 1.3rem;
-  margin-bottom: 1.5rem;
-  padding-left: 0.5rem;
-  border-left: 4px solid #2c5aa0;
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.form-field {
-  margin-bottom: 1rem;
-}
-
-.field-note {
-  font-size: 0.85rem;
-  color: #6c757d;
-  margin-top: -0.5rem;
-  margin-bottom: 1rem;
-  font-style: italic;
-}
-
-.vehicle-info {
-  margin-left: 2rem;
-  padding: 1rem;
-  background: #f8f9fa;
-  border-radius: 8px;
-  border-left: 4px solid #2c5aa0;
-}
-
-/* Estilos para la selección de cursos */
-.courses-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.course-option {
-  border: 2px solid #e9ecef;
-  border-radius: 12px;
-  padding: 1.5rem;
-  cursor: pointer;
+/* :::::::::::::::::::: CAMPO :::::::::::::::::::: */
+.campo {
+  width: 100%;
   transition: all 0.3s ease;
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-  position: relative;
 }
 
-.course-option:hover {
-  border-color: #2c5aa0;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(44, 90, 160, 0.1);
-}
 
-.course-option.selected {
-  border-color: #2c5aa0;
-  background: linear-gradient(135deg, #f8fbff 0%, #e3f2fd 100%);
-}
 
-.course-icon {
-  font-size: 2.5rem;
-  flex-shrink: 0;
-}
 
-.course-info {
-  flex: 1;
-}
-
-.course-name {
-  color: #2c5aa0;
-  font-size: 1.2rem;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-}
-
-.course-dates {
-  color: #495057;
-  font-weight: 500;
-  margin-bottom: 0.25rem;
-}
-
-.course-location {
-  color: #6c757d;
-  font-size: 0.9rem;
-  margin-bottom: 0.75rem;
-}
-
-.course-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.course-cupo {
-  color: #495057;
-  font-size: 0.9rem;
-}
-
-.course-status {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.course-status.disponible {
-  background: #d4edda;
-  color: #155724;
-}
-
-.course-status.lleno {
-  background: #f8d7da;
-  color: #721c24;
-}
-
-.selected-course-info {
-  background: #e7f3ff;
-  border: 1px solid #b3d9ff;
-  border-radius: 8px;
-  padding: 1rem 1.5rem;
-  margin-top: 1rem;
-}
-
-.selected-course-info h4 {
-  color: #2c5aa0;
-  margin-bottom: 0.5rem;
-}
-
-/* Estilos para checkboxes */
-.checkbox-group {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.checkbox-field {
-  margin-bottom: 0;
-}
-
-.terms-container {
-  background: #f8f9fa;
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.terms-content {
-  margin-bottom: 1.5rem;
-}
-
-.terms-content p {
-  margin-bottom: 0.75rem;
-}
-
-.terms-content ul {
-  margin-left: 1.5rem;
-  color: #495057;
-}
-
-.terms-content li {
-  margin-bottom: 0.5rem;
-}
-
-.terms-checkbox {
-  font-weight: 600;
-}
-
-/* Estilos para el resumen */
-.summary-container {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-
-.summary-section {
-  background: #f8f9fa;
-  border-radius: 8px;
-  padding: 1.5rem;
-}
-
-.summary-title {
-  color: #2c5aa0;
-  font-size: 1.3rem;
-  margin-bottom: 1rem;
-  border-bottom: 2px solid #2c5aa0;
-  padding-bottom: 0.5rem;
-}
-
-.summary-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1rem;
-}
-
-.summary-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem;
-  background: white;
-  border-radius: 6px;
-  border-left: 4px solid #2c5aa0;
-}
-
-.summary-item strong {
-  color: #495057;
-}
-
-/* Sección de verificación */
-.verification-section {
-  margin-top: 2rem;
-  padding: 2rem;
-  background: linear-gradient(135deg, #f8fff8 0%, #e8f5e8 100%);
-  border-radius: 12px;
-  border: 2px solid #28a745;
-}
-
-.verification-badge {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  text-align: left;
-}
-
-.verification-logo {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  border: 3px solid #28a745;
-  background: white;
-  padding: 0.5rem;
-}
-
-.verification-content {
-  flex: 1;
-}
-
-.verified-tick {
-  width: 40px;
-  height: 40px;
-  background: #28a745;
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.verification-note {
-  font-size: 0.9rem;
-  color: #28a745;
-  font-style: italic;
-  margin-top: 0.5rem;
-}
-
-/* Navegación */
-.form-navigation {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 2rem;
-  background: #f8f9fa;
-  border-top: 1px solid #e9ecef;
-}
-
-.nav-button {
-  min-width: 150px;
-}
-
-.submit-button {
-  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-  border: none;
-}
-
-.nav-spacer {
-  flex: 1;
-}
-
-/* Modal de éxito */
-.success-modal {
-  text-align: center;
-  padding: 1rem;
-}
-
-.success-icon {
-  font-size: 4rem;
-  margin-bottom: 1rem;
-}
-
-.success-modal h3 {
-  color: #28a745;
-  margin-bottom: 1rem;
-  font-size: 1.5rem;
-}
-
-.success-details {
-  background: #f8f9fa;
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin: 1.5rem 0;
-  text-align: left;
-}
-
-.detail-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid #e9ecef;
-}
-
-.detail-item:last-child {
-  margin-bottom: 0;
-  border-bottom: none;
-}
-
-.inscription-number {
-  color: #2c5aa0;
-  font-weight: 700;
-  font-size: 1.2rem;
-}
-
-.modal-verification {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  margin: 1.5rem 0;
-  padding: 1rem;
-  background: #f8fff8;
-  border-radius: 8px;
-  border: 1px solid #28a745;
-}
-
-.modal-logo {
-  width: 50px;
-  height: 50px;
-}
-
-.modal-verified {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #28a745;
-  font-weight: 600;
-}
-
-.modal-tick {
-  width: 25px;
-  height: 25px;
-  background: #28a745;
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.9rem;
-}
-
-.success-actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  margin-top: 1.5rem;
-}
-
-.action-button {
-  min-width: 180px;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .form-header {
-    padding: 1rem;
-  }
-  
-  .header-logo {
-    flex-direction: column;
-    text-align: center;
-    gap: 1rem;
-  }
-  
-  .page-title {
-    font-size: 2rem;
-  }
-  
-  .form-progress {
-    padding: 1rem;
-  }
-  
-  .progress-steps {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .step-line {
-    display: none;
-  }
-  
-  .form-container {
-    padding: 0 1rem;
-    margin: 1rem auto;
-  }
-  
-  .form-step {
-    padding: 1rem;
-  }
-  
-  .courses-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .form-grid,
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-  
-  .form-navigation {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .nav-button {
-    width: 100%;
-  }
-  
-  .success-actions {
-    flex-direction: column;
-  }
-  
-  .action-button {
-    width: 100%;
-  }
-  
-  .verification-badge {
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .modal-verification {
-    flex-direction: column;
-  }
-}
-
-@media (max-width: 480px) {
-  .course-option {
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .course-meta {
-    flex-direction: column;
-    gap: 0.5rem;
-    align-items: flex-start;
-  }
-  
-  .vehicle-info {
-    margin-left: 0;
-  }
-}
 </style>

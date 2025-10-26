@@ -19,7 +19,6 @@ const allLinks = [
   { label: 'Acreditación', to: { name: 'manualacreditacion' } },
   { label: 'QR', to: { name: 'verificadorqr' } },
   { label: 'Envío de Correos', to: { name: 'correos' } },
-  { label: 'Reportes', to: '#' },
 ]
 
 const VISIBLE_COUNT = 5 // mostrar primeros 5 enlaces, resto en "Más"

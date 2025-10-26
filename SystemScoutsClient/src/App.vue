@@ -1,5 +1,6 @@
 <script setup>
 import NavBar from './components/Reutilizables/NavBar.vue'
+import SideBar from './components/Reutilizables/SideBar.vue';
 </script>
 
 <template>

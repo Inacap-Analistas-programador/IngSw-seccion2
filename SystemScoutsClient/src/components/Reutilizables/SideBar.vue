@@ -1,8 +1,8 @@
 <template>
   <aside class="sidebar">
     <div class="sidebar-header">
-      <img src="../assets/Logo_Boyscout_Chile.png" alt="Logo" class="logo" />
-      <h1 class="titulo">SBS - Biobío</h1>
+      <img :src="logoSrc" alt="Logo Scouts" class="logo" />
+      <h1 class="titulo">SBS</h1>
     </div>
 
     <nav class="sidebar-nav">
@@ -41,9 +41,8 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import logoSrc from '@/assets/Logo_Boyscout_Chile.png'
 import { useRouter } from 'vue-router'
-// Usamos la ruta relativa (corregida)
-import usuarioService from '../service/usuarioService.js'
 
 const usuario = ref({ nombre: 'Cargando...', rol: '---' })
 const menuAbierto = ref(false)
