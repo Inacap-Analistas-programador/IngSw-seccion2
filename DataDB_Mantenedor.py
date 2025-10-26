@@ -6,7 +6,7 @@ fake = Faker('es_CL')
 # ==== Variable const de los Modulos ====
 
 modulo = ""
-password_db = ""
+password_db = "27735378Hent@i"
 
 # ==== Conexión a la base de datos ====
 
@@ -37,7 +37,7 @@ for _ in range(10):
     ))
 
 insert_many(f"""
-INSERT INTO {modulo}_rol (ROL_DESCRIPCION, ROL_TIPO, ROL_VIGENTE)
+INSERT INTO {modulo}rol (ROL_DESCRIPCION, ROL_TIPO, ROL_VIGENTE)
 VALUES (%s, %s, %s)
 """, roles)
 
@@ -45,7 +45,7 @@ VALUES (%s, %s, %s)
 
 cargos = [(fake.job()[:50], True) for _ in range(10)]
 insert_many(f"""
-INSERT INTO {modulo}_cargo (CAR_DESCRIPCION, CAR_VIGENTE)
+INSERT INTO {modulo}cargo (CAR_DESCRIPCION, CAR_VIGENTE)
 VALUES (%s, %s)
 """, cargos)
 
@@ -53,7 +53,7 @@ VALUES (%s, %s)
 
 ramas = [(fake.word(), True) for _ in range(5)]
 insert_many(f"""
-INSERT INTO {modulo}_rama (RAM_DESCRIPCION, RAM_VIGENTE)
+INSERT INTO {modulo}rama (RAM_DESCRIPCION, RAM_VIGENTE)
 VALUES (%s, %s)
 """, ramas)
 
@@ -61,7 +61,7 @@ VALUES (%s, %s)
 
 estados = [("Soltero", True), ("Casado", True), ("Divorciado", True), ("Viudo", True)]
 insert_many(f"""
-INSERT INTO {modulo}_estado_civil (ESC_DESCRIPCION, ESC_VIGENTE)
+INSERT INTO {modulo}estado_civil (ESC_DESCRIPCION, ESC_VIGENTE)
 VALUES (%s, %s)
 """, estados)
 
@@ -69,7 +69,7 @@ VALUES (%s, %s)
 
 niveles = [(f"Nivel {i}", i, True) for i in range(1, 6)]
 insert_many(f"""
-INSERT INTO {modulo}_nivel (NIV_DESCRIPCION, NIV_ORDEN, NIV_VIGENTE)
+INSERT INTO {modulo}nivel (NIV_DESCRIPCION, NIV_ORDEN, NIV_VIGENTE)
 VALUES (%s, %s, %s)
 """, niveles)
 
@@ -77,29 +77,29 @@ VALUES (%s, %s, %s)
 
 zonas = [(fake.city(), random.choice([True, False]), True) for _ in range(5)]
 insert_many(f"""
-INSERT INTO {modulo}_zona (ZON_DESCRIPCION, ZON_UNILATERAL, ZON_VIGENTE)
+INSERT INTO {modulo}zona (ZON_DESCRIPCION, ZON_UNILATERAL, ZON_VIGENTE)
 VALUES (%s, %s, %s)
 """, zonas)
 
 # ==== MODULO 7 DISTRITO ====
 
-cursor.execute(f"SELECT ZON_ID FROM {modulo}_zona")
+cursor.execute(f"SELECT ZON_ID FROM {modulo}zona")
 zona_ids = [z[0] for z in cursor.fetchall()]
 
 distritos = [(random.choice(zona_ids), fake.city(), True) for _ in range(10)]
 insert_many(f"""
-INSERT INTO {modulo}_distrito (ZON_ID_id, DIS_DESCRIPCION, DIS_VIGENTE)
+INSERT INTO {modulo}distrito (ZON_ID, DIS_DESCRIPCION, DIS_VIGENTE)
 VALUES (%s, %s, %s)
 """, distritos)
 
 # ==== MODULO 8 GRUPO ====
 
-cursor.execute(f"SELECT DIS_ID FROM {modulo}_distrito")
+cursor.execute(f"SELECT DIS_ID FROM {modulo}distrito")
 distrito_ids = [d[0] for d in cursor.fetchall()]
 
 grupos = [(random.choice(distrito_ids), fake.company(), True) for _ in range(10)]
 insert_many(f"""
-INSERT INTO {modulo}_grupo (DIS_ID_id, GRU_DESCRIPCION, GRU_VIGENTE)
+INSERT INTO {modulo}grupo (DIS_ID, GRU_DESCRIPCION, GRU_VIGENTE)
 VALUES (%s, %s, %s)
 """, grupos)
 
@@ -107,29 +107,29 @@ VALUES (%s, %s, %s)
 
 regiones = [(fake.province(), True) for _ in range(5)]
 insert_many(f"""
-INSERT INTO {modulo}_region (REG_DESCRIPCION, REG_VIGENTE)
+INSERT INTO {modulo}region (REG_DESCRIPCION, REG_VIGENTE)
 VALUES (%s, %s)
 """, regiones)
 
 # ==== MODULO 10 PROVINCIA ====
 
-cursor.execute(f"SELECT REG_ID FROM {modulo}_region")
+cursor.execute(f"SELECT REG_ID FROM {modulo}region")
 region_ids = [r[0] for r in cursor.fetchall()]
 
 provincias = [(random.choice(region_ids), fake.city(), True) for _ in range(10)]
 insert_many(f"""
-INSERT INTO {modulo}_provincia (REG_ID_id, PRO_DESCRIPCION, PRO_VIGENTE)
+INSERT INTO {modulo}provincia (REG_ID, PRO_DESCRIPCION, PRO_VIGENTE)
 VALUES (%s, %s, %s)
 """, provincias)
 
 # ==== MODULO 11 COMUNA ====
 
-cursor.execute(f"SELECT PRO_ID FROM {modulo}_provincia")
+cursor.execute(f"SELECT PRO_ID FROM {modulo}provincia")
 provincia_ids = [p[0] for p in cursor.fetchall()]
 
 comunas = [(random.choice(provincia_ids), fake.city(), True) for _ in range(20)]
 insert_many(f"""
-INSERT INTO {modulo}_comuna (PRO_ID_id, COM_DESCRIPCION, COM_VIGENTE)
+INSERT INTO {modulo}comuna (PRO_ID, COM_DESCRIPCION, COM_VIGENTE)
 VALUES (%s, %s, %s)
 """, comunas)
 
@@ -138,7 +138,7 @@ VALUES (%s, %s, %s)
 tipos_ali = [1, 2]
 alimentaciones = [(fake.word(), random.choice(tipos_ali), True) for _ in range(5)]
 insert_many(f"""
-INSERT INTO {modulo}_alimentacion (ALI_DESCRIPCION, ALI_TIPO, ALI_VIGENTE)
+INSERT INTO {modulo}alimentacion (ALI_DESCRIPCION, ALI_TIPO, ALI_VIGENTE)
 VALUES (%s, %s, %s)
 """, alimentaciones)
 
