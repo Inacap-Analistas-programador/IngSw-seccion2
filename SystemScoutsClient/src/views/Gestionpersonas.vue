@@ -5,7 +5,7 @@
     <!-- Barra de búsqueda y filtros -->
     <div class="filtros">
       <div class="filtros-left">
-        <InputBase v-model="searchQuery" placeholder="Buscar por nombre, RUT, email..." @keydown.enter="filtrar" />
+        <InputBase v-model="searchQuery" placeholder="Buscar por nombre, RUT, email..." @keydown.enter.prevent="filtrar" />
         <BaseSelect v-model="selectedRole" :options="roleOptions" placeholder="Todos los roles" />
         <BaseSelect v-model="selectedCourse" :options="courseOptions" placeholder="Todos los cursos" />
         <BaseSelect v-model="selectedRama" :options="ramaOptions" placeholder="Todas las ramas" />
@@ -17,7 +17,7 @@
     </div>
 
     <!-- Mensaje de filtro activo -->
-    <div v-if="selectedRole" class="filtro-activo" role="status" aria-live="polite">
+    <div v-if="filtroAplicado && filtrosActivos.length > 0" class="filtro-activo" role="status" aria-live="polite">
       {{ filtroMensaje }}
     </div>
 
@@ -39,7 +39,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="p in personasFiltradas" :key="p.rut">
+        <tr v-for="p in personasFiltradas" :key="p.rut" :class="{ 'persona-anulada': p.estado === 'Anulado' }">
           <td data-label="Nombre">{{ p.nombre }}</td>
           <td data-label="RUT">{{ p.rut }}</td>
           <td data-label="Email">{{ p.email }}</td>
@@ -48,13 +48,31 @@
           <td data-label="Grupo">{{ p.grupo }}</td>
           <td data-label="Estado">
             <span
-              :class="['estado', p.estado.toLowerCase()]"
+              :class="['estado', p.estado.toLowerCase().replace(/\s+/g, '-')]"
             >
               {{ p.estado }}
             </span>
           </td>
           <td>
-            <BaseButton class="editar btn-edit" variant="secondary" @click="abrirModal(p)">✏️ Ver / Editar</BaseButton>
+            <div class="acciones-buttons">
+              <BaseButton class="btn-ver btn-view" variant="info" @click="abrirModalVer(p)">Ver</BaseButton>
+              <BaseButton 
+                v-if="esAdministrador" 
+                class="btn-editar btn-edit" 
+                variant="secondary" 
+                @click="abrirModalEditar(p)"
+              >
+                Editar
+              </BaseButton>
+              <BaseButton 
+                v-if="esAdministrador" 
+                class="btn-anular btn-cancel" 
+                variant="warning" 
+                @click="anularPersona(p)"
+              >
+                Anular
+              </BaseButton>
+            </div>
           </td>
         </tr>
         <tr v-if="personasFiltradas.length === 0" class="placeholder-row">
@@ -74,10 +92,9 @@
         <template #default>
           <div class="modal-edit">
                 <header class="modal-header">
-                  <h3>Ver / Editar - {{ personaEditada?.nombre || '' }}</h3>
-                  <div class="header-actions">
-                    <BaseButton v-if="!pendingSave" class="btn-save" type="button" variant="primary" @click="prepararGuardado">💾 Guardar</BaseButton>
-                    <BaseButton v-else class="btn-confirm" type="button" variant="success" @click="guardarEdicion">✅ Confirmar</BaseButton>
+                  <h3>{{ modoSoloLectura ? 'Ver' : 'Editar' }} - {{ personaEditada?.nombre || '' }}</h3>
+                  <div class="header-actions" v-if="!modoSoloLectura">
+                    <BaseButton class="btn-save" type="button" variant="primary" @click="guardarEdicion">💾 Guardar</BaseButton>
                   </div>
                 </header>
 
@@ -87,89 +104,141 @@
                 </div>
 
                 <form v-if="modalTab==='info'" @submit.prevent="guardarEdicion" class="modal-form">
+                  <!-- Sección de Foto de Perfil -->
+                  <div class="foto-perfil-section">
+                    <div class="foto-container">
+                      <img 
+                        v-if="personaEditada.foto" 
+                        :src="personaEditada.foto" 
+                        :alt="`Foto de ${personaEditada.nombre}`"
+                        class="foto-perfil"
+                        @error="handleImageError"
+                      />
+                      <div v-else class="foto-placeholder">
+                        <span class="foto-icon">👤</span>
+                        <span class="foto-text">Sin foto</span>
+                      </div>
+                      <div v-if="!modoSoloLectura" class="foto-actions">
+                        <input 
+                          ref="fotoInput"
+                          type="file" 
+                          accept="image/*" 
+                          @change="handleFileUpload"
+                          style="display: none"
+                        />
+                        <button 
+                          type="button" 
+                          @click="$refs.fotoInput?.click()" 
+                          class="btn-foto-upload"
+                        >
+                          📷 {{ personaEditada.foto ? 'Cambiar' : 'Subir' }} Foto
+                        </button>
+                        <button 
+                          v-if="personaEditada.foto" 
+                          type="button" 
+                          @click="removePhoto" 
+                          class="btn-foto-remove"
+                        >
+                          🗑️ Eliminar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  
                   <div class="row">
                     <label>Nombre</label>
-                    <input v-model="personaEditada.nombre" required />
+                    <input v-model="personaEditada.nombre" :readonly="modoSoloLectura" required />
                   </div>
                   <div class="row">
                     <label>RUT</label>
-                    <input v-model="personaEditada.rut" required />
+                    <input v-model="personaEditada.rut" :readonly="modoSoloLectura" required />
                   </div>
                   <div class="row">
                     <label>Email</label>
-                    <input v-model="personaEditada.email" type="email" />
+                    <input v-model="personaEditada.email" :readonly="modoSoloLectura" type="email" />
                   </div>
                   <div class="row">
                     <label>Teléfono</label>
-                    <input v-model="personaEditada.telefono" />
+                    <input v-model="personaEditada.telefono" :readonly="modoSoloLectura" />
                   </div>
                   <div class="row">
                     <label>Profesión</label>
-                    <input v-model="personaEditada.profesion" />
+                    <input v-model="personaEditada.profesion" :readonly="modoSoloLectura" />
                   </div>
                   <div class="row">
                     <label>Fecha Nac.</label>
-                    <input v-model="personaEditada.fecha_nac" type="date" />
+                    <input v-model="personaEditada.fecha_nac" :readonly="modoSoloLectura" type="date" />
                   </div>
                   <div class="row">
                     <label>Dirección</label>
-                    <input v-model="personaEditada.direccion" />
+                    <input v-model="personaEditada.direccion" :readonly="modoSoloLectura" />
                   </div>
                   <div class="row">
                     <label>Contacto Emerg.</label>
-                    <input v-model="personaEditada.contacto_emergencia" />
+                    <input v-model="personaEditada.contacto_emergencia" :readonly="modoSoloLectura" />
                   </div>
                   <div class="row">
                     <label>Tel. Emerg.</label>
-                    <input v-model="personaEditada.telefono_emergencia" />
+                    <input v-model="personaEditada.telefono_emergencia" :readonly="modoSoloLectura" />
                   </div>
                   <div class="row">
                     <label>Alergias</label>
-                    <input v-model="personaEditada.alergias" />
+                    <input v-model="personaEditada.alergias" :readonly="modoSoloLectura" />
                   </div>
                   <div class="row">
                     <label>Limitación</label>
-                    <input v-model="personaEditada.limitacion" />
+                    <input v-model="personaEditada.limitacion" :readonly="modoSoloLectura" />
                   </div>
                   <div class="row">
                     <label>Apodo</label>
-                    <input v-model="personaEditada.apodo" />
+                    <input v-model="personaEditada.apodo" :readonly="modoSoloLectura" />
                   </div>
                   <div class="row">
                     <label>Religión</label>
-                    <input v-model="personaEditada.religion" />
+                    <input v-model="personaEditada.religion" :readonly="modoSoloLectura" />
                   </div>
                   <div class="row">
                     <label>Tiempo NNAJ</label>
-                    <input v-model="personaEditada.tiempo_nnaj" />
+                    <input v-model="personaEditada.tiempo_nnaj" :readonly="modoSoloLectura" />
                   </div>
                   <div class="row">
                     <label>Tiempo Adulto</label>
-                    <input v-model="personaEditada.tiempo_adulto" />
+                    <input v-model="personaEditada.tiempo_adulto" :readonly="modoSoloLectura" />
                   </div>
                   <div class="row">
                     <label>Vigente</label>
-                    <select v-model="personaEditada.vigente">
+                    <select v-model="personaEditada.vigente" :disabled="modoSoloLectura">
                       <option :value="true">Si</option>
                       <option :value="false">No</option>
                     </select>
                   </div>
                   <div class="row">
                     <label>Rol</label>
-                    <BaseSelect v-model="personaEditada.rol" :options="roleOptions" />
+                    <BaseSelect v-model="personaEditada.rol" :options="roleOptions" :disabled="modoSoloLectura" />
                   </div>
                   <div class="row">
                     <label>Rama</label>
-                    <BaseSelect v-model="personaEditada.rama" :options="ramaOptions" />
+                    <BaseSelect v-model="personaEditada.rama" :options="ramaOptions" :disabled="modoSoloLectura" />
                   </div>
                 </form>
 
-                <div v-else class="historial-panel">
+                <div v-else class="historial-panel" :class="{ 'historial-anulado': personaEditada.estado === 'Anulado' }">
                   <div class="hist-list">
                     <div v-if="(personaEditada.historial || []).length === 0">No hay participaciones previas.</div>
                     <ul>
-                      <li v-for="(h, idx) in (personaEditada.historial || [])" :key="idx">
-                        <strong>{{ h.fecha }}</strong>: {{ h.descripcion }}
+                      <li v-for="(h, idx) in (personaEditada.historial || [])" :key="idx" 
+                          :class="['historial-item', { 'historial-item-anulado': personaEditada.estado === 'Anulado' }]">
+                        <div class="historial-content" :class="{ 'historial-content-anulado': personaEditada.estado === 'Anulado' }">
+                          <div class="historial-main" :class="{ 'historial-main-anulado': personaEditada.estado === 'Anulado' }">
+                            <strong>{{ h.fecha }}</strong>: {{ h.descripcion }}
+                          </div>
+                          <div v-if="h.curso" class="historial-curso">
+                            <span class="curso-badge" :class="{ 'curso-badge-anulado': personaEditada.estado === 'Anulado' }">{{ getCursoLabel(h.curso) }}</span>
+                            <span :class="['aprobacion-badge', h.aprobado ? 'aprobado' : 'no-aprobado', { 'aprobacion-badge-anulado': personaEditada.estado === 'Anulado' }]">
+                              {{ h.aprobado ? '✅ Aprobado' : '❌ No Aprobado' }}
+                            </span>
+                          </div>
+                        </div>
                       </li>
                     </ul>
                   </div>
@@ -177,11 +246,47 @@
               </div>
         </template>
       </BaseModal>
+
+      <!-- Modal de Confirmación -->
+      <BaseModal v-model="confirmModalVisible" title="Confirmar Cambios">
+        <template #default>
+          <div class="confirm-content">
+            <div class="confirm-icon">⚠️</div>
+            <p>{{ mensajeConfirmacion }}</p>
+            <div class="confirm-actions">
+              <BaseButton @click="cancelarConfirmacion" variant="secondary" class="btn-modal-cancel">
+                ❌ Cancelar
+              </BaseButton>
+              <BaseButton @click="confirmarGuardado" variant="primary" class="btn-modal-confirm">
+                ✅ Confirmar
+              </BaseButton>
+            </div>
+          </div>
+        </template>
+      </BaseModal>
+
+      <!-- Modal de Confirmación para Anular -->
+      <BaseModal v-model="confirmModalAnularVisible" title="Confirmar Anulación">
+        <template #default>
+          <div class="confirm-content">
+            <div class="confirm-icon">⚠️</div>
+            <p>¿Estás seguro de que deseas anular a <strong>{{ personaAAnular?.nombre }}</strong>?</p>
+            <p class="confirm-warning">Esta acción marcará a la persona en gris y cambiará su estado.</p>
+            <div class="confirm-actions">
+              <BaseButton @click="cancelarAnulacion" variant="secondary" class="btn-modal-cancel">
+                ❌ Cancelar
+              </BaseButton>
+              <BaseButton @click="confirmarAnulacion" variant="warning" class="btn-modal-anular">
+                ⚠️ Anular
+              </BaseButton>
+            </div>
+          </div>
+        </template>
+      </BaseModal>
     </div>
   </div>
 </template>
 
-      <!-- Datos ejemplo para pruebas/Remover después de las pruebas -->
 
 <script>
 import InputBase from '@/components/Reutilizables/InputBase.vue'
@@ -189,6 +294,7 @@ import BaseSelect from '@/components/Reutilizables/BaseSelect.vue'
 import BaseButton from '@/components/Reutilizables/BaseButton.vue'
 import BaseAlert from '@/components/Reutilizables/BaseAlert.vue'
 import BaseModal from '@/components/Reutilizables/BaseModal.vue'
+import { personasEjemplo } from '@/data/personasEjemplo.js'
 
 export default {
   name: 'GestionPersonas',
@@ -225,39 +331,63 @@ export default {
   editModalVisible: false,
   personaEditada: null,
   modalTab: 'info',
-  pendingSave: false,
+  modoSoloLectura: false,
+  confirmModalVisible: false,
+  mensajeConfirmacion: '',
+  confirmModalAnularVisible: false,
+  personaAAnular: null,
+  
+  // Privilegios del usuario - vendrá de la BD en producción/ Puede que necesite ajustes :P
+  esAdministrador: true, // Activado para pruebas - se obtendrá de la BD
+  
     filtroAplicado: false,
     filteredPersonas: [],
-      personas: [
-  { nombre: 'JUAN PÉREZ GONZÁLEZ', rut: '12.345.678-9', email: 'juan.perez@email.com', telefono: '+56 9 1234 5678', profesion: 'INGENIERO', rol: 'PARTICIPANTE', rama: 'SCOUTS', grupo: 'GRUPO ARAUCO', zona: 'ZONA SUR', distrito: 'BIOBÍO', estado: 'Inscrito', inscripcion: 'Inscrito', pago: 'Confirmado', acreditacion: 'Pendiente', cursos: ['PRIMEROS_AUXILIOS','CAMPAMENTOS'], historial: [ { fecha: '2024-01-10', descripcion: 'Campamento regional' }, { fecha: '2023-11-05', descripcion: 'Taller de primeros auxilios' } ], fecha_nac: '1990-05-10', direccion: 'Av. Libertad 123, Concepción', contacto_emergencia: 'MARIA GONZÁLEZ', telefono_emergencia: '+56 9 4444 5555', alergias: '', limitacion: '', num_mmaa: 0, tiempo_nnaj: '3 años', tiempo_adulto: '2 años', religion: 'Católica', apodo: 'Juanca', foto: null, vigente: true, otros: '' },
-  { nombre: 'MARÍA GONZÁLEZ LÓPEZ', rut: '98.765.432-1', email: 'maria.gonzalez@email.com', telefono: '+56 9 2222 3333', profesion: 'DOCENTE', rol: 'PARTICIPANTE', rama: 'ROVERS', grupo: 'GRUPO LAUTARO', zona: 'ZONA SUR', distrito: 'BIOBÍO', estado: 'Preinscrito', inscripcion: 'Preinscrito', pago: 'Pendiente', acreditacion: 'Pendiente', cursos: ['ORIENTACION_NAV'], historial: [ { fecha: '2023-08-20', descripcion: 'Actividad de voluntariado' } ], fecha_nac: '1992-03-22', direccion: 'Calle Los Pinos 45, Talcahuano', contacto_emergencia: 'JOSÉ LÓPEZ', telefono_emergencia: '+56 9 1010 2020', alergias: 'Penicilina', limitacion: '', num_mmaa: 0, tiempo_nnaj: '1 año', tiempo_adulto: '4 años', religion: 'Evangelica', apodo: 'Maru', foto: null, vigente: true, otros: '' },
-  { nombre: 'CARLOS RAMÍREZ SOTO', rut: '11.222.333-4', email: 'carlos.ramirez@email.com', telefono: '+56 9 5555 6666', profesion: 'ESTUDIANTE', rol: 'PARTICIPANTE', rama: 'PIONEROS', grupo: 'GRUPO CAUPOLICÁN', zona: 'ZONA SUR', distrito: 'BIOBÍO', estado: 'Inscrito', inscripcion: 'Inscrito', pago: 'Confirmado', acreditacion: 'Pendiente', cursos: ['CAMPAMENTOS'], historial: [], fecha_nac: '2004-09-10', direccion: 'Pasaje Los Aromos 7, Concepción', contacto_emergencia: 'LAURA SOTO', telefono_emergencia: '+56 9 5555 0000', alergias: 'Ninguna', limitacion: '', num_mmaa: 0, tiempo_nnaj: '2 años', tiempo_adulto: '0 años', religion: 'Sin religión', apodo: 'Carlitos', foto: null, vigente: true, otros: '' },
-  { nombre: 'ANA TORRES RIVERA', rut: '15.987.654-2', email: 'ana.torres@email.com', telefono: '+56 9 7777 8888', profesion: 'MÉDICO', rol: 'DIRIGENTE', rama: 'SCOUTS', grupo: 'GRUPO LEBU', zona: 'ZONA SUR', distrito: 'BIOBÍO', estado: 'Inscrito', inscripcion: 'Inscrito', pago: 'Confirmado', acreditacion: 'Aprobada', cursos: ['FORMACION_DIRIGENTES'], historial: [ { fecha: '2022-10-12', descripcion: 'Líder regional' } ], fecha_nac: '1981-12-02', direccion: 'Av. Argentina 200, Concepción', contacto_emergencia: 'CARLOS TORRES', telefono_emergencia: '+56 9 7777 1111', alergias: '', limitacion: '', num_mmaa: 0, tiempo_nnaj: '0 años', tiempo_adulto: '10 años', religion: 'Católica', apodo: 'Ana', foto: null, vigente: true, otros: '' },
-  { nombre: 'PABLO MENDEZ', rut: '20.111.222-3', email: 'pablo.mendez@email.com', telefono: '+56 9 3333 4444', profesion: 'ARQUITECTO', rol: 'APOYO', rama: 'CASTORES', grupo: 'GRUPO CASTOR', zona: 'ZONA NORTE', distrito: 'SANTIAGO', estado: 'Inscrito', inscripcion: 'Inscrito', pago: 'Confirmado', acreditacion: 'Aprobada', cursos: ['PRIMEROS_AUXILIOS'], historial: [ { fecha: '2021-03-05', descripcion: 'Voluntariado en campo' } ], fecha_nac: '1979-04-14', direccion: 'Calle Larga 555, Santiago', contacto_emergencia: 'SOFIA MENDEZ', telefono_emergencia: '+56 9 6666 7777', alergias: 'Polen', limitacion: '', num_mmaa: 0, tiempo_nnaj: '0 años', tiempo_adulto: '6 años', religion: 'Católica', apodo: '', foto: null, vigente: true, otros: '' },
-  { nombre: 'LAURA VEGA', rut: '21.222.333-4', email: 'laura.vega@email.com', telefono: '+56 9 4444 5555', profesion: 'ENFERMERA', rol: 'DIRIGENTE', rama: 'LOBATOS', grupo: 'GRUPO LOBITOS', zona: 'ZONA CENTRO', distrito: 'SANTIAGO', estado: 'Preinscrito', inscripcion: 'Preinscrito', pago: 'Pendiente', acreditacion: 'Pendiente', cursos: ['PRIMEROS_AUXILIOS'], historial: [ { fecha: '2020-07-18', descripcion: 'Atención sanitaria en campamento' } ], fecha_nac: '1987-11-30', direccion: 'Av. Providencia 321, Santiago', contacto_emergencia: 'MARTA VEGA', telefono_emergencia: '+56 9 8888 0000', alergias: '', limitacion: '', num_mmaa: 0, tiempo_nnaj: '0 años', tiempo_adulto: '8 años', religion: 'Católica', apodo: 'Lau', foto: null, vigente: true, otros: '' },
-  { nombre: 'MARIO LOPEZ', rut: '22.333.444-5', email: 'mario.lopez@email.com', telefono: '+56 9 6666 7777', profesion: 'ESTUDIANTE', rol: 'PARTICIPANTE', rama: 'SCOUTS', grupo: 'GRUPO SUR', zona: 'ZONA SUR', distrito: 'SANTIAGO', estado: 'Inscrito', inscripcion: 'Inscrito', pago: 'Confirmado', acreditacion: 'Aprobada', cursos: ['CAMPAMENTOS'], historial: [ { fecha: '2024-02-01', descripcion: 'Competencia regional' } ] },
-  { nombre: 'SUSANA RIVERA', rut: '23.444.555-6', email: 'susana.rivera@email.com', telefono: '+56 9 8888 9999', profesion: 'DOCENTE', rol: 'APOYO', rama: 'PIONEROS', grupo: 'GRUPO PION', zona: 'ZONA NORTE', distrito: 'VALPARAÍSO', estado: 'Pendiente', inscripcion: 'Pendiente', pago: 'Pendiente', acreditacion: 'Pendiente', cursos: ['FORMACION_DIRIGENTES'], historial: [ { fecha: '2019-06-12', descripcion: 'Capacitación docente' } ] },
-  { nombre: 'RODRIGO CAMPOS', rut: '24.555.666-7', email: 'rodrigo.campos@email.com', telefono: '+56 9 1010 1111', profesion: 'INGENIERO', rol: 'DIRIGENTE', rama: 'ROVERS', grupo: 'GRUPO ROVER', zona: 'ZONA CENTRO', distrito: 'VALPARAÍSO', estado: 'Inscrito', inscripcion: 'Inscrito', pago: 'Confirmado', acreditacion: 'Aprobada', cursos: ['LIDERAZGO_SCOUT'], historial: [ { fecha: '2022-12-01', descripcion: 'Organizador de actividad' } ] },
-  { nombre: 'ELENA FERNANDEZ', rut: '25.666.777-8', email: 'elena.fernandez@email.com', telefono: '+56 9 1212 1313', profesion: 'ABOGADA', rol: 'PARTICIPANTE', rama: 'CASTORES', grupo: 'GRUPO CASTOR 2', zona: 'ZONA NORTE', distrito: 'ANTOFAGASTA', estado: 'Preinscrito', inscripcion: 'Preinscrito', pago: 'Pendiente', acreditacion: 'Pendiente', cursos: ['ORIENTACION_NAV'], historial: [ { fecha: '2021-09-09', descripcion: 'Participación en taller legal' } ] },
-  { nombre: 'ANDRES GOMEZ', rut: '26.777.888-9', email: 'andres.gomez@email.com', telefono: '+56 9 1414 1515', profesion: 'PROFESOR', rol: 'PARTICIPANTE', rama: 'LOBATOS', grupo: 'GRUPO LOBOS', zona: 'ZONA CENTRO', distrito: 'CONCEPCIÓN', estado: 'Inscrito', inscripcion: 'Inscrito', pago: 'Confirmado', acreditacion: 'Pendiente', cursos: ['CAMPAMENTOS'], historial: [ { fecha: '2023-04-11', descripcion: 'Taller educativo' } ] },
-  { nombre: 'VERONICA SALAS', rut: '27.888.999-0', email: 'veronica.salas@email.com', telefono: '+56 9 1616 1717', profesion: 'ENFERMERA', rol: 'APOYO', rama: 'SCOUTS', grupo: 'GRUPO SUR 2', zona: 'ZONA SUR', distrito: 'CONCEPCIÓN', estado: 'Inscrito', inscripcion: 'Inscrito', pago: 'Confirmado', acreditacion: 'Aprobada', cursos: ['PRIMEROS_AUXILIOS'], historial: [ { fecha: '2020-02-14', descripcion: 'Campaña de salud' } ] },
-  { nombre: 'RICARDO PENA', rut: '28.999.000-1', email: 'ricardo.pena@email.com', telefono: '+56 9 1818 1919', profesion: 'TÉCNICO', rol: 'DIRIGENTE', rama: 'PIONEROS', grupo: 'GRUPO PION 2', zona: 'ZONA NORTE', distrito: 'IQUIQUE', estado: 'Pendiente', inscripcion: 'Pendiente', pago: 'Pendiente', acreditacion: 'Pendiente', cursos: ['FORMACION_DIRIGENTES'], historial: [ { fecha: '2018-05-30', descripcion: 'Formación técnica' } ] },
-  { nombre: 'MARTA LOZANO', rut: '29.000.111-2', email: 'marta.lozano@email.com', telefono: '+56 9 2020 2121', profesion: 'ESTILISTA', rol: 'PARTICIPANTE', rama: 'ROVERS', grupo: 'GRUPO ROVER 2', zona: 'ZONA SUR', distrito: 'VALPARAÍSO', estado: 'Inscrito', inscripcion: 'Inscrito', pago: 'Confirmado', acreditacion: 'Aprobada', cursos: ['LIDERAZGO_SCOUT'], historial: [ { fecha: '2022-01-20', descripcion: 'Organización de evento' } ] },
-  { nombre: 'HUGO SANCHEZ', rut: '30.111.222-3', email: 'hugo.sanchez@email.com', telefono: '+56 9 2223 2324', profesion: 'MUSICO', rol: 'APOYO', rama: 'CASTORES', grupo: 'GRUPO CASTOR 3', zona: 'ZONA CENTRO', distrito: 'SANTIAGO', estado: 'Preinscrito', inscripcion: 'Preinscrito', pago: 'Pendiente', acreditacion: 'Pendiente', cursos: ['ORIENTACION_NAV'], historial: [ { fecha: '2019-11-02', descripcion: 'Actividad cultural' } ] },
-  { nombre: 'CAMILA RIOS', rut: '31.222.333-4', email: 'camila.rios@email.com', telefono: '+56 9 2425 2627', profesion: 'INGENIERA', rol: 'DIRIGENTE', rama: 'LOBATOS', grupo: 'GRUPO LOBOS 2', zona: 'ZONA SUR', distrito: 'CONCEPCIÓN', estado: 'Inscrito', inscripcion: 'Inscrito', pago: 'Confirmado', acreditacion: 'Aprobada', cursos: ['FORMACION_DIRIGENTES'], historial: [ { fecha: '2021-06-15', descripcion: 'Coordinación de campamento' } ] },
-  { nombre: 'OSCAR NAVARRO', rut: '32.333.444-5', email: 'oscar.navarro@email.com', telefono: '+56 9 2728 2929', profesion: 'ESTUDIANTE', rol: 'PARTICIPANTE', rama: 'SCOUTS', grupo: 'GRUPO SUR 3', zona: 'ZONA SUR', distrito: 'TALCA', estado: 'Inscrito', inscripcion: 'Inscrito', pago: 'Confirmado', acreditacion: 'Pendiente', cursos: ['CAMPAMENTOS'], historial: [ { fecha: '2023-09-05', descripcion: 'Competencia local' } ] },
-  { nombre: 'LUIS FARIAS', rut: '33.444.555-6', email: 'luis.farias@email.com', telefono: '+56 9 3031 3233', profesion: 'AGRICULTOR', rol: 'APOYO', rama: 'PIONEROS', grupo: 'GRUPO PION 3', zona: 'ZONA NORTE', distrito: 'IQUIQUE', estado: 'Inscrito', inscripcion: 'Inscrito', pago: 'Confirmado', acreditacion: 'Aprobada', cursos: ['PRIMEROS_AUXILIOS'], historial: [ { fecha: '2022-08-10', descripcion: 'Apoyo logístico' } ] },
-  { nombre: 'NICOLE MORA', rut: '34.555.666-7', email: 'nicole.mora@email.com', telefono: '+56 9 3334 3536', profesion: 'DOCTORA', rol: 'DIRIGENTE', rama: 'ROVERS', grupo: 'GRUPO ROVER 3', zona: 'ZONA CENTRO', distrito: 'SANTIAGO', estado: 'Preinscrito', inscripcion: 'Preinscrito', pago: 'Pendiente', acreditacion: 'Pendiente', cursos: ['FORMACION_DIRIGENTES','PRIMEROS_AUXILIOS'], historial: [ { fecha: '2017-04-22', descripcion: 'Atención médica en evento' } ] }
-      ]
+    filtrandoEnProceso: false,
+      personas: [] // Será cargado desde la BD en producción
     };
   },
   created() {
+    // Cargar datos de ejemplo para desarrollo - será reemplazado por llamada a la BD
+    this.personas = personasEjemplo;
+    
     // enriquecer personas con campos tipo BD al crear
     this.enrichPersonas();
   },
   computed: {
+    filtrosActivos() {
+      const filtros = [];
+      
+      if (this.searchQuery && this.searchQuery.trim()) {
+        filtros.push(`Búsqueda: "${this.searchQuery.trim()}"`);
+      }
+      
+      if (this.selectedRole) {
+        const rolLabel = this.roleOptions.find(r => r.value === this.selectedRole)?.label || this.selectedRole;
+        filtros.push(`Rol: ${rolLabel}`);
+      }
+      
+      if (this.selectedRama) {
+        const ramaLabel = this.ramaOptions.find(r => r.value === this.selectedRama)?.label || this.selectedRama;
+        filtros.push(`Rama: ${ramaLabel}`);
+      }
+      
+      if (this.selectedCourse) {
+        const cursoLabel = this.courseOptions.find(c => c.value === this.selectedCourse)?.label || this.selectedCourse;
+        filtros.push(`Curso: ${cursoLabel}`);
+      }
+      
+      return filtros;
+    },
+    
     filtroMensaje() {
-      return `Filtro activo: Solo se muestran personas con rol "${this.selectedRole}"`
+      const filtros = this.filtrosActivos;
+      if (filtros.length === 0) return '';
+      
+      if (filtros.length === 1) {
+        return `Filtro activo: ${filtros[0]}`;
+      } else {
+        return `Filtros activos: ${filtros.join(' | ')}`;
+      }
     },
     // Mostrar la instantánea de personas filtradas. Vacío hasta presionar Buscar.
     personasFiltradas() {
@@ -280,6 +410,27 @@ export default {
       this.personaSeleccionada = persona;
   this.pendingSave = false;
     },
+    abrirModalVer(persona) {
+      // Abrir modal solo para ver - mostrar info pero sin editar
+      this.personaEditada = JSON.parse(JSON.stringify(persona || {}));
+      if (!this.personaEditada.historial) this.personaEditada.historial = [];
+      this.modalTab = 'info';
+      this.modoSoloLectura = true;
+      this.editModalVisible = true;
+      this.personaSeleccionada = persona;
+      this.pendingSave = false;
+    },
+    abrirModalEditar(persona) {
+      // Abrir modal solo para editar - forzar tab de info
+      this.personaEditada = JSON.parse(JSON.stringify(persona || {}));
+      if (!this.personaEditada.historial) this.personaEditada.historial = [];
+      this.newHistEntry = { fecha: '', descripcion: '' };
+      this.modalTab = 'info';
+      this.modoSoloLectura = false;
+      this.editModalVisible = true;
+      this.personaSeleccionada = persona;
+      this.pendingSave = false;
+    },
     cancelarEdicion() {
       // cerrar modal usando la propiedad reactiva
       this.editModalVisible = false;
@@ -291,16 +442,38 @@ export default {
       this.personaSeleccionada = null;
     },
     filtrar() {
+      // Evitar doble ejecución usando debounce
+      if (this.filtrandoEnProceso) {
+        return;
+      }
+      this.filtrandoEnProceso = true;
+      
+      // Usar setTimeout para asegurar que solo se ejecute una vez
+      setTimeout(() => {
+        this.ejecutarFiltrado();
+        this.filtrandoEnProceso = false;
+      }, 10);
+    },
+    ejecutarFiltrado() {
+      // Verificar que al menos un filtro esté activo
+      const q = (this.searchQuery || '').toLowerCase().trim();
+      const selectedRoleNorm = (this.selectedRole || '').toString().trim().toUpperCase();
+      const selectedRamaNorm = (this.selectedRama || '').toString().trim().toUpperCase();
+      const selectedCourseNorm = (this.selectedCourse || '').toString().trim().toUpperCase();
+
+      const tieneAlgunFiltro = q || selectedRoleNorm || selectedRamaNorm || selectedCourseNorm;
+      
+      if (!tieneAlgunFiltro) {
+        alert('Debe usar un filtro o mas para poder buscar.');
+        return;
+      }
+
       // Marcar que el usuario aplicó el filtro para mostrar la lista
       this.filtroAplicado = true;
       // cerrar detalle si estaba abierto
       this.personaSeleccionada = null;
 
   // Calcular la instantánea filtrada una vez (no actualizar reactivamente mientras se escribe)
-      const q = (this.searchQuery || '').toLowerCase().trim();
-  const selectedRoleNorm = (this.selectedRole || '').toString().trim().toUpperCase();
-  const selectedRamaNorm = (this.selectedRama || '').toString().trim().toUpperCase();
-  const selectedCourseNorm = (this.selectedCourse || '').toString().trim().toUpperCase();
 
       this.filteredPersonas = this.personas.filter((p) => {
         const nombre = (p.nombre || '').toLowerCase();
@@ -431,6 +604,16 @@ export default {
         return;
       }
 
+      // Mostrar popup de confirmación
+      this.mensajeConfirmacion = `¿Seguro que quieres guardar estos cambios?`;
+      this.confirmModalVisible = true;
+    },
+    
+    confirmarGuardado() {
+      // Cerrar modal de confirmación
+      this.confirmModalVisible = false;
+      
+      // Proceder con el guardado directamente
       if (this.personaEditada) {
         this.personaEditada.PER_FECHA_NAC = this.personaEditada.fecha_nac || this.personaEditada.PER_FECHA_NAC || '';
         this.personaEditada.PER_DIRECCION = this.personaEditada.direccion || this.personaEditada.PER_DIRECCION || '';
@@ -473,17 +656,55 @@ export default {
       this.editModalVisible = false;
       this.personaSeleccionada = null;
       this.personaEditada = null;
-      this.pendingSave = false;
     },
-    prepararGuardado() {
-      // Marcar pendingSave para que el usuario confirme al guardar
-      this.pendingSave = true;
-      this.$nextTick(() => {
-        const m = document.querySelector('.modal-edit');
-        if (m && typeof m.scrollIntoView === 'function') m.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        });
-      },
-      addHistEntry() {
+    
+    cancelarConfirmacion() {
+      // Cerrar modal de confirmación sin guardar
+      this.confirmModalVisible = false;
+    },
+    
+    anularPersona(persona) {
+      // Guardar referencia a la persona a anular
+      this.personaAAnular = persona;
+      // Mostrar modal de confirmación
+      this.confirmModalAnularVisible = true;
+    },
+    
+    cancelarAnulacion() {
+      // Cerrar modal de confirmación de anulación
+      this.confirmModalAnularVisible = false;
+      this.personaAAnular = null;
+    },
+    
+    confirmarAnulacion() {
+      if (!this.personaAAnular) return;
+      
+      // Marcar persona como anulada (gris)
+      this.personaAAnular.estado = 'Anulado';
+      this.personaAAnular.inscripcion = 'Anulado';
+      this.personaAAnular.vigente = false;
+      
+      // Buscar en el array principal y actualizar
+      const idx = this.personas.findIndex((p) => p.rut === this.personaAAnular.rut);
+      if (idx !== -1) {
+        this.$set ? this.$set(this.personas, idx, Object.assign({}, this.personaAAnular)) : 
+                   (this.personas.splice(idx, 1, Object.assign({}, this.personaAAnular)));
+      }
+      
+      // Actualizar en filteredPersonas si existe
+      if (this.filteredPersonas && this.filteredPersonas.length) {
+        const fidx = this.filteredPersonas.findIndex((p) => p.rut === this.personaAAnular.rut);
+        if (fidx !== -1) {
+          this.filteredPersonas.splice(fidx, 1, Object.assign({}, this.personaAAnular));
+        }
+      }
+      
+      // Cerrar modal
+      this.confirmModalAnularVisible = false;
+      this.personaAAnular = null;
+    },
+    
+    addHistEntry() {
       if (!this.personaEditada) return;
       const fecha = (this.newHistEntry.fecha || '').trim();
       const descripcion = (this.newHistEntry.descripcion || '').trim();
@@ -494,6 +715,45 @@ export default {
       this.personaEditada.historial = this.personaEditada.historial || [];
       this.personaEditada.historial.unshift({ fecha, descripcion });
       this.newHistEntry = { fecha: '', descripcion: '' };
+    },
+    
+    getCursoLabel(cursoCodigo) {
+      const curso = this.courseOptions.find(c => c.value === cursoCodigo);
+      return curso ? curso.label : cursoCodigo;
+    },
+    
+    // Métodos para manejo de fotos de perfil
+    handleFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      // Validar tipo de archivo
+      if (!file.type.startsWith('image/')) {
+        alert('Por favor selecciona un archivo de imagen válido.');
+        return;
+      }
+      
+      // Validar tamaño (máximo 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('El archivo es demasiado grande. Por favor selecciona una imagen menor a 5MB.');
+        return;
+      }
+      
+      // Convertir a base64 para almacenar en la aplicación
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.personaEditada.foto = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    },
+    
+    removePhoto() {
+      this.personaEditada.foto = null;
+    },
+    
+    handleImageError() {
+      // Si hay error al cargar la imagen, mostrar placeholder
+      this.personaEditada.foto = null;
     }
   }
 };
@@ -510,7 +770,7 @@ export default {
   flex-direction: column;
   gap: 16px;
   font-family: Arial, sans-serif;
-  width: 1100px;                
+  width: 1400px;                
   max-width: calc(100% - 48px);
   height: auto;
   max-height: calc(100vh - 48px);
@@ -606,18 +866,36 @@ export default {
 .btn-export, .exportar { background: linear-gradient(180deg,#16a34a,#15803d); color: #fff; box-shadow: 0 6px 18px rgba(16,185,129,0.08); border: none; }
 
 .btn-edit { background: linear-gradient(180deg,#facc15,#f59e0b); color: #111; box-shadow: 0 6px 18px rgba(250,204,21,0.08); }
+.btn-ver { background: linear-gradient(180deg,#3b82f6,#1d4ed8); color: #fff; box-shadow: 0 6px 18px rgba(59,130,246,0.12); }
+.btn-editar { background: linear-gradient(180deg,#facc15,#f59e0b); color: #111; box-shadow: 0 6px 18px rgba(250,204,21,0.08); }
+.btn-anular { background: linear-gradient(180deg,#ef4444,#dc2626); color: #fff; box-shadow: 0 6px 18px rgba(239,68,68,0.12); }
 .btn-save { background: linear-gradient(180deg,#2563eb,#1e40af); color:#fff; box-shadow: 0 8px 24px rgba(37,99,235,0.12); }
 .btn-confirm { background: linear-gradient(180deg,#059669,#047857); color:#fff; box-shadow: 0 8px 24px rgba(5,150,105,0.12); }
 
-.btn-search, .btn-export, .btn-edit, .btn-save, .btn-confirm {
+.btn-search, .btn-export, .btn-edit, .btn-ver, .btn-editar, .btn-anular, .btn-save, .btn-confirm {
   padding: 8px 14px;
   border-radius: 8px;
   font-weight:700;
   transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
 }
-.btn-search:hover, .btn-export:hover, .btn-edit:hover, .btn-save:hover, .btn-confirm:hover { transform: translateY(-2px); }
-.btn-search:active, .btn-export:active, .btn-edit:active, .btn-save:active, .btn-confirm:active { transform: translateY(0); }
-.btn-search:focus, .btn-export:focus, .btn-edit:focus, .btn-save:focus, .btn-confirm:focus { outline: 3px solid rgba(33,78,156,0.12); }
+.btn-search:hover, .btn-export:hover, .btn-edit:hover, .btn-ver:hover, .btn-editar:hover, .btn-anular:hover, .btn-save:hover, .btn-confirm:hover { transform: translateY(-2px); }
+.btn-search:active, .btn-export:active, .btn-edit:active, .btn-ver:active, .btn-editar:active, .btn-anular:active, .btn-save:active, .btn-confirm:active { transform: translateY(0); }
+.btn-search:focus, .btn-export:focus, .btn-edit:focus, .btn-ver:focus, .btn-editar:focus, .btn-anular:focus, .btn-save:focus, .btn-confirm:focus { outline: 3px solid rgba(33,78,156,0.12); }
+
+.acciones-buttons {
+  display: flex;
+  gap: 3px;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+}
+
+.acciones-buttons .base-button {
+  font-size: 11px;
+  padding: 3px 6px;
+  min-width: auto;
+  white-space: nowrap;
+}
 
 .editar { padding: 6px 10px; }
 
@@ -679,12 +957,73 @@ th {
   padding: 6px 10px;
 }
 
-.estado { padding: 4px 8px; border-radius: 12px; font-size: 12px; }
-.estado.inscrito { background:#d1fae5; color:#065f46 }
-.estado.preinscrito { background:#fff4db; color:#8f5b00 }
+.estado { padding: 4px 8px; border-radius: 12px; font-size: 12px; white-space: nowrap; }
+.estado.vigente { background:#d1fae5; color:#065f46 }
+.estado.no-vigente { background:#fbbf24; color:#1f2937 }
+.estado.anulado { background:#e5e7eb; color:#374151; text-decoration: line-through; }
 .estado.confirmado { background:#d1fae5; color:#065f46 }
 .estado.aprobada { background:#d1fae5; color:#065f46 }
 .estado.pendiente { background:#fff4db; color:#8f5b00 }
+
+/* Estilos para filas de personas anuladas :c*/
+.persona-anulada {
+  background-color: #f3f4f6 !important;
+  opacity: 0.7;
+}
+
+.persona-anulada td {
+  color: #6b7280 !important;
+  text-decoration: line-through;
+}
+
+.persona-anulada .estado.anulado {
+  background: #d1d5db !important;
+  color: #4b5563 !important;
+}
+
+.historial-anulado {
+  opacity: 0.7;
+}
+
+.historial-item-anulado {
+  background-color: #f3f4f6 !important;
+  opacity: 0.8;
+}
+
+.historial-content-anulado {
+  opacity: 0.9;
+}
+
+.historial-main-anulado {
+  color: #6b7280 !important;
+  text-decoration: line-through;
+}
+
+.historial-main-anulado strong {
+  color: #6b7280 !important;
+  text-decoration: line-through;
+}
+
+.curso-badge-anulado {
+  background: #d1d5db !important;
+  color: #4b5563 !important;
+  text-decoration: line-through;
+}
+
+.aprobacion-badge-anulado {
+  opacity: 0.6;
+  text-decoration: line-through;
+}
+
+.aprobacion-badge-anulado.aprobado {
+  background: #e5e7eb !important;
+  color: #6b7280 !important;
+}
+
+.aprobacion-badge-anulado.no-aprobado {
+  background: #e5e7eb !important;
+  color: #6b7280 !important;
+}
 
 .detail-panel .detalle { flex: 0 0 auto; margin-top: 18px; padding: 14px 18px; background: #f6f7f9; border-radius: 6px; }
 .detail-panel .detalle h4 { margin: 0 0 10px 0; color:#1e3a8a; font-size: 20px; font-weight:700 }
@@ -713,7 +1052,7 @@ th {
   td[data-label]::before { content: attr(data-label) ": "; font-weight:600; margin-right:6px; color:#333; }
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1400px) {
   .gestion-personas {
     width: calc(100% - 32px);
     height: auto;
@@ -722,7 +1061,7 @@ th {
   }
 }
 
-@media (min-width: 1100px) {
+@media (min-width: 1400px) {
   .main-area {
     flex-direction: row;
     align-items: flex-start;
@@ -816,7 +1155,18 @@ th {
 .detalle strong { display: inline-block; min-width: 110px; font-weight: 700; color: #111; }
 
 
-td[data-label="Nombre"] { text-transform: uppercase; font-weight:600; }
+td[data-label="Nombre"] { 
+  text-transform: uppercase; 
+  font-weight:600; 
+  white-space: nowrap; 
+  overflow: hidden; 
+  text-overflow: ellipsis; 
+  max-width: 180px; 
+}
+
+td[data-label="RUT"] { 
+  white-space: nowrap; 
+}
 
 
 </style>
@@ -852,8 +1202,111 @@ td[data-label="Nombre"] { text-transform: uppercase; font-weight:600; }
 .modal-form .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
 .modal-form .row label { width:120px; min-width:100px; font-weight:700; color:#222 }
 .modal-form .row input, .modal-form .row select { flex:1; min-width:140px; padding:8px 10px; border:1px solid #e6e6e6; border-radius:6px }
+.modal-form .row input:disabled, .modal-form .row select:disabled { background-color:#f5f5f5; color:#666; cursor:not-allowed }
+.modal-form .row input[readonly], .modal-form .row select[readonly] { background-color:#f9f9f9; color:#555 }
 .modal-form .actions { justify-content:flex-end; margin-top:12px }
 .modal-form .actions .base-button { margin-left:8px }
+
+/* Estiloss para foto de perfil */
+.foto-perfil-section {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.foto-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.foto-perfil {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.foto-perfil:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+.foto-placeholder {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 4px solid #cbd5e1;
+  color: #64748b;
+}
+
+.foto-icon {
+  font-size: 50px;
+  margin-bottom: 6px;
+}
+
+.foto-text {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.foto-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn-foto-upload {
+  background: linear-gradient(180deg, #3b82f6, #1d4ed8);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+
+.btn-foto-upload:hover {
+  background: linear-gradient(180deg, #1d4ed8, #1e40af);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-foto-remove {
+  background: linear-gradient(180deg, #ef4444, #dc2626);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
+}
+
+.btn-foto-remove:hover {
+  background: linear-gradient(180deg, #dc2626, #b91c1c);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
 </style>
 
 <style scoped>
@@ -866,4 +1319,164 @@ td[data-label="Nombre"] { text-transform: uppercase; font-weight:600; }
 .hist-list ul { list-style:none; padding:0; margin:0 }
 .hist-list li { padding:8px 10px; border-bottom:1px solid #eee }
 .hist-add { width:320px; border-left:1px solid #f0f0f0; padding-left:16px }
+
+.historial-item {
+  padding: 12px 16px !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  background: #fafafa;
+  margin-bottom: 8px;
+  border-radius: 6px;
+}
+
+.historial-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.historial-main {
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.4;
+}
+
+.historial-curso {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.curso-badge {
+  background: #e0e7ff;
+  color: #3730a3;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.aprobacion-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.aprobacion-badge.aprobado {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.aprobacion-badge.no-aprobado {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.confirm-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 32px 24px;
+  background: linear-gradient(135deg, #fafafa, #f3f4f6);
+  border-radius: 12px;
+  margin: -16px;
+}
+
+.confirm-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+}
+
+.confirm-content p {
+  font-size: 18px;
+  color: #1f2937;
+  margin-bottom: 8px;
+  line-height: 1.6;
+  font-weight: 500;
+  max-width: 400px;
+}
+
+.confirm-content p:last-of-type {
+  margin-bottom: 24px;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 32px;
+}
+
+.confirm-warning {
+  font-size: 14px;
+  color: #d97706;
+  font-style: italic;
+  margin-bottom: 16px !important;
+}
+
+.btn-modal-cancel {
+  background: linear-gradient(180deg, #6b7280, #4b5563) !important;
+  color: #fff !important;
+  border: none !important;
+  padding: 12px 24px !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  font-size: 16px !important;
+  min-width: 120px !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 4px 12px rgba(107, 114, 128, 0.25) !important;
+}
+
+.btn-modal-cancel:hover {
+  background: linear-gradient(180deg, #4b5563, #374151) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 16px rgba(107, 114, 128, 0.35) !important;
+}
+
+.btn-modal-confirm {
+  background: linear-gradient(180deg, #10b981, #059669) !important;
+  color: #fff !important;
+  border: none !important;
+  padding: 12px 24px !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  font-size: 16px !important;
+  min-width: 120px !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25) !important;
+}
+
+.btn-modal-confirm:hover {
+  background: linear-gradient(180deg, #059669, #047857) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35) !important;
+}
+
+.btn-modal-anular {
+  background: linear-gradient(180deg, #ef4444, #dc2626) !important;
+  color: #fff !important;
+  border: none !important;
+  padding: 12px 24px !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  font-size: 16px !important;
+  min-width: 120px !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25) !important;
+}
+
+.btn-modal-anular:hover {
+  background: linear-gradient(180deg, #dc2626, #b91c1c) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.35) !important;
+}
+
+.btn-modal-cancel:active,
+.btn-modal-confirm:active,
+.btn-modal-anular:active {
+  transform: translateY(0) !important;
+}
 </style>
