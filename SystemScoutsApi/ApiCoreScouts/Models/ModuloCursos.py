@@ -4,7 +4,7 @@ from .ModuloPersonas import *
 from .ModuloUsuarios import *
 
 class Curso(models.Model):
-    CURS_ID = models.BigAutoField(primary_key=True, db_column='CURS_ID')
+    CUR_ID = models.BigAutoField(primary_key=True, db_column='CUR_ID')
     USU_ID = models.ForeignKey(Usuario, on_delete=models.CASCADE, db_column='USU_ID')
     TCU_ID = models.ForeignKey('Tipo_Curso', on_delete=models.CASCADE, db_column='TCU_ID')
     PER_ID_RESPONSABLE = models.ForeignKey(Persona, on_delete=models.CASCADE, db_column='PER_ID_RESPONSABLE')

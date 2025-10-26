@@ -18,7 +18,7 @@ class Archivo(models.Model):
 class Archivo_Curso(models.Model):
     ARU_ID = models.BigAutoField(primary_key=True, db_column='ARU_ID')
     ARC_ID = models.ForeignKey('Archivo', on_delete=models.PROTECT, null=False, db_column='ARC_ID')
-    CUS_ID = models.ForeignKey(Curso, on_delete=models.PROTECT, null=False, db_column='CUS_ID')
+    CUS_ID = models.ForeignKey(Curso_Seccion, on_delete=models.PROTECT, null=False, db_column='CUS_ID')
 
     class Meta:
         db_table = 'ARCHIVO_CURSO'
@@ -27,7 +27,7 @@ class Archivo_Persona(models.Model):
     ARP_ID = models.BigAutoField(primary_key=True, db_column='ARP_ID')
     ARC_ID = models.ForeignKey('Archivo', on_delete=models.PROTECT, null=False, db_column='ARC_ID')
     PER_ID = models.ForeignKey(Persona, on_delete=models.PROTECT, null=False, db_column='PER_ID')
-    CUS_ID = models.ForeignKey(Curso, on_delete=models.CASCADE, null=True, db_column='CUS_ID')
+    CUS_ID = models.ForeignKey(Curso_Seccion, on_delete=models.CASCADE, null=True, db_column='CUS_ID')
 
     class Meta:
         db_table = 'ARCHIVO_PERSONA'
