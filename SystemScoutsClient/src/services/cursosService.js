@@ -26,6 +26,22 @@ export default {
     const c = await request(`${BASE}/${id}`)
     return mapCurso(c)
   },
+  async crear(payload) {
+    // Espera un payload con nombres de campos del backend (e.g., CUR_CODIGO, CUR_DESCRIPCION, etc.)
+    // Nota: La creación de Curso requiere múltiples campos obligatorios en el backend.
+    // Asegúrate de enviar todos los requeridos.
+    const res = await request(BASE, { method: 'POST', body: JSON.stringify(payload) })
+    return mapCurso(res)
+  },
+  async actualizar(id, patch) {
+    // Usa PATCH para actualizar parcialmente campos como CUR_DESCRIPCION, CUR_CODIGO, etc.
+    const res = await request(`${BASE}/${id}`, { method: 'PATCH', body: JSON.stringify(patch) })
+    return mapCurso(res)
+  },
+  async eliminar(id) {
+    await request(`${BASE}/${id}`, { method: 'DELETE' })
+    return true
+  },
   async listarCuotas() {
     // Try common paths
     try {

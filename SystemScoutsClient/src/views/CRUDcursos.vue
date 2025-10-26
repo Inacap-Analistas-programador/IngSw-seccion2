@@ -52,6 +52,7 @@
                 <BaseButton class="btn-secondary" small @click="togglePreinscripcion(i)">
                   {{ c.habilitado ? 'Deshabilitar' : 'Habilitar' }}
                 </BaseButton>
+                <BaseButton class="btn-danger" small @click="eliminarCurso(i)">Eliminar</BaseButton>
               </td>
             </tr>
             <tr v-if="paginatedCursos.length === 0">
@@ -252,27 +253,44 @@ async function guardarCurso() {
     alert('Por favor completa nombre, código y responsable')
     return
   }
-
-  // TODO: integrar POST/PUT real. Por ahora actualizamos localmente.
-  const nuevo = {
-    CURS_ID: modoEdicion.value && indiceEdicion.value >= 0 ? cursos[indiceEdicion.value].CURS_ID : Date.now(),
-    CUR_DESCRIPCION: form.nombre,
-    CUR_CODIGO: form.codigo,
-    CUR_TIPO_CURSO: form.tipoCurso,
-    fechaInicio: form.fechaInicio,
-    fechaTermino: form.fechaFin,
-    responsableNombre: getPersonaNombre(form.responsable),
-    CUR_ESTADO: 1,
-    habilitado: true,
-    PER_ID_RESPONSABLE: form.responsable || null,
+  try {
+    if (modoEdicion.value && indiceEdicion.value >= 0) {
+      // Actualizar en servidor vía PATCH sólo los campos editados en el formulario.
+      const cursoActual = cursos[indiceEdicion.value]
+      const patch = {
+        CUR_DESCRIPCION: form.nombre,
+        CUR_CODIGO: form.codigo,
+        ...(form.responsable ? { PER_ID_RESPONSABLE: form.responsable } : {}),
+        ...(form.tipoCurso ? { CUR_TIPO_CURSO: form.tipoCurso } : {}),
+        ...(form.modalidad ? { CUR_MODALIDAD: form.modalidad } : {}),
+        ...(form.comuna ? { COM_ID_LUGAR: form.comuna } : {}),
+      }
+      await cursosService.actualizar(cursoActual.CURS_ID || cursoActual.id, patch)
+      // Refrescar lista
+      const data = await cursosService.listar()
+      cursos.splice(0, cursos.length, ...((data || []).map(c => ({
+        CURS_ID: c.id,
+        CUR_DESCRIPCION: c.nombre || c.codigo || 'Curso',
+        CUR_CODIGO: c.codigo || '-',
+        CUR_TIPO_CURSO: null,
+        fechaInicio: null,
+        fechaTermino: null,
+        responsableNombre: '-',
+        CUR_ESTADO: c.estado ?? 1,
+        habilitado: (c.estado === 1)
+      }))))
+      filtrarCursos()
+      limpiarFormulario()
+    } else {
+      // Creación en servidor: el modelo requiere muchos campos obligatorios.
+      // Mostramos aviso y evitamos desincronizar UI con backend.
+      alert('La creación de cursos en el servidor requiere campos adicionales (usuario, tipo, comuna, modalidad, administración, cuotas, lugar, etc.). Agrega esos campos al formulario para habilitar el POST.')
+      // TODO: cuando el formulario incluya todos los campos requeridos, enviar cursosService.crear(payload)
+    }
+  } catch (e) {
+    console.error('Error guardando curso:', e)
+    alert('No se pudo guardar el curso. Revisa los datos e inténtalo nuevamente.')
   }
-  if (modoEdicion.value && indiceEdicion.value >= 0) {
-    Object.assign(cursos[indiceEdicion.value], nuevo)
-  } else {
-    cursos.push(nuevo)
-  }
-  filtrarCursos()
-  limpiarFormulario()
 }
 
 // Editar curso existente
@@ -324,6 +342,22 @@ function limpiarFormulario() {
   mostrarFormulario.value = false
   modoEdicion.value = false
   indiceEdicion.value = -1
+}
+
+// Eliminar curso
+async function eliminarCurso(index) {
+  const curso = cursos[index]
+  if (!curso) return
+  const ok = confirm(`¿Eliminar el curso "${curso.CUR_DESCRIPCION || curso.CUR_CODIGO}"?`)
+  if (!ok) return
+  try {
+    await cursosService.eliminar(curso.CURS_ID || curso.id)
+    cursos.splice(index, 1)
+    filtrarCursos()
+  } catch (e) {
+    console.error('Error eliminando curso:', e)
+    alert('No se pudo eliminar el curso.')
+  }
 }
 
 // Formatear fechas
