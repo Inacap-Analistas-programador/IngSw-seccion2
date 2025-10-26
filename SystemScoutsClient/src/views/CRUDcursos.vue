@@ -154,17 +154,9 @@
 </template>
 
 <script setup>
-<<<<<<< HEAD
-import { reactive, ref, onMounted } from 'vue'
-import cursosService from '@/services/cursosService.js'
-
-// Lista de cursos (se carga desde API)
-const cursos = reactive([])
-=======
-import { reactive, ref } from 'vue'
+import { reactive, ref, computed, onMounted } from 'vue'
 import InputBase from '@/components/Reutilizables/InputBase.vue'
 import BaseButton from '@/components/Reutilizables/BaseButton.vue'
-import BaseCheckBox from '@/components/Reutilizables/BaseCheckBox.vue'
 import BaseSelect from '@/components/Reutilizables/BaseSelect.vue'
 import cursosService from '@/services/cursosService.js'
 import personasService from '@/services/personasService.js'
@@ -172,7 +164,6 @@ import personasService from '@/services/personasService.js'
 // Lista de cursos y personas
 const cursos = reactive([])
 const personas = ref([])
->>>>>>> 0d07fbc23e917a3f08e27709965b056a4245f22b
 
 // Estado del formulario
 const form = reactive({
@@ -180,56 +171,75 @@ const form = reactive({
   codigo: '',
   fechaInicio: '',
   fechaFin: '',
-  responsable: null, // Cambiado a null para el select
-  jerarquias: []
+  responsable: null,
+  tipoCurso: null,
+  comuna: null,
+  modalidad: null,
+  coordinadores: []
 })
 
-// Lógica de filtros
+// Opciones de selects (placeholder)
+const tiposCurso = ref([
+  { value: 1, label: 'Básico' },
+  { value: 2, label: 'Especialidad' },
+])
+const comunas = ref([
+  { value: 1, label: 'Comuna 1' },
+  { value: 2, label: 'Comuna 2' },
+])
+const modalidadOptions = ref([
+  { value: 1, label: 'Presencial' },
+  { value: 2, label: 'Mixta' },
+])
+const cargos = ref([
+  { value: 1, label: 'Coordinador' },
+  { value: 2, label: 'Asistente' },
+])
+
+// Jerarquías/coordinadores
+const nuevoCoordinador = reactive({ persona: null, cargo: null })
+function agregarCoordinador() {
+  if (!nuevoCoordinador.persona || !nuevoCoordinador.cargo) return
+  form.coordinadores.push({ PER_ID: nuevoCoordinador.persona, CAR_ID: nuevoCoordinador.cargo })
+  nuevoCoordinador.persona = null
+  nuevoCoordinador.cargo = null
+}
+function eliminarCoordinador(index) {
+  form.coordinadores.splice(index, 1)
+}
+function getPersonaNombre(id) {
+  const p = personas.value.find(x => x.value === id)
+  return p?.label || '-'
+}
+function getCargoNombre(id) {
+  const c = cargos.value.find(x => x.value === id)
+  return c?.label || '-'
+}
+
+// Filtros y paginación
 const searchQuery = ref('')
-const cursosFiltrados = ref([])
-
-async function cargarDatos() {
-  try {
-    const [cursosResponse, personasResponse] = await Promise.all([
-      cursosService.obtenerCursos(),
-      personasService.obtenerPersonas()
-    ]);
-    
-    cursos.splice(0, cursos.length, ...cursosResponse.map(c => ({
-      ...c,
-      // Mapear el nombre del responsable
-      responsableNombre: personasResponse.find(p => p.PER_ID === c.PER_ID_RESPONSABLE)?.PER_NOMBRES || 'No asignado'
-    })));
-    
-    personas.value = personasResponse.map(p => ({
-      value: p.PER_ID,
-      label: `${p.PER_NOMBRES} ${p.PER_APELPTA || ''}`.trim()
-    }));
-    
-    filtrarCursos();
-  } catch (error) {
-    console.error("Error al cargar datos:", error);
-    // Aquí podrías mostrar una notificación al usuario
-  }
-}
-
-function filtrarCursos() {
+const currentPage = ref(1)
+const pageSize = ref(10)
+const cursosFiltrados = computed(() => {
   const query = searchQuery.value.toLowerCase().trim()
-  if (!query) {
-    cursosFiltrados.value = cursos
-    return
-  }
-  cursosFiltrados.value = cursos.filter(curso => {
-    return (
-      curso.nombre.toLowerCase().includes(query) ||
-      curso.codigo.toLowerCase().includes(query)
-    )
-  })
+  if (!query) return cursos
+  return cursos.filter(c =>
+    (c.CUR_DESCRIPCION || '').toLowerCase().includes(query) ||
+    (c.CUR_CODIGO || '').toLowerCase().includes(query)
+  )
+})
+const totalPages = computed(() => Math.max(1, Math.ceil(cursosFiltrados.value.length / pageSize.value)))
+const paginatedCursos = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return cursosFiltrados.value.slice(start, start + pageSize.value)
+})
+function goToPage(p) {
+  if (p < 1 || p > totalPages.value) return
+  currentPage.value = p
 }
-
-// Inicializar datos
-import { onMounted } from 'vue'
-onMounted(cargarDatos)
+function filtrarCursos() {
+  currentPage.value = 1
+}
 
 // Control de visibilidad y modo
 const mostrarFormulario = ref(false)
@@ -243,49 +253,36 @@ async function guardarCurso() {
     return
   }
 
-  const cursoData = {
+  // TODO: integrar POST/PUT real. Por ahora actualizamos localmente.
+  const nuevo = {
+    CURS_ID: modoEdicion.value && indiceEdicion.value >= 0 ? cursos[indiceEdicion.value].CURS_ID : Date.now(),
     CUR_DESCRIPCION: form.nombre,
     CUR_CODIGO: form.codigo,
-    CUR_FECHA_SOLICITUD: new Date().toISOString().split('T')[0], // Fecha actual
-    PER_ID_RESPONSABLE: form.responsable,
-    // Añadir otros campos necesarios por el modelo de Django
-    TCU_ID: 1, // Ejemplo, esto debería venir de un select
-    CAR_ID_RESPONSABLE: 1, // Ejemplo
-    COM_ID_LUGAR: 1, // Ejemplo
-    CUR_ADMINISTRA: 1,
-    CUR_COTA_CON_ALMUERZO: 0,
-    CUR_COTA_SIN_ALMUERZO: 0,
-    CUR_MODALIDAD: 1,
-    CUR_TIPO_CURSO: 1,
-    CUR_LUGAR: 'Lugar de ejemplo',
+    CUR_TIPO_CURSO: form.tipoCurso,
+    fechaInicio: form.fechaInicio,
+    fechaTermino: form.fechaFin,
+    responsableNombre: getPersonaNombre(form.responsable),
     CUR_ESTADO: 1,
-  };
-
-  try {
-    if (modoEdicion.value) {
-      // Actualizar curso existente
-      const cursoId = cursos[indiceEdicion.value].CURS_ID;
-      await cursosService.actualizarCurso(cursoId, cursoData);
-    } else {
-      // Crear nuevo curso
-      await cursosService.agregarCurso(cursoData);
-    }
-    await cargarDatos(); // Recargar datos para ver los cambios
-    limpiarFormulario();
-  } catch (error) {
-    console.error("Error al guardar el curso:", error);
-    alert("Hubo un error al guardar el curso. Revisa la consola para más detalles.");
+    habilitado: true,
+    PER_ID_RESPONSABLE: form.responsable || null,
   }
+  if (modoEdicion.value && indiceEdicion.value >= 0) {
+    Object.assign(cursos[indiceEdicion.value], nuevo)
+  } else {
+    cursos.push(nuevo)
+  }
+  filtrarCursos()
+  limpiarFormulario()
 }
 
 // Editar curso existente
 function editarCurso(index) {
   const curso = cursos[index]
-  
+
   // Llenar el formulario con los datos del curso a editar
-  form.nombre = curso.CUR_DESCRIPCION
-  form.codigo = curso.CUR_CODIGO
-  
+  form.nombre = curso.CUR_DESCRIPCION || ''
+  form.codigo = curso.CUR_CODIGO || ''
+
   // Formatear la fecha para el input type="date" (YYYY-MM-DD)
   if (curso.CUR_FECHA_SOLICITUD) {
     form.fechaInicio = new Date(curso.CUR_FECHA_SOLICITUD).toISOString().split('T')[0]
@@ -293,15 +290,17 @@ function editarCurso(index) {
     form.fechaInicio = ''
   }
   // Asumimos que no hay fecha de fin en el modelo principal, se deja en blanco
-  form.fechaFin = '' 
-  
-  form.responsable = curso.PER_ID_RESPONSABLE
-  form.jerarquias = [] // Este campo se puede desarrollar más adelante
+  form.fechaFin = ''
+
+  form.responsable = curso.PER_ID_RESPONSABLE || null
+  form.coordinadores = [] // Este campo se puede desarrollar más adelante
 
   modoEdicion.value = true
   indiceEdicion.value = index
   mostrarFormulario.value = true
-}// Toggle de preinscripción
+}
+
+// Toggle de preinscripción
 function togglePreinscripcion(index) {
   cursos[index].habilitado = !cursos[index].habilitado
 }
@@ -318,7 +317,10 @@ function limpiarFormulario() {
   form.fechaInicio = ''
   form.fechaFin = ''
   form.responsable = null
-  form.jerarquias = []
+  form.tipoCurso = null
+  form.comuna = null
+  form.modalidad = null
+  form.coordinadores = []
   mostrarFormulario.value = false
   modoEdicion.value = false
   indiceEdicion.value = -1
@@ -340,19 +342,43 @@ function formatDate(d) {
 // Cargar cursos desde API al montar
 onMounted(async () => {
   try {
+    // Cargar cursos
     const data = await cursosService.listar()
     const mapped = (data || []).map(c => ({
-      nombre: c.nombre || c.codigo || 'Curso',
-      codigo: c.codigo || '-',
-      fechas: '-',
-      responsable: '-',
-      habilitado: (c.estado === 1) // ejemplo: 1 = Vigente
+      CURS_ID: c.id,
+      CUR_DESCRIPCION: c.nombre || c.codigo || 'Curso',
+      CUR_CODIGO: c.codigo || '-',
+      CUR_TIPO_CURSO: null,
+      fechaInicio: null,
+      fechaTermino: null,
+      responsableNombre: '-',
+      CUR_ESTADO: c.estado ?? 1,
+      habilitado: (c.estado === 1)
     }))
     cursos.splice(0, cursos.length, ...mapped)
+
+    // Cargar personas para selects
+    const pers = await personasService.listarBasic()
+    personas.value = (pers || []).map(p => ({ value: p.id, label: p.nombre }))
   } catch (e) {
-    console.warn('No se pudieron cargar cursos desde API', e)
+    console.warn('No se pudieron cargar cursos/personas desde API', e)
   }
 })
+
+// Helpers de presentación
+function getTipoCursoText(t) {
+  const found = tiposCurso.value.find(x => x.value === (Number(t) || t))
+  return found?.label || '—'
+}
+function getEstadoInfo(estado) {
+  const st = Number(estado)
+  if (st === 1) return { class: 'badge-success', text: 'Vigente' }
+  if (st === 0) return { class: 'badge-secondary', text: 'Inactivo' }
+  return { class: 'badge-info', text: 'Desconocido' }
+}
+function gestionarParticipantes(id) {
+  console.log('Gestionar participantes para curso', id)
+}
 </script>
 
 <style scoped>

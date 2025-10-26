@@ -294,7 +294,7 @@ import BaseSelect from '@/components/Reutilizables/BaseSelect.vue'
 import BaseButton from '@/components/Reutilizables/BaseButton.vue'
 import BaseAlert from '@/components/Reutilizables/BaseAlert.vue'
 import BaseModal from '@/components/Reutilizables/BaseModal.vue'
-import { personasEjemplo } from '@/data/personasEjemplo.js'
+import personasService from '@/services/personasService.js'
 
 export default {
   name: 'GestionPersonas',
@@ -347,11 +347,8 @@ export default {
     };
   },
   created() {
-    // Cargar datos de ejemplo para desarrollo - será reemplazado por llamada a la BD
-    this.personas = personasEjemplo;
-    
-    // enriquecer personas con campos tipo BD al crear
-    this.enrichPersonas();
+    // Cargar desde API
+    this.loadPersonas();
   },
   computed: {
     filtrosActivos() {
@@ -395,6 +392,33 @@ export default {
     }
   },
   methods: {
+    async loadPersonas() {
+      try {
+        const lista = await personasService.listarBasic();
+        // Asegurar campos esperados por la vista
+        this.personas = (lista || []).map(p => ({
+          nombre: p.nombre || '',
+          rut: p.rut || '',
+          email: p.email || '',
+          rol: p.rol || '',
+          rama: p.rama || '',
+          grupo: p.grupo || '',
+          estado: p.vigente === false ? 'No vigente' : (p.estado || 'Vigente'),
+          vigente: p.vigente !== false,
+          telefono: p.telefono || '',
+          fecha_nac: p.fecha_nac || '',
+          direccion: p.direccion || '',
+          profesion: p.profesion || '',
+          cursos: p.cursos || [],
+          historial: p.historial || [],
+          foto: p.foto || null,
+          raw: p.raw || p
+        }));
+      } catch (e) {
+        console.error('Error cargando personas', e);
+        this.personas = [];
+      }
+    },
     seleccionar(persona) {
       // mantener compatibilidad - también abrir modal para editar
       this.abrirModal(persona);

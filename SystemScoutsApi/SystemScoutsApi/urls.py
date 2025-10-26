@@ -25,4 +25,6 @@ urlpatterns = [
     path('api/auth/login/', auth_views.login),
     path('api/personas/qr-token/', auth_views.qr_token),
     path('api/personas/qr-email/', auth_views.qr_email),
+    path('api/personas/acreditacion/manual/search/', auth_views.acreditacion_manual_search),
+    path('api/personas/acreditacion/manual/acreditar/', auth_views.acreditacion_manual_acreditar),
 ]

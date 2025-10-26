@@ -125,6 +125,7 @@ import DataTable from '@/components/Reutilizables/DataTable.vue'
 import BaseButton from '@/components/Reutilizables/BaseButton.vue'
 import BaseAlert from '@/components/Reutilizables/BaseAlert.vue'
 import NotificationToast from '@/components/Reutilizables/NotificationToast.vue'
+import acreditacionService from '@/services/acreditacionService.js'
 
 export default {
   name: 'ManualAcreditation',
@@ -202,58 +203,43 @@ export default {
     },
 
     handleSearch() {
-      if (this.searchTerm.trim()) {
-        // Simular búsqueda con diferentes estados
-        const randomState = Math.random();
-        if (randomState < 0.3) {
-          // Usuario sin pago
-          this.selectedParticipant = {
-            name: 'JUAN PÉREZ GONZÁLEZ',
-            rut: '12.345.678-9',
-            currentCourse: 'Formación de Dirigentes',
-            paymentStatus: 'Pendiente',
-            acreditationStatus: 'Pendiente',
-            paymentConfirmed: false
-          };
-        } else if (randomState < 0.6) {
-          // Usuario listo para acreditar
-          this.selectedParticipant = {
-            name: 'MARÍA GONZÁLEZ LÓPEZ',
-            rut: '98.765.432-1',
-            currentCourse: 'Formación de Dirigentes',
-            paymentStatus: 'Confirmado',
-            acreditationStatus: 'Pendiente',
-            paymentConfirmed: true
-          };
-        } else {
-          // Usuario ya acreditado
-          this.selectedParticipant = {
-            name: 'CARLOS RAMÍREZ SOTO',
-            rut: '11.222.333-4',
-            currentCourse: 'Curso de Especialidades',
-            paymentStatus: 'Confirmado',
-            acreditationStatus: 'Acreditado',
-            paymentConfirmed: true
-          };
-        }
-      } else {
-        this.selectedParticipant = null;
-      }
+      const term = this.searchTerm.trim()
+      if (!term) { this.selectedParticipant = null; return }
+      acreditacionService.buscar(term)
+        .then((p) => {
+          if (!p) {
+            this.selectedParticipant = null
+            this.acreditationSuccess = false
+            this.paymentSuccess = false
+          } else {
+            this.selectedParticipant = p
+          }
+        })
+        .catch((e) => {
+          console.error('Error buscando participante:', e)
+          this.selectedParticipant = null
+        })
     },
 
     acreditarParticipante() {
-      if (this.canAcredit) {
-        this.selectedParticipant.acreditationStatus = 'Acreditado';
-        // Mostrar toast en lugar de BaseAlert grande
-        const msg = `${this.selectedParticipant.name} acreditado correctamente`;
-        this.acreditationSuccessMessage = msg;
-        this.acreditationSuccess = true;
-        // Auto-dismiss
-        setTimeout(() => {
-          this.acreditationSuccess = false;
-          this.acreditationSuccessMessage = '';
-        }, 3500);
-      }
+      if (!this.canAcredit || !this.selectedParticipant) return
+      const { rut, per_id } = this.selectedParticipant
+      acreditacionService.acreditar({ rut, per_id })
+        .then((ok) => {
+          if (ok) {
+            this.selectedParticipant.acreditationStatus = 'Acreditado'
+            const msg = `${this.selectedParticipant.name} acreditado correctamente`
+            this.acreditationSuccessMessage = msg
+            this.acreditationSuccess = true
+            setTimeout(() => {
+              this.acreditationSuccess = false
+              this.acreditationSuccessMessage = ''
+            }, 3500)
+          } else {
+            console.warn('No se pudo acreditar (respuesta no ok)')
+          }
+        })
+        .catch((e) => console.error('Error acreditando:', e))
     },
 
     handlePagar() {
