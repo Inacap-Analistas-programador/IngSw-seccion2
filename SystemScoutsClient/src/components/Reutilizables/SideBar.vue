@@ -1,69 +1,82 @@
 <template>
   <aside class="sidebar">
-    <div class="sidebar-header">
-      <img :src="logoSrc" alt="Logo Scouts" class="logo" />
-      <h1 class="titulo">SBS</h1>
-    </div>
-
     <nav class="sidebar-nav">
       
       <div v-if="usuario.rol === 'Administradora Regional'">
-        <span class="nav-section-title">Navegación Principal</span>
-        <router-link to="/" class="nav-item">Panel de Control</router-link>
+        <span class="nav-section-title">NAVEGACIÓN PRINCIPAL</span>
+        
         <router-link to="/usuarios" class="nav-item">Usuarios y Roles</router-link>
-        <router-link to="/cursos" class="nav-item">Cursos y Capacitaciones</router-link>
+        <router-link to="/cursos-capacitaciones" class="nav-item">Cursos y Capacitaciones</router-link>
         <router-link to="/inscripciones" class="nav-item">Inscripciones</router-link>
-        <router-link to="/personas" class="nav-item">Gestión de Personas</router-link>
+        <router-link to="/gestionpersonas" class="nav-item">Gestión de Personas</router-link>
         <router-link to="/pagos" class="nav-item">Pagos</router-link>
         <router-link to="/correos" class="nav-item">Envío de Correos</router-link>
-        <router-link to="/reportes" class="nav-item">Reportes</router-link>
-        <router-link to="/qr" class="nav-item">Acreditación QR</router-link>
+        <div class="nav-item nav-collapsible" @click="toggleMantenedores">
+          <span>Mantenedores</span>
+          <span class="caret" :class="{ open: showMantenedores }">▾</span>
+        </div>
+        <div v-if="showMantenedores" class="submenu">
+          <router-link
+            v-for="t in mantenedoresTabs"
+            :key="t.id"
+            class="submenu-item"
+            :to="`/mantenedores/${t.id}`"
+          >
+            {{ t.label }}
+          </router-link>
+        </div>
+        <router-link to="/manual-acreditacion" class="nav-item">Acreditación Manual</router-link>
+        <router-link to="/verificador-qr" class="nav-item">Verificador QR</router-link>
       </div>
       <div v-else>
-        <router-link to="/" class="nav-item">🏠 Inicio</router-link>
+        <router-link to="/dashboard" class="nav-item">Inicio</router-link>
       </div>
     </nav>
-
-    <div class="sidebar-footer">
-      <hr class="footer-divider" />
-      <div class="usuario-menu" @click="toggleMenu">
-        <strong>{{ usuario.nombre }}</strong>
-        <small>{{ usuario.rol }}</small>
-      </div>
-      
-      <div v-if="menuAbierto" class="dropdown-up">
-        <router-link to="/perfil" class="dropdown-item" @click="cerrarMenu">👤 Mi Perfil</router-link>
-        <button class="logout" @click="cerrarSesion">🚪 Cerrar sesión</button>
-      </div>
-    </div>
   </aside>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import logoSrc from '@/assets/Logo_Boyscout_Chile.png'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
-const usuario = ref({ nombre: 'Cargando...', rol: '---' })
-const menuAbierto = ref(false)
-const router = useRouter()
+// Se mantiene el rol para condicionar el menú
+const usuario = ref({ nombre: 'Usuario Demo', rol: 'Administradora Regional' })
 
-function toggleMenu() {
-  menuAbierto.value = !menuAbierto.value
-}
+// Desplegable de Mantenedores
+const showMantenedores = ref(false)
+const mantenedoresTabs = [
+  // Orden solicitado: región, provincia, comuna, zona, distrito, grupo
+  { id: 'regiones', label: 'Regiones' },
+  { id: 'provincias', label: 'Provincias' },
+  { id: 'comunas', label: 'Comunas' },
+  { id: 'zonas', label: 'Zonas' },
+  { id: 'distritos', label: 'Distritos' },
+  { id: 'grupos', label: 'Grupos Scout' },
+  // Resto de mantenedores (manteniendo su orden relativo original)
+  { id: 'ramas', label: 'Ramas' },
+  { id: 'tipos-curso', label: 'Tipos Curso' },
+  { id: 'cargos', label: 'Cargos' },
+  { id: 'alimentacion', label: 'Alimentación' },
+  { id: 'niveles', label: 'Niveles' },
+  { id: 'estados-civiles', label: 'Estados Civiles' },
+  { id: 'roles', label: 'Roles' },
+  { id: 'conceptos-contables', label: 'Conceptos Contables' },
+  { id: 'tipos-archivo', label: 'Tipos de Archivo' }
+]
 
-function cerrarMenu() {
-  menuAbierto.value = false
-}
-
-function cerrarSesion() {
-  alert(`Hasta pronto, ${usuario.value.nombre}`)
-  cerrarMenu()
-  router.push('/')
+function toggleMantenedores() {
+  showMantenedores.value = !showMantenedores.value
 }
 
 onMounted(async () => {
-  usuario.value = await usuarioService.obtenerUsuarioActual()
+  // Aquí puedes cargar los datos del usuario desde tu servicio
+  // usuario.value = await usuarioService.obtenerUsuarioActual()
+  const route = useRoute()
+  // Abrir automáticamente si se navega a /mantenedores
+  showMantenedores.value = route.path.startsWith('/mantenedores')
+  watch(() => route.path, (p) => {
+    showMantenedores.value = p.startsWith('/mantenedores')
+  })
 })
 </script>
 
@@ -74,37 +87,15 @@ onMounted(async () => {
   background: #1e3a8a;
   color: white;
   width: 250px;
-  height: 100vh;
+  height: calc(100vh - 64px); /* Altura total menos la navbar reducida */
   position: fixed;
-  top: 0;
+  top: 64px; /* Altura ajustada de la navbar */
   left: 0;
   box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
+  z-index: 999;
   overflow-y: auto;
   font-weight: 400; /* Regular */
 }
-
-/* 1. Encabezado */
-.sidebar-header {
-  display: flex;
-  align-items: center;
-  padding: 15px 20px;
-  border-bottom: 1px solid #3b5998;
-}
-.logo {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  margin-right: 10px;
-}
-.titulo {
-  margin: 0;
-  /* Título secundario (18–24 px, Semibold/500) */
-  font-size: 1.25rem; /* 20px */
-  font-weight: 500; /* Semibold */
-  line-height: 1.3; /* Títulos (1.2–1.4) */
-}
-
 /* 2. Navegación */
 .sidebar-nav {
   flex-grow: 1; 
@@ -139,83 +130,35 @@ onMounted(async () => {
   background: #2563eb;
 }
 
-/* 3. Footer (Perfil) */
-.sidebar-footer {
-  position: sticky;
-  bottom: 0;
-  background: #1e3a8a;
-  padding: 15px;
-  position: relative;
-  /* Texto normal (line-height) */
-  line-height: 1.5;
-}
-.footer-divider {
-  border: 0;
-  height: 1px;
-  background: #3b5998;
-  margin-bottom: 15px;
-}
-.usuario-menu {
+/* Desplegable */
+.nav-collapsible {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
   cursor: pointer;
-  padding: 8px;
-  border-radius: 6px;
 }
-.usuario-menu:hover {
+.caret { transition: transform 0.2s ease; }
+.caret.open { transform: rotate(180deg); }
+.submenu {
+  background: #173274;
+  padding: 6px 0 8px 0;
+}
+.submenu-item {
+  display: block;
+  color: #e6eeff;
+  text-decoration: none;
+  padding: 8px 32px;
+  font-size: 0.9rem;
+}
+.submenu-item:hover, .submenu-item.router-link-exact-active {
   background: #2563eb;
-}
-.usuario-menu strong {
-  /* Texto normal (14-16px, Medium/500) */
-  font-size: 0.875rem; /* 14px */
-  font-weight: 500; /* Medium */
-}
-.usuario-menu small {
-  /* Texto pequeño (12px, Regular/400) */
-  font-size: 0.75rem; /* 12px */
-  font-weight: 400; /* Regular */
-  color: #a0bcf0; /* Color secundario (branding) */
+  color: #fff;
 }
 
-/* Dropdown que aparece hacia arriba */
-.dropdown-up {
-  position: absolute;
-  bottom: 100%;
-  left: 15px;
-  right: 15px;
-  background: white;
-  padding: 10px;
-  border-radius: 8px;
-  box-shadow: 0 -4px 8px rgba(0, 0, 0, 0.15);
-  z-index: 1001;
-  margin-bottom: 10px;
-  /* Texto normal (14-16px, Regular/400) */
-  font-size: 0.875rem; /* 14px */
-  font-weight: 400; /* Regular */
-  line-height: 1.5;
-  /* Color de texto principal */
-  color: #111111;
-}
-.dropdown-item {
-  display: block;
-  text-decoration: none;
-  padding: 6px 0;
-  /* Botones (14-16px, Medium/500) */
-  font-weight: 500; /* Medium */
-  /* Links (colores del branding) */
-  color: #1e3a8a;
-}
-.logout {
-  width: 100%;
-  background: none;
-  border: none;
-  padding: 6px 0;
-  text-align: left;
-  cursor: pointer;
-  /* Botones (14-16px, Bold/600) */
-  font-size: 0.875rem; /* 14px */
-  font-weight: 600; /* Bold */
-  /* Links (colores del branding) */
-  color: #dc2626;
+/* Responsive: ocultar sidebar en móviles */
+@media (max-width: 768px) {
+  .sidebar {
+    display: none;
+  }
 }
 </style>
