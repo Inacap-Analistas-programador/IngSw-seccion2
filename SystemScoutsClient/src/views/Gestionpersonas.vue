@@ -788,8 +788,8 @@ export default {
   box-sizing: border-box;
   margin: 20px auto;
   padding: 16px 40px; 
-  background: #ffffff;
-  color: #111;
+  background: var(--color-surface);
+  color: var(--color-text);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -810,7 +810,7 @@ export default {
 }
 
 .header h2 {
-  background-color: #214e9c;
+  background-color: var(--color-primary);
   color: #fff;
   padding: 14px 18px;
   border-radius: 6px;
@@ -841,10 +841,10 @@ export default {
 .filtros input,
 .filtros select {
   padding: 10px 12px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--color-border);
   border-radius: 4px;
-  color: #222;
-  background: #fff;
+  color: var(--color-text);
+  background: var(--color-surface);
 }
 
 .filtros input {
@@ -886,15 +886,15 @@ export default {
   border-radius: 6px;
   cursor: pointer;
 }
-.btn-search, .buscar { background: linear-gradient(180deg,#2b6cb0,#154c8c); color: #fff; box-shadow: 0 6px 18px rgba(33,78,156,0.12); border: none; }
-.btn-export, .exportar { background: linear-gradient(180deg,#16a34a,#15803d); color: #fff; box-shadow: 0 6px 18px rgba(16,185,129,0.08); border: none; }
+.btn-search, .buscar { background: var(--color-primary); color: #fff; box-shadow: var(--btn-shadow); border: none; }
+.btn-export, .exportar { background: var(--color-success); color: #fff; box-shadow: var(--btn-shadow); border: none; }
 
-.btn-edit { background: linear-gradient(180deg,#facc15,#f59e0b); color: #111; box-shadow: 0 6px 18px rgba(250,204,21,0.08); }
-.btn-ver { background: linear-gradient(180deg,#3b82f6,#1d4ed8); color: #fff; box-shadow: 0 6px 18px rgba(59,130,246,0.12); }
-.btn-editar { background: linear-gradient(180deg,#facc15,#f59e0b); color: #111; box-shadow: 0 6px 18px rgba(250,204,21,0.08); }
-.btn-anular { background: linear-gradient(180deg,#ef4444,#dc2626); color: #fff; box-shadow: 0 6px 18px rgba(239,68,68,0.12); }
-.btn-save { background: linear-gradient(180deg,#2563eb,#1e40af); color:#fff; box-shadow: 0 8px 24px rgba(37,99,235,0.12); }
-.btn-confirm { background: linear-gradient(180deg,#059669,#047857); color:#fff; box-shadow: 0 8px 24px rgba(5,150,105,0.12); }
+.btn-edit { background: var(--color-warning); color: #111; box-shadow: var(--btn-shadow); }
+.btn-ver { background: var(--color-info); color: #fff; box-shadow: var(--btn-shadow); }
+.btn-editar { background: var(--color-warning); color: #111; box-shadow: var(--btn-shadow); }
+.btn-anular { background: var(--color-danger); color: #fff; box-shadow: var(--btn-shadow); }
+.btn-save { background: var(--color-primary); color:#fff; box-shadow: var(--btn-shadow); }
+.btn-confirm { background: var(--color-success); color:#fff; box-shadow: var(--btn-shadow); }
 
 .btn-search, .btn-export, .btn-edit, .btn-ver, .btn-editar, .btn-anular, .btn-save, .btn-confirm {
   padding: 8px 14px;
@@ -902,7 +902,7 @@ export default {
   font-weight:700;
   transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
 }
-.btn-search:hover, .btn-export:hover, .btn-edit:hover, .btn-ver:hover, .btn-editar:hover, .btn-anular:hover, .btn-save:hover, .btn-confirm:hover { transform: translateY(-2px); }
+.btn-search:hover, .btn-export:hover, .btn-edit:hover, .btn-ver:hover, .btn-editar:hover, .btn-anular:hover, .btn-save:hover, .btn-confirm:hover { transform: translateY(-2px); filter: brightness(0.95); }
 .btn-search:active, .btn-export:active, .btn-edit:active, .btn-ver:active, .btn-editar:active, .btn-anular:active, .btn-save:active, .btn-confirm:active { transform: translateY(0); }
 .btn-search:focus, .btn-export:focus, .btn-edit:focus, .btn-ver:focus, .btn-editar:focus, .btn-anular:focus, .btn-save:focus, .btn-confirm:focus { outline: 3px solid rgba(33,78,156,0.12); }
 
@@ -951,22 +951,22 @@ table {
   width: 100%;
   box-sizing: border-box;
   border-collapse: collapse;
-  background-color: #fff;
+  background-color: var(--color-surface);
   min-width: 0; 
   font-size: 14px;
 }
 
 th, td {
   padding: 14px 12px;
-  border-bottom: 1px solid #ececec;
+  border-bottom: 1px solid var(--color-border);
   text-align: left;
-  color: #222; 
+  color: var(--color-text); 
   opacity: 1;
 }
 
 th {
-  background-color: #f7f7f7;
-  color: #222;
+  background-color: var(--color-background-mute);
+  color: var(--color-text);
   font-weight: 600;
   position: sticky;
   top: 0;
@@ -1049,8 +1049,8 @@ th {
   color: #6b7280 !important;
 }
 
-.detail-panel .detalle { flex: 0 0 auto; margin-top: 18px; padding: 14px 18px; background: #f6f7f9; border-radius: 6px; }
-.detail-panel .detalle h4 { margin: 0 0 10px 0; color:#1e3a8a; font-size: 20px; font-weight:700 }
+.detail-panel .detalle { flex: 0 0 auto; margin-top: 18px; padding: 14px 18px; background: var(--color-background-soft); border-radius: 6px; }
+.detail-panel .detalle h4 { margin: 0 0 10px 0; color: var(--color-primary); font-size: 20px; font-weight:700 }
 
 .placeholder-row td {
   text-align: center;
@@ -1115,7 +1115,7 @@ th {
 .detalle { box-shadow: 0 6px 20px rgba(16,24,40,0.06); }
 .detail-panel .detalle h4 {
   background: transparent;
-  color: #214e9c; 
+  color: var(--color-primary); 
   padding: 0;
   margin: 0 0 10px 0;
   font-size: 18px;
@@ -1127,14 +1127,14 @@ th {
   gap: 48px;
   align-items: flex-start;
   justify-content: space-between;
-  border-top: 2px solid #214e9c; 
+  border-top: 2px solid var(--color-primary); 
   padding-top: 14px;
   margin-top: 10px;
 }
 
 
 .detalle-header {
-  background: #214e9c;
+  background: var(--color-primary);
   color: #fff;
   padding: 12px 16px;
   border-radius: 6px 6px 0 0;
@@ -1161,7 +1161,7 @@ th {
   border-radius: 4px;
 }
 .cerrar-detalle:hover { background: rgba(255,255,255,0.06); }
-.detalle-body {
+.detall e-body {
   background: #fff;
   border-radius: 0 0 6px 6px;
   padding: 18px;
@@ -1205,7 +1205,7 @@ td[data-label="RUT"] {
   padding: 12px 14px;
 }
 .modal-header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
-.modal-header h3 { margin:0; font-size:18px; color:#214e9c }
+.modal-header h3 { margin:0; font-size:18px; color: var(--color-primary) }
 .modal-close { background:transparent; border:none; font-size:18px; cursor:pointer }
 .modal-header .header-actions { display:flex; gap:8px; align-items:center }
 .modal-header .header-actions .base-button { padding:6px 10px }

@@ -61,18 +61,18 @@ function onInput(e) {
 .base-input { display: block; width: 100%; margin-bottom: 12px; }
 
 /* etiqueta obligatoriamente en bloque -> garantiza que quede arriba */
-.base-label { display: block; font-weight: 700; margin-bottom: 6px; color: #111; font-size: 14px; }
+.base-label { display: block; font-weight: 700; margin-bottom: 6px; color: var(--color-text); font-size: 14px; }
 
 /* input ocupa 100% del ancho y caja con borde gris similar a la imagen */
 .base-field {
     display: block;
     width: 100%;
     box-sizing: border-box;
-    border: 1px solid #d0d0d0;
-    background: #fff;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
     padding: 8px 10px;
     font-size: 13px;
-    color: #222;
+    color: var(--color-text);
     border-radius: 2px;
 }
 
@@ -80,7 +80,7 @@ function onInput(e) {
 .base-field::placeholder { text-transform: uppercase; color: #9b9b9b; }
 
 /* foco sutil que no desplace la etiqueta */
-.base-field:focus { outline: none; border-color: #9aa8b2; }
+.base-field:focus { outline: none; border-color: var(--color-primary); }
 
 /* mensaje de error bajo el input */
 .base-error { color: #c0392b; font-size: 12px; margin-top: 6px; display: block; }

@@ -160,7 +160,7 @@ export default {
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 600;
-  color: #39424bff;
+  color: var(--color-text);
   font-size: 0.9rem;
 }
 
@@ -171,17 +171,18 @@ export default {
 .base-select__element {
   width: 100%;
   padding: 0.75rem;
-  border: 2px solid #dcdfe6;
+  border: 2px solid var(--color-border);
   border-radius: 6px;
-  background-color: white;
+  background-color: var(--color-surface);
+  color: var(--color-text);
   font-size: 1rem;
   transition: all 0.3s ease;
   outline: none;
 }
 
 .base-select__element:focus {
-  border-color: #d7e1e7ff;
-  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 
 .base-select__element--error {

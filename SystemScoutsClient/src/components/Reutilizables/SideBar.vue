@@ -84,8 +84,8 @@ onMounted(async () => {
 .sidebar {
   display: flex;
   flex-direction: column;
-  background: #1e3a8a;
-  color: white;
+  background: var(--color-primary);
+  color: #fff;
   width: 250px;
   height: calc(100vh - 64px); /* Altura total menos la navbar reducida */
   position: fixed;
@@ -104,7 +104,7 @@ onMounted(async () => {
 .nav-section-title {
   display: block;
   text-transform: uppercase;
-  color: #a0bcf0;
+  color: rgba(255,255,255,0.7);
   padding: 0 20px 10px 20px;
   /* Texto pequeño (12 px, Regular/400) */
   font-size: 0.75rem; /* 12px */
@@ -113,7 +113,7 @@ onMounted(async () => {
 }
 .nav-item {
   display: block;
-  color: white;
+  color: #fff;
   text-decoration: none;
   padding: 12px 20px; /* Padding para clic cómodo */
   transition: background 0.2s;
@@ -122,12 +122,12 @@ onMounted(async () => {
   font-weight: 500; /* Medium */
 }
 .nav-item:hover {
-  background: #2563eb;
+  background: var(--color-primary-hover);
 }
 .router-link-exact-active {
   /* Botones (Bold/600) para estado activo */
   font-weight: 600; /* Bold */
-  background: #2563eb;
+  background: var(--color-primary-hover);
 }
 
 /* Desplegable */
@@ -140,18 +140,18 @@ onMounted(async () => {
 .caret { transition: transform 0.2s ease; }
 .caret.open { transform: rotate(180deg); }
 .submenu {
-  background: #173274;
+  background: rgba(0,0,0,0.15);
   padding: 6px 0 8px 0;
 }
 .submenu-item {
   display: block;
-  color: #e6eeff;
+  color: rgba(255,255,255,0.9);
   text-decoration: none;
   padding: 8px 32px;
   font-size: 0.9rem;
 }
 .submenu-item:hover, .submenu-item.router-link-exact-active {
-  background: #2563eb;
+  background: var(--color-primary-hover);
   color: #fff;
 }
 

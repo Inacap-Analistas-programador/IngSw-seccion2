@@ -65,7 +65,7 @@ function onAvatarError() {
 <style scoped>
 /* ====== Barra de navegación ====== */
 .navbar {
-  background: #2c5aa0; /* Azul institucional Scouts */
+  background: var(--color-primary); /* Azul institucional estandarizado */
   color: white;
   padding: 8px 20px;
   box-shadow: 0 2px 10px rgba(0,0,0,0.15);
@@ -97,7 +97,7 @@ function onAvatarError() {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  border: 2px solid #ffcc00; /* Amarillo brillante */
+  border: 2px solid var(--color-warning); /* Amarillo del tema */
   background: white;
   object-fit: cover;
   box-shadow: 0 3px 6px rgba(0,0,0,0.18);
@@ -136,8 +136,8 @@ function onAvatarError() {
   height: 36px;
   border-radius: 50%;
   object-fit: cover;
-  background: #fff;
-  border: 2px solid #ffcc00;
+  background: var(--color-surface);
+  border: 2px solid var(--color-warning);
   box-shadow: 0 3px 6px rgba(0,0,0,0.18);
 }
 .user-meta {

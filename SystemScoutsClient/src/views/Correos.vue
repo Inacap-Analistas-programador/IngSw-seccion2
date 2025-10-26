@@ -53,8 +53,8 @@
 							</div>
 						</div>
 						<div class="correos-card-desc">
-							<span v-if="loading" style="color: #3a8dde; font-weight: 600;"> (Cargando...)</span>
-							<span v-if="error" style="color: #d32f2f; font-weight: 600;"> ⚠️ {{ error }}</span>
+							<span v-if="loading" style="color: var(--color-info); font-weight: 600;"> (Cargando...)</span>
+							<span v-if="error" style="color: var(--color-danger); font-weight: 600;"> ⚠️ {{ error }}</span>
 						</div>
 						<div class="datatable-visual">
 							<table class="datatable-table">
@@ -75,7 +75,7 @@
 										<td colspan="8" style="text-align: center; padding: 20px;">Cargando personas...</td>
 									</tr>
 									<tr v-else-if="error">
-										<td colspan="8" style="text-align: center; padding: 20px; color: #d32f2f;">{{ error }}</td>
+										<td colspan="8" style="text-align: center; padding: 20px; color: var(--color-danger);">{{ error }}</td>
 									</tr>
 									<tr v-else-if="!rowsFiltered.length">
 										<td colspan="8" style="text-align: center; padding: 20px;">No hay personas que coincidan con los filtros</td>
@@ -282,7 +282,7 @@ async function enviarPorCorreo() {
 .correos-bg {
 	min-height: 100vh;
 	width: 100%;
-	background: #ffffff;
+	background: var(--color-background);
 	display: flex;
 	flex-direction: column;
 	align-items: center;
@@ -308,11 +308,11 @@ async function enviarPorCorreo() {
 	font-size: 1.25rem;
 	font-weight: 600;
 	margin: 0 0 18px 0;
-	color: #285ca8;
+	color: var(--color-primary);
 	padding-left: 8px;
 }
 .correos-card {
-	background: #fff;
+	background: var(--color-surface);
 	border-radius: 12px;
 	box-shadow: 0 4px 18px rgba(40,92,168,0.13);
 	margin: 0 auto 28px auto;
@@ -320,7 +320,7 @@ async function enviarPorCorreo() {
 	max-width: 1300px;
 	width: 100%;
 	box-sizing: border-box;
-	border: 1.5px solid #e3eaf6;
+	border: 1.5px solid var(--color-border);
 }
 .correos-card-header {
 	display: flex;
@@ -333,7 +333,7 @@ async function enviarPorCorreo() {
 .correos-card-title {
 	font-size: 1.18rem;
 	font-weight: 700;
-	color: #285ca8;
+	color: var(--color-primary);
 	position: relative;
 	padding-left: 14px;
 }
@@ -344,7 +344,7 @@ async function enviarPorCorreo() {
 	top: 0;
 	height: 100%;
 	width: 6px;
-	background: #285ca8;
+	background: var(--color-primary);
 	border-radius: 4px;
 }
 .correos-card-actions {
@@ -364,28 +364,6 @@ async function enviarPorCorreo() {
 	border: none;
 	transition: all 0.3s ease;
 }
-.correos-card-actions :deep(.bg-blue-600),
-.correos-card-actions button[variant="primary"] {
-	background: #285ca8;
-	color: #fff;
-}
-.correos-card-actions :deep(.bg-green-600),
-.correos-card-actions button[variant="success"] {
-	background: #1a7f37;
-	color: #fff;
-}
-.correos-card-actions :deep(.bg-yellow-400),
-.correos-card-actions button[variant="warning"] {
-	background: #b85c0b;
-	color: #fff;
-}
-.correos-card-actions button[variant="success"]:hover,
-.correos-card-actions button[variant="success"]:focus {
-	background: #34d058 !important; /* verde más brillante */
-	transform: translateY(-3px) scale(1.02);
-	box-shadow: 0 10px 24px rgba(46, 164, 79, 0.55), 0 0 0 3px rgba(46, 164, 79, 0.25) !important;
-	filter: none !important;
-}
 .correos-card-actions button:hover {
 	filter: brightness(0.95);
 	box-shadow: 0 4px 16px rgba(40,92,168,0.13);
@@ -403,27 +381,27 @@ async function enviarPorCorreo() {
 	width: 100%;
 	border-collapse: separate;
 	border-spacing: 0;
-	background: #fafdff;
+	background: var(--color-background-soft);
 	border-radius: 10px;
 	overflow: hidden;
 	font-size: 1.05rem;
 	margin-bottom: 0;
 }
 .datatable-table th {
-	background: #e3eaf6;
-	color: #123244; /* texto más oscuro para mejor contraste */
+	background: var(--color-background-mute);
+	color: var(--color-text);
 	font-weight: 700;
 	padding: 12px 10px;
-	border-bottom: 2px solid #b3c6e6;
+	border-bottom: 2px solid var(--color-border);
 	text-align: left;
 }
 .datatable-table td {
 	padding: 12px 10px;
-	border-bottom: 1px solid #e3eaf6;
-	color: #122333; /* asegurar visibilidad del texto */
+	border-bottom: 1px solid var(--color-border);
+	color: var(--color-text);
 }
 .datatable-table tr:nth-child(even) {
-	background: #f4f6fb;
+	background: var(--color-background-soft);
 }
 .datatable-table tr:last-child td {
 	border-bottom: none;
@@ -439,24 +417,24 @@ async function enviarPorCorreo() {
 	box-shadow: 0 1px 4px rgba(40,92,168,0.07);
 }
 .badge-success {
-	background: #e6f7e6;
-	color: #1a7f37;
-	border: 1px solid #b6e2c7;
+	background: var(--color-success);
+	color: #fff;
+	border: 1px solid transparent;
 }
 .badge-warning {
-	background: #fff9e6;
-	color: #b85c0b;
-	border: 1px solid #ffd966;
+	background: var(--color-warning);
+	color: #111;
+	border: 1px solid transparent;
 }
 .badge-pending {
-	background: #ffe6e6;
-	color: #d32f2f;
-	border: 1px solid #ffb3b3;
+	background: var(--color-danger);
+	color: #fff;
+	border: 1px solid transparent;
 }
 input[type="checkbox"] {
 	width: 18px;
 	height: 18px;
-	accent-color: #285ca8;
+	accent-color: var(--color-primary);
 }
 .filters-bar {
 	display: flex;
@@ -469,7 +447,7 @@ input[type="checkbox"] {
 }
 .filters-bar label {
 	font-weight: 600;
-	color: #123244;
+	color: var(--color-text);
 	display: flex;
 	flex-direction: column;
 	font-size: 0.95rem;
@@ -478,9 +456,9 @@ input[type="checkbox"] {
 	margin-top: 6px;
 	padding: 6px 8px;
 	border-radius: 6px;
-	border: 1px solid #d7e3f5;
-	background: #fff;
-	color: #122333;
+	border: 1px solid var(--color-border);
+	background: var(--color-surface);
+	color: var(--color-text);
 }
 @media (max-width: 900px) {
 	.correos-title, .correos-subtitle, .correos-card {
@@ -515,7 +493,7 @@ input[type="checkbox"] {
 	justify-content: center;
 }
 .qr-modal-content {
-	background: #fff;
+	background: var(--color-surface);
 	border-radius: 10px;
 	padding: 16px 20px;
 	box-shadow: 0 8px 20px rgba(0,0,0,0.2);

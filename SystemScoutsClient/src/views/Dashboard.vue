@@ -547,7 +547,7 @@ onMounted(() => {
   flex-direction: column;
   min-height: 100vh;
   width: 100%;
-  background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
+  background: var(--color-primary);
   overflow-x: hidden;
 }
 
@@ -572,7 +572,7 @@ onMounted(() => {
 }
 
 .control-panel {
-  background: #fff;
+  background: var(--color-surface);
   border-radius: 20px;
   box-shadow: 0 10px 40px rgba(0,0,0,0.15);
   max-width: 1400px;
@@ -585,21 +585,18 @@ onMounted(() => {
   text-align: center;
   margin-bottom: 2rem;
   padding-bottom: 1.5rem;
-  border-bottom: 2px solid #e2e8f0;
+  border-bottom: 2px solid var(--color-border);
 }
 
 .control-header h1 {
   font-size: 2rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #2c5282 0%, #1e3a5f 100%);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #fff;
   margin-bottom: 0.5rem;
 }
 
 .control-subtitle {
-  color: #64748b;
+  color: var(--color-text);
   font-size: 1rem;
 }
 
@@ -608,7 +605,7 @@ onMounted(() => {
   gap: 0.5rem;
   margin-bottom: 2rem;
   padding: 0.5rem;
-  background: #f8fafc;
+  background: var(--color-background);
   border-radius: 12px;
 }
 
@@ -625,15 +622,15 @@ onMounted(() => {
   cursor: pointer;
   transition: all 0.3s ease;
   font-weight: 600;
-  color: #64748b;
+  color: var(--color-text);
 }
 
 .tab-btn:hover {
-  background: #e2e8f0;
+  background: var(--color-background-mute);
 }
 
 .tab-btn.active {
-  background: linear-gradient(135deg, #2c5282 0%, #1e3a5f 100%);
+  background: var(--color-primary);
   color: #fff;
   box-shadow: 0 4px 12px rgba(44,82,130,0.3);
 }
@@ -665,13 +662,13 @@ onMounted(() => {
 }
 
 .semaforo-card {
-  background: #fff;
+  background: var(--color-surface);
   border-radius: 16px;
   padding: 1.5rem;
   display: flex;
   align-items: center;
   gap: 1rem;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-border);
   position: relative;
   overflow: hidden;
   transition: all 0.3s ease;

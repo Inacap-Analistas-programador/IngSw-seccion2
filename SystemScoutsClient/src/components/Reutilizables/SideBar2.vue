@@ -88,8 +88,8 @@ function goToMockup(id) {
   top: 0;
   bottom: 0;
   width: var(--sidebar-width);
-  background: linear-gradient(180deg, #274963 0%, #1f3b57 100%);
-  color: #ecf0f1;
+  background: var(--color-primary);
+  color: #fff;
   padding: 20px 12px;
   box-shadow: 2px 0 8px rgba(15, 23, 30, 0.08);
   z-index: 40;
@@ -110,7 +110,7 @@ function goToMockup(id) {
   width: 100%;
   background: none;
   border: none;
-  color: #ecf0f1;
+  color: #fff;
   padding: 10px 14px;
   cursor: pointer;
   text-align: left;
@@ -119,11 +119,11 @@ function goToMockup(id) {
 }
 
 .sidebar-link:hover {
-  background: #34495e;
+  background: var(--color-primary-hover);
 }
 
 .sidebar-link.active {
-  background: linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+  background: var(--color-primary-hover);
   box-shadow: inset 0 0 0 2px rgba(255,255,255,0.02);
 }
 
@@ -148,6 +148,7 @@ function goToMockup(id) {
     white-space: nowrap;
   }
   .sidebar.mobile-open { transform: translateY(0%); background: rgba(39,73,99,0.98); }
+.sidebar.mobile-open { transform: translateY(0%); background: var(--color-primary); }
   .sidebar-link { display: inline-flex; padding: 8px 10px; }
 }
 
@@ -158,6 +159,7 @@ function goToMockup(id) {
 
 .sidebar-top { display:flex; justify-content:flex-end }
 .collapse-btn { background: rgba(255,255,255,0.04); border: none; color:#fff; padding:6px 8px; border-radius:6px; cursor:pointer }
+.collapse-btn { background: rgba(255,255,255,0.1); border: none; color:#fff; padding:6px 8px; border-radius:6px; cursor:pointer }
 .sidebar-bottom { margin-top: auto; text-align:center; opacity:0.8 }
 .version { font-size: 0.75rem; color: rgba(255,255,255,0.7) }
 </style>

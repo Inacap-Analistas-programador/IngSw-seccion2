@@ -386,8 +386,8 @@ function gestionarParticipantes(id) {
   box-sizing: border-box;
   margin: 20px auto;
   padding: 16px 40px; 
-  background: #ffffff;
-  color: #111;
+  background: var(--color-surface);
+  color: var(--color-text);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -402,7 +402,7 @@ function gestionarParticipantes(id) {
 }
 
 .page-header {
-  background-color: #214e9c;
+  background-color: var(--color-primary);
   color: #fff;
   padding: 14px 18px;
   border-radius: 6px;
@@ -429,7 +429,7 @@ function gestionarParticipantes(id) {
 
 .title-row h4 {
   margin: 0;
-  color: #444;
+  color: var(--color-text);
   font-weight: 500;
 }
 
@@ -437,22 +437,22 @@ function gestionarParticipantes(id) {
   width: 100%;
   box-sizing: border-box;
   border-collapse: collapse;
-  background-color: #fff;
+  background-color: var(--color-surface);
   min-width: 0; 
   font-size: 14px;
 }
 
 .courses-table th, .courses-table td {
   padding: 14px 12px;
-  border-bottom: 1px solid #ececec;
+  border-bottom: 1px solid var(--color-border);
   text-align: left;
-  color: #222; 
+  color: var(--color-text); 
   opacity: 1;
 }
 
 .courses-table th {
-  background-color: #f7f7f7;
-  color: #222;
+  background-color: var(--color-background-mute);
+  color: var(--color-text);
   font-weight: 600;
   position: sticky;
   top: 0;
@@ -513,16 +513,16 @@ function gestionarParticipantes(id) {
   gap: 16px;
   margin-top: 20px;
   padding: 10px;
-  background-color: #f9fafb;
+  background-color: var(--color-background-mute);
   border-radius: 8px;
 }
 
 .create-card {
-  background: #f2f5f9; 
+  background: var(--color-background-soft); 
   border-radius: 6px;
   padding: 18px 18px 16px 18px;
-  border: 1px solid rgba(33,78,156,0.08);
-  color: #222;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
   font-size: 15px;
   line-height: 1.4;
   margin-top: 16px;
@@ -530,7 +530,7 @@ function gestionarParticipantes(id) {
 
 .create-card h5 {
   margin: 0 0 10px 0;
-  color:#1e3a8a;
+  color: var(--color-primary);
   font-size: 20px;
   font-weight:700;
 }
@@ -550,20 +550,20 @@ function gestionarParticipantes(id) {
 .form-group label {
   margin-bottom: 4px;
   font-weight: 600;
-  color: #333;
+  color: var(--color-text);
 }
 
 .hierarchy-section {
   margin-top: 24px;
   padding-top: 16px;
-  border-top: 1px solid #dde4ee;
+  border-top: 1px solid var(--color-border);
 }
 
 .hierarchy-section > label {
   display: block;
   margin-bottom: 12px;
   font-weight: 600;
-  color: #333;
+  color: var(--color-text);
   font-size: 1.1em;
 }
 
@@ -590,19 +590,19 @@ function gestionarParticipantes(id) {
 
 .coordinador-table th, .coordinador-table td {
   padding: 8px 10px;
-  border: 1px solid #dde4ee;
+  border: 1px solid var(--color-border);
   text-align: left;
 }
 
 .coordinador-table th {
-  background-color: #eef2f7;
+  background-color: var(--color-background-mute);
 }
 
 .no-coordinadores {
   color: #6b7280;
   font-style: italic;
   padding: 10px;
-  background-color: #f9fafb;
+  background-color: var(--color-background-mute);
   border-radius: 4px;
   text-align: center;
 }
@@ -620,8 +620,8 @@ function gestionarParticipantes(id) {
 
 .participantes-modal h4 {
   margin-top: 0;
-  color: #1e3a8a;
-  border-bottom: 2px solid #1e3a8a;
+  color: var(--color-primary);
+  border-bottom: 2px solid var(--color-primary);
   padding-bottom: 10px;
   margin-bottom: 20px;
 }
@@ -639,12 +639,12 @@ function gestionarParticipantes(id) {
 
 .participantes-table th, .participantes-table td {
   padding: 10px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   text-align: left;
 }
 
 .participantes-table th {
-  background-color: #f9fafb;
+  background-color: var(--color-background-mute);
 }
 
 .hierarchy {

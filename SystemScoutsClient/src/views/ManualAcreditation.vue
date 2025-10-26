@@ -282,7 +282,7 @@ export default {
 }
 
 .acreditation-header h1 {
-  color: #2c3e50;
+  color: var(--color-primary);
   margin-bottom: 8px;
 }
 
@@ -300,13 +300,21 @@ export default {
 .search-input {
   flex: 1;
   padding: 12px 16px;
-  border: 2px solid #dcdfe6;
+  border: 2px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
   border-radius: 8px;
   font-size: 16px;
 }
 
+.search-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
 .participant-info {
-  background: #f8f9fa;
+  background: var(--color-background-soft);
   padding: 24px;
   border-radius: 12px;
   margin-bottom: 30px;
@@ -327,9 +335,9 @@ export default {
 }
 
 .info-section h3 {
-  color: #2c3e50;
+  color: var(--color-primary);
   margin-bottom: 16px;
-  border-bottom: 2px solid #3498db;
+  border-bottom: 2px solid var(--color-primary);
   padding-bottom: 8px;
 }
 
@@ -373,7 +381,7 @@ export default {
 .action-buttons {
   text-align: center;
   padding-top: 20px;
-  border-top: 1px solid #dee2e6;
+  border-top: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
   gap: 12px;
