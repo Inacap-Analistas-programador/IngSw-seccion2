@@ -1,36 +1,13 @@
 <template>
   <div class="mantenedores-scouts">
-    <!-- SideBar Restaurada -->
-    <div class="sidebar">
-      <div class="sidebar-header">
-        <h2>⚙️ Mantenedores</h2>
-      </div>
-      <ul class="sidebar-menu">
-        <li 
-          v-for="tab in tabs" 
-          :key="tab.id"
-          class="sidebar-item"
-          :class="{ active: activeTab === tab.id }"
-          @click="activeTab = tab.id"
-        >
-          <span class="sidebar-icon">{{ tab.icon }}</span>
-          <span class="sidebar-label">{{ tab.label }}</span>
-        </li>
-      </ul>
-    </div>
-
-    <!-- Main Content -->
-    <div class="main-content">
-      <!-- Header -->
-      <div class="header">
-        <h1>Módulo de Mantenedores</h1>
-        <p>Gestión de Datos Maestros del Sistema Scout</p>
-      </div>
+    <!-- Main Content (sidebar propia removida; se usa la barra lateral global) -->
+      <div class="main-content">
+      <!-- Header eliminado a petición: se muestra directamente el contenido -->
       
       <!-- Zonas -->
       <div v-if="activeTab === 'zonas'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>🗺️ Gestión de Zonas</h2>
+          <h2>Gestión de Zonas</h2>
           <button class="btn-primary" @click="abrirModalCrear('zona')">
             + Nueva Zona
           </button>
@@ -50,7 +27,7 @@
             placeholder="Buscar zona por descripción..."
             v-model="searchZonas"
           >
-          <button class="btn-primary">🔍 Buscar</button>
+          <button class="btn-primary">Buscar</button>
         </div>
         
         <div class="table-container">
@@ -86,7 +63,7 @@
       <!-- Distritos -->
       <div v-if="activeTab === 'distritos'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>📍 Gestión de Distritos</h2>
+          <h2>Gestión de Distritos</h2>
           <button class="btn-primary" @click="abrirModalCrear('distrito')">
             + Nuevo Distrito
           </button>
@@ -112,7 +89,7 @@
               {{ zona.descripcion }}
             </option>
           </select>
-          <button class="btn-primary">🔍 Buscar</button>
+          <button class="btn-primary">Buscar</button>
         </div>
         
         <div class="table-container">
@@ -148,7 +125,7 @@
       <!-- Grupos Scout -->
       <div v-if="activeTab === 'grupos'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>👥 Gestión de Grupos Scout</h2>
+          <h2>Gestión de Grupos Scout</h2>
           <button class="btn-primary" @click="abrirModalCrear('grupo')">
             + Nuevo Grupo
           </button>
@@ -174,7 +151,7 @@
               {{ distrito.descripcion }}
             </option>
           </select>
-          <button class="btn-primary">🔍 Buscar</button>
+          <button class="btn-primary">Buscar</button>
         </div>
         
         <div class="table-container">
@@ -210,7 +187,7 @@
       <!-- Ramas -->
       <div v-if="activeTab === 'ramas'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>🏕️ Gestión de Ramas</h2>
+          <h2>Gestión de Ramas</h2>
           <button class="btn-primary" @click="abrirModalCrear('rama')">
             + Nueva Rama
           </button>
@@ -254,7 +231,7 @@
       <!-- Tipos de Curso -->
       <div v-if="activeTab === 'tipos-curso'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>📚 Gestión de Tipos de Curso</h2>
+          <h2>Gestión de Tipos de Curso</h2>
           <button class="btn-primary" @click="abrirModalCrear('tipoCurso')">
             + Nuevo Tipo
           </button>
@@ -302,7 +279,7 @@
       <!-- Cargos -->
       <div v-if="activeTab === 'cargos'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>👔 Gestión de Cargos</h2>
+          <h2>Gestión de Cargos</h2>
           <button class="btn-primary" @click="abrirModalCrear('cargo')">
             + Nuevo Cargo
           </button>
@@ -346,7 +323,7 @@
       <!-- Alimentación -->
       <div v-if="activeTab === 'alimentacion'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>🍽️ Gestión de Alimentación</h2>
+          <h2>Gestión de Alimentación</h2>
           <button class="btn-primary" @click="abrirModalCrear('alimentacion')">
             + Nueva Alimentación
           </button>
@@ -392,7 +369,7 @@
       <!-- Comunas -->
       <div v-if="activeTab === 'comunas'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>🏘️ Gestión de Comunas</h2>
+          <h2>Gestión de Comunas</h2>
           <button class="btn-primary" @click="abrirModalCrear('comuna')">
             + Nueva Comuna
           </button>
@@ -448,7 +425,7 @@
       <!-- Provincias -->
       <div v-if="activeTab === 'provincias'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>🏞️ Gestión de Provincias</h2>
+          <h2>Gestión de Provincias</h2>
           <button class="btn-primary" @click="abrirModalCrear('provincia')">
             + Nueva Provincia
           </button>
@@ -494,7 +471,7 @@
       <!-- Regiones -->
       <div v-if="activeTab === 'regiones'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>🗾 Gestión de Regiones</h2>
+          <h2>Gestión de Regiones</h2>
           <button class="btn-primary" @click="abrirModalCrear('region')">
             + Nueva Región
           </button>
@@ -538,7 +515,7 @@
       <!-- Niveles -->
       <div v-if="activeTab === 'niveles'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>📊 Gestión de Niveles</h2>
+          <h2>Gestión de Niveles</h2>
           <button class="btn-primary" @click="abrirModalCrear('nivel')">
             + Nuevo Nivel
           </button>
@@ -582,7 +559,7 @@
       <!-- Estados Civiles -->
       <div v-if="activeTab === 'estados-civiles'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>💑 Gestión de Estados Civiles</h2>
+          <h2>Gestión de Estados Civiles</h2>
           <button class="btn-primary" @click="abrirModalCrear('estadoCivil')">
             + Nuevo Estado Civil
           </button>
@@ -626,7 +603,7 @@
       <!-- Roles -->
       <div v-if="activeTab === 'roles'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>👤 Gestión de Roles</h2>
+          <h2>Gestión de Roles</h2>
           <button class="btn-primary" @click="abrirModalCrear('rol')">
             + Nuevo Rol
           </button>
@@ -670,7 +647,7 @@
       <!-- Conceptos Contables -->
       <div v-if="activeTab === 'conceptos-contables'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>💰 Gestión de Conceptos Contables</h2>
+          <h2>Gestión de Conceptos Contables</h2>
           <button class="btn-primary" @click="abrirModalCrear('conceptoContable')">
             + Nuevo Concepto
           </button>
@@ -716,7 +693,7 @@
       <!-- Tipos de Archivo -->
       <div v-if="activeTab === 'tipos-archivo'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>📁 Gestión de Tipos de Archivo</h2>
+          <h2>Gestión de Tipos de Archivo</h2>
           <button class="btn-primary" @click="abrirModalCrear('tipoArchivo')">
             + Nuevo Tipo
           </button>
@@ -764,7 +741,7 @@
     <div v-if="modalActivo === 'ver'" class="modal-overlay" @click="cerrarModal">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
-          <h3>👁 Visualizar {{ getTipoNombre(tipoElemento) }}</h3>
+          <h3>Visualizar {{ getTipoNombre(tipoElemento) }}</h3>
           <button class="modal-close" @click="cerrarModal">×</button>
         </div>
         <div class="modal-body">
@@ -827,7 +804,7 @@
     <div v-if="modalActivo === 'confirmar-anular'" class="modal-overlay" @click="cerrarModal">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
-          <h3>🚫 Confirmar Anulación</h3>
+          <h3>Confirmar Anulación</h3>
           <button class="modal-close" @click="cerrarModal">×</button>
         </div>
         <div class="modal-body">
@@ -836,7 +813,7 @@
             <div class="elemento-info">
               <strong>{{ getTipoNombre(tipoElemento) }}:</strong> {{ elementoSeleccionado.descripcion }}
             </div>
-            <p class="warning-text">⚠️ Esta acción no se puede deshacer.</p>
+            <p class="warning-text">Esta acción no se puede deshacer.</p>
           </div>
           <div class="form-actions">
             <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
@@ -883,7 +860,7 @@
             <div class="form-actions">
               <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
               <button type="submit" class="btn-primary">
-                💾 {{ editando ? 'Actualizar' : 'Guardar' }}
+                {{ editando ? 'Actualizar' : 'Guardar' }}
               </button>
             </div>
           </form>
@@ -929,7 +906,7 @@
             <div class="form-actions">
               <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
               <button type="submit" class="btn-primary">
-                💾 {{ editando ? 'Actualizar' : 'Guardar' }}
+                {{ editando ? 'Actualizar' : 'Guardar' }}
               </button>
             </div>
           </form>
@@ -975,7 +952,7 @@
             <div class="form-actions">
               <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
               <button type="submit" class="btn-primary">
-                💾 {{ editando ? 'Actualizar' : 'Guardar' }}
+                {{ editando ? 'Actualizar' : 'Guardar' }}
               </button>
             </div>
           </form>
@@ -1012,7 +989,7 @@
             <div class="form-actions">
               <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
               <button type="submit" class="btn-primary">
-                💾 {{ editando ? 'Actualizar' : 'Guardar' }}
+                {{ editando ? 'Actualizar' : 'Guardar' }}
               </button>
             </div>
           </form>
@@ -1027,13 +1004,44 @@
 </template>
 
 <script>
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, reactive, watch, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 export default {
   name: 'MantenedoresScouts',
   setup() {
-    // Estado reactivo
-    const activeTab = ref('zonas')
+    // Estado reactivo / sincronización de pestaña con la URL
+      const route = useRoute()
+      const router = useRouter()
+
+      const VALID_TABS = [
+        'zonas','distritos','grupos','ramas','tipos-curso','cargos','alimentacion',
+        'comunas','provincias','regiones','niveles','estados-civiles','roles',
+        'conceptos-contables','tipos-archivo'
+      ]
+
+  const activeTab = ref('zonas')
+
+      // Inicializar desde la URL
+      onMounted(() => {
+        const initial = typeof route.params.tab === 'string' ? route.params.tab : ''
+        activeTab.value = VALID_TABS.includes(initial) ? initial : 'zonas'
+      })
+
+      // Sincronizar cuando cambia la URL
+      watch(() => route.params.tab, (val) => {
+        if (typeof val === 'string' && VALID_TABS.includes(val)) {
+          activeTab.value = val
+        }
+      })
+
+      // Empujar a la URL cuando cambia la pestaña desde el contenido
+      watch(activeTab, (val) => {
+        if (!VALID_TABS.includes(val)) return
+        if (route.params.tab !== val) {
+          router.replace({ name: 'mantenedores', params: { tab: val } })
+        }
+      })
     const modalActivo = ref('')
     const editando = ref(false)
     const tipoElemento = ref('')
@@ -1541,97 +1549,20 @@ export default {
 
 <style scoped>
 .mantenedores-scouts {
-  display: flex;
+  display: block;
   min-height: 100vh;
   background: #f5f5f5;
 }
 
-/* SideBar Styles */
-.sidebar {
-  width: 280px;
-  background: #1e3d73;
-  color: white;
-  height: 100vh;
-  position: fixed;
-  left: 0;
-  top: 0;
-  overflow-y: auto;
-}
-
-.sidebar-header {
-  padding: 25px 20px;
-  border-bottom: 2px solid #2c5aa0;
-  background: #2c5aa0;
-}
-
-.sidebar-header h2 {
-  margin: 0;
-  font-size: 1.4rem;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.sidebar-menu {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.sidebar-item {
-  padding: 16px 20px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border-bottom: 1px solid #2c5aa0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.sidebar-item:hover {
-  background: #2c5aa0;
-}
-
-.sidebar-item.active {
-  background: #ff6b35;
-  border-left: 4px solid #fff;
-}
-
-.sidebar-icon {
-  font-size: 1.2rem;
-  width: 24px;
-  text-align: center;
-}
-
-.sidebar-label {
-  font-weight: 500;
-}
-
-/* Main Content Styles */
+/* Main Content Styles (a pantalla completa) */
 .main-content {
-  flex: 1;
-  margin-left: 280px;
   padding: 0;
   min-height: 100vh;
+  margin-left: 0; /* sin sidebar interna */
+  width: 100%;
 }
 
-.header {
-  background: linear-gradient(135deg, #2c5aa0 0%, #1e3d73 100%);
-  color: white;
-  padding: 25px 30px;
-  margin-bottom: 0;
-}
 
-.header h1 {
-  font-size: 1.8rem;
-  margin-bottom: 8px;
-}
-
-.header p {
-  margin: 0;
-  opacity: 0.9;
-  font-size: 1.1rem;
-}
 
 .mantenedor-section {
   padding: 30px;
@@ -1688,10 +1619,7 @@ export default {
   gap: 12px;
 }
 
-.alert-icon {
-  font-size: 1.2rem;
-  margin-top: 2px;
-}
+.alert-icon { display: none; }
 
 .search-bar {
   display: flex;
