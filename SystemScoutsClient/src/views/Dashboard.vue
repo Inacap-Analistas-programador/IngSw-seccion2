@@ -254,6 +254,8 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { request } from '@/services/apiClient'
+import personasService from '@/services/personasService.js'
 
 const router = useRouter()
 const activeTab = ref('resumen')
@@ -263,12 +265,8 @@ const tabs = [
   { id: 'resumen', label: 'Resumen', icon: '📊' }
 ]
 
-const cursosList = ref([
-  { id: 1, title: 'Curso Básico Scout', inscritos: 28, capacidad: 30, valor: 25000, estado: 'Vigente' },
-  { id: 2, title: 'Curso de Especialidades', inscritos: 10, capacidad: 20, valor: 35000, estado: 'Vigente' },
-  { id: 3, title: 'Formación de Dirigentes', inscritos: 22, capacidad: 25, valor: 40000, estado: 'Vigente' },
-  { id: 4, title: 'Capacitación de Liderazgo', inscritos: 15, capacidad: 20, valor: 30000, estado: 'Vigente' }
-])
+const cursosList = ref([])
+const totalPersonas = ref(0)
 
 const sortedCursos = computed(() =>
   [...cursosList.value].sort((a, b) => (a.title || '').localeCompare(b.title || '', 'es', { sensitivity: 'base' }))
@@ -326,12 +324,8 @@ function getSemaforoClass(indicator) {
   return 'ok'
 }
 
-const pagosSumByCourse = ref({
-  1: 450000,  // Curso Básico Scout: 28 * 25000 = 700000, pagado 450000
-  2: 280000,  // Curso de Especialidades: 10 * 35000 = 350000, pagado 280000
-  3: 520000,  // Formación de Dirigentes: 22 * 40000 = 880000, pagado 520000
-  4: 150000   // Capacitación de Liderazgo: 15 * 30000 = 450000, pagado 150000
-})
+// Pagos no enlazados aún: dejamos montos en 0 hasta habilitar API de pagos
+const pagosSumByCourse = ref({})
 const pagosCountPaidByCourse = ref({})
 const directivosByCourse = ref({
   1: 4,  // Curso Básico Scout: tiene 4 de 3 requeridos (OK)
@@ -371,7 +365,8 @@ function fmtCurrency(amount) {
 
 const kpi = computed(() => {
   const totalCursos = sortedCursos.value.length
-  const totalInscritos = sortedCursos.value.reduce((sum, c) => sum + (Number(c.inscritos) || 0), 0)
+  // Por ahora usamos el total de personas como "pre inscritos totales"
+  const totalInscritos = Number(totalPersonas.value || 0)
   const ingresosProyectados = sortedCursos.value.reduce((sum, c) => sum + (Number(c.inscritos) || 0) * (Number(c.valor) || 0), 0)
   const ingresosPagados = pagosBars.value.reduce((sum, b) => sum + (Number(b.paid) || 0), 0)
   const ingresosPendientes = Math.max(0, ingresosProyectados - ingresosPagados)
@@ -495,63 +490,52 @@ function getPagoStatusLabel(curso) {
 }
 
 onMounted(() => {
-  async function fetchJSON(url) {
-    try {
-      const res = await fetch(url)
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      return await res.json()
-    } catch (err) {
-      console.warn('Failed to fetch', url, err)
-      return null
-    }
-  }
-
   ;(async () => {
-    const cursos = await fetchJSON('/api/cursos/cursos/')
-    if (Array.isArray(cursos)) {
-      cursosList.value = cursos.map(c => ({
-        id: c.CURS_ID || c.CUR_ID || c.id || c.ID,
-        title: c.CUR_DESCRIPCION || c.CUR_CODIGO || c.CURS_ID || 'Curso',
-        inscritos: parseInt(c._inscritos_count || c.INSCRITOS || 0) || 0,
-        capacidad: parseInt(c.CUR_COTA_CON_ALMUERZO || c.CUR_COTA_SIN_ALMUERZO || c.CUR_CANT_PARTICIPANTE || c.CAPACIDAD || 0) || 0,
-        valor: 0,
-        estado: c.CUR_ESTADO || c.ESTADO || 'Vigente'
-      }))
-    }
-
-    const cuotas = await fetchJSON('/api/cursos/cuotas/')
-    if (Array.isArray(cuotas)) {
-      const byCourse = {}
-      cuotas.forEach(q => {
-        const curId = q.CUR_ID || q.curso_id || q.cur_id || null
-        if (!curId) return
-        const val = Number(q.CUU_VALOR || q.valor || 0)
-        const date = q.CUU_FECHA || ''
-        const prev = byCourse[curId]
-        if (!prev || val > prev.val || (date && prev.date && date > prev.date)) {
-          byCourse[curId] = { val, date }
-        }
-      })
-      cursosList.value = cursosList.value.map(c => ({ ...c, valor: byCourse[c.id]?.val || c.valor || 0 }))
-    }
-
-    const pagos = await fetchJSON('/api/pagos/pago-persona/')
-    if (Array.isArray(pagos)) {
-      const sum = {}
-      const countPaid = {}
-      const asNumber = v => {
-        const n = Number((v ?? '').toString().replace(/[^0-9.-]/g, ''))
-        return isNaN(n) ? 0 : n
+    // Cursos
+    try {
+      const cursos = await request('cursos/cursos')
+      if (Array.isArray(cursos)) {
+        cursosList.value = cursos.map(c => ({
+          id: c.CURS_ID || c.CUR_ID || c.id || c.ID,
+          title: c.CUR_DESCRIPCION || c.CUR_CODIGO || c.CURS_ID || 'Curso',
+          inscritos: parseInt(c._inscritos_count || c.INSCRITOS || 0) || 0,
+          capacidad: parseInt(c.CUR_COTA_CON_ALMUERZO || c.CUR_COTA_SIN_ALMUERZO || c.CUR_CANT_PARTICIPANTE || c.CAPACIDAD || 0) || 0,
+          valor: 0,
+          estado: c.CUR_ESTADO || c.ESTADO || 'Vigente'
+        }))
       }
-      pagos.forEach(p => {
-        const curId = p.CUR_ID || p.CURS_ID || p.curso_id || p.cur_id || null
-        if (!curId) return
-        const monto = asNumber(p.PAP_VALOR || p.valor || p.MONTO)
-        sum[curId] = (sum[curId] || 0) + monto
-        countPaid[curId] = (countPaid[curId] || 0) + 1
-      })
-      pagosSumByCourse.value = sum
-      pagosCountPaidByCourse.value = countPaid
+    } catch (e) {
+      console.warn('Cursos no disponibles:', e)
+    }
+
+    // Cuotas por curso (para valor referencial)
+    try {
+      const cuotas = await request('cursos/cuotas')
+      if (Array.isArray(cuotas)) {
+        const byCourse = {}
+        cuotas.forEach(q => {
+          const curId = q.CUR_ID || q.curso_id || q.cur_id || null
+          if (!curId) return
+          const val = Number(q.CUU_VALOR || q.valor || 0)
+          const date = q.CUU_FECHA || ''
+          const prev = byCourse[curId]
+          if (!prev || val > prev.val || (date && prev.date && date > prev.date)) {
+            byCourse[curId] = { val, date }
+          }
+        })
+        cursosList.value = cursosList.value.map(c => ({ ...c, valor: byCourse[c.id]?.val || c.valor || 0 }))
+      }
+    } catch (e) {
+      console.warn('Cuotas no disponibles:', e)
+    }
+
+    // Personas totales (para KPI de pre inscritos)
+    try {
+      const personas = await personasService.listarBasic()
+      totalPersonas.value = Array.isArray(personas) ? personas.length : 0
+    } catch (e) {
+      console.warn('Personas no disponibles:', e)
+      totalPersonas.value = 0
     }
   })()
 })

@@ -123,10 +123,11 @@
 import { reactive, computed, ref, onMounted, nextTick } from 'vue'
 import BaseButton from '../components/Reutilizables/BaseButton.vue'
 import QRCode from 'qrcode'
+import personasService from '@/services/personasService.js'
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api/core'
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
 
-// Datos reales desde la API
+// Datos desde la API
 const rows = ref([])
 const loading = ref(true)
 const error = ref(null)
@@ -141,24 +142,22 @@ onMounted(async () => {
 	try {
 		loading.value = true
 		error.value = null
-		// Consumir la API usando el dataService (maneja base URL y formato)
-		const personas = await obtenerPersonas()
-		rows.value = personas.map(p => ({
+		const personas = await personasService.listarBasic()
+		rows.value = (personas || []).map(p => ({
 			id: p.id,
 			nombre: p.nombre,
 			email: p.email || '',
-			curso: 'Formación', // TODO: obtener desde relación Persona_Curso
-			cargo: 'Participante', // TODO: obtener desde relación
-			estadoPago: 'Pendiente', // TODO: obtener desde módulo pagos
+			curso: p.curso || 'Sin curso', // TODO: si viene desde persona-curso
+			cargo: p.cargo || 'Participante', // TODO: desde relaciones
+			estadoPago: 'Pendiente', // TODO: enlazar pagos
 			estadoCorreo: 'Pendiente',
 			diasPendiente: null,
-			vigente: p.vigente
+			vigente: p.vigente !== false
 		}))
-		loading.value = false
 	} catch (e) {
 		console.error('Error cargando personas:', e)
-		// Muestra un mensaje más informativo para depurar (mantenerlo brevemente)
 		error.value = `No se pudieron cargar las personas${e?.message ? `: ${e.message}` : ''}`
+	} finally {
 		loading.value = false
 	}
 })
@@ -210,7 +209,7 @@ async function marcarEnviado() {
 	
 	// Llamar al backend para generar token firmado y persistirlo
 	try {
-		const response = await fetch(`${API_BASE}/qr-token/`, {
+	const response = await fetch(`${API_BASE}/api/personas/qr-token/`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
@@ -251,7 +250,7 @@ async function enviarPorCorreo() {
 	}
 
 	try {
-		const response = await fetch(`${API_BASE}/qr-email/`, {
+	const response = await fetch(`${API_BASE}/api/personas/qr-email/`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({

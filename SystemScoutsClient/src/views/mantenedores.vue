@@ -1006,6 +1006,7 @@
 <script>
 import { ref, computed, reactive, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import mantenedoresService from '@/services/mantenedoresService.js'
 
 export default {
   name: 'MantenedoresScouts',
@@ -1074,101 +1075,78 @@ export default {
       { id: 'tipos-archivo', label: 'Tipos de Archivo', icon: '📁' }
     ]
 
-    // Datos de ejemplo para todos los mantenedores
-    const zonas = ref([
-      { id: 1, descripcion: 'ZONA NORTE BIOBÍO', unilateral: true, vigente: true },
-      { id: 2, descripcion: 'ZONA SUR BIOBÍO', unilateral: false, vigente: true },
-      { id: 3, descripcion: 'ZONA COSTA BIOBÍO', unilateral: true, vigente: true },
-      { id: 4, descripcion: 'ZONA CORDILLERA BIOBÍO', unilateral: false, vigente: false }
-    ])
+    // Datos cargados desde API
+    const zonas = ref([])
+    const distritos = ref([])
+    const grupos = ref([])
+    const ramas = ref([])
+    const tiposCurso = ref([])
+    const cargos = ref([])
+    const alimentacion = ref([])
+    const comunas = ref([])
+    const provincias = ref([])
+    const regiones = ref([])
+    const niveles = ref([])
+    const estadosCiviles = ref([])
+    const roles = ref([])
+    const conceptosContables = ref([])
+    const tiposArchivo = ref([])
 
-    const distritos = ref([
-      { id: 1, descripcion: 'DISTRITO CONCEPCIÓN', zona_id: 1, vigente: true },
-      { id: 2, descripcion: 'DISTRITO TALCAHUANO', zona_id: 1, vigente: true },
-      { id: 3, descripcion: 'DISTRITO LOS ÁNGELES', zona_id: 2, vigente: true }
-    ])
-
-    const grupos = ref([
-      { id: 1, descripcion: 'GRUPO ARAUCO', distrito_id: 1, vigente: true },
-      { id: 2, descripcion: 'GRUPO LAUTARO', distrito_id: 2, vigente: true },
-      { id: 3, descripcion: 'GRUPO CAUPOLICÁN', distrito_id: 3, vigente: true }
-    ])
-
-    const ramas = ref([
-      { id: 1, descripcion: 'LOBATOS', vigente: true },
-      { id: 2, descripcion: 'SCOUTS', vigente: true },
-      { id: 3, descripcion: 'PIONEROS', vigente: true },
-      { id: 4, descripcion: 'ROVERS', vigente: true }
-    ])
-
-    const tiposCurso = ref([
-      { id: 1, descripcion: 'CURSO BÁSICO', tipo: 1, cant_participante: 30, vigente: true },
-      { id: 2, descripcion: 'CURSO INTERMEDIO', tipo: 2, cant_participante: 25, vigente: true },
-      { id: 3, descripcion: 'CURSO AVANZADO', tipo: 3, cant_participante: 20, vigente: true }
-    ])
-
-    const cargos = ref([
-      { id: 1, descripcion: 'JEFE DE GRUPO', vigente: true },
-      { id: 2, descripcion: 'SUBJEFE', vigente: true },
-      { id: 3, descripcion: 'TESORERO', vigente: true },
-      { id: 4, descripcion: 'SECRETARIO', vigente: true }
-    ])
-
-    const alimentacion = ref([
-      { id: 1, descripcion: 'DIETA REGULAR', tipo: 1, vigente: true },
-      { id: 2, descripcion: 'DIETA VEGETARIANA', tipo: 2, vigente: true },
-      { id: 3, descripcion: 'DIETA VEGANA', tipo: 3, vigente: true }
-    ])
-
-    // Nuevos mantenedores
-    const comunas = ref([
-      { id: 1, descripcion: 'CONCEPCIÓN', provincia_id: 1, vigente: true },
-      { id: 2, descripcion: 'TALCAHUANO', provincia_id: 1, vigente: true },
-      { id: 3, descripcion: 'LOS ÁNGELES', provincia_id: 2, vigente: true }
-    ])
-
-    const provincias = ref([
-      { id: 1, descripcion: 'CONCEPCIÓN', region_id: 1, vigente: true },
-      { id: 2, descripcion: 'BIOBÍO', region_id: 1, vigente: true },
-      { id: 3, descripcion: 'ÑUBLE', region_id: 1, vigente: true }
-    ])
-
-    const regiones = ref([
-      { id: 1, descripcion: 'REGION DEL BIOBÍO', vigente: true },
-      { id: 2, descripcion: 'REGION METROPOLITANA', vigente: true },
-      { id: 3, descripcion: 'REGION DE VALPARAÍSO', vigente: true }
-    ])
-
-    const niveles = ref([
-      { id: 1, descripcion: 'NIVEL BÁSICO', vigente: true },
-      { id: 2, descripcion: 'NIVEL INTERMEDIO', vigente: true },
-      { id: 3, descripcion: 'NIVEL AVANZADO', vigente: true }
-    ])
-
-    const estadosCiviles = ref([
-      { id: 1, descripcion: 'SOLTERO/A', vigente: true },
-      { id: 2, descripcion: 'CASADO/A', vigente: true },
-      { id: 3, descripcion: 'DIVORCIADO/A', vigente: true },
-      { id: 4, descripcion: 'VIUDO/A', vigente: true }
-    ])
-
-    const roles = ref([
-      { id: 1, descripcion: 'ADMINISTRADOR', vigente: true },
-      { id: 2, descripcion: 'USUARIO', vigente: true },
-      { id: 3, descripcion: 'INVITADO', vigente: true }
-    ])
-
-    const conceptosContables = ref([
-      { id: 1, descripcion: 'MATRÍCULA', tipo: 'INGRESO', vigente: true },
-      { id: 2, descripcion: 'CUOTA MENSUAL', tipo: 'INGRESO', vigente: true },
-      { id: 3, descripcion: 'GASTOS OPERACIONALES', tipo: 'EGRESO', vigente: true }
-    ])
-
-    const tiposArchivo = ref([
-      { id: 1, descripcion: 'DOCUMENTO PDF', extension: '.pdf', vigente: true },
-      { id: 2, descripcion: 'IMAGEN JPEG', extension: '.jpg', vigente: true },
-      { id: 3, descripcion: 'DOCUMENTO WORD', extension: '.docx', vigente: true }
-    ])
+    // Carga inicial desde endpoints
+    onMounted(async () => {
+      try {
+        const [
+          _zonas,
+          _distritos,
+          _grupos,
+          _ramas,
+          _tiposCurso,
+          _cargos,
+          _alimentacion,
+          _regiones,
+          _provincias,
+          _comunas,
+          _niveles,
+          _estados,
+          _roles,
+          _conceptos,
+          _tiposArchivo
+        ] = await Promise.all([
+          mantenedoresService.listarZonas(),
+          mantenedoresService.listarDistritos(),
+          mantenedoresService.listarGrupos(),
+          mantenedoresService.listarRamas(),
+          mantenedoresService.listarTiposCurso(),
+          mantenedoresService.listarCargos(),
+          mantenedoresService.listarAlimentacion(),
+          mantenedoresService.listarRegiones(),
+          mantenedoresService.listarProvincias(),
+          mantenedoresService.listarComunas(),
+          mantenedoresService.listarNiveles(),
+          mantenedoresService.listarEstadosCiviles(),
+          mantenedoresService.listarRoles(),
+          mantenedoresService.listarConceptosContables(),
+          mantenedoresService.listarTiposArchivo(),
+        ])
+        zonas.value = _zonas
+        distritos.value = _distritos
+        grupos.value = _grupos
+        ramas.value = _ramas
+        tiposCurso.value = _tiposCurso
+        cargos.value = _cargos
+        alimentacion.value = _alimentacion
+        regiones.value = _regiones
+        provincias.value = _provincias
+        comunas.value = _comunas
+        niveles.value = _niveles
+        estadosCiviles.value = _estados
+        roles.value = _roles
+        conceptosContables.value = _conceptos
+        tiposArchivo.value = _tiposArchivo
+      } catch (e) {
+        console.warn('No se pudieron cargar algunos mantenedores desde la API', e)
+      }
+    })
 
     // Formularios
     const formZona = reactive({

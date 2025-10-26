@@ -92,13 +92,11 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
+import cursosService from '@/services/cursosService.js'
 
-// Lista de cursos
-const cursos = reactive([
-  { nombre: 'Formación de Dirigentes', codigo: 'FD-001', fechas: '15-17 Oct 2024', responsable: 'Juan Pérez', habilitado: true },
-  { nombre: 'Curso de Especialidades', codigo: 'CE-002', fechas: '22-24 Nov 2024', responsable: 'María González', habilitado: false }
-])
+// Lista de cursos (se carga desde API)
+const cursos = reactive([])
 
 // Estado del formulario
 const form = reactive({ 
@@ -189,6 +187,23 @@ function formatDate(d) {
   const dt = new Date(d)
   return dt.toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })
 }
+
+// Cargar cursos desde API al montar
+onMounted(async () => {
+  try {
+    const data = await cursosService.listar()
+    const mapped = (data || []).map(c => ({
+      nombre: c.nombre || c.codigo || 'Curso',
+      codigo: c.codigo || '-',
+      fechas: '-',
+      responsable: '-',
+      habilitado: (c.estado === 1) // ejemplo: 1 = Vigente
+    }))
+    cursos.splice(0, cursos.length, ...mapped)
+  } catch (e) {
+    console.warn('No se pudieron cargar cursos desde API', e)
+  }
+})
 </script>
 
 <style scoped>

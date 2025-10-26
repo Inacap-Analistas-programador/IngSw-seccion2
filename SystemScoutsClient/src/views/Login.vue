@@ -19,6 +19,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import authService from '@/services/authService.js'
 
 const username = ref('');
 const password = ref('');
@@ -28,23 +29,16 @@ const router = useRouter();
 
 const handleLogin = async () => {
   try {
-    const response = await fetch('http://127.0.0.1:8000/api/core/usuariocurso/usuarios/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: username.value, password: password.value }),
-    });
-
-    const data = await response.json();
-
-    if (response.ok && data.success) {
-      localStorage.setItem('token', data.token); // guardar JWT
-      router.push('/dashboard');
+    errorMessage.value = ''
+    const data = await authService.login(username.value, password.value)
+    if (data && data.token) {
+      router.push('/dashboard')
     } else {
-      errorMessage.value = 'Usuario o contraseña incorrectos';
+      errorMessage.value = 'Usuario o contraseña incorrectos'
     }
   } catch (err) {
-    console.error(err);
-    errorMessage.value = 'Ocurrió un error al iniciar sesión';
+    console.error(err)
+    errorMessage.value = err?.message || 'Ocurrió un error al iniciar sesión'
   }
 };
 
