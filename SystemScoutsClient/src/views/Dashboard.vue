@@ -148,7 +148,7 @@
                     ⚠️ Faltan {{ getDirectivoRequired(curso) - getDirectivoCount(curso) }} formadores
                   </div>
                   <div class="directivo-message warning" v-else-if="getDirectivoStatus(curso) === 'near'">
-                    ⚡ Necesita {{ getDirectivoRequired(curso) - getDirectivoCount(curso) }} formador{{ getDirectivoRequired(curso) - getDirectivoCount(curso) > 1 ? 'es' : '' }} más
+                     Necesita {{ getDirectivoRequired(curso) - getDirectivoCount(curso) }} formador{{ getDirectivoRequired(curso) - getDirectivoCount(curso) > 1 ? 'es' : '' }} más
                   </div>
                   <div class="directivo-message success" v-else>
                     ✓ Personal completo
