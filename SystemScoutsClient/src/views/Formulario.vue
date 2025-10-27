@@ -1,6 +1,6 @@
 <template>
   <div class="formulario">  
-    <h1>FORMULARIO DE REGISTRO</h1>
+  
 
     <form>
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
@@ -144,6 +144,8 @@
       </select>
 
   <!-- TEXTAREA BLOQUEADO POR DEFECTO, SE HABILITA SI ELIGE "OTRO" -->
+                    <Transition name="desplegar">
+                      <div v-if="rolSeleccionado === 'otro'" class="campo">
                       <label for="rolOtro">Especifique su rol:</label>
                       <textarea
                         id="rolOtro"
@@ -153,6 +155,8 @@
                         maxlength="100"
                         :disabled="rolSeleccionado !== 'otro'"
                       ></textarea>
+                      </div>
+                    </Transition>
 
   <!-- :::::::::::::::::: SELECTOR DE GRUPO ::::::::::::::::::::::::: -->
         <label for="grupo">Grupo al que pertenece:</label>
@@ -211,6 +215,8 @@
           <option value="otro">Otro</option>
         </select>
   <!--:::::::::::::: TEXTAREA QUE SE HABILITA SOLO AL ELEGIR "OTRO"::::::::::::::::::::: -->
+                          <Transition name="desplegar">
+                            <div v-if="grupoSeleccionado === 'otro'" class="campo">
                             <label for="grupoOtro">Ingrese el nombre del grupo:</label>
                             <textarea
                               id="grupoOtro"
@@ -220,6 +226,8 @@
                               maxlength="100"
                               :disabled="grupoSeleccionado !== 'otro'"
                             ></textarea>
+                            </div>
+                          </Transition>
 
       <!-- :::::::::::::::::: SELECTOR DE RAMA / SECCIÓN ::::::::::::::::::::::::: -->
       <label for="rama">Rama o sección a la que pertenece:</label>
@@ -234,22 +242,25 @@
       </select>
 
     <!-- :::::::::::::::::: INPUT DE CARGO EN LA UNIDAD ::::::::::::::::::::::::: -->
-      <label for="cargo">¿Qué cargo tienes en tu Unidad?</label>
+      <label for="cargo">¿Tienes cargo en tu unidad?</label>
       <select id="cargo" v-model="opcionCargo">
         <option disabled value="">Seleccione una opción</option>
         <option value="escribir">Sí</option>
         <option value="ninguno">No</option>
       </select>
 
-      <label for="cargoTexto">Escriba su cargo:</label>
-      <input
-        id="cargoTexto"
-        type="text"
-        v-model="cargoTexto"
-        placeholder="Ingrese su cargo..."
-        maxlength="50"
-        :disabled="opcionCargo !== 'escribir'"
-      />
+                  <Transition name="desplegar">
+                    <div v-if="opcionCargo === 'escribir'" class="campo">
+                    <label for="cargoTexto">Escriba su cargo:</label>
+                    <input
+                      id="cargoTexto"
+                      type="text"
+                      v-model="cargoTexto"
+                      placeholder="Ingrese su cargo..."
+                      maxlength="50"
+                      :disabled="opcionCargo !== 'escribir'"/>
+                    </div>
+                  </Transition>
 
   <!-- :::::::::::::::::: INPUT TIEMPO EN LA UNIDAD ::::::::::::::::::::::::: -->
     <label for="tiempoUnidad">¿Cuánto tiempo lleva en su unidad?</label>
@@ -287,6 +298,8 @@
       </select>
 
                       <!-- TEXTAREA QUE SE HABILITA SOLO AL ELEGIR "OTRO" -->
+                    <Transition name="desplegar">
+                      <div v-if="distritoSeleccionado === 'Otro'" class="campo">
                       <label for="distritoOtro">Ingrese el nombre del Distrito:</label>
                       <textarea
                         id="distritoOtro"
@@ -296,6 +309,8 @@
                         maxlength="100"
                         :disabled="distritoSeleccionado !== 'Otro'"
                       ></textarea>
+                      </div>
+                    </Transition>
   
 <!--::::::::::::::::::::::SELECTOR NIVEL:::::::::::::::::::::::::::::::::::::::::::::::-->
     <label for="nivel">¿Qué nivel tienes?</label>
@@ -308,38 +323,38 @@
     </select>
 
 <!--::::::::::::::::::::::SELECTOR RAMA PARA NIVEL MEDIO:::::::::::::::::::::::::::::::::::::::::::::::-->
-      <label for="ramaMedio">¿En qué rama tienes ese nivel? (solo si tu nivel es Medio)</label>
-      <select
-        id="ramaMedio"
-        v-model="ramaMedioSeleccionada"
-        :disabled="nivelSeleccionado !== 'Medio'"
-      >
-        <option disabled value="">Seleccione la rama</option>
-        <option value="Lobatos">Lobatos</option>
-        <option value="Golondrinas">Golondrinas</option>
-        <option value="Guías">Guías</option>
-        <option value="Scouts">Scouts</option>
-        <option value="Pioneros">Pioneros</option>
-        <option value="Caminantes">Caminantes</option>
-        <option value="Ninguno">Ninguno</option>
-      </select>
+                      <transition name="desplegar">
+                        <div v-if="nivelSeleccionado === 'Medio'" class="campo">
+                          <label for="ramaMedio">¿En qué rama tienes ese nivel?</label>
+                          <select id="ramaMedio" v-model="ramaMedioSeleccionada">
+                            <option disabled value="">Seleccione la rama</option>
+                            <option value="Lobatos">Lobatos</option>
+                            <option value="Golondrinas">Golondrinas</option>
+                            <option value="Guías">Guías</option>
+                            <option value="Scouts">Scouts</option>
+                            <option value="Pioneros">Pioneros</option>
+                            <option value="Caminantes">Caminantes</option>
+                            <option value="Ninguno">Ninguno</option>
+                          </select>
+                        </div>
+                      </transition>
 
   <!--::::::::::::::::::::::SELECTOR RAMA PARA NIVEL AVANZADO:::::::::::::::::::::::::::::::::::::::::::::::-->
-      <label for="ramaAvanzado">¿En qué rama tienes ese nivel? (solo si tu nivel es Avanzado)</label>
-      <select
-        id="ramaAvanzado"
-        v-model="ramaAvanzadoSeleccionada"
-        :disabled="nivelSeleccionado !== 'Avanzado'"
-      >
-        <option disabled value="">Seleccione la rama</option>
-        <option value="Lobatos">Lobatos</option>
-        <option value="Golondrinas">Golondrinas</option>
-        <option value="Guías">Guías</option>
-        <option value="Scouts">Scouts</option>
-        <option value="Pioneros">Pioneros</option>
-        <option value="Caminantes">Caminantes</option>
-        <option value="Ninguno">Ninguno</option>
-      </select>
+                      <transition name="desplegar">
+                        <div v-if="nivelSeleccionado === 'Avanzado'" class="campo">
+                          <label for="ramaAvanzado">¿En qué rama tienes ese nivel?</label>
+                          <select id="ramaAvanzado" v-model="ramaAvanzadoSeleccionada">
+                            <option disabled value="">Seleccione la rama</option>
+                            <option value="Lobatos">Lobatos</option>
+                            <option value="Golondrinas">Golondrinas</option>
+                            <option value="Guías">Guías</option>
+                            <option value="Scouts">Scouts</option>
+                            <option value="Pioneros">Pioneros</option>
+                            <option value="Caminantes">Caminantes</option>
+                            <option value="Ninguno">Ninguno</option>
+                          </select>
+                        </div>
+                      </transition>
 
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
@@ -352,12 +367,14 @@
       <label for="salud">¿Tiene alergias o alguna enfermedad a considerar?</label>
       <select id="salud" v-model="tieneAlergiaEnfermedad">
         <option disabled value="">Seleccione una opción</option>
-        <option value="si">Sí</option>
-        <option value="no">No</option>
+        <option value="Si">Sí</option>
+        <option value="No">No</option>
       </select>
 
   <!--:::::::::::::::: TEXT AREA BLOQUEADO POR DEFECTO, SE HABILITA AL SELECCIONAR "si" :::::::::::::::::::::::::::::::::-->
-                            <label for="detalleSalud">Detalle de alergias o enfermedades:</label>
+                        <transition name="desplegar">
+                          <div v-if="tieneAlergiaEnfermedad === 'Si'" class="campo">
+                          <label for="detalleSalud">Detalle de alergias o enfermedades:</label>
                             <textarea
                                 id="detalleSalud"
                                 v-model="detalleAlergiaEnfermedad"
@@ -366,7 +383,8 @@
                                 maxlength="200"
                               :disabled="tieneAlergiaEnfermedad !== 'si'"
                             ></textarea>
-
+                          </div>
+                        </transition>
   <!-- :::::::::::::::::: SELECTOR DE TIPO DE ALIMENTACIÓN ::::::::::::::::::::::::: -->
         <label for="alimentacion">Tipo de alimentación:</label>
         <select id="alimentacion" v-model="tipoAlimentacion">
@@ -411,50 +429,45 @@
         />
       </div>
 
-  <!--::::::::::::::::::::::VEHÍCULO PROPIO:::::::::::::::::::::::::::::::::::::::::::::::-->
-    <label for="vehiculoPropio">¿Viene en vehículo propio?</label>
-    <select id="vehiculoPropio" v-model="vehiculoPropio" required>
-      <option disabled value="">Seleccione una opción</option>
-      <option value="si">Sí</option>
-      <option value="no">No</option>
-    </select>
-  <!--::::::::::::::::::::::CAMPOS SOLO SI SELECCIONA "SI" AL VAHICULO PROPIO:::::::::::::::::::::::::::::::::::::::::::::::-->
-                              <label for="patentePropia">Patente del vehículo (formato: AB-CD-12)</label>
-                              <input
-                                id="patentePropia"
-                                v-model="patentePropia"
-                                type="text"
-                                placeholder="Ej: AB-CD-12"
-                                maxlength="8"
-                                @input="validarPatentePropia"
-                                :disabled="vehiculoPropio !== 'si'"
-                              />
+<!--:::::::::::::::::::::: VEHÍCULO PROPIO :::::::::::::::::::::::::::::::::::::::::::::::::::-->
+<label for="vehiculoPropio">¿Viene en vehículo propio?</label>
+<select id="vehiculoPropio" v-model="vehiculoPropio" required>
+  <option disabled value="">Seleccione una opción</option>
+  <option value="si">Sí</option>
+  <option value="no">No</option>
+</select>
 
-                              <label for="marcaPropia">Marca del vehículo:</label>
-                              <input
-                                id="marcaPropia"
-                                v-model="marcaPropia"
-                                type="text"
-                                placeholder="Ej: Toyota"
-                                :disabled="vehiculoPropio !== 'si'"
-                              />
+<!--:::::::::::::::::::::: CAMPOS SOLO SI SELECCIONA "SI" :::::::::::::::::::::::::::::::::::::::::::::::::::-->
+              <transition name="desplegar">
+                <div v-if="vehiculoPropio === 'si'" class="campo">
+                  <label for="patentePropia">Patente del vehículo (formato: AB-CD-12)</label>
+                  <input
+                    id="patentePropia"
+                    v-model="patentePropia"
+                    type="text"
+                    placeholder="Ej: AB-CD-12"
+                    maxlength="8"
+                    @input="validarPatentePropia"
+                  />
 
-                              <label for="modeloPropio">Modelo del vehículo:</label>
-                              <input
-                                id="modeloPropio"
-                                v-model="modeloPropio"
-                                type="text"
-                                placeholder="Ej: Yaris"
-                                :disabled="vehiculoPropio !== 'si'"
-                              />
+                  <label for="marcaPropia">Marca del vehículo:</label>
+                  <input
+                    id="marcaPropia"
+                    v-model="marcaPropia"
+                    type="text"
+                    placeholder="Ej: Toyota"
+                  />
 
-  <!-- :::::::::::::::::: SELECTOR DE ALOJAMIENTO ::::::::::::::::::::::::: -->
-            <label for="alojamiento">¿Necesita alojamiento?</label>
-            <select id="alojamiento" v-model="necesitaAlojamiento">
-              <option disabled value="">Seleccione una opción</option>
-              <option value="si">Sí</option>
-              <option value="no">No</option>
-            </select>
+                  <label for="modeloPropio">Modelo del vehículo:</label>
+                  <input
+                    id="modeloPropio"
+                    v-model="modeloPropio"
+                    type="text"
+                    placeholder="Ej: Yaris"
+                  />
+                </div>
+              </transition>
+
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
   <!--:::::::::::::::::::::::::          Informacion Adicional      ::::::::::::::::::::::::::::::::::-->
@@ -493,11 +506,13 @@
     <label for="beneficiario">¿Eres o fuiste beneficiario?</label>
     <select id="beneficiario" v-model="esBeneficiario" required>
       <option disabled value="">Seleccione una opción</option>
-      <option value="si">Sí</option>
-      <option value="no">No</option>
+      <option value="Si">Sí</option>
+      <option value="No">No</option>
     </select>
 
                       <!-- Input para el tiempo si selecciona "Sí" -->
+                    <transition name="desplegar">
+                      <div v-if="esBeneficiario === 'Si'" class="campo">
                       <label for="tiempoBeneficiario">¿Por cuánto tiempo?</label>
                       <input
                         id="tiempoBeneficiario"
@@ -506,6 +521,8 @@
                         placeholder="Ingrese el tiempo"
                         :disabled="esBeneficiario !== 'si'"
                       />
+                      </div>
+                    </transition>
   
   <!--::::::::::::::::::::::MIEMBRO ACTIVO:::::::::::::::::::::::::::::::::::::::::::::::-->
       <label for="miembroActivo">¿Es un miembro activo?</label>
@@ -515,6 +532,11 @@
         <option value="no">No</option>
       </select>
 
+  <!--:::::::::::::::::::::: BOTONES DE ACCIÓN ::::::::::::::::::::::::::::::::::-->
+        <div class="botones-formulario">
+          <button type="button" class="btn-vaciar" @click="limpiarFormulario">VACIAR</button>
+          <button type="submit" class="btn-enviar" @click.prevent="enviarFormulario">ENVIAR</button>
+        </div>
 
 
     </form>
@@ -526,6 +548,8 @@
 <script setup>
 import { ref, computed } from 'vue';
 import InputBase from '@/components/Reutilizables/InputBase.vue';
+
+
 
 
 // :::::::::::::::::: VARIABLES PARA CAPTURAR VALORES :::::::::::::::::::::::::
@@ -579,8 +603,61 @@ const regionSeleccionada = ref("");
 const ciudadSeleccionada = ref("");
 const comunaSeleccionada = ref("");
 
+//:::::::::::::::::::::::::::::FUNCION LIMPIAR FORMULARIO (BOTON):::::::::::::::::::::::::::::::::::::::::::::::
+function limpiarFormulario() {
+  nombre.value = "";
+  rut.value = "";
+  fechaNacimiento.value = "";
+  numeroCelular.value = "";
+  email.value = "";
+  estadoCivil.value = "";
+  direccion.value = "";
+  edad.value = null;
+  religion.value = "";
+  consideraciones.value = "";
+  necesitaAlojamiento.value = "";
+  profesion.value = "";
+  apodoCredencial.value = "";
+  tieneAlergiaEnfermedad.value = "";
+  detalleAlergiaEnfermedad.value = "";
+  tipoAlimentacion.value = "";
+  rolSeleccionado.value = "";
+  rolOtro.value = "";
+  grupoSeleccionado.value = "";
+  grupoOtro.value = "";
+  ramaSeleccionada.value = "";
+  opcionCargo.value = "";
+  cargoTexto.value = "";
+  añosUnidad.value = "";
+  mesesUnidad.value = "";
+  distritoSeleccionado.value = "";
+  distritoOtro.value = "";
+  nivelSeleccionado.value = "";
+  ramaMedioSeleccionada.value = "";
+  ramaAvanzadoSeleccionada.value = "";
+  nombreEmergencia.value = "";
+  numeroEmergencia.value = "";
+  haTrabajadoConNinos.value = "";
+  esBeneficiario.value = "";
+  tiempoBeneficiario.value = "";
+  esMiembroActivo.value = "";
+  patenteVehiculo.value = "";
+  vehiculoPropio.value = "";
+  patentePropia.value = "";
+  marcaPropia.value = "";
+  modeloPropio.value = "";
+  cursoSeleccionado.value = "";
+  regionSeleccionada.value = "";
+  ciudadSeleccionada.value = "";
+  comunaSeleccionada.value = "";
+
+  
+  // Limpia también los demás campos que tengas
+  alert("Formulario vaciado correctamente.");
+}
+
 // Validación del formato de patente chilena (ej: AB-CD-12)
-function validarPatente() {
+function validarPatentePropia() {
   // Permite formato: AA-BB-11 o AB-CD-12 o similar
   const formato = /^[A-Z]{2}-[A-Z]{2}-\d{2}$/;
   if (patenteVehiculo.value && !formato.test(patenteVehiculo.value.toUpperCase())) {
@@ -589,6 +666,8 @@ function validarPatente() {
       .replace(/[^A-Z0-9-]/g, ""); // limpia caracteres no válidos
   }
 }
+
+
 
 // :::::::::::::::::: LISTA DE REGIONES, CIUDADES Y COMUNAS ::::::::::::::::::::::::: 
 const comunasPorRegion = {
@@ -702,146 +781,228 @@ const comunasDisponibles = computed(() => {
 
 
 <style scoped>
+* { font-family: "Calibri", sans-serif; } 
 
-* {
-  font-family: "Calibri", sans-serif;
-}
+.formulario { 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: center; /* Centra verticalmente */ 
+    align-items: center; /* Centra horizontalmente */ 
+    min-height: 100vh; /* Ocupa todo el alto de la ventana */ 
+    background: linear-gradient(135deg, #4a90e2, #cfe2f3); 
+} 
 
+textarea { 
+    resize: none; /* desactiva el cambio de tamaño con el mouse */ 
+    height: 100px; /* ||alto fijo (puedes ajustar a tu gusto) */ 
+    width: 100%; /* asegura que ocupe todo el ancho del contenedor */ 
+    box-sizing: border-box; /* evita desbordes por padding */ 
+} 
 
+h2 { 
+    font-size: 20px; /* tamaño de los sub titulos */ 
+    color: #333; 
+    font-weight: 600; 
+    text-align: center; 
+    margin: 1.5rem 0 1rem 0; 
+    border-bottom: 2px solid #428ce1; 
+    padding-bottom: 6px; 
+} 
+    
+.formulario :deep(input), .formulario :deep(select), .formulario :deep(textarea) { 
+    padding: 5px 5px; 
+    border: 1px solid #ccc; 
+    border-radius: 6px; 
+    font-size: 16px; /* Tamaño de fuente legible dentro de los inputs */ 
+    background-color: #f9f9f9; 
+    color: #333; 
+    transition: all 0.2s ease; 
+    width: 100%; 
+    box-sizing: border-box; 
+} 
 
-.formulario {
-  display: flex;
-  flex-direction: column;
-  justify-content: center; /* Centra verticalmente */
-  align-items: center;     /* Centra horizontalmente */
-  min-height: 100vh;       /* Ocupa todo el alto de la ventana */
-  background-color: #f5f5f5; /* (Opcional) fondo suave */
-}
+.formulario :deep(input:focus), .formulario :deep(select:focus), .formulario :deep(textarea:focus) { /*border-color: #3079f0;*/ 
+    box-shadow: 0 0 4px rgba(2, 145, 255, 0.925); 
+    outline: none; 
+} 
+    
+.formulario :deep(label) { 
+    font-weight: 600; color: #444; 
+    margin-bottom: 5px; 
+    display: inline-block; 
+} 
 
-textarea {
-  resize: none;           /* desactiva el cambio de tamaño con el mouse */
-  height: 100px;          /* ||alto fijo (puedes ajustar a tu gusto) */
-  width: 100%;            /* asegura que ocupe todo el ancho del contenedor */
-  box-sizing: border-box; /* evita desbordes por padding */
-}
-
-h2 {
-  font-size: 20px; /* tamaño de los sub titulos */
-  color: #333;
-  font-weight: 600;
-  text-align: center;
-  margin: 1.5rem 0 1rem 0;
-  border-bottom: 2px solid #428ce1;
-  padding-bottom: 6px;
-}
-
-.formulario :deep(input),
-.formulario :deep(select),
-.formulario :deep(textarea) {
-  padding: 10px 5px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 16px;   /* Tamaño de fuente legible dentro de los inputs */
-  background-color: #f9f9f9;
-  color: #333;
-  transition: all 0.2s ease;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.formulario :deep(input:focus),
-.formulario :deep(select:focus),
-.formulario :deep(textarea:focus) {
-  /*border-color: #3079f0;*/
-
-  box-shadow: 0 0 4px rgba(2, 145, 255, 0.925);
-  outline: none;
-}
-
-.formulario :deep(label) {
-  font-weight: 600;
-  color: #444;
-  margin-bottom: 5px;
-  display: inline-block;
-}
-
-
-form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 100%;
-  max-width: 400px;          /* Controla el ancho del formulario */
-  background: rgb(255, 255, 255);         /* Opcional: fondo blanco */
-  padding: 50px;
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(34, 24, 232, 0.1);
-  border: 2px solid #ffffff;   /* Borde azul claro */
+form { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 10px; 
+    width: 100%; 
+    max-width: 400px; /* Controla el ancho del formulario */ 
+    background: rgb(255, 255, 255); /* Opcional: fondo blanco */ 
+    padding: 70px; 
+    border-radius: 10px; 
+    box-shadow: 0 0 10px rgba(34, 24, 232, 0.1); 
+    border: 2px solid #1135a1; /* Borde azul claro */ 
 }
 
 h1 {
-text-align: left; 
-font-family: "Calibri", sans-serif; 
-font-weight: bold; font-size: 30px; 
-background: #202020; 
--webkit-background-clip: text; 
--moz-background-clip: text; 
-background-clip: text; 
-color: transparent; 
+  font-family: "Segoe UI", "Calibri", sans-serif;
+  font-weight: 700;
+  font-size: 2.2rem;
+  text-align: center;
+  color: #ffffff;
+  background-color: #1e3b728c; /* azul profundo */
+  background-image: linear-gradient(135deg, #2a5298, #1e3c72);
+  opacity: 70%;
+  padding: 20px;
+  border-radius: 10px 10px 0 0; /* redondea solo arriba */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+  letter-spacing: 8px;
+  text-transform: capitalize;
+  width: 47%;
+  margin-bottom: 20px;
+  box-sizing: border-box;
 }
 
-input, select, textarea {
-  padding: 10px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  width: 100%;
-  box-sizing: border-box;  /* Asegura que padding no rompa el ancho */
-  font-size: 14px;
-  font-weight: 500;
-  color: #333;
-  transition: all 0.2s ease;
-}
 
-/* Efecto al enfocar (hover o focus) */
-input:focus, select:focus, textarea:focus {
-  border-color: #4CAF50;         /* Verde suave */
-  box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
-  outline: none;
-}
 
-/* Placeholder más suave */
-::placeholder {
-  color: #999;
-}
-
-/* :::::::::::::::::::: EFECTO DESPLEGABLE :::::::::::::::::::: */
-.desplegar-enter-active,
-.desplegar-leave-active {
-  transition: all 0.4s ease;
+input, select, textarea { 
+    padding: 10px; 
+    border-radius: 6px; 
+    border: 1px solid #ccc; 
+    width: 100%; 
+    box-sizing: border-box; /* Asegura que padding no rompa el ancho */ 
+    font-size: 14px; 
+    font-weight: 500; 
+    color: #333; 
+    transition: all 0.2s ease; 
+} 
+/* Efecto al enfocar (hover o focus) */ 
+input:focus, select:focus, textarea:focus { 
+    border-color: #4CAF50; /* Verde suave */ 
+    box-shadow: 0 0 5px rgba(76, 175, 80, 0.3); 
+    outline: none; 
+} 
+/* Placeholder más suave */ 
+::placeholder { 
+    color: #999; 
+} 
+/* :::::::::::::::::::: EFECTO DESPLEGABLE :::::::::::::::::::: */ 
+.desplegar-enter-active, .desplegar-leave-active { 
+    transition: all 0.4s ease; 
+    overflow: hidden; 
+} 
+.desplegar-enter-from, .desplegar-leave-to { 
+    max-height: 0; 
+    opacity: 0; 
+    transform: translateY(-10px); 
+} 
+.desplegar-enter-to, .desplegar-leave-from { 
+    max-height: 200px; 
+    opacity: 1; 
+    transform: translateY(0); 
+} 
+/* :::::::::::::::::::: CAMPO :::::::::::::::::::: */ 
+.campo { 
+    width: 100%; 
+    transition: all 0.3s ease; 
+} 
+/* :::::::::::::::::::: BOTONES :::::::::::::::::::: */ 
+  .btn-enviar {
+  margin-top: 20px;
+  display: inline-block;
+  justify-content: center;
+  align-items: center;
+  width: 180px;
+  height: 45px;
+  border-radius: 10px;
+  border: 1px solid black;
+  position: relative;
   overflow: hidden;
-}
+  transition: all 0.5s ease-in;
+  z-index: 1;
+  font-weight: bold;
+  
+  }
 
-.desplegar-enter-from,
-.desplegar-leave-to {
-  max-height: 0;
-  opacity: 0;
-  transform: translateY(-10px);
-}
+  .btn-enviar::before,
+  .btn-enviar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 0;
+  height: 100%;
+  transform: skew(15deg);
+  transition: all 0.5s;
+  overflow: hidden;
+  z-index: -1;
+  }
 
-.desplegar-enter-to,
-.desplegar-leave-from {
-  max-height: 200px;
-  opacity: 1;
-  transform: translateY(0);
-}
+  .btn-enviar::before {
+  left: -10px;
+  background: #0ca5e6;
+  }
 
-/* :::::::::::::::::::: CAMPO :::::::::::::::::::: */
-.campo {
-  width: 100%;
-  transition: all 0.3s ease;
-}
+  .btn-enviar::after {
+  right: -10px;
+  background: #0ca5e6;
+  }
 
+  .btn-enviar:hover::before,
+  .btn-enviar:hover::after {
+  width: 58%;
+  }
+/*:::::::::::::::::::::::::::::::::::::::::::::::::::::::*/
+  .btn-vaciar {
+  margin-right: 40px;
+  margin-top: 20px;
+  display: inline-block;
+  justify-content: center;
+  align-items: center;
+  width: 180px;
+  height: 45px;
+  border-radius: 10px;
+  border: 1px solid black;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.5s ease-in;
+  z-index: 1;
+  font-weight: bold;
+  }
+
+  .btn-vaciar::before,
+  .btn-vaciar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 0;
+  height: 100%;
+  transform: skew(15deg);
+  transition: all 0.5s;
+  overflow: hidden;
+  z-index: -1;
+  }
+
+  .btn-vaciar::before {
+  left: -10px;
+  background: #5ac392;
+  }
+
+  .btn-vaciar::after {
+  right: -10px;
+  background: #5ac392;
+  }
+
+  .btn-vaciar:hover::before,
+  .btn-vaciar:hover::after {
+  width: 58%;
+  }
 
 
 
 </style>
+
+
+
+
+
