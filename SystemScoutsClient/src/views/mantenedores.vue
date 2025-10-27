@@ -1,13 +1,36 @@
-﻿<template>
+<template>
   <div class="mantenedores-scouts">
-    <!-- Main Content (sidebar propia removida; se usa la barra lateral global) -->
-      <div class="main-content">
-      <!-- Header eliminado a petición: se muestra directamente el contenido -->
+    <!-- SideBar Restaurada -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h2>⚙️ Mantenedores</h2>
+      </div>
+      <ul class="sidebar-menu">
+        <li 
+          v-for="tab in tabs" 
+          :key="tab.id"
+          class="sidebar-item"
+          :class="{ active: activeTab === tab.id }"
+          @click="activeTab = tab.id"
+        >
+          <span class="sidebar-icon">{{ tab.icon }}</span>
+          <span class="sidebar-label">{{ tab.label }}</span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Header -->
+      <div class="header">
+        <h1>Módulo de Mantenedores</h1>
+        <p>Gestión de Datos Maestros del Sistema Scout</p>
+      </div>
       
       <!-- Zonas -->
       <div v-if="activeTab === 'zonas'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>Gestión de Zonas</h2>
+          <h2>🗺️ Gestión de Zonas</h2>
           <button class="btn-primary" @click="abrirModalCrear('zona')">
             + Nueva Zona
           </button>
@@ -27,7 +50,7 @@
             placeholder="Buscar zona por descripción..."
             v-model="searchZonas"
           >
-          <button class="btn-primary">Buscar</button>
+          <button class="btn-primary">🔍 Buscar</button>
         </div>
         
         <div class="table-container">
@@ -50,9 +73,9 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('zona', zona)">Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('zona', zona)">Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('zona', zona)">Anular</button>
+                  <button class="btn-action btn-view" @click="verElemento('zona', zona)">👁 Ver</button>
+                  <button class="btn-action btn-edit" @click="editarElemento('zona', zona)">✏ Editar</button>
+                  <button class="btn-action btn-anular" @click="solicitarAnular('zona', zona)">🚫 Anular</button>
                 </td>
               </tr>
             </tbody>
@@ -63,7 +86,7 @@
       <!-- Distritos -->
       <div v-if="activeTab === 'distritos'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>Gestión de Distritos</h2>
+          <h2>📍 Gestión de Distritos</h2>
           <button class="btn-primary" @click="abrirModalCrear('distrito')">
             + Nuevo Distrito
           </button>
@@ -89,7 +112,7 @@
               {{ zona.descripcion }}
             </option>
           </select>
-          <button class="btn-primary">Buscar</button>
+          <button class="btn-primary">🔍 Buscar</button>
         </div>
         
         <div class="table-container">
@@ -112,9 +135,9 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('distrito', distrito)">Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('distrito', distrito)">Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('distrito', distrito)">Anular</button>
+                  <button class="btn-action btn-view" @click="verElemento('distrito', distrito)">👁 Ver</button>
+                  <button class="btn-action btn-edit" @click="editarElemento('distrito', distrito)">✏ Editar</button>
+                  <button class="btn-action btn-anular" @click="solicitarAnular('distrito', distrito)">🚫 Anular</button>
                 </td>
               </tr>
             </tbody>
@@ -125,7 +148,7 @@
       <!-- Grupos Scout -->
       <div v-if="activeTab === 'grupos'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>Gestión de Grupos Scout</h2>
+          <h2>👥 Gestión de Grupos Scout</h2>
           <button class="btn-primary" @click="abrirModalCrear('grupo')">
             + Nuevo Grupo
           </button>
@@ -151,7 +174,7 @@
               {{ distrito.descripcion }}
             </option>
           </select>
-          <button class="btn-primary">Buscar</button>
+          <button class="btn-primary">🔍 Buscar</button>
         </div>
         
         <div class="table-container">
@@ -174,9 +197,9 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('grupo', grupo)">Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('grupo', grupo)">Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('grupo', grupo)">Anular</button>
+                  <button class="btn-action btn-view" @click="verElemento('grupo', grupo)">👁 Ver</button>
+                  <button class="btn-action btn-edit" @click="editarElemento('grupo', grupo)">✏ Editar</button>
+                  <button class="btn-action btn-anular" @click="solicitarAnular('grupo', grupo)">🚫 Anular</button>
                 </td>
               </tr>
             </tbody>
@@ -187,7 +210,7 @@
       <!-- Ramas -->
       <div v-if="activeTab === 'ramas'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>Gestión de Ramas</h2>
+          <h2>🏕️ Gestión de Ramas</h2>
           <button class="btn-primary" @click="abrirModalCrear('rama')">
             + Nueva Rama
           </button>
@@ -218,9 +241,9 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('rama', rama)">Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('rama', rama)">Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('rama', rama)">Anular</button>
+                  <button class="btn-action btn-view" @click="verElemento('rama', rama)">👁 Ver</button>
+                  <button class="btn-action btn-edit" @click="editarElemento('rama', rama)">✏ Editar</button>
+                  <button class="btn-action btn-anular" @click="solicitarAnular('rama', rama)">🚫 Anular</button>
                 </td>
               </tr>
             </tbody>
@@ -231,7 +254,7 @@
       <!-- Tipos de Curso -->
       <div v-if="activeTab === 'tipos-curso'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>Gestión de Tipos de Curso</h2>
+          <h2>📚 Gestión de Tipos de Curso</h2>
           <button class="btn-primary" @click="abrirModalCrear('tipoCurso')">
             + Nuevo Tipo
           </button>
@@ -266,9 +289,9 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('tipoCurso', tipoCurso)">Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('tipoCurso', tipoCurso)">Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('tipoCurso', tipoCurso)">Anular</button>
+                  <button class="btn-action btn-view" @click="verElemento('tipoCurso', tipoCurso)">👁 Ver</button>
+                  <button class="btn-action btn-edit" @click="editarElemento('tipoCurso', tipoCurso)">✏ Editar</button>
+                  <button class="btn-action btn-anular" @click="solicitarAnular('tipoCurso', tipoCurso)">🚫 Anular</button>
                 </td>
               </tr>
             </tbody>
@@ -279,7 +302,7 @@
       <!-- Cargos -->
       <div v-if="activeTab === 'cargos'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>Gestión de Cargos</h2>
+          <h2>👔 Gestión de Cargos</h2>
           <button class="btn-primary" @click="abrirModalCrear('cargo')">
             + Nuevo Cargo
           </button>
@@ -310,9 +333,9 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('cargo', cargo)">Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('cargo', cargo)">Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('cargo', cargo)">Anular</button>
+                  <button class="btn-action btn-view" @click="verElemento('cargo', cargo)">👁 Ver</button>
+                  <button class="btn-action btn-edit" @click="editarElemento('cargo', cargo)">✏ Editar</button>
+                  <button class="btn-action btn-anular" @click="solicitarAnular('cargo', cargo)">🚫 Anular</button>
                 </td>
               </tr>
             </tbody>
@@ -323,7 +346,7 @@
       <!-- Alimentación -->
       <div v-if="activeTab === 'alimentacion'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>Gestión de Alimentación</h2>
+          <h2>🍽️ Gestión de Alimentación</h2>
           <button class="btn-primary" @click="abrirModalCrear('alimentacion')">
             + Nueva Alimentación
           </button>
@@ -356,9 +379,9 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('alimentacion', alimentacionItem)">Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('alimentacion', alimentacionItem)">Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('alimentacion', alimentacionItem)">Anular</button>
+                  <button class="btn-action btn-view" @click="verElemento('alimentacion', alimentacionItem)">👁 Ver</button>
+                  <button class="btn-action btn-edit" @click="editarElemento('alimentacion', alimentacionItem)">✏ Editar</button>
+                  <button class="btn-action btn-anular" @click="solicitarAnular('alimentacion', alimentacionItem)">🚫 Anular</button>
                 </td>
               </tr>
             </tbody>
@@ -369,7 +392,7 @@
       <!-- Comunas -->
       <div v-if="activeTab === 'comunas'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>Gestión de Comunas</h2>
+          <h2>🏘️ Gestión de Comunas</h2>
           <button class="btn-primary" @click="abrirModalCrear('comuna')">
             + Nueva Comuna
           </button>
@@ -389,7 +412,7 @@
             placeholder="Buscar comuna..."
             v-model="searchComunas"
           >
-          <button class="btn-primary">Buscar</button>
+          <button class="btn-primary">🔍 Buscar</button>
         </div>
         
         <div class="table-container">
@@ -412,9 +435,9 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('comuna', comuna)">Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('comuna', comuna)">Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('comuna', comuna)">Anular</button>
+                  <button class="btn-action btn-view" @click="verElemento('comuna', comuna)">👁 Ver</button>
+                  <button class="btn-action btn-edit" @click="editarElemento('comuna', comuna)">✏ Editar</button>
+                  <button class="btn-action btn-anular" @click="solicitarAnular('comuna', comuna)">🚫 Anular</button>
                 </td>
               </tr>
             </tbody>
@@ -425,7 +448,7 @@
       <!-- Provincias -->
       <div v-if="activeTab === 'provincias'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>Gestión de Provincias</h2>
+          <h2>🏞️ Gestión de Provincias</h2>
           <button class="btn-primary" @click="abrirModalCrear('provincia')">
             + Nueva Provincia
           </button>
@@ -458,9 +481,9 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('provincia', provincia)">Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('provincia', provincia)">Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('provincia', provincia)">Anular</button>
+                  <button class="btn-action btn-view" @click="verElemento('provincia', provincia)">👁 Ver</button>
+                  <button class="btn-action btn-edit" @click="editarElemento('provincia', provincia)">✏ Editar</button>
+                  <button class="btn-action btn-anular" @click="solicitarAnular('provincia', provincia)">🚫 Anular</button>
                 </td>
               </tr>
             </tbody>
@@ -471,7 +494,7 @@
       <!-- Regiones -->
       <div v-if="activeTab === 'regiones'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>Gestión de Regiones</h2>
+          <h2>🗾 Gestión de Regiones</h2>
           <button class="btn-primary" @click="abrirModalCrear('region')">
             + Nueva Región
           </button>
@@ -502,9 +525,9 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('region', region)">Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('region', region)">Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('region', region)">Anular</button>
+                  <button class="btn-action btn-view" @click="verElemento('region', region)">👁 Ver</button>
+                  <button class="btn-action btn-edit" @click="editarElemento('region', region)">✏ Editar</button>
+                  <button class="btn-action btn-anular" @click="solicitarAnular('region', region)">🚫 Anular</button>
                 </td>
               </tr>
             </tbody>
@@ -515,7 +538,7 @@
       <!-- Niveles -->
       <div v-if="activeTab === 'niveles'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>Gestión de Niveles</h2>
+          <h2>📊 Gestión de Niveles</h2>
           <button class="btn-primary" @click="abrirModalCrear('nivel')">
             + Nuevo Nivel
           </button>
@@ -546,9 +569,9 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('nivel', nivel)">Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('nivel', nivel)">Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('nivel', nivel)">Anular</button>
+                  <button class="btn-action btn-view" @click="verElemento('nivel', nivel)">👁 Ver</button>
+                  <button class="btn-action btn-edit" @click="editarElemento('nivel', nivel)">✏ Editar</button>
+                  <button class="btn-action btn-anular" @click="solicitarAnular('nivel', nivel)">🚫 Anular</button>
                 </td>
               </tr>
             </tbody>
@@ -559,7 +582,7 @@
       <!-- Estados Civiles -->
       <div v-if="activeTab === 'estados-civiles'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>Gestión de Estados Civiles</h2>
+          <h2>💑 Gestión de Estados Civiles</h2>
           <button class="btn-primary" @click="abrirModalCrear('estadoCivil')">
             + Nuevo Estado Civil
           </button>
@@ -590,9 +613,9 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('estadoCivil', estadoCivil)">Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('estadoCivil', estadoCivil)">Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('estadoCivil', estadoCivil)">Anular</button>
+                  <button class="btn-action btn-view" @click="verElemento('estadoCivil', estadoCivil)">👁 Ver</button>
+                  <button class="btn-action btn-edit" @click="editarElemento('estadoCivil', estadoCivil)">✏ Editar</button>
+                  <button class="btn-action btn-anular" @click="solicitarAnular('estadoCivil', estadoCivil)">🚫 Anular</button>
                 </td>
               </tr>
             </tbody>
@@ -603,7 +626,7 @@
       <!-- Roles -->
       <div v-if="activeTab === 'roles'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>Gestión de Roles</h2>
+          <h2>👤 Gestión de Roles</h2>
           <button class="btn-primary" @click="abrirModalCrear('rol')">
             + Nuevo Rol
           </button>
@@ -634,9 +657,9 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('rol', rol)">Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('rol', rol)">Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('rol', rol)">Anular</button>
+                  <button class="btn-action btn-view" @click="verElemento('rol', rol)">👁 Ver</button>
+                  <button class="btn-action btn-edit" @click="editarElemento('rol', rol)">✏ Editar</button>
+                  <button class="btn-action btn-anular" @click="solicitarAnular('rol', rol)">🚫 Anular</button>
                 </td>
               </tr>
             </tbody>
@@ -647,7 +670,7 @@
       <!-- Conceptos Contables -->
       <div v-if="activeTab === 'conceptos-contables'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>Gestión de Conceptos Contables</h2>
+          <h2>💰 Gestión de Conceptos Contables</h2>
           <button class="btn-primary" @click="abrirModalCrear('conceptoContable')">
             + Nuevo Concepto
           </button>
@@ -680,9 +703,9 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('conceptoContable', concepto)">Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('conceptoContable', concepto)">Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('conceptoContable', concepto)">Anular</button>
+                  <button class="btn-action btn-view" @click="verElemento('conceptoContable', concepto)">👁 Ver</button>
+                  <button class="btn-action btn-edit" @click="editarElemento('conceptoContable', concepto)">✏ Editar</button>
+                  <button class="btn-action btn-anular" @click="solicitarAnular('conceptoContable', concepto)">🚫 Anular</button>
                 </td>
               </tr>
             </tbody>
@@ -693,7 +716,7 @@
       <!-- Tipos de Archivo -->
       <div v-if="activeTab === 'tipos-archivo'" class="mantenedor-section">
         <div class="mantenedor-header">
-          <h2>Gestión de Tipos de Archivo</h2>
+          <h2>📁 Gestión de Tipos de Archivo</h2>
           <button class="btn-primary" @click="abrirModalCrear('tipoArchivo')">
             + Nuevo Tipo
           </button>
@@ -726,9 +749,9 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('tipoArchivo', tipoArchivo)">Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('tipoArchivo', tipoArchivo)">Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('tipoArchivo', tipoArchivo)">Anular</button>
+                  <button class="btn-action btn-view" @click="verElemento('tipoArchivo', tipoArchivo)">👁 Ver</button>
+                  <button class="btn-action btn-edit" @click="editarElemento('tipoArchivo', tipoArchivo)">✏ Editar</button>
+                  <button class="btn-action btn-anular" @click="solicitarAnular('tipoArchivo', tipoArchivo)">🚫 Anular</button>
                 </td>
               </tr>
             </tbody>
@@ -741,7 +764,7 @@
     <div v-if="modalActivo === 'ver'" class="modal-overlay" @click="cerrarModal">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
-          <h3>Visualizar {{ getTipoNombre(tipoElemento) }}</h3>
+          <h3>👁 Visualizar {{ getTipoNombre(tipoElemento) }}</h3>
           <button class="modal-close" @click="cerrarModal">×</button>
         </div>
         <div class="modal-body">
@@ -804,7 +827,7 @@
     <div v-if="modalActivo === 'confirmar-anular'" class="modal-overlay" @click="cerrarModal">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
-          <h3>Confirmar Anulación</h3>
+          <h3>🚫 Confirmar Anulación</h3>
           <button class="modal-close" @click="cerrarModal">×</button>
         </div>
         <div class="modal-body">
@@ -813,7 +836,7 @@
             <div class="elemento-info">
               <strong>{{ getTipoNombre(tipoElemento) }}:</strong> {{ elementoSeleccionado.descripcion }}
             </div>
-            <p class="warning-text">Esta acción no se puede deshacer.</p>
+            <p class="warning-text">⚠️ Esta acción no se puede deshacer.</p>
           </div>
           <div class="form-actions">
             <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
@@ -860,7 +883,7 @@
             <div class="form-actions">
               <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
               <button type="submit" class="btn-primary">
-                {{ editando ? 'Actualizar' : 'Guardar' }}
+                💾 {{ editando ? 'Actualizar' : 'Guardar' }}
               </button>
             </div>
           </form>
@@ -906,7 +929,7 @@
             <div class="form-actions">
               <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
               <button type="submit" class="btn-primary">
-                {{ editando ? 'Actualizar' : 'Guardar' }}
+                💾 {{ editando ? 'Actualizar' : 'Guardar' }}
               </button>
             </div>
           </form>
@@ -952,7 +975,7 @@
             <div class="form-actions">
               <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
               <button type="submit" class="btn-primary">
-                {{ editando ? 'Actualizar' : 'Guardar' }}
+                💾 {{ editando ? 'Actualizar' : 'Guardar' }}
               </button>
             </div>
           </form>
@@ -989,7 +1012,7 @@
             <div class="form-actions">
               <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
               <button type="submit" class="btn-primary">
-                {{ editando ? 'Actualizar' : 'Guardar' }}
+                💾 {{ editando ? 'Actualizar' : 'Guardar' }}
               </button>
             </div>
           </form>
@@ -1004,45 +1027,13 @@
 </template>
 
 <script>
-import { ref, computed, reactive, watch, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import mantenedoresService from '@/services/mantenedoresService.js'
+import { ref, computed, reactive } from 'vue'
 
 export default {
   name: 'MantenedoresScouts',
   setup() {
-    // Estado reactivo / sincronización de pestaña con la URL
-      const route = useRoute()
-      const router = useRouter()
-
-      const VALID_TABS = [
-        'zonas','distritos','grupos','ramas','tipos-curso','cargos','alimentacion',
-        'comunas','provincias','regiones','niveles','estados-civiles','roles',
-        'conceptos-contables','tipos-archivo'
-      ]
-
-  const activeTab = ref('zonas')
-
-      // Inicializar desde la URL
-      onMounted(() => {
-        const initial = typeof route.params.tab === 'string' ? route.params.tab : ''
-        activeTab.value = VALID_TABS.includes(initial) ? initial : 'zonas'
-      })
-
-      // Sincronizar cuando cambia la URL
-      watch(() => route.params.tab, (val) => {
-        if (typeof val === 'string' && VALID_TABS.includes(val)) {
-          activeTab.value = val
-        }
-      })
-
-      // Empujar a la URL cuando cambia la pestaña desde el contenido
-      watch(activeTab, (val) => {
-        if (!VALID_TABS.includes(val)) return
-        if (route.params.tab !== val) {
-          router.replace({ name: 'mantenedores', params: { tab: val } })
-        }
-      })
+    // Estado reactivo
+    const activeTab = ref('zonas')
     const modalActivo = ref('')
     const editando = ref(false)
     const tipoElemento = ref('')
@@ -1075,78 +1066,101 @@ export default {
       { id: 'tipos-archivo', label: 'Tipos de Archivo', icon: '📁' }
     ]
 
-    // Datos cargados desde API
-    const zonas = ref([])
-    const distritos = ref([])
-    const grupos = ref([])
-    const ramas = ref([])
-    const tiposCurso = ref([])
-    const cargos = ref([])
-    const alimentacion = ref([])
-    const comunas = ref([])
-    const provincias = ref([])
-    const regiones = ref([])
-    const niveles = ref([])
-    const estadosCiviles = ref([])
-    const roles = ref([])
-    const conceptosContables = ref([])
-    const tiposArchivo = ref([])
+    // Datos de ejemplo para todos los mantenedores
+    const zonas = ref([
+      { id: 1, descripcion: 'ZONA NORTE BIOBÍO', unilateral: true, vigente: true },
+      { id: 2, descripcion: 'ZONA SUR BIOBÍO', unilateral: false, vigente: true },
+      { id: 3, descripcion: 'ZONA COSTA BIOBÍO', unilateral: true, vigente: true },
+      { id: 4, descripcion: 'ZONA CORDILLERA BIOBÍO', unilateral: false, vigente: false }
+    ])
 
-    // Carga inicial desde endpoints
-    onMounted(async () => {
-      try {
-        const [
-          _zonas,
-          _distritos,
-          _grupos,
-          _ramas,
-          _tiposCurso,
-          _cargos,
-          _alimentacion,
-          _regiones,
-          _provincias,
-          _comunas,
-          _niveles,
-          _estados,
-          _roles,
-          _conceptos,
-          _tiposArchivo
-        ] = await Promise.all([
-          mantenedoresService.listarZonas(),
-          mantenedoresService.listarDistritos(),
-          mantenedoresService.listarGrupos(),
-          mantenedoresService.listarRamas(),
-          mantenedoresService.listarTiposCurso(),
-          mantenedoresService.listarCargos(),
-          mantenedoresService.listarAlimentacion(),
-          mantenedoresService.listarRegiones(),
-          mantenedoresService.listarProvincias(),
-          mantenedoresService.listarComunas(),
-          mantenedoresService.listarNiveles(),
-          mantenedoresService.listarEstadosCiviles(),
-          mantenedoresService.listarRoles(),
-          mantenedoresService.listarConceptosContables(),
-          mantenedoresService.listarTiposArchivo(),
-        ])
-        zonas.value = _zonas
-        distritos.value = _distritos
-        grupos.value = _grupos
-        ramas.value = _ramas
-        tiposCurso.value = _tiposCurso
-        cargos.value = _cargos
-        alimentacion.value = _alimentacion
-        regiones.value = _regiones
-        provincias.value = _provincias
-        comunas.value = _comunas
-        niveles.value = _niveles
-        estadosCiviles.value = _estados
-        roles.value = _roles
-        conceptosContables.value = _conceptos
-        tiposArchivo.value = _tiposArchivo
-      } catch (e) {
-        console.warn('No se pudieron cargar algunos mantenedores desde la API', e)
-      }
-    })
+    const distritos = ref([
+      { id: 1, descripcion: 'DISTRITO CONCEPCIÓN', zona_id: 1, vigente: true },
+      { id: 2, descripcion: 'DISTRITO TALCAHUANO', zona_id: 1, vigente: true },
+      { id: 3, descripcion: 'DISTRITO LOS ÁNGELES', zona_id: 2, vigente: true }
+    ])
+
+    const grupos = ref([
+      { id: 1, descripcion: 'GRUPO ARAUCO', distrito_id: 1, vigente: true },
+      { id: 2, descripcion: 'GRUPO LAUTARO', distrito_id: 2, vigente: true },
+      { id: 3, descripcion: 'GRUPO CAUPOLICÁN', distrito_id: 3, vigente: true }
+    ])
+
+    const ramas = ref([
+      { id: 1, descripcion: 'LOBATOS', vigente: true },
+      { id: 2, descripcion: 'SCOUTS', vigente: true },
+      { id: 3, descripcion: 'PIONEROS', vigente: true },
+      { id: 4, descripcion: 'ROVERS', vigente: true }
+    ])
+
+    const tiposCurso = ref([
+      { id: 1, descripcion: 'CURSO BÁSICO', tipo: 1, cant_participante: 30, vigente: true },
+      { id: 2, descripcion: 'CURSO INTERMEDIO', tipo: 2, cant_participante: 25, vigente: true },
+      { id: 3, descripcion: 'CURSO AVANZADO', tipo: 3, cant_participante: 20, vigente: true }
+    ])
+
+    const cargos = ref([
+      { id: 1, descripcion: 'JEFE DE GRUPO', vigente: true },
+      { id: 2, descripcion: 'SUBJEFE', vigente: true },
+      { id: 3, descripcion: 'TESORERO', vigente: true },
+      { id: 4, descripcion: 'SECRETARIO', vigente: true }
+    ])
+
+    const alimentacion = ref([
+      { id: 1, descripcion: 'DIETA REGULAR', tipo: 1, vigente: true },
+      { id: 2, descripcion: 'DIETA VEGETARIANA', tipo: 2, vigente: true },
+      { id: 3, descripcion: 'DIETA VEGANA', tipo: 3, vigente: true }
+    ])
+
+    // Nuevos mantenedores
+    const comunas = ref([
+      { id: 1, descripcion: 'CONCEPCIÓN', provincia_id: 1, vigente: true },
+      { id: 2, descripcion: 'TALCAHUANO', provincia_id: 1, vigente: true },
+      { id: 3, descripcion: 'LOS ÁNGELES', provincia_id: 2, vigente: true }
+    ])
+
+    const provincias = ref([
+      { id: 1, descripcion: 'CONCEPCIÓN', region_id: 1, vigente: true },
+      { id: 2, descripcion: 'BIOBÍO', region_id: 1, vigente: true },
+      { id: 3, descripcion: 'ÑUBLE', region_id: 1, vigente: true }
+    ])
+
+    const regiones = ref([
+      { id: 1, descripcion: 'REGION DEL BIOBÍO', vigente: true },
+      { id: 2, descripcion: 'REGION METROPOLITANA', vigente: true },
+      { id: 3, descripcion: 'REGION DE VALPARAÍSO', vigente: true }
+    ])
+
+    const niveles = ref([
+      { id: 1, descripcion: 'NIVEL BÁSICO', vigente: true },
+      { id: 2, descripcion: 'NIVEL INTERMEDIO', vigente: true },
+      { id: 3, descripcion: 'NIVEL AVANZADO', vigente: true }
+    ])
+
+    const estadosCiviles = ref([
+      { id: 1, descripcion: 'SOLTERO/A', vigente: true },
+      { id: 2, descripcion: 'CASADO/A', vigente: true },
+      { id: 3, descripcion: 'DIVORCIADO/A', vigente: true },
+      { id: 4, descripcion: 'VIUDO/A', vigente: true }
+    ])
+
+    const roles = ref([
+      { id: 1, descripcion: 'ADMINISTRADOR', vigente: true },
+      { id: 2, descripcion: 'USUARIO', vigente: true },
+      { id: 3, descripcion: 'INVITADO', vigente: true }
+    ])
+
+    const conceptosContables = ref([
+      { id: 1, descripcion: 'MATRÍCULA', tipo: 'INGRESO', vigente: true },
+      { id: 2, descripcion: 'CUOTA MENSUAL', tipo: 'INGRESO', vigente: true },
+      { id: 3, descripcion: 'GASTOS OPERACIONALES', tipo: 'EGRESO', vigente: true }
+    ])
+
+    const tiposArchivo = ref([
+      { id: 1, descripcion: 'DOCUMENTO PDF', extension: '.pdf', vigente: true },
+      { id: 2, descripcion: 'IMAGEN JPEG', extension: '.jpg', vigente: true },
+      { id: 3, descripcion: 'DOCUMENTO WORD', extension: '.docx', vigente: true }
+    ])
 
     // Formularios
     const formZona = reactive({
@@ -1527,20 +1541,97 @@ export default {
 
 <style scoped>
 .mantenedores-scouts {
-  display: block;
+  display: flex;
   min-height: 100vh;
   background: #f5f5f5;
 }
 
-/* Main Content Styles (a pantalla completa) */
-.main-content {
-  padding: 0;
-  min-height: 100vh;
-  margin-left: 0; /* sin sidebar interna */
-  width: 100%;
+/* SideBar Styles */
+.sidebar {
+  width: 280px;
+  background: #1e3d73;
+  color: white;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  overflow-y: auto;
 }
 
+.sidebar-header {
+  padding: 25px 20px;
+  border-bottom: 2px solid #2c5aa0;
+  background: #2c5aa0;
+}
 
+.sidebar-header h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sidebar-menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-item {
+  padding: 16px 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-bottom: 1px solid #2c5aa0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar-item:hover {
+  background: #2c5aa0;
+}
+
+.sidebar-item.active {
+  background: #ff6b35;
+  border-left: 4px solid #fff;
+}
+
+.sidebar-icon {
+  font-size: 1.2rem;
+  width: 24px;
+  text-align: center;
+}
+
+.sidebar-label {
+  font-weight: 500;
+}
+
+/* Main Content Styles */
+.main-content {
+  flex: 1;
+  margin-left: 280px;
+  padding: 0;
+  min-height: 100vh;
+}
+
+.header {
+  background: linear-gradient(135deg, #2c5aa0 0%, #1e3d73 100%);
+  color: white;
+  padding: 25px 30px;
+  margin-bottom: 0;
+}
+
+.header h1 {
+  font-size: 1.8rem;
+  margin-bottom: 8px;
+}
+
+.header p {
+  margin: 0;
+  opacity: 0.9;
+  font-size: 1.1rem;
+}
 
 .mantenedor-section {
   padding: 30px;
@@ -1597,7 +1688,10 @@ export default {
   gap: 12px;
 }
 
-.alert-icon { display: none; }
+.alert-icon {
+  font-size: 1.2rem;
+  margin-top: 2px;
+}
 
 .search-bar {
   display: flex;

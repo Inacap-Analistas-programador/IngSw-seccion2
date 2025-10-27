@@ -1,6 +1,6 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import logoSrc from '@/assets/Logo_Boyscout_Chile.png'
 import authService from '@/services/authService.js'
 import logoutDefault from '@/assets/logout_default.svg'
@@ -9,17 +9,43 @@ import avatarDefault from '@/assets/avatar_default.svg'
 // User state (avatar + name)
 const user = ref({ name: 'Usuario', role: 'Invitado', avatarUrl: null })
 const router = useRouter()
+const route = useRoute()
 const logoutSrc = ref('/logout.png')
 const avatarSrc = ref(avatarDefault)
 
+// Estado reactivo de autenticación
+const isAuthenticated = ref(!!localStorage.getItem('token'))
+
+// Función para actualizar el estado de autenticación
+function updateAuthState() {
+  const hasToken = !!localStorage.getItem('token')
+  isAuthenticated.value = hasToken
+  
+  if (hasToken) {
+    // Cargar info del usuario
+    authService.getCurrentUser().then(u => {
+      if (u) {
+        user.value = { name: u.name || 'Usuario', role: u.role || 'Invitado', avatarUrl: u.avatarUrl || null }
+        avatarSrc.value = u.avatarUrl || avatarDefault
+      }
+    })
+  }
+}
+
+// Escuchar cambios de ruta para detectar login/logout
+watch(() => route.path, () => {
+  updateAuthState()
+})
+
 onMounted(() => {
-  // Load user info
-  authService.getCurrentUser().then(u => {
-    if (u) {
-      user.value = { name: u.name || 'Usuario', role: u.role || 'Invitado', avatarUrl: u.avatarUrl || null }
-      avatarSrc.value = u.avatarUrl || avatarDefault
-    }
-  })
+  updateAuthState()
+  
+  // Escuchar eventos de storage (cambios en otras pestañas)
+  window.addEventListener('storage', updateAuthState)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('storage', updateAuthState)
 })
 
 function logout() {
@@ -48,17 +74,28 @@ function onAvatarError() {
   <router-link class="dash-link" :to="{ name: 'dashboard' }">Panel de Control</router-link>
     </div>
 
-    <!-- Usuario (avatar + nombre/rol) y salir -->
-    <div class="navbar-user">
-      <img :src="avatarSrc" @error="onAvatarError" alt="Usuario" class="avatar" />
-      <div class="user-meta">
-        <div class="user-name">{{ user.name }}</div>
-        <div class="user-role">{{ user.role }}</div>
+    <!-- Usuario (avatar + nombre/rol + salir) - Solo visible si autenticado -->
+    <Transition name="user-fade">
+      <div v-if="isAuthenticated" class="navbar-user">
+        <img :src="avatarSrc" @error="onAvatarError" alt="Usuario" class="avatar" />
+        <div class="user-meta">
+          <div class="user-name">{{ user.name }}</div>
+          <div class="user-role">{{ user.role }}</div>
+        </div>
+        <button class="logout-btn" @click="logout" title="Cerrar sesión" aria-label="Cerrar sesión">
+          <img :src="logoutSrc" @error="onLogoutImgError" alt="Cerrar sesión" class="logout-img" />
+        </button>
       </div>
-      <button class="logout-btn" @click="logout" title="Cerrar sesión" aria-label="Cerrar sesión">
-        <img :src="logoutSrc" @error="onLogoutImgError" alt="Cerrar sesión" class="logout-img" />
-      </button>
-    </div>
+    </Transition>
+
+    <!-- Botón de Login cuando no está autenticado -->
+    <Transition name="user-fade">
+      <div v-if="!isAuthenticated" class="navbar-actions">
+        <button class="login-btn" @click="router.push('/')" title="Iniciar sesión" aria-label="Iniciar sesión">
+          Iniciar Sesión
+        </button>
+      </div>
+    </Transition>
   </nav>
 </template>
 
@@ -178,8 +215,59 @@ function onAvatarError() {
   filter: brightness(0) invert(1);
 }
 
+/* ====== Botón de Login (cuando no está autenticado) ====== */
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.login-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 20px;
+  border-radius: 8px;
+  border: 2px solid rgba(255,255,255,0.8);
+  background: rgba(255,255,255,0.15);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.login-btn:hover {
+  background: rgba(255,255,255,0.25);
+  border-color: rgba(255,255,255,1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.login-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
 /* ====== Responsive ====== */
 @media (max-width: 768px) {
   .user-meta { display: none; }
+}
+
+/* ====== Animación de entrada/salida del usuario ====== */
+.user-fade-enter-active,
+.user-fade-leave-active {
+  transition: all 0.3s ease;
+}
+
+.user-fade-enter-from {
+  opacity: 0;
+  transform: translateX(20px);
+}
+
+.user-fade-leave-to {
+  opacity: 0;
+  transform: translateX(20px);
 }
 </style>

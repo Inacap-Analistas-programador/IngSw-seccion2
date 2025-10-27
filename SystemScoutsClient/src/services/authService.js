@@ -44,7 +44,7 @@ async function login(username, password) {
   if (data && data.user) {
     setCurrentUser({
       name: data.user.USU_USERNAME,
-      role: '',
+      role: 'Administradora Regional', // Rol por defecto para frontend
       avatarUrl: data.user.USU_RUTA_FOTO || null
     })
   }

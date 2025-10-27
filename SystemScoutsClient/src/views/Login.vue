@@ -133,7 +133,7 @@ const handleLogin = async () => {
     passwordError.value = ''
     loading.value = true
 
-    // Validación básica antes de llamar al backend
+    // Validación básica
     if (!username.value || !password.value) {
       if (!username.value) usernameError.value = 'Ingresa tu usuario'
       if (!password.value) passwordError.value = 'Ingresa tu contraseña'
@@ -144,6 +144,33 @@ const handleLogin = async () => {
         focusUsername()
       return
     }
+
+    // ===== MODO PRESENTACIÓN: Login ficticio =====
+    // Usuario: admin / Contraseña: admin
+    // TODO: Para producción, descomentar la llamada real al backend
+    if (username.value === 'admin' && password.value === 'admin') {
+      // Simular token y usuario
+      localStorage.setItem('token', 'demo-token-' + Date.now())
+      localStorage.setItem('currentUser', JSON.stringify({
+        name: 'Administrador',
+        role: 'Admin',
+        avatarUrl: null
+      }))
+      const redirectTo = route.query.redirect || '/dashboard'
+      router.push(redirectTo)
+    } else {
+      // Credenciales incorrectas
+      const msg = 'Usuario y contraseña están equivocados'
+      errorMessage.value = msg
+      usernameError.value = ''
+      passwordError.value = msg
+      showToast(msg)
+      password.value = ''
+      focusUsername()
+      triggerShake()
+    }
+
+    /* ===== LOGIN REAL (descomentado para producción) =====
     const data = await authService.login(username.value, password.value)
     if (data && data.token) {
       const redirectTo = route.query.redirect || '/dashboard'
@@ -158,32 +185,15 @@ const handleLogin = async () => {
       focusUsername()
       triggerShake()
     }
+    */
   } catch (err) {
     console.error(err)
-    if (err?.message?.includes('Failed to fetch')) {
-      const msg = 'No se pudo conectar con el servidor. Inténtalo nuevamente.'
-      errorMessage.value = msg
-      usernameError.value = ''
-      passwordError.value = msg
-      showToast(msg)
-        focusUsername(false)
-    } else if (String(err?.message || '').startsWith('401')) {
-      const msg = 'Usuario y contraseña están equivocados'
-      errorMessage.value = msg
-      usernameError.value = ''
-      passwordError.value = msg
-      showToast(msg)
-      password.value = ''
-        focusUsername()
-        triggerShake()
-    } else {
-      const msg = 'Ocurrió un error al iniciar sesión'
-      errorMessage.value = msg
-      usernameError.value = ''
-      passwordError.value = msg
-      showToast(msg)
-        focusUsername(false)
-    }
+    const msg = 'Ocurrió un error al iniciar sesión'
+    errorMessage.value = msg
+    usernameError.value = ''
+    passwordError.value = msg
+    showToast(msg)
+    focusUsername(false)
   } finally {
     loading.value = false
   }

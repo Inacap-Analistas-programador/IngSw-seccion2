@@ -1,4 +1,12 @@
 <template>
+  <!-- Prefer custom SVGs dropped in /src/assets/icons/custom (by filename) -->
+  <span
+    v-if="customIconSvg"
+    class="svg-wrapper"
+    :style="{ width: computedSize + 'px', height: computedSize + 'px' }"
+    v-html="customIconSvg"
+  />
+
   <svg v-if="name === 'search'" :width="size" :height="size" viewBox="0 0 24 24" fill="none" stroke="currentColor" :stroke-width="strokeWidth">
     <circle cx="11" cy="11" r="8"/>
     <path d="m21 21-4.35-4.35"/>
@@ -106,10 +114,90 @@
     <circle cx="12" cy="12" r="3"/>
     <path d="M12 1v6m0 6v6m-6-6h6m6 0h6M3.9 3.9l4.2 4.2m8.5 8.5l4.2 4.2M3.9 20.1l4.2-4.2m8.5-8.5l4.2-4.2"/>
   </svg>
+
+  <svg v-else-if="name === 'file-text'" :width="size" :height="size" viewBox="0 0 24 24" fill="none" stroke="currentColor" :stroke-width="strokeWidth">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+    <polyline points="14 2 14 8 20 8"/>
+    <line x1="16" y1="13" x2="8" y2="13"/>
+    <line x1="16" y1="17" x2="8" y2="17"/>
+    <polyline points="10 9 9 9 8 9"/>
+  </svg>
+
+  <svg v-else-if="name === 'dollar-sign'" :width="size" :height="size" viewBox="0 0 24 24" fill="none" stroke="currentColor" :stroke-width="strokeWidth">
+    <line x1="12" y1="1" x2="12" y2="23"/>
+    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+  </svg>
+
+  <svg v-else-if="name === 'clipboard'" :width="size" :height="size" viewBox="0 0 24 24" fill="none" stroke="currentColor" :stroke-width="strokeWidth">
+    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+    <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+  </svg>
+
+  <svg v-else-if="name === 'user'" :width="size" :height="size" viewBox="0 0 24 24" fill="none" stroke="currentColor" :stroke-width="strokeWidth">
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+    <circle cx="12" cy="7" r="4"/>
+  </svg>
+
+  <svg v-else-if="name === 'user-check'" :width="size" :height="size" viewBox="0 0 24 24" fill="none" stroke="currentColor" :stroke-width="strokeWidth">
+    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+    <circle cx="8.5" cy="7" r="4"/>
+    <polyline points="17 11 19 13 23 9"/>
+  </svg>
+
+  <svg v-else-if="name === 'refresh'" :width="size" :height="size" viewBox="0 0 24 24" fill="none" stroke="currentColor" :stroke-width="strokeWidth">
+    <polyline points="23 4 23 10 17 10"/>
+    <polyline points="1 20 1 14 7 14"/>
+    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+  </svg>
+
+  <svg v-else-if="name === 'file'" :width="size" :height="size" viewBox="0 0 24 24" fill="none" stroke="currentColor" :stroke-width="strokeWidth">
+    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+    <polyline points="13 2 13 9 20 9"/>
+  </svg>
+
+  <svg v-else-if="name === 'paperclip'" :width="size" :height="size" viewBox="0 0 24 24" fill="none" stroke="currentColor" :stroke-width="strokeWidth">
+    <path d="M21.44 11.05 12.1 20.39a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.17 18.06a2 2 0 1 1-2.83-2.83l8.13-8.13"/>
+  </svg>
+
+  <svg v-else-if="name === 'check-circle'" :width="size" :height="size" viewBox="0 0 24 24" fill="none" stroke="currentColor" :stroke-width="strokeWidth">
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+    <polyline points="22 4 12 14.01 9 11.01"/>
+  </svg>
+
+  <svg v-else-if="name === 'x-circle'" :width="size" :height="size" viewBox="0 0 24 24" fill="none" stroke="currentColor" :stroke-width="strokeWidth">
+    <circle cx="12" cy="12" r="10"/>
+    <line x1="15" y1="9" x2="9" y2="15"/>
+    <line x1="9" y1="9" x2="15" y2="15"/>
+  </svg>
+
+  <!-- Sorting icons -->
+  <svg v-else-if="name === 'chevron-up'" :width="size" :height="size" viewBox="0 0 24 24" fill="none" stroke="currentColor" :stroke-width="strokeWidth">
+    <polyline points="18 15 12 9 6 15"/>
+  </svg>
+  <svg v-else-if="name === 'chevron-down'" :width="size" :height="size" viewBox="0 0 24 24" fill="none" stroke="currentColor" :stroke-width="strokeWidth">
+    <polyline points="6 9 12 15 18 9"/>
+  </svg>
+  <svg v-else-if="name === 'arrow-up-down'" :width="size" :height="size" viewBox="0 0 24 24" fill="none" stroke="currentColor" :stroke-width="strokeWidth">
+    <polyline points="7 3 12 8 17 3"/>
+    <line x1="12" y1="8" x2="12" y2="16"/>
+    <polyline points="17 21 12 16 7 21"/>
+  </svg>
 </template>
 
 <script setup>
 import { computed } from 'vue'
+
+// Auto-load any SVGs placed in /src/assets/icons/custom
+// The filename (without .svg) must match the `name` prop.
+// Example: /src/assets/icons/custom/clipboard.svg -> <AppIcons name="clipboard" />
+const customIconsRaw = import.meta.glob('/src/assets/icons/custom/*.svg', { eager: true, query: '?raw', import: 'default' })
+const customIconsMap = Object.fromEntries(
+  Object.entries(customIconsRaw).map(([path, svg]) => {
+    const file = path.split('/').pop() || ''
+    const key = file.replace(/\.svg$/i, '')
+    return [key, svg]
+  })
+)
 
 const props = defineProps({
   name: {
@@ -125,6 +213,9 @@ const props = defineProps({
     default: 2
   }
 })
+
+const computedSize = computed(() => Number(props.size))
+const customIconSvg = computed(() => customIconsMap[props.name] || '')
 </script>
 
 <style scoped>
@@ -132,5 +223,15 @@ svg {
   display: inline-block;
   vertical-align: middle;
   margin-right: 6px;
+}
+
+.svg-wrapper :deep(svg) {
+  /* Ensure dropped SVGs scale and inherit color */
+  width: 100%;
+  height: 100%;
+  display: inline-block;
+  vertical-align: middle;
+  /* Favor fill by default; authors can set stroke in their SVGs if desired */
+  fill: currentColor;
 }
 </style>

@@ -789,7 +789,8 @@ const comunasDisponibles = computed(() => {
     justify-content: center; /* Centra verticalmente */ 
     align-items: center; /* Centra horizontalmente */ 
     min-height: 100vh; /* Ocupa todo el alto de la ventana */ 
-    background: linear-gradient(135deg, #4a90e2, #cfe2f3); 
+    background: linear-gradient(135deg, #1e3a8a, #2563eb, #3b82f6); /* Gradiente azul más intenso */
+    padding: 40px 20px; /* Padding para dar espacio en móvil */
 } 
 
 textarea { 
@@ -837,9 +838,9 @@ form {
     flex-direction: column; 
     gap: 10px; 
     width: 100%; 
-    max-width: 400px; /* Controla el ancho del formulario */ 
+    max-width: 600px; /* Ancho ampliado del formulario */ 
     background: rgb(255, 255, 255); /* Opcional: fondo blanco */ 
-    padding: 70px; 
+    padding: 50px; 
     border-radius: 10px; 
     box-shadow: 0 0 10px rgba(34, 24, 232, 0.1); 
     border: 2px solid #1135a1; /* Borde azul claro */ 
@@ -908,8 +909,14 @@ input:focus, select:focus, textarea:focus {
     transition: all 0.3s ease; 
 } 
 /* :::::::::::::::::::: BOTONES :::::::::::::::::::: */ 
+  .botones-formulario {
+    display: flex;
+    justify-content: center;
+    gap: 20px; /* Espacio entre botones */
+    margin-top: 20px;
+  }
+
   .btn-enviar {
-  margin-top: 20px;
   display: inline-block;
   justify-content: center;
   align-items: center;
@@ -954,8 +961,6 @@ input:focus, select:focus, textarea:focus {
   }
 /*:::::::::::::::::::::::::::::::::::::::::::::::::::::::*/
   .btn-vaciar {
-  margin-right: 40px;
-  margin-top: 20px;
   display: inline-block;
   justify-content: center;
   align-items: center;

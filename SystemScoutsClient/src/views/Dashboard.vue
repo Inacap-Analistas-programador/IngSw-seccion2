@@ -258,6 +258,16 @@ const tabs = [
 const cursosList = ref([])
 const totalPersonas = ref(0)
 
+// Datos mock para presentación (fallback si falla backend)
+const MOCK_CURSOS = [
+  { id: 1, title: 'Curso Básico de Formación', inscritos: 28, capacidad: 30, valor: 25000, estado: 'Vigente' },
+  { id: 2, title: 'Técnicas de Campamento', inscritos: 15, capacidad: 25, valor: 30000, estado: 'Vigente' },
+  { id: 3, title: 'Liderazgo Scout', inscritos: 12, capacidad: 20, valor: 35000, estado: 'Vigente' },
+  { id: 4, title: 'Primeros Auxilios Avanzado', inscritos: 8, capacidad: 15, valor: 28000, estado: 'Vigente' },
+  { id: 5, title: 'Orientación y Navegación', inscritos: 5, capacidad: 20, valor: 22000, estado: 'Vigente' }
+]
+const MOCK_TOTAL_PERSONAS = 68
+
 const sortedCursos = computed(() =>
   [...cursosList.value].sort((a, b) => (a.title || '').localeCompare(b.title || '', 'es', { sensitivity: 'base' }))
 )
@@ -495,7 +505,8 @@ onMounted(() => {
         }))
       }
     } catch (e) {
-      console.warn('Cursos no disponibles:', e)
+      console.warn('Cursos no disponibles, usando datos mock:', e)
+      cursosList.value = MOCK_CURSOS
     }
 
     // Cuotas por curso (para valor referencial)
@@ -524,8 +535,8 @@ onMounted(() => {
       const personas = await personasService.listarBasic()
       totalPersonas.value = Array.isArray(personas) ? personas.length : 0
     } catch (e) {
-      console.warn('Personas no disponibles:', e)
-      totalPersonas.value = 0
+      console.warn('Personas no disponibles, usando datos mock:', e)
+      totalPersonas.value = MOCK_TOTAL_PERSONAS
     }
   })()
 })
@@ -716,15 +727,15 @@ onMounted(() => {
 }
 
 .semaforo-indicator.ok {
-  background: #22c55e;
+  background: var(--color-semaforo-green);
 }
 
 .semaforo-indicator.near {
-  background: #f59e0b;
+  background: var(--color-semaforo-yellow);
 }
 
 .semaforo-indicator.full {
-  background: #ef4444;
+  background: var(--color-semaforo-red);
 }
 
 .data-section {

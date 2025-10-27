@@ -154,17 +154,21 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
+import { reactive, ref, computed, onMounted } from 'vue'
 import InputBase from '@/components/Reutilizables/InputBase.vue'
 import BaseButton from '@/components/Reutilizables/BaseButton.vue'
 import BaseCheckBox from '@/components/Reutilizables/BaseCheckBox.vue'
 import BaseSelect from '@/components/Reutilizables/BaseSelect.vue'
 import cursosService from '@/services/cursosService.js'
 import personasService from '@/services/personasService.js'
+import mantenedoresService from '@/services/mantenedoresService.js'
 
 // Lista de cursos y personas
 const cursos = reactive([])
 const personas = ref([])
+const tiposCurso = ref([])
+const comunas = ref([])
+const cargos = ref([])
 
 // Estado del formulario
 const form = reactive({
@@ -172,36 +176,188 @@ const form = reactive({
   codigo: '',
   fechaInicio: '',
   fechaFin: '',
-  responsable: null, // Cambiado a null para el select
-  jerarquias: []
+  responsable: null,
+  tipoCurso: null,
+  comuna: null,
+  modalidad: null,
+  coordinadores: []
 })
+
+const nuevoCoordinador = reactive({
+  persona: null,
+  cargo: null
+})
+
+const modalidadOptions = [
+  { value: 1, label: 'Presencial' },
+  { value: 2, label: 'Virtual' },
+  { value: 3, label: 'Híbrido' }
+]
 
 // Lógica de filtros
 const searchQuery = ref('')
 const cursosFiltrados = ref([])
 
+// Paginación
+const currentPage = ref(1)
+const itemsPerPage = ref(10)
+
+const paginatedCursos = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value
+  const end = start + itemsPerPage.value
+  return cursosFiltrados.value.slice(start, end)
+})
+
+const totalPages = computed(() => {
+  return Math.ceil(cursosFiltrados.value.length / itemsPerPage.value)
+})
+
+function goToPage(page) {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
+  }
+}
+
 async function cargarDatos() {
   try {
-    const [cursosResponse, personasResponse] = await Promise.all([
+    // Intentar cargar datos reales del backend
+    const [cursosResponse, personasResponse, tiposCursoResponse, comunasResponse, cargosResponse] = await Promise.all([
       cursosService.obtenerCursos(),
-      personasService.obtenerPersonas()
+      personasService.listarBasic(),
+      mantenedoresService.obtenerTiposCurso(),
+      mantenedoresService.obtenerComunas(),
+      mantenedoresService.obtenerCargos()
     ]);
     
     cursos.splice(0, cursos.length, ...cursosResponse.map(c => ({
       ...c,
-      // Mapear el nombre del responsable
-      responsableNombre: personasResponse.find(p => p.PER_ID === c.PER_ID_RESPONSABLE)?.PER_NOMBRES || 'No asignado'
+      responsableNombre: personasResponse.find(p => p.id === c.PER_ID_RESPONSABLE)?.nombre || 'No asignado'
     })));
     
     personas.value = personasResponse.map(p => ({
-      value: p.PER_ID,
-      label: `${p.PER_NOMBRES} ${p.PER_APELPTA || ''}`.trim()
+      value: p.id,
+      label: p.nombre
+    }));
+    
+    tiposCurso.value = tiposCursoResponse.map(t => ({
+      value: t.TCU_ID,
+      label: t.TCU_DESCRIPCION
+    }));
+    
+    comunas.value = comunasResponse.map(c => ({
+      value: c.COM_ID,
+      label: c.COM_NOMBRE
+    }));
+    
+    cargos.value = cargosResponse.map(c => ({
+      value: c.CAR_ID,
+      label: c.CAR_NOMBRE
     }));
     
     filtrarCursos();
   } catch (error) {
-    console.error("Error al cargar datos:", error);
-    // Aquí podrías mostrar una notificación al usuario
+    console.warn("Backend no disponible. Usando datos de prueba:", error);
+    
+    // Datos de prueba - Personas
+    personas.value = [
+      { value: 1, label: 'Juan Pérez González' },
+      { value: 2, label: 'María García Silva' },
+      { value: 3, label: 'Carlos Rodríguez Muñoz' },
+      { value: 4, label: 'Ana López Fernández' },
+      { value: 5, label: 'Pedro Martínez Díaz' }
+    ];
+    
+    // Datos de prueba - Tipos de Curso
+    tiposCurso.value = [
+      { value: 1, label: 'Formación de Dirigentes' },
+      { value: 2, label: 'Capacitación Técnica' },
+      { value: 3, label: 'Desarrollo Personal' },
+      { value: 4, label: 'Liderazgo' }
+    ];
+    
+    // Datos de prueba - Comunas
+    comunas.value = [
+      { value: 1, label: 'Concepción' },
+      { value: 2, label: 'Talcahuano' },
+      { value: 3, label: 'Chiguayante' },
+      { value: 4, label: 'San Pedro de la Paz' },
+      { value: 5, label: 'Coronel' }
+    ];
+    
+    // Datos de prueba - Cargos
+    cargos.value = [
+      { value: 1, label: 'Coordinador General' },
+      { value: 2, label: 'Instructor' },
+      { value: 3, label: 'Asistente' },
+      { value: 4, label: 'Evaluador' }
+    ];
+    
+    // Datos de prueba - Cursos
+    const cursosPrueba = [
+      {
+        CURS_ID: 1,
+        CUR_DESCRIPCION: 'Formación Básica de Dirigentes',
+        CUR_CODIGO: 'FBD-2024-01',
+        CUR_TIPO_CURSO: 1,
+        fechaInicio: '2024-11-15',
+        fechaTermino: '2024-11-17',
+        PER_ID_RESPONSABLE: 1,
+        responsableNombre: 'Juan Pérez González',
+        CUR_ESTADO: 1,
+        habilitado: true
+      },
+      {
+        CURS_ID: 2,
+        CUR_DESCRIPCION: 'Capacitación en Primeros Auxilios',
+        CUR_CODIGO: 'CPA-2024-02',
+        CUR_TIPO_CURSO: 2,
+        fechaInicio: '2024-12-01',
+        fechaTermino: '2024-12-03',
+        PER_ID_RESPONSABLE: 2,
+        responsableNombre: 'María García Silva',
+        CUR_ESTADO: 2,
+        habilitado: true
+      },
+      {
+        CURS_ID: 3,
+        CUR_DESCRIPCION: 'Liderazgo y Trabajo en Equipo',
+        CUR_CODIGO: 'LTE-2024-03',
+        CUR_TIPO_CURSO: 4,
+        fechaInicio: '2024-10-10',
+        fechaTermino: '2024-10-12',
+        PER_ID_RESPONSABLE: 3,
+        responsableNombre: 'Carlos Rodríguez Muñoz',
+        CUR_ESTADO: 3,
+        habilitado: false
+      },
+      {
+        CURS_ID: 4,
+        CUR_DESCRIPCION: 'Desarrollo de Habilidades Sociales',
+        CUR_CODIGO: 'DHS-2024-04',
+        CUR_TIPO_CURSO: 3,
+        fechaInicio: '2024-11-20',
+        fechaTermino: '2024-11-22',
+        PER_ID_RESPONSABLE: 4,
+        responsableNombre: 'Ana López Fernández',
+        CUR_ESTADO: 1,
+        habilitado: true
+      },
+      {
+        CURS_ID: 5,
+        CUR_DESCRIPCION: 'Gestión de Proyectos Scouts',
+        CUR_CODIGO: 'GPS-2024-05',
+        CUR_TIPO_CURSO: 2,
+        fechaInicio: '2024-09-05',
+        fechaTermino: '2024-09-07',
+        PER_ID_RESPONSABLE: 5,
+        responsableNombre: 'Pedro Martínez Díaz',
+        CUR_ESTADO: 3,
+        habilitado: false
+      }
+    ];
+    
+    cursos.splice(0, cursos.length, ...cursosPrueba);
+    filtrarCursos();
   }
 }
 
@@ -220,7 +376,6 @@ function filtrarCursos() {
 }
 
 // Inicializar datos
-import { onMounted } from 'vue'
 onMounted(cargarDatos)
 
 // Control de visibilidad y modo
@@ -310,7 +465,10 @@ function limpiarFormulario() {
   form.fechaInicio = ''
   form.fechaFin = ''
   form.responsable = null
-  form.jerarquias = []
+  form.tipoCurso = null
+  form.comuna = null
+  form.modalidad = null
+  form.coordinadores = []
   mostrarFormulario.value = false
   modoEdicion.value = false
   indiceEdicion.value = -1
@@ -327,6 +485,57 @@ function formatDate(d) {
   if (!d) return ''
   const dt = new Date(d)
   return dt.toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+// Funciones auxiliares
+function getTipoCursoText(tipoId) {
+  const tipo = tiposCurso.value.find(t => t.value === tipoId)
+  return tipo ? tipo.label : 'Sin tipo'
+}
+
+function getEstadoInfo(estado) {
+  const estados = {
+    1: { text: 'Activo', class: 'badge-success' },
+    2: { text: 'Pendiente', class: 'badge-warning' },
+    3: { text: 'Finalizado', class: 'badge-secondary' },
+    4: { text: 'Cancelado', class: 'badge-danger' }
+  }
+  return estados[estado] || { text: 'Desconocido', class: 'badge-info' }
+}
+
+function gestionarParticipantes(cursoId) {
+  // TODO: Implementar modal de participantes
+  console.log('Gestionar participantes del curso:', cursoId)
+  alert('Funcionalidad en desarrollo')
+}
+
+function agregarCoordinador() {
+  if (!nuevoCoordinador.persona || !nuevoCoordinador.cargo) {
+    alert('Selecciona persona y cargo')
+    return
+  }
+  
+  form.coordinadores.push({
+    PER_ID: nuevoCoordinador.persona,
+    CAR_ID: nuevoCoordinador.cargo
+  })
+  
+  nuevoCoordinador.persona = null
+  nuevoCoordinador.cargo = null
+}
+
+function eliminarCoordinador(index) {
+  form.coordinadores.splice(index, 1)
+}
+
+function getPersonaNombre(perId) {
+  const persona = personas.value.find(p => p.value === perId)
+  return persona ? persona.label : 'Desconocido'
+}
+
+function getCargoNombre(carId) {
+  const cargo = cargos.value.find(c => c.value === carId)
+  return cargo ? cargo.label : 'Desconocido'
 }
 </script>
 

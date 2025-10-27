@@ -2,7 +2,14 @@
   <aside class="sidebar">
     <nav class="sidebar-nav">
       
-      <div v-if="usuario.rol === 'Administradora Regional'">
+      <!-- Sin sesión iniciada: solo mostrar Formulario -->
+      <div v-if="!isLoggedIn">
+        <span class="nav-section-title">ACCESO PÚBLICO</span>
+        <router-link to="/inscripciones" class="nav-item">Formulario de Pre-inscripción</router-link>
+      </div>
+      
+      <!-- Con sesión: mostrar menú completo (por defecto admin) -->
+      <div v-else>
         <span class="nav-section-title">NAVEGACIÓN PRINCIPAL</span>
         
         <router-link to="/usuarios" class="nav-item">Usuarios y Roles</router-link>
@@ -11,25 +18,19 @@
         <router-link to="/gestionpersonas" class="nav-item">Gestión de Personas</router-link>
         <router-link to="/pagos" class="nav-item">Pagos</router-link>
         <router-link to="/correos" class="nav-item">Envío de Correos</router-link>
-        <div class="nav-item nav-collapsible" @click="toggleMantenedores">
-          <span>Mantenedores</span>
-          <span class="caret" :class="{ open: showMantenedores }">▾</span>
-        </div>
-        <div v-if="showMantenedores" class="submenu">
-          <router-link
-            v-for="t in mantenedoresTabs"
-            :key="t.id"
-            class="submenu-item"
-            :to="`/mantenedores/${t.id}`"
-          >
-            {{ t.label }}
-          </router-link>
-        </div>
+        <router-link to="/mantenedores" class="nav-item">Mantenedores</router-link>
         <router-link to="/manual-acreditacion" class="nav-item">Acreditación Manual</router-link>
-        <router-link to="/verificador-qr" class="nav-item">Verificador QR</router-link>
-      </div>
-      <div v-else>
-        <router-link to="/dashboard" class="nav-item">Inicio</router-link>
+        <router-link to="/verificador-qr" class="nav-item" v-if="usuario.rol === 'Administradora Regional'">Verificador QR</router-link>
+
+        <!-- Apartado desplegable: Pantallas 2 -->
+        <div class="nav-item nav-collapsible" @click="togglePantallas2">
+          <span>Pantallas 2</span>
+          <span class="caret" :class="{ open: showPantallas2 }">▾</span>
+        </div>
+        <div v-show="showPantallas2" class="submenu">
+          <router-link to="/dashboard-2" class="submenu-item">Dashboard 2</router-link>
+          <router-link to="/inscripciones-2" class="submenu-item">Formulario 2</router-link>
+        </div>
       </div>
     </nav>
   </aside>
@@ -38,12 +39,17 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import authService from '@/services/authService'
 
-// Se mantiene el rol para condicionar el menú
+// Se mantiene el rol para condicionar el menú (por defecto admin para pruebas)
 const usuario = ref({ nombre: 'Usuario Demo', rol: 'Administradora Regional' })
+
+// Verificar si hay sesión iniciada (reactivo)
+const isLoggedIn = ref(!!localStorage.getItem('token'))
 
 // Desplegable de Mantenedores
 const showMantenedores = ref(false)
+const showPantallas2 = ref(false)
 const mantenedoresTabs = [
   // Orden solicitado: región, provincia, comuna, zona, distrito, grupo
   { id: 'regiones', label: 'Regiones' },
@@ -68,14 +74,46 @@ function toggleMantenedores() {
   showMantenedores.value = !showMantenedores.value
 }
 
+function togglePantallas2() {
+  showPantallas2.value = !showPantallas2.value
+}
+
 onMounted(async () => {
-  // Aquí puedes cargar los datos del usuario desde tu servicio
-  // usuario.value = await usuarioService.obtenerUsuarioActual()
+  // Actualizar estado de login
+  isLoggedIn.value = !!localStorage.getItem('token')
+  
+  // Cargar información del usuario actual si está logueado
+  if (isLoggedIn.value) {
+    const currentUser = await authService.getCurrentUser()
+    usuario.value = {
+      nombre: currentUser.name,
+      rol: currentUser.role
+    }
+    console.log('Usuario cargado:', usuario.value) // Debug
+  }
+  
   const route = useRoute()
   // Abrir automáticamente si se navega a /mantenedores
   showMantenedores.value = route.path.startsWith('/mantenedores')
-  watch(() => route.path, (p) => {
+  // Abrir automáticamente Pantallas 2 si coincide la ruta
+  showPantallas2.value = route.path.startsWith('/dashboard-2') || route.path.startsWith('/inscripciones-2')
+  
+  // Watch para actualizar estado al cambiar de ruta
+  watch(() => route.path, async (p) => {
     showMantenedores.value = p.startsWith('/mantenedores')
+    showPantallas2.value = p.startsWith('/dashboard-2') || p.startsWith('/inscripciones-2')
+    
+    // Actualizar estado de autenticación al cambiar de ruta
+    isLoggedIn.value = !!localStorage.getItem('token')
+    
+    if (isLoggedIn.value) {
+      const currentUser = await authService.getCurrentUser()
+      usuario.value = {
+        nombre: currentUser.name,
+        rol: currentUser.role
+      }
+      console.log('Usuario actualizado:', usuario.value) // Debug
+    }
   })
 })
 </script>

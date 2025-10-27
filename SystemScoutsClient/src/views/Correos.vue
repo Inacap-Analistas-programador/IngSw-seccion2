@@ -133,6 +133,15 @@ const rows = ref([])
 const loading = ref(true)
 const error = ref(null)
 
+// Datos mock para presentación
+const MOCK_ROWS = [
+  { id: 1, nombre: 'Juan Pérez', email: 'juan.perez@scout.cl', curso: 'Curso Básico de Formación', cargo: 'Dirigente', estadoPago: 'Pagado', estadoCorreo: 'Enviado', diasPendiente: null, vigente: true },
+  { id: 2, nombre: 'María González', email: 'maria.gonzalez@scout.cl', curso: 'Técnicas de Campamento', cargo: 'Participante', estadoPago: 'Pendiente', estadoCorreo: 'Pendiente', diasPendiente: 5, vigente: true },
+  { id: 3, nombre: 'Pedro Silva', email: 'pedro.silva@scout.cl', curso: 'Liderazgo Scout', cargo: 'Coordinador', estadoPago: 'Pagado', estadoCorreo: 'Enviado', diasPendiente: null, vigente: true },
+  { id: 4, nombre: 'Ana Martínez', email: 'ana.martinez@scout.cl', curso: 'Curso Básico de Formación', cargo: 'Participante', estadoPago: 'Pendiente', estadoCorreo: 'Pendiente', diasPendiente: 3, vigente: true },
+  { id: 5, nombre: 'Carlos Rojas', email: 'carlos.rojas@scout.cl', curso: 'Primeros Auxilios Avanzado', cargo: 'Dirigente', estadoPago: 'Pagado', estadoCorreo: 'Enviado', diasPendiente: null, vigente: true }
+]
+
 const filters = reactive({ curso: 'Todos', cargo: 'Todos', estadoPago: 'Todos', estadoCorreo: 'Todos' })
 const seleccion = reactive({})
 const mostrarQR = ref(false)
@@ -156,8 +165,9 @@ onMounted(async () => {
 			vigente: p.vigente !== false
 		}))
 	} catch (e) {
-		console.error('Error cargando personas:', e)
-		error.value = `No se pudieron cargar las personas${e?.message ? `: ${e.message}` : ''}`
+		console.error('Error cargando personas, usando datos mock:', e)
+		error.value = null // No mostrar error en presentación
+		rows.value = MOCK_ROWS
 	} finally {
 		loading.value = false
 	}
@@ -415,20 +425,20 @@ async function enviarPorCorreo() {
 	font-weight: 600;
 	letter-spacing: 0.5px;
 	margin-right: 2px;
-	box-shadow: 0 1px 4px rgba(40,92,168,0.07);
+	box-shadow: 0 1px 4px rgba(0,0,0,0.1);
 }
 .badge-success {
-	background: var(--color-success);
+	background: var(--color-semaforo-green); /* Verde semáforo */
 	color: #fff;
 	border: 1px solid transparent;
 }
 .badge-warning {
-	background: var(--color-warning);
-	color: #111;
+	background: var(--color-semaforo-yellow); /* Amarillo/naranja semáforo */
+	color: #fff;
 	border: 1px solid transparent;
 }
 .badge-pending {
-	background: var(--color-danger);
+	background: var(--color-semaforo-red); /* Rojo semáforo */
 	color: #fff;
 	border: 1px solid transparent;
 }

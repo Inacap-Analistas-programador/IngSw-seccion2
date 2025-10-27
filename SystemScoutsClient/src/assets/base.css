@@ -44,6 +44,11 @@
   --color-danger: #dc2626;         /* Red */
   --color-surface: #ffffff;        /* Cards/containers */
 
+  /* Colores tipo semáforo (estandarizados en toda la app) */
+  --color-semaforo-green: #22c55e;  /* Verde - OK/Aprobado/Enviado */
+  --color-semaforo-yellow: #f59e0b; /* Amarillo - Advertencia/Pendiente */
+  --color-semaforo-red: #ef4444;    /* Rojo - Error/Rechazado/Lleno */
+
   /* Derived shades (hover/active) */
   --color-primary-hover: #1e3a8a;
   --color-secondary-hover: #475569;

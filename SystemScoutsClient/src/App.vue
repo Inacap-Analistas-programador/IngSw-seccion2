@@ -9,7 +9,11 @@ import SideBar from './components/Reutilizables/SideBar.vue';
 		<div class="app-layout">
 			<SideBar />
 			<main class="main-content">
-				<router-view />
+				<router-view v-slot="{ Component, route }">
+					<Transition :name="route.meta.transition || 'fade'" mode="out-in">
+						<component :is="Component" :key="route.path" />
+					</Transition>
+				</router-view>
 			</main>
 		</div>
 	</div>
@@ -44,8 +48,59 @@ body, html {
 	flex: 1;
 	margin-left: 250px; /* Ancho de la sidebar */
 	overflow-y: auto;
-	padding: 20px;
+	padding: 0; /* Eliminado el padding para que las vistas ocupen toda la pantalla */
 	background: #f5f5f5;
+	position: relative;
+}
+
+/* ====== Animaciones de transición entre vistas ====== */
+
+/* Fade básico (por defecto) */
+.fade-enter-active,
+.fade-leave-active {
+	transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.fade-enter-from {
+	opacity: 0;
+	transform: translateY(10px);
+}
+
+.fade-leave-to {
+	opacity: 0;
+	transform: translateY(-10px);
+}
+
+/* Slide desde la derecha */
+.slide-left-enter-active,
+.slide-left-leave-active {
+	transition: all 0.3s ease;
+}
+
+.slide-left-enter-from {
+	opacity: 0;
+	transform: translateX(30px);
+}
+
+.slide-left-leave-to {
+	opacity: 0;
+	transform: translateX(-30px);
+}
+
+/* Slide desde la izquierda */
+.slide-right-enter-active,
+.slide-right-leave-active {
+	transition: all 0.3s ease;
+}
+
+.slide-right-enter-from {
+	opacity: 0;
+	transform: translateX(-30px);
+}
+
+.slide-right-leave-to {
+	opacity: 0;
+	transform: translateX(30px);
 }
 
 /* Responsive: ocultar sidebar en móviles */
