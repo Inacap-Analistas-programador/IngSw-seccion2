@@ -906,7 +906,7 @@ input:focus, select:focus, textarea:focus {
 /* :::::::::::::::::::: CAMPO :::::::::::::::::::: */ 
 .campo { 
     width: 100%; 
-    transition: all 0.3s ease; 
+    transition: all 1s ease; 
 } 
 /* :::::::::::::::::::: BOTONES :::::::::::::::::::: */ 
   .botones-formulario {
