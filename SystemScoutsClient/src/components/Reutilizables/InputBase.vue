@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, useSlots } from 'vue'
 
 const props = defineProps({
     modelValue: [String, Number],
@@ -8,12 +8,16 @@ const props = defineProps({
     type: { type: String, default: "text" },
     rules: { type: String, default: "" }, // 'text'|'number'|'email'|'rut'
     required: { type: Boolean, default: false },
-    id: { type: String, default: "" }
+    id: { type: String, default: "" },
+    // Permite inyectar un error externo (ej: desde el formulario)
+    externalError: { type: String, default: "" }
 })
 
 const emit = defineEmits(["update:modelValue"])
 const error = ref("")
 const inputId = computed(() => props.id || `base-input-${Math.random().toString(36).slice(2,9)}`)
+const slots = useSlots()
+const hasAppend = computed(() => !!slots.append)
 
 function validarRut(rut) {
     if (!rut || !/^[0-9]+-[0-9kK]{1}$/.test(rut)) return false
@@ -44,16 +48,23 @@ function onInput(e) {
     <div class="base-input">
         <label v-if="label" :for="inputId" class="base-label">{{ label }}</label>
 
-        <input
-            :id="inputId"
-            :type="type"
-            :value="modelValue"
-            :placeholder="placeholder"
-            @input="onInput"
-            class="base-field"
-        />
+        <div class="input-wrapper" :class="{ 'has-append': hasAppend }">
+            <input
+                :id="inputId"
+                :type="type"
+                :value="modelValue"
+                :placeholder="placeholder"
+                @input="onInput"
+                class="base-field"
+                :aria-invalid="(externalError || error) ? 'true' : 'false'"
+            />
 
-        <span v-if="error" class="base-error">{{ error }}</span>    
+            <div v-if="hasAppend" class="input-append">
+                <slot name="append" />
+            </div>
+        </div>
+
+        <span v-if="externalError || error" class="base-error">{{ externalError || error }}</span>    
     </div>
 </template>
 
@@ -76,6 +87,10 @@ function onInput(e) {
     border-radius: 2px;
 }
 
+.input-wrapper { position: relative; }
+.input-wrapper.has-append .base-field { padding-right: 40px; }
+.input-append { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; }
+
 /* placeholder en mayúsculas y gris */
 .base-field::placeholder { text-transform: uppercase; color: #9b9b9b; }
 
@@ -83,5 +98,14 @@ function onInput(e) {
 .base-field:focus { outline: none; border-color: var(--color-primary); }
 
 /* mensaje de error bajo el input */
-.base-error { color: #c0392b; font-size: 12px; margin-top: 6px; display: block; }
+.base-error { color: #c0392b; font-size: 12px; margin-top: 4px; display: block; }
+
+/* estado de error: borde rojo y halo sutil */
+.base-field[aria-invalid="true"] {
+    border-color: #dc2626;
+}
+.base-field[aria-invalid="true"]:focus {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.1) inset;
+}
 </style>

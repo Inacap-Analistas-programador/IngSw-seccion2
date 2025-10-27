@@ -71,6 +71,13 @@
     <circle cx="12" cy="12" r="3"/>
   </svg>
 
+  <svg v-else-if="name === 'eye-off'" :width="size" :height="size" viewBox="0 0 24 24" fill="none" stroke="currentColor" :stroke-width="strokeWidth">
+    <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20C5 20 1 12 1 12a21.74 21.74 0 0 1 4.73-5.94"/>
+    <path d="M9.88 4.12A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a21.9 21.9 0 0 1-3.47 5.19"/>
+    <path d="M10.58 10.58a2 2 0 1 0 2.84 2.84"/>
+    <line x1="1" y1="1" x2="23" y2="23"/>
+  </svg>
+
   <svg v-else-if="name === 'filter'" :width="size" :height="size" viewBox="0 0 24 24" fill="none" stroke="currentColor" :stroke-width="strokeWidth">
     <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
   </svg>
