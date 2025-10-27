@@ -9,7 +9,7 @@
       <div class="card-body">
         <div class="title-row">
           <h4>Gestión de Cursos</h4>
-          <BaseButton class="btn-success" @click="mostrarFormulario = !mostrarFormulario">+ Nuevo Curso</BaseButton>
+          <BaseButton class="btn-success" @click="mostrarFormulario = !mostrarFormulario"><AppIcons name="plus" :size="16" /> Nuevo Curso</BaseButton>
         </div>
 
         <div class="filtros">
@@ -17,7 +17,7 @@
             <InputBase v-model="searchQuery" placeholder="Buscar por nombre o código..." @keydown.enter="filtrarCursos" />
           </div>
           <div class="filtros-right">
-            <BaseButton class="btn-search" variant="primary" @click="filtrarCursos">🔎 Buscar</BaseButton>
+            <BaseButton class="btn-search" variant="primary" @click="filtrarCursos"><AppIcons name="search" :size="16" /> Buscar</BaseButton>
           </div>
         </div>
 
@@ -47,12 +47,12 @@
                 </span>
               </td>
               <td class="actions-cell">
-                <BaseButton class="btn-info" small @click="gestionarParticipantes(c.CURS_ID)">Participantes</BaseButton>
-                <BaseButton class="btn-warning" small @click="editarCurso(i)">Editar</BaseButton>
+                <BaseButton class="btn-info" small @click="gestionarParticipantes(c.CURS_ID)"><AppIcons name="users" :size="14" /> Participantes</BaseButton>
+                <BaseButton class="btn-warning" small @click="editarCurso(i)"><AppIcons name="edit" :size="14" /> Editar</BaseButton>
                 <BaseButton class="btn-secondary" small @click="togglePreinscripcion(i)">
                   {{ c.habilitado ? 'Deshabilitar' : 'Habilitar' }}
                 </BaseButton>
-                <BaseButton class="btn-danger" small @click="eliminarCurso(i)">Eliminar</BaseButton>
+                <BaseButton class="btn-danger" small @click="eliminarCurso(i)"><AppIcons name="trash" :size="14" /> Eliminar</BaseButton>
               </td>
             </tr>
             <tr v-if="paginatedCursos.length === 0">
@@ -161,6 +161,7 @@ import BaseButton from '@/components/Reutilizables/BaseButton.vue'
 import BaseSelect from '@/components/Reutilizables/BaseSelect.vue'
 import cursosService from '@/services/cursosService.js'
 import personasService from '@/services/personasService.js'
+import AppIcons from '@/components/icons/AppIcons.vue'
 
 // Lista de cursos y personas
 const cursos = reactive([])
@@ -685,3 +686,4 @@ function gestionarParticipantes(id) {
   margin-top: 16px;
 }
 </style>
+

@@ -7,12 +7,12 @@
         :key="alert.id" 
         class="alert-toast"
       >
-        <div class="alert-toast-icon">⚠️</div>
+        <div class="alert-toast-icon"><AppIcons name="alert-circle" :size="20" /></div>
         <div class="alert-toast-content">
           <div class="alert-toast-title">{{ alert.title }}</div>
           <div class="alert-toast-message">{{ getAlertDescription(alert.type, alert.title) }}</div>
         </div>
-        <button class="alert-toast-close" @click="closeAlert(alert.id)">✕</button>
+        <button class="alert-toast-close" @click="closeAlert(alert.id)"><AppIcons name="x" :size="16" /></button>
       </div>
     </div>
 
@@ -44,11 +44,7 @@
             <!-- Indicadores críticos tipo semáforo -->
             <div class="semaforo-grid">
               <div :class="['semaforo-card', getSemaforoClass('inscritos')]" @click="goToGestionPersonas">
-                <svg class="semaforo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
-                  <circle cx="9" cy="7" r="4"/>
-                  <path d="M23 21v-2a4 4 0 00-3-3.87m-4-12a4 4 0 010 7.75"/>
-                </svg>
+                <AppIcons name="users" :size="32" class="semaforo-icon" />
                 <div class="semaforo-data">
                   <div class="semaforo-value">{{ kpi.totalInscritos }}</div>
                   <div class="semaforo-label">Pre inscritos totales</div>
@@ -57,10 +53,7 @@
               </div>
 
               <div :class="['semaforo-card', getSemaforoClass('cursos')]" @click="showCursosModal = !showCursosModal">
-                <svg class="semaforo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/>
-                  <path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/>
-                </svg>
+                <AppIcons name="book" :size="32" class="semaforo-icon" />
                 <div class="semaforo-data">
                   <div class="semaforo-value">{{ kpi.totalCursos }}</div>
                   <div class="semaforo-label">Cursos activos</div>
@@ -69,11 +62,7 @@
               </div>
 
               <div :class="['semaforo-card', getSemaforoClass('alertas')]" @click="showAlerts">
-                <svg class="semaforo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-                  <line x1="12" y1="9" x2="12" y2="13"/>
-                  <line x1="12" y1="17" x2="12.01" y2="17"/>
-                </svg>
+                <AppIcons name="alert-circle" :size="32" class="semaforo-icon" />
                 <div class="semaforo-data">
                   <div class="semaforo-value">{{ alerts.length }}</div>
                   <div class="semaforo-label">Alertas activas</div>
@@ -87,7 +76,7 @@
               <div class="modal-content" @click.stop>
                 <div class="modal-header">
                   <h3>Cursos Activos</h3>
-                  <button class="modal-close" @click="showCursosModal = false">✕</button>
+                  <button class="modal-close" @click="showCursosModal = false"><AppIcons name="x" :size="20" /></button>
                 </div>
                 <div class="modal-body">
                   <div class="cursos-list">
@@ -256,6 +245,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { request } from '@/services/apiClient'
 import personasService from '@/services/personasService.js'
+import AppIcons from '@/components/icons/AppIcons.vue'
 
 const router = useRouter()
 const activeTab = ref('resumen')
@@ -1726,3 +1716,4 @@ onMounted(() => {
   }
 }
 </style>
+

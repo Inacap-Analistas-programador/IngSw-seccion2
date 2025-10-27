@@ -36,24 +36,24 @@
   --section-gap: 160px;
 
   /* Design tokens: brand and semantic colors */
-  --color-primary: #214e9c;        /* Brand blue */
-  --color-secondary: #6b7280;      /* Neutral gray */
-  --color-success: #10b981;        /* Green */
+  --color-primary: #1e40af;        /* Brand blue */
+  --color-secondary: #64748b;      /* Neutral gray */
+  --color-success: #0ea5e9;        /* Green */
   --color-info: #3b82f6;           /* Blue */
-  --color-warning: #f59e0b;        /* Amber */
-  --color-danger: #ef4444;         /* Red */
+  --color-warning: #0284c7;        /* Amber */
+  --color-danger: #dc2626;         /* Red */
   --color-surface: #ffffff;        /* Cards/containers */
 
   /* Derived shades (hover/active) */
-  --color-primary-hover: #1a3e7d;
-  --color-secondary-hover: #575e66;
-  --color-success-hover: #0ea371;
+  --color-primary-hover: #1e3a8a;
+  --color-secondary-hover: #475569;
+  --color-success-hover: #0284c7;
   --color-info-hover: #2563eb;
-  --color-warning-hover: #d97706;
-  --color-danger-hover: #dc2626;
+  --color-warning-hover: #0369a1;
+  --color-danger-hover: #b91c1c;
 
   /* Focus ring */
-  --ring-color: rgba(33, 78, 156, 0.35);
+  --color-focus-ring: rgba(30, 64, 175, 0.35);
   --ring-color-weak: rgba(17, 24, 39, 0.12);
 
   /* Button defaults */
@@ -63,7 +63,7 @@
   --btn-shadow-hover: 0 8px 24px rgba(16, 24, 40, 0.14);
 }
 
-@media (prefers-color-scheme: dark) {
+@media (prefers-color-scheme: dark-disabled) {
   :root {
     --color-background: var(--vt-c-black);
     --color-background-soft: var(--vt-c-black-soft);

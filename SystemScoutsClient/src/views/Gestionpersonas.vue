@@ -11,8 +11,8 @@
         <BaseSelect v-model="selectedRama" :options="ramaOptions" placeholder="Todas las ramas" />
       </div>
       <div class="filtros-right">
-        <BaseButton class="btn-search" variant="primary" @click="filtrar">🔎 Buscar</BaseButton>
-        <BaseButton class="btn-export" variant="secondary" @click="exportarExcel">📊 Exportar</BaseButton>
+        <BaseButton class="btn-search" variant="primary" @click="filtrar"><AppIcons name="search" :size="16" /> Buscar</BaseButton>
+        <BaseButton class="btn-export" variant="secondary" @click="exportarExcel"><AppIcons name="download" :size="16" /> Exportar</BaseButton>
       </div>
     </div>
 
@@ -55,14 +55,14 @@
           </td>
           <td>
             <div class="acciones-buttons">
-              <BaseButton class="btn-ver btn-view" variant="info" @click="abrirModalVer(p)">Ver</BaseButton>
+              <BaseButton class="btn-ver btn-view" variant="info" @click="abrirModalVer(p)"><AppIcons name="eye" :size="14" /> Ver</BaseButton>
               <BaseButton 
                 v-if="esAdministrador" 
                 class="btn-editar btn-edit" 
                 variant="secondary" 
                 @click="abrirModalEditar(p)"
               >
-                Editar
+                <AppIcons name="edit" :size="14" /> Editar
               </BaseButton>
               <BaseButton 
                 v-if="esAdministrador" 
@@ -70,7 +70,7 @@
                 variant="warning" 
                 @click="anularPersona(p)"
               >
-                Anular
+                <AppIcons name="x" :size="14" /> Anular
               </BaseButton>
             </div>
           </td>
@@ -94,7 +94,7 @@
                 <header class="modal-header">
                   <h3>{{ modoSoloLectura ? 'Ver' : 'Editar' }} - {{ personaEditada?.nombre || '' }}</h3>
                   <div class="header-actions" v-if="!modoSoloLectura">
-                    <BaseButton class="btn-save" type="button" variant="primary" @click="guardarEdicion">💾 Guardar</BaseButton>
+                    <BaseButton class="btn-save" type="button" variant="primary" @click="guardarEdicion"><AppIcons name="check" :size="16" /> Guardar</BaseButton>
                   </div>
                 </header>
 
@@ -294,11 +294,12 @@ import BaseSelect from '@/components/Reutilizables/BaseSelect.vue'
 import BaseButton from '@/components/Reutilizables/BaseButton.vue'
 import BaseAlert from '@/components/Reutilizables/BaseAlert.vue'
 import BaseModal from '@/components/Reutilizables/BaseModal.vue'
+import AppIcons from '@/components/icons/AppIcons.vue'
 import personasService from '@/services/personasService.js'
 
 export default {
   name: 'GestionPersonas',
-  components: { InputBase, BaseSelect, BaseButton, BaseAlert, BaseModal },
+  components: { InputBase, BaseSelect, BaseButton, BaseAlert, BaseModal, AppIcons },
   data() {
     return {
       searchQuery: '',

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="mantenedores-scouts">
     <!-- Main Content (sidebar propia removida; se usa la barra lateral global) -->
       <div class="main-content">
@@ -50,9 +50,9 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('zona', zona)">👁 Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('zona', zona)">✏ Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('zona', zona)">🚫 Anular</button>
+                  <button class="btn-action btn-view" @click="verElemento('zona', zona)">Ver</button>
+                  <button class="btn-action btn-edit" @click="editarElemento('zona', zona)">Editar</button>
+                  <button class="btn-action btn-anular" @click="solicitarAnular('zona', zona)">Anular</button>
                 </td>
               </tr>
             </tbody>
@@ -112,9 +112,9 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('distrito', distrito)">👁 Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('distrito', distrito)">✏ Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('distrito', distrito)">🚫 Anular</button>
+                  <button class="btn-action btn-view" @click="verElemento('distrito', distrito)">Ver</button>
+                  <button class="btn-action btn-edit" @click="editarElemento('distrito', distrito)">Editar</button>
+                  <button class="btn-action btn-anular" @click="solicitarAnular('distrito', distrito)">Anular</button>
                 </td>
               </tr>
             </tbody>
@@ -174,9 +174,9 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('grupo', grupo)">👁 Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('grupo', grupo)">✏ Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('grupo', grupo)">🚫 Anular</button>
+                  <button class="btn-action btn-view" @click="verElemento('grupo', grupo)">Ver</button>
+                  <button class="btn-action btn-edit" @click="editarElemento('grupo', grupo)">Editar</button>
+                  <button class="btn-action btn-anular" @click="solicitarAnular('grupo', grupo)">Anular</button>
                 </td>
               </tr>
             </tbody>
@@ -218,9 +218,9 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('rama', rama)">👁 Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('rama', rama)">✏ Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('rama', rama)">🚫 Anular</button>
+                  <button class="btn-action btn-view" @click="verElemento('rama', rama)">Ver</button>
+                  <button class="btn-action btn-edit" @click="editarElemento('rama', rama)">Editar</button>
+                  <button class="btn-action btn-anular" @click="solicitarAnular('rama', rama)">Anular</button>
                 </td>
               </tr>
             </tbody>
@@ -266,9 +266,9 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('tipoCurso', tipoCurso)">👁 Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('tipoCurso', tipoCurso)">✏ Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('tipoCurso', tipoCurso)">🚫 Anular</button>
+                  <button class="btn-action btn-view" @click="verElemento('tipoCurso', tipoCurso)">Ver</button>
+                  <button class="btn-action btn-edit" @click="editarElemento('tipoCurso', tipoCurso)">Editar</button>
+                  <button class="btn-action btn-anular" @click="solicitarAnular('tipoCurso', tipoCurso)">Anular</button>
                 </td>
               </tr>
             </tbody>
@@ -310,9 +310,9 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('cargo', cargo)">👁 Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('cargo', cargo)">✏ Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('cargo', cargo)">🚫 Anular</button>
+                  <button class="btn-action btn-view" @click="verElemento('cargo', cargo)">Ver</button>
+                  <button class="btn-action btn-edit" @click="editarElemento('cargo', cargo)">Editar</button>
+                  <button class="btn-action btn-anular" @click="solicitarAnular('cargo', cargo)">Anular</button>
                 </td>
               </tr>
             </tbody>
@@ -356,9 +356,9 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('alimentacion', alimentacionItem)">👁 Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('alimentacion', alimentacionItem)">✏ Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('alimentacion', alimentacionItem)">🚫 Anular</button>
+                  <button class="btn-action btn-view" @click="verElemento('alimentacion', alimentacionItem)">Ver</button>
+                  <button class="btn-action btn-edit" @click="editarElemento('alimentacion', alimentacionItem)">Editar</button>
+                  <button class="btn-action btn-anular" @click="solicitarAnular('alimentacion', alimentacionItem)">Anular</button>
                 </td>
               </tr>
             </tbody>
@@ -389,7 +389,7 @@
             placeholder="Buscar comuna..."
             v-model="searchComunas"
           >
-          <button class="btn-primary">🔍 Buscar</button>
+          <button class="btn-primary">Buscar</button>
         </div>
         
         <div class="table-container">
@@ -412,9 +412,9 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('comuna', comuna)">👁 Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('comuna', comuna)">✏ Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('comuna', comuna)">🚫 Anular</button>
+                  <button class="btn-action btn-view" @click="verElemento('comuna', comuna)">Ver</button>
+                  <button class="btn-action btn-edit" @click="editarElemento('comuna', comuna)">Editar</button>
+                  <button class="btn-action btn-anular" @click="solicitarAnular('comuna', comuna)">Anular</button>
                 </td>
               </tr>
             </tbody>
@@ -458,9 +458,9 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('provincia', provincia)">👁 Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('provincia', provincia)">✏ Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('provincia', provincia)">🚫 Anular</button>
+                  <button class="btn-action btn-view" @click="verElemento('provincia', provincia)">Ver</button>
+                  <button class="btn-action btn-edit" @click="editarElemento('provincia', provincia)">Editar</button>
+                  <button class="btn-action btn-anular" @click="solicitarAnular('provincia', provincia)">Anular</button>
                 </td>
               </tr>
             </tbody>
@@ -502,9 +502,9 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('region', region)">👁 Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('region', region)">✏ Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('region', region)">🚫 Anular</button>
+                  <button class="btn-action btn-view" @click="verElemento('region', region)">Ver</button>
+                  <button class="btn-action btn-edit" @click="editarElemento('region', region)">Editar</button>
+                  <button class="btn-action btn-anular" @click="solicitarAnular('region', region)">Anular</button>
                 </td>
               </tr>
             </tbody>
@@ -546,9 +546,9 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('nivel', nivel)">👁 Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('nivel', nivel)">✏ Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('nivel', nivel)">🚫 Anular</button>
+                  <button class="btn-action btn-view" @click="verElemento('nivel', nivel)">Ver</button>
+                  <button class="btn-action btn-edit" @click="editarElemento('nivel', nivel)">Editar</button>
+                  <button class="btn-action btn-anular" @click="solicitarAnular('nivel', nivel)">Anular</button>
                 </td>
               </tr>
             </tbody>
@@ -590,9 +590,9 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('estadoCivil', estadoCivil)">👁 Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('estadoCivil', estadoCivil)">✏ Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('estadoCivil', estadoCivil)">🚫 Anular</button>
+                  <button class="btn-action btn-view" @click="verElemento('estadoCivil', estadoCivil)">Ver</button>
+                  <button class="btn-action btn-edit" @click="editarElemento('estadoCivil', estadoCivil)">Editar</button>
+                  <button class="btn-action btn-anular" @click="solicitarAnular('estadoCivil', estadoCivil)">Anular</button>
                 </td>
               </tr>
             </tbody>
@@ -634,9 +634,9 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('rol', rol)">👁 Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('rol', rol)">✏ Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('rol', rol)">🚫 Anular</button>
+                  <button class="btn-action btn-view" @click="verElemento('rol', rol)">Ver</button>
+                  <button class="btn-action btn-edit" @click="editarElemento('rol', rol)">Editar</button>
+                  <button class="btn-action btn-anular" @click="solicitarAnular('rol', rol)">Anular</button>
                 </td>
               </tr>
             </tbody>
@@ -680,9 +680,9 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('conceptoContable', concepto)">👁 Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('conceptoContable', concepto)">✏ Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('conceptoContable', concepto)">🚫 Anular</button>
+                  <button class="btn-action btn-view" @click="verElemento('conceptoContable', concepto)">Ver</button>
+                  <button class="btn-action btn-edit" @click="editarElemento('conceptoContable', concepto)">Editar</button>
+                  <button class="btn-action btn-anular" @click="solicitarAnular('conceptoContable', concepto)">Anular</button>
                 </td>
               </tr>
             </tbody>
@@ -726,9 +726,9 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('tipoArchivo', tipoArchivo)">👁 Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('tipoArchivo', tipoArchivo)">✏ Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('tipoArchivo', tipoArchivo)">🚫 Anular</button>
+                  <button class="btn-action btn-view" @click="verElemento('tipoArchivo', tipoArchivo)">Ver</button>
+                  <button class="btn-action btn-edit" @click="editarElemento('tipoArchivo', tipoArchivo)">Editar</button>
+                  <button class="btn-action btn-anular" @click="solicitarAnular('tipoArchivo', tipoArchivo)">Anular</button>
                 </td>
               </tr>
             </tbody>

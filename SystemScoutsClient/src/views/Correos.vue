@@ -47,9 +47,9 @@
 						<div class="correos-card-header">
 							<span class="correos-card-title blue-bar">Lista de Participantes</span>
 							<div class="correos-card-actions">
-								<BaseButton variant="primary" @click="exportarCorreos">Exportar Correos</BaseButton>
-								<BaseButton variant="success" @click="marcarEnviado">Marcar Enviado</BaseButton>
-								<BaseButton variant="warning" @click="enviarPorCorreo">Enviar por correo</BaseButton>
+								<BaseButton variant="secondary" @click="exportarCorreos"><AppIcons name="download" :size="16" /> Exportar Correos</BaseButton>
+								<BaseButton variant="primary" @click="marcarEnviado"><AppIcons name="check" :size="16" /> Marcar Enviado</BaseButton>
+								<BaseButton variant="primary" @click="enviarPorCorreo"><AppIcons name="send" :size="16" /> Enviar por correo</BaseButton>
 							</div>
 						</div>
 						<div class="correos-card-desc">
@@ -122,6 +122,7 @@
 <script setup>
 import { reactive, computed, ref, onMounted, nextTick } from 'vue'
 import BaseButton from '../components/Reutilizables/BaseButton.vue'
+import AppIcons from '@/components/icons/AppIcons.vue'
 import QRCode from 'qrcode'
 import personasService from '@/services/personasService.js'
 
@@ -502,3 +503,4 @@ input[type="checkbox"] {
 }
 .qr-actions { margin-top: 10px; display:flex; justify-content:center; }
 </style>
+
