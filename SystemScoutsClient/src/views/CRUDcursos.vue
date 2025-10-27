@@ -9,7 +9,7 @@
       <div class="card-body">
         <div class="title-row">
           <h4>Gestión de Cursos</h4>
-          <BaseButton class="btn-success" @click="mostrarFormulario = !mostrarFormulario"><AppIcons name="plus" :size="16" /> Nuevo Curso</BaseButton>
+          <BaseButton class="btn-success" @click="mostrarFormulario = !mostrarFormulario">+ Nuevo Curso</BaseButton>
         </div>
 
         <div class="filtros">
@@ -17,7 +17,7 @@
             <InputBase v-model="searchQuery" placeholder="Buscar por nombre o código..." @keydown.enter="filtrarCursos" />
           </div>
           <div class="filtros-right">
-            <BaseButton class="btn-search" variant="primary" @click="filtrarCursos"><AppIcons name="search" :size="16" /> Buscar</BaseButton>
+            <BaseButton class="btn-search" variant="primary" @click="filtrarCursos">🔎 Buscar</BaseButton>
           </div>
         </div>
 
@@ -47,12 +47,11 @@
                 </span>
               </td>
               <td class="actions-cell">
-                <BaseButton class="btn-info" small @click="gestionarParticipantes(c.CURS_ID)"><AppIcons name="users" :size="14" /> Participantes</BaseButton>
-                <BaseButton class="btn-warning" small @click="editarCurso(i)"><AppIcons name="edit" :size="14" /> Editar</BaseButton>
+                <BaseButton class="btn-info" small @click="gestionarParticipantes(c.CURS_ID)">Participantes</BaseButton>
+                <BaseButton class="btn-warning" small @click="editarCurso(i)">Editar</BaseButton>
                 <BaseButton class="btn-secondary" small @click="togglePreinscripcion(i)">
                   {{ c.habilitado ? 'Deshabilitar' : 'Habilitar' }}
                 </BaseButton>
-                <BaseButton class="btn-danger" small @click="eliminarCurso(i)"><AppIcons name="trash" :size="14" /> Eliminar</BaseButton>
               </td>
             </tr>
             <tr v-if="paginatedCursos.length === 0">
@@ -155,13 +154,13 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed, onMounted } from 'vue'
+import { reactive, ref } from 'vue'
 import InputBase from '@/components/Reutilizables/InputBase.vue'
 import BaseButton from '@/components/Reutilizables/BaseButton.vue'
+import BaseCheckBox from '@/components/Reutilizables/BaseCheckBox.vue'
 import BaseSelect from '@/components/Reutilizables/BaseSelect.vue'
 import cursosService from '@/services/cursosService.js'
 import personasService from '@/services/personasService.js'
-import AppIcons from '@/components/icons/AppIcons.vue'
 
 // Lista de cursos y personas
 const cursos = reactive([])
@@ -173,75 +172,56 @@ const form = reactive({
   codigo: '',
   fechaInicio: '',
   fechaFin: '',
-  responsable: null,
-  tipoCurso: null,
-  comuna: null,
-  modalidad: null,
-  coordinadores: []
+  responsable: null, // Cambiado a null para el select
+  jerarquias: []
 })
 
-// Opciones de selects (placeholder)
-const tiposCurso = ref([
-  { value: 1, label: 'Básico' },
-  { value: 2, label: 'Especialidad' },
-])
-const comunas = ref([
-  { value: 1, label: 'Comuna 1' },
-  { value: 2, label: 'Comuna 2' },
-])
-const modalidadOptions = ref([
-  { value: 1, label: 'Presencial' },
-  { value: 2, label: 'Mixta' },
-])
-const cargos = ref([
-  { value: 1, label: 'Coordinador' },
-  { value: 2, label: 'Asistente' },
-])
-
-// Jerarquías/coordinadores
-const nuevoCoordinador = reactive({ persona: null, cargo: null })
-function agregarCoordinador() {
-  if (!nuevoCoordinador.persona || !nuevoCoordinador.cargo) return
-  form.coordinadores.push({ PER_ID: nuevoCoordinador.persona, CAR_ID: nuevoCoordinador.cargo })
-  nuevoCoordinador.persona = null
-  nuevoCoordinador.cargo = null
-}
-function eliminarCoordinador(index) {
-  form.coordinadores.splice(index, 1)
-}
-function getPersonaNombre(id) {
-  const p = personas.value.find(x => x.value === id)
-  return p?.label || '-'
-}
-function getCargoNombre(id) {
-  const c = cargos.value.find(x => x.value === id)
-  return c?.label || '-'
-}
-
-// Filtros y paginación
+// Lógica de filtros
 const searchQuery = ref('')
-const currentPage = ref(1)
-const pageSize = ref(10)
-const cursosFiltrados = computed(() => {
-  const query = searchQuery.value.toLowerCase().trim()
-  if (!query) return cursos
-  return cursos.filter(c =>
-    (c.CUR_DESCRIPCION || '').toLowerCase().includes(query) ||
-    (c.CUR_CODIGO || '').toLowerCase().includes(query)
-  )
-})
-const totalPages = computed(() => Math.max(1, Math.ceil(cursosFiltrados.value.length / pageSize.value)))
-const paginatedCursos = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  return cursosFiltrados.value.slice(start, start + pageSize.value)
-})
-function goToPage(p) {
-  if (p < 1 || p > totalPages.value) return
-  currentPage.value = p
+const cursosFiltrados = ref([])
+
+async function cargarDatos() {
+  try {
+    const [cursosResponse, personasResponse] = await Promise.all([
+      cursosService.obtenerCursos(),
+      personasService.obtenerPersonas()
+    ]);
+    
+    cursos.splice(0, cursos.length, ...cursosResponse.map(c => ({
+      ...c,
+      // Mapear el nombre del responsable
+      responsableNombre: personasResponse.find(p => p.PER_ID === c.PER_ID_RESPONSABLE)?.PER_NOMBRES || 'No asignado'
+    })));
+    
+    personas.value = personasResponse.map(p => ({
+      value: p.PER_ID,
+      label: `${p.PER_NOMBRES} ${p.PER_APELPTA || ''}`.trim()
+    }));
+    
+    filtrarCursos();
+  } catch (error) {
+    console.error("Error al cargar datos:", error);
+    // Aquí podrías mostrar una notificación al usuario
+  }
 }
+
 function filtrarCursos() {
-  currentPage.value = 1
+  const query = searchQuery.value.toLowerCase().trim()
+  if (!query) {
+    cursosFiltrados.value = cursos
+    return
+  }
+  cursosFiltrados.value = cursos.filter(curso => {
+    return (
+      curso.nombre.toLowerCase().includes(query) ||
+      curso.codigo.toLowerCase().includes(query)
+    )
+  })
 }
+
+// Inicializar datos
+import { onMounted } from 'vue'
+onMounted(cargarDatos)
 
 // Control de visibilidad y modo
 const mostrarFormulario = ref(false)
@@ -254,54 +234,50 @@ async function guardarCurso() {
     alert('Por favor completa nombre, código y responsable')
     return
   }
+
+  const cursoData = {
+    CUR_DESCRIPCION: form.nombre,
+    CUR_CODIGO: form.codigo,
+    CUR_FECHA_SOLICITUD: new Date().toISOString().split('T')[0], // Fecha actual
+    PER_ID_RESPONSABLE: form.responsable,
+    // Añadir otros campos necesarios por el modelo de Django
+    TCU_ID: 1, // Ejemplo, esto debería venir de un select
+    CAR_ID_RESPONSABLE: 1, // Ejemplo
+    COM_ID_LUGAR: 1, // Ejemplo
+    CUR_ADMINISTRA: 1,
+    CUR_COTA_CON_ALMUERZO: 0,
+    CUR_COTA_SIN_ALMUERZO: 0,
+    CUR_MODALIDAD: 1,
+    CUR_TIPO_CURSO: 1,
+    CUR_LUGAR: 'Lugar de ejemplo',
+    CUR_ESTADO: 1,
+  };
+
   try {
-    if (modoEdicion.value && indiceEdicion.value >= 0) {
-      // Actualizar en servidor vía PATCH sólo los campos editados en el formulario.
-      const cursoActual = cursos[indiceEdicion.value]
-      const patch = {
-        CUR_DESCRIPCION: form.nombre,
-        CUR_CODIGO: form.codigo,
-        ...(form.responsable ? { PER_ID_RESPONSABLE: form.responsable } : {}),
-        ...(form.tipoCurso ? { CUR_TIPO_CURSO: form.tipoCurso } : {}),
-        ...(form.modalidad ? { CUR_MODALIDAD: form.modalidad } : {}),
-        ...(form.comuna ? { COM_ID_LUGAR: form.comuna } : {}),
-      }
-      await cursosService.actualizar(cursoActual.CURS_ID || cursoActual.id, patch)
-      // Refrescar lista
-      const data = await cursosService.listar()
-      cursos.splice(0, cursos.length, ...((data || []).map(c => ({
-        CURS_ID: c.id,
-        CUR_DESCRIPCION: c.nombre || c.codigo || 'Curso',
-        CUR_CODIGO: c.codigo || '-',
-        CUR_TIPO_CURSO: null,
-        fechaInicio: null,
-        fechaTermino: null,
-        responsableNombre: '-',
-        CUR_ESTADO: c.estado ?? 1,
-        habilitado: (c.estado === 1)
-      }))))
-      filtrarCursos()
-      limpiarFormulario()
+    if (modoEdicion.value) {
+      // Actualizar curso existente
+      const cursoId = cursos[indiceEdicion.value].CURS_ID;
+      await cursosService.actualizarCurso(cursoId, cursoData);
     } else {
-      // Creación en servidor: el modelo requiere muchos campos obligatorios.
-      // Mostramos aviso y evitamos desincronizar UI con backend.
-      alert('La creación de cursos en el servidor requiere campos adicionales (usuario, tipo, comuna, modalidad, administración, cuotas, lugar, etc.). Agrega esos campos al formulario para habilitar el POST.')
-      // TODO: cuando el formulario incluya todos los campos requeridos, enviar cursosService.crear(payload)
+      // Crear nuevo curso
+      await cursosService.agregarCurso(cursoData);
     }
-  } catch (e) {
-    console.error('Error guardando curso:', e)
-    alert('No se pudo guardar el curso. Revisa los datos e inténtalo nuevamente.')
+    await cargarDatos(); // Recargar datos para ver los cambios
+    limpiarFormulario();
+  } catch (error) {
+    console.error("Error al guardar el curso:", error);
+    alert("Hubo un error al guardar el curso. Revisa la consola para más detalles.");
   }
 }
 
 // Editar curso existente
 function editarCurso(index) {
   const curso = cursos[index]
-
+  
   // Llenar el formulario con los datos del curso a editar
-  form.nombre = curso.CUR_DESCRIPCION || ''
-  form.codigo = curso.CUR_CODIGO || ''
-
+  form.nombre = curso.CUR_DESCRIPCION
+  form.codigo = curso.CUR_CODIGO
+  
   // Formatear la fecha para el input type="date" (YYYY-MM-DD)
   if (curso.CUR_FECHA_SOLICITUD) {
     form.fechaInicio = new Date(curso.CUR_FECHA_SOLICITUD).toISOString().split('T')[0]
@@ -309,17 +285,15 @@ function editarCurso(index) {
     form.fechaInicio = ''
   }
   // Asumimos que no hay fecha de fin en el modelo principal, se deja en blanco
-  form.fechaFin = ''
-
-  form.responsable = curso.PER_ID_RESPONSABLE || null
-  form.coordinadores = [] // Este campo se puede desarrollar más adelante
+  form.fechaFin = '' 
+  
+  form.responsable = curso.PER_ID_RESPONSABLE
+  form.jerarquias = [] // Este campo se puede desarrollar más adelante
 
   modoEdicion.value = true
   indiceEdicion.value = index
   mostrarFormulario.value = true
-}
-
-// Toggle de preinscripción
+}// Toggle de preinscripción
 function togglePreinscripcion(index) {
   cursos[index].habilitado = !cursos[index].habilitado
 }
@@ -336,29 +310,10 @@ function limpiarFormulario() {
   form.fechaInicio = ''
   form.fechaFin = ''
   form.responsable = null
-  form.tipoCurso = null
-  form.comuna = null
-  form.modalidad = null
-  form.coordinadores = []
+  form.jerarquias = []
   mostrarFormulario.value = false
   modoEdicion.value = false
   indiceEdicion.value = -1
-}
-
-// Eliminar curso
-async function eliminarCurso(index) {
-  const curso = cursos[index]
-  if (!curso) return
-  const ok = confirm(`¿Eliminar el curso "${curso.CUR_DESCRIPCION || curso.CUR_CODIGO}"?`)
-  if (!ok) return
-  try {
-    await cursosService.eliminar(curso.CURS_ID || curso.id)
-    cursos.splice(index, 1)
-    filtrarCursos()
-  } catch (e) {
-    console.error('Error eliminando curso:', e)
-    alert('No se pudo eliminar el curso.')
-  }
 }
 
 // Formatear fechas
@@ -373,47 +328,6 @@ function formatDate(d) {
   const dt = new Date(d)
   return dt.toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })
 }
-
-// Cargar cursos desde API al montar
-onMounted(async () => {
-  try {
-    // Cargar cursos
-    const data = await cursosService.listar()
-    const mapped = (data || []).map(c => ({
-      CURS_ID: c.id,
-      CUR_DESCRIPCION: c.nombre || c.codigo || 'Curso',
-      CUR_CODIGO: c.codigo || '-',
-      CUR_TIPO_CURSO: null,
-      fechaInicio: null,
-      fechaTermino: null,
-      responsableNombre: '-',
-      CUR_ESTADO: c.estado ?? 1,
-      habilitado: (c.estado === 1)
-    }))
-    cursos.splice(0, cursos.length, ...mapped)
-
-    // Cargar personas para selects
-    const pers = await personasService.listarBasic()
-    personas.value = (pers || []).map(p => ({ value: p.id, label: p.nombre }))
-  } catch (e) {
-    console.warn('No se pudieron cargar cursos/personas desde API', e)
-  }
-})
-
-// Helpers de presentación
-function getTipoCursoText(t) {
-  const found = tiposCurso.value.find(x => x.value === (Number(t) || t))
-  return found?.label || '—'
-}
-function getEstadoInfo(estado) {
-  const st = Number(estado)
-  if (st === 1) return { class: 'badge-success', text: 'Vigente' }
-  if (st === 0) return { class: 'badge-secondary', text: 'Inactivo' }
-  return { class: 'badge-info', text: 'Desconocido' }
-}
-function gestionarParticipantes(id) {
-  console.log('Gestionar participantes para curso', id)
-}
 </script>
 
 <style scoped>
@@ -421,8 +335,8 @@ function gestionarParticipantes(id) {
   box-sizing: border-box;
   margin: 20px auto;
   padding: 16px 40px; 
-  background: var(--color-surface);
-  color: var(--color-text);
+  background: #ffffff;
+  color: #111;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -437,7 +351,7 @@ function gestionarParticipantes(id) {
 }
 
 .page-header {
-  background-color: var(--color-primary);
+  background-color: #214e9c;
   color: #fff;
   padding: 14px 18px;
   border-radius: 6px;
@@ -464,7 +378,7 @@ function gestionarParticipantes(id) {
 
 .title-row h4 {
   margin: 0;
-  color: var(--color-text);
+  color: #444;
   font-weight: 500;
 }
 
@@ -472,22 +386,22 @@ function gestionarParticipantes(id) {
   width: 100%;
   box-sizing: border-box;
   border-collapse: collapse;
-  background-color: var(--color-surface);
+  background-color: #fff;
   min-width: 0; 
   font-size: 14px;
 }
 
 .courses-table th, .courses-table td {
   padding: 14px 12px;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid #ececec;
   text-align: left;
-  color: var(--color-text); 
+  color: #222; 
   opacity: 1;
 }
 
 .courses-table th {
-  background-color: var(--color-background-mute);
-  color: var(--color-text);
+  background-color: #f7f7f7;
+  color: #222;
   font-weight: 600;
   position: sticky;
   top: 0;
@@ -548,16 +462,16 @@ function gestionarParticipantes(id) {
   gap: 16px;
   margin-top: 20px;
   padding: 10px;
-  background-color: var(--color-background-mute);
+  background-color: #f9fafb;
   border-radius: 8px;
 }
 
 .create-card {
-  background: var(--color-background-soft); 
+  background: #f2f5f9; 
   border-radius: 6px;
   padding: 18px 18px 16px 18px;
-  border: 1px solid var(--color-border);
-  color: var(--color-text);
+  border: 1px solid rgba(33,78,156,0.08);
+  color: #222;
   font-size: 15px;
   line-height: 1.4;
   margin-top: 16px;
@@ -565,7 +479,7 @@ function gestionarParticipantes(id) {
 
 .create-card h5 {
   margin: 0 0 10px 0;
-  color: var(--color-primary);
+  color:#1e3a8a;
   font-size: 20px;
   font-weight:700;
 }
@@ -585,20 +499,20 @@ function gestionarParticipantes(id) {
 .form-group label {
   margin-bottom: 4px;
   font-weight: 600;
-  color: var(--color-text);
+  color: #333;
 }
 
 .hierarchy-section {
   margin-top: 24px;
   padding-top: 16px;
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid #dde4ee;
 }
 
 .hierarchy-section > label {
   display: block;
   margin-bottom: 12px;
   font-weight: 600;
-  color: var(--color-text);
+  color: #333;
   font-size: 1.1em;
 }
 
@@ -625,19 +539,19 @@ function gestionarParticipantes(id) {
 
 .coordinador-table th, .coordinador-table td {
   padding: 8px 10px;
-  border: 1px solid var(--color-border);
+  border: 1px solid #dde4ee;
   text-align: left;
 }
 
 .coordinador-table th {
-  background-color: var(--color-background-mute);
+  background-color: #eef2f7;
 }
 
 .no-coordinadores {
   color: #6b7280;
   font-style: italic;
   padding: 10px;
-  background-color: var(--color-background-mute);
+  background-color: #f9fafb;
   border-radius: 4px;
   text-align: center;
 }
@@ -655,8 +569,8 @@ function gestionarParticipantes(id) {
 
 .participantes-modal h4 {
   margin-top: 0;
-  color: var(--color-primary);
-  border-bottom: 2px solid var(--color-primary);
+  color: #1e3a8a;
+  border-bottom: 2px solid #1e3a8a;
   padding-bottom: 10px;
   margin-bottom: 20px;
 }
@@ -674,16 +588,15 @@ function gestionarParticipantes(id) {
 
 .participantes-table th, .participantes-table td {
   padding: 10px;
-  border: 1px solid var(--color-border);
+  border: 1px solid #e5e7eb;
   text-align: left;
 }
 
 .participantes-table th {
-  background-color: var(--color-background-mute);
+  background-color: #f9fafb;
 }
 
 .hierarchy {
   margin-top: 16px;
 }
 </style>
-

@@ -1,57 +1,85 @@
-import { request } from './apiClient'
+const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:8000/api').replace(/\/$/, '')
 
-// Cursos endpoints per backend: /api/cursos/
-// Routers likely include: cursos, cuotas, fechas, secciones, etc.
+async function request(path, options = {}) {
+  const normPath = String(path).replace(/^\//, '')
+  const needsSlash = !/\?(.*)$/.test(normPath) && !normPath.endsWith('/')
+  const url = `${API_BASE}/${normPath}${needsSlash ? '/' : ''}`
 
-const BASE = 'cursos/cursos'
-const CUOTAS = 'cursos/curso-cuota' // Check exact router name; fallback to 'cursos/cuotas'
-
-function mapCurso(c) {
-  return {
-    id: c.CUR_ID || c.id,
-    codigo: c.CUR_CODIGO || '',
-    nombre: c.CUR_DESCRIPCION || '',
-    estado: c.CUR_ESTADO,
-    // Optional enrichments can be added by joining cuotas, fechas, etc.
-    raw: c
+  const isGet = !options.method || options.method.toUpperCase() === 'GET'
+  const headers = { ...(options.headers || {}) }
+  if (!isGet && !('Content-Type' in headers)) {
+    headers['Content-Type'] = 'application/json'
   }
+
+  const res = await fetch(url, {
+    headers,
+    ...options
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`${res.status} ${res.statusText}: ${text}`)
+  }
+  return res.status === 204 ? null : res.json()
 }
 
 export default {
-  async listar() {
-    const data = await request(BASE)
-    return Array.isArray(data) ? data.map(mapCurso) : []
+  async obtenerCursos() {
+    const data = await request('cursos/curso') // Asumiendo que el endpoint es /api/cursos/curso/
+    if (!Array.isArray(data)) return []
+    return data
   },
-  async obtener(id) {
-    const c = await request(`${BASE}/${id}`)
-    return mapCurso(c)
+
+  async agregarCurso(cursoData) {
+    return request('cursos/curso', { method: 'POST', body: JSON.stringify(cursoData) })
   },
-  async crear(payload) {
-    // Espera un payload con nombres de campos del backend (e.g., CUR_CODIGO, CUR_DESCRIPCION, etc.)
-    // Nota: La creación de Curso requiere múltiples campos obligatorios en el backend.
-    // Asegúrate de enviar todos los requeridos.
-    const res = await request(BASE, { method: 'POST', body: JSON.stringify(payload) })
-    return mapCurso(res)
+
+  async actualizarCurso(id, cursoData) {
+    return request(`cursos/curso/${id}`, { method: 'PUT', body: JSON.stringify(cursoData) })
   },
-  async actualizar(id, patch) {
-    // Usa PATCH para actualizar parcialmente campos como CUR_DESCRIPCION, CUR_CODIGO, etc.
-    const res = await request(`${BASE}/${id}`, { method: 'PATCH', body: JSON.stringify(patch) })
-    return mapCurso(res)
+
+  async eliminarCurso(id) {
+    return request(`cursos/curso/${id}`, { method: 'DELETE' })
   },
-  async eliminar(id) {
-    await request(`${BASE}/${id}`, { method: 'DELETE' })
-    return true
+
+  // --- Funciones para manejar las fechas del curso ---
+  async obtenerFechas() {
+    return request('cursos/fechas')
   },
-  async listarCuotas() {
-    // Try common paths
-    try {
-      return await request('cursos/curso_cuota')
-    } catch {
-      try {
-        return await request('cursos/cuotas')
-      } catch {
-        return []
-      }
+
+  async guardarFecha(fechaData) {
+    if (fechaData.CUF_ID) {
+      // Si tiene ID, es una actualización (PUT)
+      const { CUF_ID, ...data } = fechaData;
+      return request(`cursos/fechas/${CUF_ID}`, { method: 'PUT', body: JSON.stringify(data) });
+    } else {
+      // Si no tiene ID, es una creación (POST)
+      return request('cursos/fechas', { method: 'POST', body: JSON.stringify(fechaData) });
     }
+  },
+
+  // --- Funciones para manejar los coordinadores del curso ---
+  async obtenerCoordinadores() {
+    return request('cursos/coordinador');
+  },
+
+  async guardarCoordinador(coordinadorData) {
+    return request('cursos/coordinador', { method: 'POST', body: JSON.stringify(coordinadorData) });
+  },
+
+  async eliminarCoordinador(id) {
+    return request(`cursos/coordinador/${id}`, { method: 'DELETE' });
+  },
+
+  // --- Funciones para manejar las inscripciones (Persona_Curso) ---
+  async obtenerInscripciones() {
+    return request('personas/persona_curso');
+  },
+
+  async inscribirPersona(inscripcionData) {
+    return request('personas/persona_curso', { method: 'POST', body: JSON.stringify(inscripcionData) });
+  },
+
+  async eliminarInscripcion(id) {
+    return request(`personas/persona_curso/${id}`, { method: 'DELETE' });
   }
 }
