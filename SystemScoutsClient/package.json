@@ -12,6 +12,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "dotenv": "^17.2.3",
     "html5-qrcode": "^2.3.8",
     "leaflet": "^1.9.4",
     "qrcode": "^1.5.4",

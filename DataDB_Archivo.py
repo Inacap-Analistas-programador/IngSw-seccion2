@@ -1,19 +1,23 @@
 import mysql.connector
 from faker import Faker
 import random
-from datetime import datetime
+import os
+from dotenv import load_dotenv
+from datetime import datetime, timedelta
 
 fake = Faker('es_CL')
 
+load_dotenv()
+
 # ==== Configuración ====
-modulo = ""  # prefijo de tablas si aplica
-password_db = "27735378Hent@i"
+
+modulo = ""
 
 db = mysql.connector.connect(
-    host="127.0.0.1",
-    user="root",
-    password=password_db,
-    database="ssb"
+    host = os.getenv("HOST"),
+    user = os.getenv("USER"),
+    password = os.getenv("PASSWORD"),
+    database = os.getenv("DATABASE")
 )
 cursor = db.cursor(buffered=True)
 
