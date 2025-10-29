@@ -35,6 +35,8 @@ class Curso(models.Model):
     ]
     CUR_TIPO_CURSO = models.IntegerField(choices=CUR_TIPO_CURSO_OPTIONS, null=False, db_column='CUR_TIPO_CURSO')
     CUR_LUGAR = models.CharField(max_length=100, db_column='CUR_LUGAR')
+    CUR_COORD_LATITUD = models.CharField(max_length=50, null=True, db_column='CUR_COORD_LATITUD')
+    CUR_COORD_LONGITUD = models.CharField(max_length=50, null=True, db_column='CUR_COORD_LONGITUD')
     CUR_ESTADO_OPTIONS = [
         (0, 'Pendiente'),
         (1, 'Vigente'),

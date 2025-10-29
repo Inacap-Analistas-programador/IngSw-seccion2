@@ -20,7 +20,7 @@
         <router-link to="/correos" class="nav-item">Envío de Correos</router-link>
         <router-link to="/mantenedores" class="nav-item">Mantenedores</router-link>
         <router-link to="/manual-acreditacion" class="nav-item">Acreditación Manual</router-link>
-        <router-link to="/verificador-qr" class="nav-item" v-if="usuario.rol === 'Administradora Regional'">Verificador QR</router-link>
+        <router-link to="/verificador-qr" class="nav-item">Verificador QR</router-link>
 
         <!-- Apartado desplegable: Pantallas 2 -->
         <div class="nav-item nav-collapsible" @click="togglePantallas2">
