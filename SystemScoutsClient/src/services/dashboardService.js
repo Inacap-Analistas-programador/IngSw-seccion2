@@ -12,17 +12,24 @@ function parseIntSafe(v, def = 0) {
 export async function obtenerCursosResumen() {
   const cursos = await request('cursos/cursos')
   if (!Array.isArray(cursos)) return []
-  return cursos.map(c => ({
-    id: c.CURS_ID || c.CUR_ID || c.id || c.ID,
-    title: c.CUR_DESCRIPCION || c.CUR_CODIGO || c.CURS_ID || 'Curso',
-    inscritos: parseIntSafe(c._inscritos_count ?? c.INSCRITOS ?? 0, 0),
-    capacidad: parseIntSafe(
-      c.CUR_COTA_CON_ALMUERZO ?? c.CUR_COTA_SIN_ALMUERZO ?? c.CUR_CANT_PARTICIPANTE ?? c.CAPACIDAD ?? 0,
-      0
-    ),
-    valor: 0,
-    estado: 1, // normalizamos a 1 como solicitaste previamente
-  }))
+  
+  // Filtrar solo cursos vigentes (estado = 1)
+  return cursos
+    .filter(c => {
+      const estado = c.CUR_ESTADO || c.ESTADO || c.estado || null
+      return Number(estado) === 1
+    })
+    .map(c => ({
+      id: c.CURS_ID || c.CUR_ID || c.id || c.ID,
+      title: c.CUR_DESCRIPCION || c.CUR_CODIGO || c.CURS_ID || 'Curso',
+      inscritos: parseIntSafe(c._inscritos_count ?? c.INSCRITOS ?? 0, 0),
+      capacidad: parseIntSafe(
+        c.CUR_COTA_CON_ALMUERZO ?? c.CUR_COTA_SIN_ALMUERZO ?? c.CUR_CANT_PARTICIPANTE ?? c.CAPACIDAD ?? 0,
+        0
+      ),
+      valor: 0,
+      estado: 1,
+    }))
 }
 
 export async function obtenerCuotasPorCurso() {
