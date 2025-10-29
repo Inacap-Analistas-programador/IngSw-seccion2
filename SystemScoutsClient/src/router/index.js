@@ -28,7 +28,7 @@ const router = createRouter({
     { path: '/gestionpersonas', name: 'gestionpersonas', component: Gestionpersonas, meta: { requiresAuth: true } },
     { path: '/pagos', name: 'pagos', component: PagosView, meta: { requiresAuth: true } },
   { path: '/manual-acreditacion', name: 'manualacreditacion', component: ManualAcreditation, meta: { requiresAuth: true } },
-  { path: '/verificador-qr', name: 'verificadorqr', component: VerificadorQR, meta: { requiresAuth: true, requiresAdmin: true } },
+  { path: '/verificador-qr', name: 'verificadorqr', component: VerificadorQR, meta: { requiresAuth: true, requiresAuth: true } },
     { path: '/correos', name: 'correos', component: Correos, meta: { requiresAuth: true } },
     { path: '/cursos-capacitaciones', name: 'cursoscapacitaciones', component: CursosCapacitaciones, meta: { requiresAuth: true } },
     { path: '/inscripciones', name: 'formularioPreInscripcion', component: FormularioPreInscripcion },
