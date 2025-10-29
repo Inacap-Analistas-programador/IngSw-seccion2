@@ -243,9 +243,10 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { request } from '@/services/apiClient'
-import personasService from '@/services/personasService.js'
 import AppIcons from '@/components/icons/AppIcons.vue'
+import dashboardService from '@/services/dashboardService.js'
+
+// Sin datos mock: todo proviene del servicio/API
 
 const router = useRouter()
 const activeTab = ref('resumen')
@@ -257,16 +258,6 @@ const tabs = [
 
 const cursosList = ref([])
 const totalPersonas = ref(0)
-
-// Datos mock para presentación (fallback si falla backend)
-const MOCK_CURSOS = [
-  { id: 1, title: 'Curso Básico de Formación', inscritos: 28, capacidad: 30, valor: 25000, estado: 'Vigente' },
-  { id: 2, title: 'Técnicas de Campamento', inscritos: 15, capacidad: 25, valor: 30000, estado: 'Vigente' },
-  { id: 3, title: 'Liderazgo Scout', inscritos: 12, capacidad: 20, valor: 35000, estado: 'Vigente' },
-  { id: 4, title: 'Primeros Auxilios Avanzado', inscritos: 8, capacidad: 15, valor: 28000, estado: 'Vigente' },
-  { id: 5, title: 'Orientación y Navegación', inscritos: 5, capacidad: 20, valor: 22000, estado: 'Vigente' }
-]
-const MOCK_TOTAL_PERSONAS = 68
 
 const sortedCursos = computed(() =>
   [...cursosList.value].sort((a, b) => (a.title || '').localeCompare(b.title || '', 'es', { sensitivity: 'base' }))
@@ -452,7 +443,6 @@ function showAlerts() {
 }
 
 function getDirectivoCount(curso) {
-  // Simulado: en producción vendría de la API
   return directivosByCourse.value[curso.id] !== undefined ? directivosByCourse.value[curso.id] : 0
 }
 
@@ -491,52 +481,29 @@ function getPagoStatusLabel(curso) {
 
 onMounted(() => {
   ;(async () => {
-    // Cursos
     try {
-      const cursos = await request('cursos/cursos')
-      if (Array.isArray(cursos)) {
-        cursosList.value = cursos.map(c => ({
-          id: c.CURS_ID || c.CUR_ID || c.id || c.ID,
-          title: c.CUR_DESCRIPCION || c.CUR_CODIGO || c.CURS_ID || 'Curso',
-          inscritos: parseInt(c._inscritos_count || c.INSCRITOS || 0) || 0,
-          capacidad: parseInt(c.CUR_COTA_CON_ALMUERZO || c.CUR_COTA_SIN_ALMUERZO || c.CUR_CANT_PARTICIPANTE || c.CAPACIDAD || 0) || 0,
-          valor: 0,
-          estado: c.CUR_ESTADO || c.ESTADO || 'Vigente'
-        }))
-      }
+      const cursos = await dashboardService.obtenerCursosResumen()
+      cursosList.value = Array.isArray(cursos) ? cursos : []
     } catch (e) {
-      console.warn('Cursos no disponibles, usando datos mock:', e)
-      cursosList.value = MOCK_CURSOS
+      console.warn('Dashboard: error obteniendo cursos', e)
+      cursosList.value = []
     }
 
-    // Cuotas por curso (para valor referencial)
     try {
-      const cuotas = await request('cursos/cuotas')
-      if (Array.isArray(cuotas)) {
-        const byCourse = {}
-        cuotas.forEach(q => {
-          const curId = q.CUR_ID || q.curso_id || q.cur_id || null
-          if (!curId) return
-          const val = Number(q.CUU_VALOR || q.valor || 0)
-          const date = q.CUU_FECHA || ''
-          const prev = byCourse[curId]
-          if (!prev || val > prev.val || (date && prev.date && date > prev.date)) {
-            byCourse[curId] = { val, date }
-          }
-        })
-        cursosList.value = cursosList.value.map(c => ({ ...c, valor: byCourse[c.id]?.val || c.valor || 0 }))
+      const cuotasMap = await dashboardService.obtenerCuotasPorCurso()
+      if (cuotasMap && typeof cuotasMap === 'object') {
+        cursosList.value = cursosList.value.map(c => ({ ...c, valor: cuotasMap[c.id] ?? c.valor ?? 0 }))
       }
     } catch (e) {
-      console.warn('Cuotas no disponibles:', e)
+      console.warn('Dashboard: cuotas no disponibles', e)
     }
 
-    // Personas totales (para KPI de pre inscritos)
     try {
-      const personas = await personasService.listarBasic()
-      totalPersonas.value = Array.isArray(personas) ? personas.length : 0
+      const total = await dashboardService.getTotalPersonas()
+      totalPersonas.value = Number.isFinite(total) ? total : 0
     } catch (e) {
-      console.warn('Personas no disponibles, usando datos mock:', e)
-      totalPersonas.value = MOCK_TOTAL_PERSONAS
+      console.warn('Dashboard: personas no disponibles', e)
+      totalPersonas.value = 0
     }
   })()
 })
