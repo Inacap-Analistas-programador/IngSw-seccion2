@@ -20,6 +20,7 @@
         <router-link to="/correos" class="nav-item">Envío de Correos</router-link>
         <router-link to="/mantenedores" class="nav-item">Mantenedores</router-link>
         <router-link to="/manual-acreditacion" class="nav-item">Acreditación Manual</router-link>
+        <router-link to="/reportes" class="nav-item">Reportes Excel</router-link>
         <router-link to="/verificador-qr" class="nav-item">Verificador QR</router-link>
 
         <!-- Apartado desplegable: Pantallas 2 -->
@@ -84,35 +85,49 @@ onMounted(async () => {
   
   // Cargar información del usuario actual si está logueado
   if (isLoggedIn.value) {
-    const currentUser = await authService.getCurrentUser()
-    usuario.value = {
-      nombre: currentUser.name,
-      rol: currentUser.role
-    }
-    console.log('Usuario cargado:', usuario.value) // Debug
-  }
-  
-  const route = useRoute()
-  // Abrir automáticamente si se navega a /mantenedores
-  showMantenedores.value = route.path.startsWith('/mantenedores')
-  // Abrir automáticamente Pantallas 2 si coincide la ruta
-  showPantallas2.value = route.path.startsWith('/dashboard-2') || route.path.startsWith('/inscripciones-2')
-  
-  // Watch para actualizar estado al cambiar de ruta
-  watch(() => route.path, async (p) => {
-    showMantenedores.value = p.startsWith('/mantenedores')
-    showPantallas2.value = p.startsWith('/dashboard-2') || p.startsWith('/inscripciones-2')
-    
-    // Actualizar estado de autenticación al cambiar de ruta
-    isLoggedIn.value = !!localStorage.getItem('token')
-    
-    if (isLoggedIn.value) {
+    try {
       const currentUser = await authService.getCurrentUser()
       usuario.value = {
         nombre: currentUser.name,
         rol: currentUser.role
       }
-      console.log('Usuario actualizado:', usuario.value) // Debug
+      console.log('Usuario cargado:', usuario.value) // Debug
+    } catch (error) {
+      console.error('Error al cargar usuario:', error)
+      // Usar valores por defecto si falla
+      usuario.value = {
+        nombre: 'Usuario Demo',
+        rol: 'Administradora Regional'
+      }
+    }
+  }
+  
+  const route = useRoute()
+  // Abrir automáticamente si se navega a /mantenedores
+  if (route && route.path) {
+    showMantenedores.value = route.path.startsWith('/mantenedores')
+    showPantallas2.value = route.path.startsWith('/dashboard-2') || route.path.startsWith('/inscripciones-2')
+  }
+
+  // Watch para actualizar estado al cambiar de ruta
+  watch(() => route && route.path, async (p) => {
+    if (p) {
+      showMantenedores.value = p.startsWith('/mantenedores')
+      showPantallas2.value = p.startsWith('/dashboard-2') || p.startsWith('/inscripciones-2')
+    }
+    // Actualizar estado de autenticación al cambiar de ruta
+    isLoggedIn.value = !!localStorage.getItem('token')
+    if (isLoggedIn.value) {
+      try {
+        const currentUser = await authService.getCurrentUser()
+        usuario.value = {
+          nombre: currentUser.name,
+          rol: currentUser.role
+        }
+        console.log('Usuario actualizado:', usuario.value) // Debug
+      } catch (error) {
+        console.error('Error al actualizar usuario:', error)
+      }
     }
   })
 })
