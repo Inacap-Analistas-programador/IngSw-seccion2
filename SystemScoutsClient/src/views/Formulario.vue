@@ -1,7 +1,5 @@
 <template>
-  <div class="formulario">  
-  
-
+  <div class="formulario"> 
     <form>
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
@@ -10,6 +8,7 @@
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
 
   <!--::::::::::::::::::::::::::::::::::CURSO DE PARTICIPACIÓN::::::::::::::::::::::::::::::::::::::::-->
+  <section>
     <div class="seleccioneCurso"></div> <!-- Titulo Eleccion de Cursos-->
           <h2>Seleccione Curso</h2>
 
@@ -20,8 +19,10 @@
       <option value="primerosAuxilios">Curso de Primeros Auxilios en Campamento</option>
       <option value="gestionAmbiental">Curso de Gestión Ambiental Scout</option>
     </select>
+  </section>
 
-      <div class="datosPersonales"></div> <!-- titulo Datos Personales-->
+
+  <section>
           <h2>Datos Personales</h2>
   <!-- :::::::::::::::::: INPUTS BÁSICOS ::::::::::::::::::::::::: -->
         <InputBase v-model="nombre" label="Nombre Completo:" type="text" placeholder="nombre completo" />
@@ -50,6 +51,8 @@
     {{ region }}
   </option>
 </select>
+
+
 
 <!-- :::::::::::::::::: SELECTOR DE CIUDADES ::::::::::::::::::::::::: -->
 <transition name="desplegar">
@@ -112,11 +115,64 @@
           <option value="otra">Otra</option>
         </select>
 
+  <!-- ::::::::::::::::::::: FOTO (Selfie o Subida) ::::::::::::::::::::: -->
+<label for="foto">Sube o toma tu foto (selfie):</label>
+
+<!-- Input para subir archivo -->
+<input
+  type="file"
+  id="foto"
+  accept="image/png, image/jpeg"
+  :disabled="camaraActiva || fotoUrl"   
+  @change="procesarFoto"
+/>
+
+<!-- Vista previa -->
+<div v-if="fotoUrl" class="preview">
+  <img :src="fotoUrl" alt="Vista previa de la foto" />
+</div>
+
+<!-- Botones -->
+<div class="botones-foto">
+  <button
+    type="button"
+    class="btn-capturar"
+    @click="abrirCamara"
+    :disabled="fotoSubida || fotoUrl"     
+  >
+    📷 Tomar foto ahora
+  </button>
+
+  <button
+    v-if="fotoUrl"
+    type="button"
+    class="btn-eliminar"
+    @click="eliminarFoto"
+  >
+    🗑️ Eliminar foto
+  </button>
+</div>
+
+<!-- Contenedor de cámara -->
+<div v-if="mostrarCamara" class="camara-container">
+  <video ref="video" autoplay></video>
+  <button type="button" class="btn-foto" @click="capturarFoto">Capturar</button>
+  <canvas ref="canvas" style="display: none;"></canvas>
+</div>
+
+</section>
+
+
+
+
+
+
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
   <!--:::::::::::::::::::::::::              Datos Scout            ::::::::::::::::::::::::::::::::::-->
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+  <section>
     <div class="datosScout"></div> <!-- titulo Datos Scout-->
           <h2>Datos Scout</h2>
   <!-- :::::::::::::::::: INPUT APODO CREDENCIAL ::::::::::::::::::::::::: -->
@@ -356,11 +412,14 @@
                         </div>
                       </transition>
 
+  </section>
+
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
   <!--:::::::::::::::::::::::::            Salud y Logistica        ::::::::::::::::::::::::::::::::::-->
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+  <section>
       <div class="saludLogistica"></div> <!-- Salud y Logistica-->
           <h2>Salud y Logistica</h2>
   <!--::::::::::::::::::: INPUT DE ALERGIAS/ENFERMEDADES ::::::::::::::::::::::::: -->
@@ -467,12 +526,14 @@
                   />
                 </div>
               </transition>
+  </section>
 
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
   <!--:::::::::::::::::::::::::          Informacion Adicional      ::::::::::::::::::::::::::::::::::-->
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+  <section>
       <div class="informacionAdicional"></div> <!-- Titulo Informacion Adicional-->
           <h2>Informacion Adicional</h2>
   <!-- :::::::::::::::::: INPUT TEXT AREA DE CONSIDERACIONES ::::::::::::::::::::::::: -->
@@ -532,6 +593,8 @@
         <option value="no">No</option>
       </select>
 
+  </section>
+
   <!--:::::::::::::::::::::: BOTONES DE ACCIÓN ::::::::::::::::::::::::::::::::::-->
         <div class="botones-formulario">
           <button type="button" class="btn-vaciar" @click="limpiarFormulario">VACIAR</button>
@@ -541,15 +604,29 @@
 
     </form>
   </div>
+  <!--:::::::::::::::::::::: BOTON FLOTANTE ::::::::::::::::::::::::::::::::::-->
+  <button class="btn-volver" @click="volverArriba">↑</button>
+
 </template>
 
-
+  <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+  <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+  <!--::::::::::::::::::::::::::::::::        SCRIPST  JS    :::::::::::::::::::::::::::::::::::::::::-->
+  <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+  <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
 
 <script setup>
+// :::::::::::::::::: IMPORTS Y WEAS :::::::::::::::::::::::::
 import { ref, computed } from 'vue';
 import InputBase from '@/components/Reutilizables/InputBase.vue';
 
-
+// :::::::::::::::::: LOGICA BOTON FLOTANTE :::::::::::::::::::::::::
+const volverArriba = () => {
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+};
 
 
 // :::::::::::::::::: VARIABLES PARA CAPTURAR VALORES :::::::::::::::::::::::::
@@ -604,6 +681,7 @@ const ciudadSeleccionada = ref("");
 const comunaSeleccionada = ref("");
 
 //:::::::::::::::::::::::::::::FUNCION LIMPIAR FORMULARIO (BOTON):::::::::::::::::::::::::::::::::::::::::::::::
+
 function limpiarFormulario() {
   nombre.value = "";
   rut.value = "";
@@ -615,7 +693,6 @@ function limpiarFormulario() {
   edad.value = null;
   religion.value = "";
   consideraciones.value = "";
-  necesitaAlojamiento.value = "";
   profesion.value = "";
   apodoCredencial.value = "";
   tieneAlergiaEnfermedad.value = "";
@@ -665,6 +742,77 @@ function validarPatentePropia() {
       .toUpperCase()
       .replace(/[^A-Z0-9-]/g, ""); // limpia caracteres no válidos
   }
+}
+
+const fotoUrl = ref(null)
+const mostrarCamara = ref(false)
+const video = ref(null)
+const canvas = ref(null)
+const camaraActiva = ref(false)
+const fotoSubida = ref(false)
+const fotoFinal = ref(null)
+
+let stream = null
+
+function procesarFoto(event) {
+  const file = event.target.files[0]
+  if (file && (file.type === 'image/jpeg' || file.type === 'image/png')) {
+    if (file.size <= 50 * 1024 * 1024) {
+      fotoUrl.value = URL.createObjectURL(file)
+      fotoSubida.value = true
+      fotoFinal.value = file
+    } else {
+      alert('La imagen excede el tamaño máximo de 50MB.')
+    }
+  } else {
+    alert('Solo se permiten imágenes en formato JPG o PNG.')
+  }
+}
+
+async function abrirCamara() {
+  try {
+    mostrarCamara.value = true
+    camaraActiva.value = true
+    stream = await navigator.mediaDevices.getUserMedia({ video: true })
+    video.value.srcObject = stream
+  } catch (error) {
+    alert('No se pudo acceder a la cámara. Verifica permisos o hardware disponible.')
+  }
+}
+
+function capturarFoto() {
+  const context = canvas.value.getContext('2d')
+  canvas.value.width = video.value.videoWidth
+  canvas.value.height = video.value.videoHeight
+  context.drawImage(video.value, 0, 0, canvas.value.width, canvas.value.height)
+
+  const dataUrl = canvas.value.toDataURL('image/png')
+  fotoUrl.value = dataUrl
+  fotoFinal.value = dataUrl
+  cerrarCamara()
+}
+
+function cerrarCamara() {
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop())
+  }
+  mostrarCamara.value = false
+  camaraActiva.value = false
+}
+
+// ✅ Nueva función: eliminar la foto actual
+function eliminarFoto() {
+  fotoUrl.value = null
+  fotoFinal.value = null
+  fotoSubida.value = false
+  camaraActiva.value = false
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop())
+  }
+  mostrarCamara.value = false
+  // Limpia el input file por si el usuario subió un archivo
+  const input = document.getElementById('foto')
+  if (input) input.value = ''
 }
 
 
@@ -778,10 +926,107 @@ const comunasDisponibles = computed(() => {
 </script>
 
 
-
+  <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+  <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+  <!--::::::::::::::::::::::::::::::::        STYLES CSS     :::::::::::::::::::::::::::::::::::::::::-->
+  <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+  <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
 
 <style scoped>
 * { font-family: "Calibri", sans-serif; } 
+
+  /* Estilos para el botón flotante que en template tiene la clase `btn-volver` */
+  .btn-volver {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    background: linear-gradient(135deg, #8e04e9);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 55px;
+    height: 55px;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(21, 101, 192, 0.4);
+    transition: all 0.3s ease;
+    z-index: 9999;
+  }
+
+  .btn-volver:hover {
+    background: linear-gradient(135deg, #1e88e5, #42a5f5);
+    transform: translateY(-4px);
+    box-shadow: 0 6px 14px rgba(30, 136, 229, 0.5);
+  }
+
+
+.preview img {
+  width: 180px;       /* Ancho fijo */
+  height: 180px;      /* Alto fijo */
+  object-fit: cover;  /* Recorta y centra la imagen sin deformarla */
+  border-radius: 10px;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.2);
+  margin-top: 10px;
+}
+
+.botones-foto {
+  display: flex;
+  gap: 10px; /* separa los botones */
+  margin-top: 10px;
+}
+
+.btn-capturar, .btn-eliminar {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-capturar {
+  background-color: #007bff;
+  color: white;
+}
+
+.btn-eliminar {
+  background-color: #dc3545;
+  color: white;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-foto {
+  background: linear-gradient(135deg, #2196f3, #1e88e5);
+  color: white;
+  font-weight: 600;
+  font-size: 16px;
+  padding: 12px 25px;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(30, 136, 229, 0.4);
+  margin-top: 10px;
+}
+
+.btn-foto:hover {
+  background: linear-gradient(135deg, #42a5f5, #1976d2);
+  box-shadow: 0 6px 12px rgba(25, 118, 210, 0.45);
+  transform: translateY(-2px);
+}
+
+.btn-foto:active {
+  transform: scale(0.97);
+  box-shadow: 0 3px 8px rgba(25, 118, 210, 0.3);
+}
+
+.btn-foto::before {
+  content: "📸 ";
+}
 
 .formulario { 
     display: flex; 
@@ -789,8 +1034,7 @@ const comunasDisponibles = computed(() => {
     justify-content: center; /* Centra verticalmente */ 
     align-items: center; /* Centra horizontalmente */ 
     min-height: 100vh; /* Ocupa todo el alto de la ventana */ 
-    background: linear-gradient(135deg, #1e3a8a, #2563eb, #3b82f6); /* Gradiente azul más intenso */
-    padding: 40px 20px; /* Padding para dar espacio en móvil */
+    background: linear-gradient(135deg, #4a90e2, #cfe2f3); 
 } 
 
 textarea { 
@@ -809,7 +1053,15 @@ h2 {
     border-bottom: 2px solid #428ce1; 
     padding-bottom: 6px; 
 } 
-    
+
+section {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  border: #7d787834 1px solid;
+}
+
 .formulario :deep(input), .formulario :deep(select), .formulario :deep(textarea) { 
     padding: 5px 5px; 
     border: 1px solid #ccc; 
@@ -838,9 +1090,9 @@ form {
     flex-direction: column; 
     gap: 10px; 
     width: 100%; 
-    max-width: 600px; /* Ancho ampliado del formulario */ 
+    max-width: 400px; /* Controla el ancho del formulario */ 
     background: rgb(255, 255, 255); /* Opcional: fondo blanco */ 
-    padding: 50px; 
+    padding: 70px; 
     border-radius: 10px; 
     box-shadow: 0 0 10px rgba(34, 24, 232, 0.1); 
     border: 2px solid #1135a1; /* Borde azul claro */ 
@@ -906,17 +1158,11 @@ input:focus, select:focus, textarea:focus {
 /* :::::::::::::::::::: CAMPO :::::::::::::::::::: */ 
 .campo { 
     width: 100%; 
-    transition: all 1s ease; 
+    transition: all 0.3s ease; 
 } 
 /* :::::::::::::::::::: BOTONES :::::::::::::::::::: */ 
-  .botones-formulario {
-    display: flex;
-    justify-content: center;
-    gap: 20px; /* Espacio entre botones */
-    margin-top: 20px;
-  }
-
   .btn-enviar {
+  margin-top: 20px;
   display: inline-block;
   justify-content: center;
   align-items: center;
@@ -961,6 +1207,8 @@ input:focus, select:focus, textarea:focus {
   }
 /*:::::::::::::::::::::::::::::::::::::::::::::::::::::::*/
   .btn-vaciar {
+  margin-right: 40px;
+  margin-top: 20px;
   display: inline-block;
   justify-content: center;
   align-items: center;
