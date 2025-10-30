@@ -1,157 +1,290 @@
 <template>
-  <div class="crud-cursos container">
-    <!-- Encabezado principal de la página -->
+  <div class="gestion-personas"> <!-- Clase principal consistente -->
     <header class="page-header">
       <h3>Gestión de Cursos</h3>
     </header>
 
-    <section class="card cursos-card">
-      <div class="card-body">
-        <div class="title-row">
-          <h4>Gestión de Cursos</h4>
-          <BaseButton class="btn-success" @click="mostrarFormulario = !mostrarFormulario">+ Nuevo Curso</BaseButton>
-        </div>
+    <div class="filtros"> <!-- Estructura de filtros consistente -->
+      <div class="filtros-left">
+        <InputBase v-model="searchQuery" placeholder="Buscar por nombre o código..." />
+      </div>
+      <div class="filtros-right">
+        <BaseButton @click="abrirModalCrear" class="btn-success">+ Nuevo Curso</BaseButton>
+      </div>
+    </div>
 
-        <div class="filtros">
-          <div class="filtros-left">
-            <InputBase v-model="searchQuery" placeholder="Buscar por nombre o código..." @keydown.enter="filtrarCursos" />
-          </div>
-          <div class="filtros-right">
-            <BaseButton class="btn-search" variant="primary" @click="filtrarCursos">🔎 Buscar</BaseButton>
-          </div>
-        </div>
-
-        <!-- Tabla de cursos -->
-        <table class="courses-table">
+    <div class="main-area">
+      <div class="table-wrapper">
+        <table class="table-cursos">
           <thead>
             <tr>
               <th>Nombre del Curso</th>
               <th>Código</th>
               <th>Tipo</th>
-              <th>Fechas del Curso</th>
+              <th>Fechas</th>
               <th>Responsable</th>
               <th>Estado</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(c, i) in paginatedCursos" :key="c.CURS_ID">
-              <td>{{ c.CUR_DESCRIPCION }}</td>
-              <td>{{ c.CUR_CODIGO }}</td>
-              <td>{{ getTipoCursoText(c.CUR_TIPO_CURSO) }}</td>
-              <td>{{ formatDates(c.fechaInicio, c.fechaTermino) }}</td>
-              <td>{{ c.responsableNombre }}</td>
+            <tr v-if="isLoading">
+              <td colspan="7" class="text-center">Cargando...</td>
+            </tr>
+            <tr v-else-if="cursosPaginados.length === 0">
+              <td colspan="7" class="text-center">No se encontraron cursos.</td>
+            </tr>
+            <tr v-for="curso in cursosPaginados" :key="curso.CUR_ID">
+              <td>{{ curso.CUR_DESCRIPCION }}</td>
+              <td>{{ curso.CUR_CODIGO }}</td>
+              <td>{{ getTipoCurso(curso.CUR_TIPO_CURSO)?.TIP_CUR_DESCRIPCION || 'N/A' }}</td>
+              <td>{{ formatearFechas(curso.CUR_FECHA_INICIO, curso.CUR_FECHA_TERMINO) }}</td>
+              <td>{{ getPersona(curso.PER_ID_RESPONSABLE)?.PER_NOMBRE || 'N/A' }}</td>
               <td>
-                <span :class="['badge', getEstadoInfo(c.CUR_ESTADO).class]">
-                  {{ getEstadoInfo(c.CUR_ESTADO).text }}
-                </span>
+                <span :class="['badge', getEstadoClass(curso.CUR_ESTADO)]">{{ getEstadoTexto(curso.CUR_ESTADO) }}</span>
               </td>
               <td class="actions-cell">
-                <BaseButton class="btn-info" small @click="gestionarParticipantes(c.CURS_ID)">Participantes</BaseButton>
-                <BaseButton class="btn-warning" small @click="editarCurso(i)">Editar</BaseButton>
-                <BaseButton class="btn-secondary" small @click="togglePreinscripcion(i)">
-                  {{ c.habilitado ? 'Deshabilitar' : 'Habilitar' }}
-                </BaseButton>
+                <BaseButton @click="abrirModalEditar(curso)" class="btn-warning" small>Editar</BaseButton>
+                <BaseButton @click="confirmarEliminacion(curso.CUR_ID)" class="btn-danger" small>Eliminar</BaseButton>
               </td>
-            </tr>
-            <tr v-if="paginatedCursos.length === 0">
-              <td colspan="7" class="no-results">No se encontraron cursos.</td>
             </tr>
           </tbody>
         </table>
+      </div>
+    </div>
 
-        <!-- Paginación -->
-        <div class="pagination" v-if="totalPages > 1">
-          <BaseButton @click="goToPage(currentPage - 1)" :disabled="currentPage === 1">Anterior</BaseButton>
-          <span>Página {{ currentPage }} de {{ totalPages }}</span>
-          <BaseButton @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages">Siguiente</BaseButton>
-        </div>
+    <div class="pagination-controls" v-if="totalPages > 1">
+      <BaseButton @click="cambiarPagina(currentPage - 1)" :disabled="currentPage === 1">Anterior</BaseButton>
+      <span>Página {{ currentPage }} de {{ totalPages }}</span>
+      <BaseButton @click="cambiarPagina(currentPage + 1)" :disabled="currentPage === totalPages">Siguiente</BaseButton>
+    </div>
 
-
-        <!-- Formulario de creación/edición -->
-        <div class="create-card" v-if="mostrarFormulario">
-          <h5>{{ modoEdicion ? 'Editar Curso' : 'Crear Nuevo Curso' }}</h5>
+    <BaseModal v-model="mostrarModal">
+      <div class="modal-contenido">
+        <h3>{{ esEdicion ? 'Editar Curso' : 'Crear Nuevo Curso' }}</h3>
+        <form @submit.prevent="guardarCurso" class="form-curso">
           <div class="form-grid">
             <div class="form-group">
               <label>Nombre del Curso:</label>
-              <InputBase type="text" placeholder="Ej: Formación de Dirigentes" v-model="form.nombre" />
+              <InputBase v-model="form.CUR_DESCRIPCION" required />
             </div>
             <div class="form-group">
               <label>Código:</label>
-              <InputBase type="text" placeholder="Ej: FD-001" v-model="form.codigo" />
+              <InputBase v-model="form.CUR_CODIGO" required />
             </div>
             <div class="form-group">
               <label>Fecha Inicio:</label>
-              <InputBase type="date" v-model="form.fechaInicio" />
+              <InputBase type="date" v-model="form.CUR_FECHA_INICIO" required />
             </div>
             <div class="form-group">
               <label>Fecha Fin:</label>
-              <InputBase type="date" v-model="form.fechaFin" />
+              <InputBase type="date" v-model="form.CUR_FECHA_TERMINO" required />
             </div>
             <div class="form-group">
               <label>Responsable:</label>
-              <BaseSelect v-model="form.responsable" :options="personas" placeholder="Seleccione un responsable" />
+              <BaseSelect v-model="form.PER_ID_RESPONSABLE" :options="personasOptions" required />
             </div>
             <div class="form-group">
               <label>Tipo de Curso:</label>
-              <BaseSelect v-model="form.tipoCurso" :options="tiposCurso" placeholder="Seleccione un tipo" />
+              <BaseSelect v-model="form.CUR_TIPO_CURSO" :options="tiposCursoOptions" required />
             </div>
-            <div class="form-group">
-              <label>Comuna (Lugar):</label>
-              <BaseSelect v-model="form.comuna" :options="comunas" placeholder="Seleccione una comuna" />
-            </div>
-            <div class="form-group">
-              <label>Modalidad:</label>
-              <BaseSelect v-model="form.modalidad" :options="modalidadOptions" placeholder="Seleccione modalidad" />
+             <div class="form-group">
+              <label>Estado:</label>
+              <BaseSelect v-model="form.CUR_ESTADO" :options="estadosOptions" required />
             </div>
           </div>
-
-          <div class="form-group">
-            <label>Responsable:</label>
-            <BaseSelect v-model="form.responsable" :options="personas" placeholder="Selecciona un responsable" />
+          <div class="form-actions">
+            <BaseButton @click="cerrarModal" type="button" class="btn-secondary">Cancelar</BaseButton>
+            <BaseButton type="submit" class="btn-primary">{{ esEdicion ? 'Actualizar' : 'Guardar' }}</BaseButton>
           </div>
-
-          <div class="hierarchy-section">
-            <label>Equipo del Curso (Jerarquías):</label>
-            <div class="coordinador-form">
-              <BaseSelect v-model="nuevoCoordinador.persona" :options="personas" placeholder="Seleccionar Persona" class="select-persona" />
-              <BaseSelect v-model="nuevoCoordinador.cargo" :options="cargos" placeholder="Seleccionar Cargo" class="select-cargo" />
-              <BaseButton @click="agregarCoordinador" class="btn-success">Añadir al Equipo</BaseButton>
-            </div>
-            
-            <table class="coordinador-table" v-if="form.coordinadores.length > 0">
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Cargo</th>
-                  <th>Acción</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(coord, index) in form.coordinadores" :key="index">
-                  <td>{{ getPersonaNombre(coord.PER_ID) }}</td>
-                  <td>{{ getCargoNombre(coord.CAR_ID) }}</td>
-                  <td>
-                    <BaseButton @click="eliminarCoordinador(index)" class="btn-danger" small>Eliminar</BaseButton>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            <p v-else class="no-coordinadores">Aún no se han añadido miembros al equipo.</p>
-          </div>
-
-
-          <div class="actions-row">
-            <BaseButton class="btn-primary" @click="guardarCurso">
-              {{ modoEdicion ? 'Actualizar' : 'Crear Curso' }}
-            </BaseButton>
-            <BaseButton class="btn-secondary" @click="cancelarFormulario">Cancelar</BaseButton>
-          </div>
-        </div>
+        </form>
       </div>
-    </section>
+    </BaseModal>
   </div>
 </template>
+
+<script setup>
+import { ref, onMounted, computed, reactive } from 'vue';
+import gestioncursosService from '@/services/gestioncursosService';
+import personasService from '@/services/personasService';
+import BaseButton from '@/components/Reutilizables/BaseButton.vue';
+import BaseModal from '@/components/Reutilizables/BaseModal.vue';
+import InputBase from '@/components/Reutilizables/InputBase.vue';
+import BaseSelect from '@/components/Reutilizables/BaseSelect.vue';
+
+const cursos = ref([]);
+const personas = ref([]);
+const tiposCurso = ref([
+  { TIP_CUR_ID: 1, TIP_CUR_DESCRIPCION: 'Formación Inicial' },
+  { TIP_CUR_ID: 2, TIP_CUR_DESCRIPCION: 'Formación Avanzada' },
+  { TIP_CUR_ID: 3, TIP_CUR_DESCRIPCION: 'Especialización' },
+]);
+const isLoading = ref(true);
+const mostrarModal = ref(false);
+const esEdicion = ref(false);
+const searchQuery = ref('');
+const currentPage = ref(1);
+const itemsPerPage = 10;
+
+const form = reactive({
+  CUR_ID: null,
+  CUR_DESCRIPCION: '',
+  CUR_CODIGO: '',
+  CUR_FECHA_INICIO: '',
+  CUR_FECHA_TERMINO: '',
+  PER_ID_RESPONSABLE: null,
+  CUR_TIPO_CURSO: null,
+  CUR_ESTADO: 'P',
+});
+
+const estadosOptions = [
+    { value: 'P', label: 'Planificado' },
+    { value: 'E', label: 'En Curso' },
+    { value: 'F', label: 'Finalizado' },
+    { value: 'C', label: 'Cancelado' },
+];
+
+const cargarDatos = async () => {
+  try {
+    isLoading.value = true;
+    const [cursosRes, personasRes] = await Promise.all([
+      cursosService.getCursos(),
+      personasService.getPersonas(),
+    ]);
+    cursos.value = cursosRes.data;
+    personas.value = personasRes.data;
+  } catch (error) {
+    console.error('Error al cargar datos:', error);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+onMounted(cargarDatos);
+
+const cursosFiltrados = computed(() => {
+  if (!searchQuery.value) {
+    return cursos.value;
+  }
+  return cursos.value.filter(c =>
+    c.CUR_DESCRIPCION.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+    c.CUR_CODIGO.toLowerCase().includes(searchQuery.value.toLowerCase())
+  );
+});
+
+const totalPages = computed(() => Math.ceil(cursosFiltrados.value.length / itemsPerPage));
+const cursosPaginados = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  return cursosFiltrados.value.slice(start, end);
+});
+
+const cambiarPagina = (page) => {
+  if (page > 0 && page <= totalPages.value) {
+    currentPage.value = page;
+  }
+};
+
+const personasOptions = computed(() =>
+  personas.value.map(p => ({ value: p.PER_ID, label: `${p.PER_NOMBRE} ${p.PER_APELLIDO_PATERNO}` }))
+);
+
+const tiposCursoOptions = computed(() =>
+  tiposCurso.value.map(t => ({ value: t.TIP_CUR_ID, label: t.TIP_CUR_DESCRIPCION }))
+);
+
+const getPersona = (id) => personas.value.find(p => p.PER_ID === id);
+const getTipoCurso = (id) => tiposCurso.value.find(t => t.TIP_CUR_ID === id);
+
+const resetForm = () => {
+  Object.assign(form, {
+    CUR_ID: null,
+    CUR_DESCRIPCION: '',
+    CUR_CODIGO: '',
+    CUR_FECHA_INICIO: '',
+    CUR_FECHA_TERMINO: '',
+    PER_ID_RESPONSABLE: null,
+    CUR_TIPO_CURSO: null,
+    CUR_ESTADO: 'P',
+  });
+};
+
+const abrirModalCrear = () => {
+  esEdicion.value = false;
+  resetForm();
+  mostrarModal.value = true;
+};
+
+const abrirModalEditar = (curso) => {
+  esEdicion.value = true;
+  Object.assign(form, {
+    CUR_ID: curso.CUR_ID,
+    CUR_DESCRIPCION: curso.CUR_DESCRIPCION,
+    CUR_CODIGO: curso.CUR_CODIGO,
+    CUR_FECHA_INICIO: curso.CUR_FECHA_INICIO.split('T')[0],
+    CUR_FECHA_TERMINO: curso.CUR_FECHA_TERMINO.split('T')[0],
+    PER_ID_RESPONSABLE: curso.PER_ID_RESPONSABLE,
+    CUR_TIPO_CURSO: curso.CUR_TIPO_CURSO,
+    CUR_ESTADO: curso.CUR_ESTADO,
+  });
+  mostrarModal.value = true;
+};
+
+const cerrarModal = () => {
+  mostrarModal.value = false;
+};
+
+const guardarCurso = async () => {
+  try {
+    if (esEdicion.value) {
+      await cursosService.updateCurso(form.CUR_ID, form);
+    } else {
+      await cursosService.createCurso(form);
+    }
+    cerrarModal();
+    await cargarDatos();
+  } catch (error) {
+    console.error('Error al guardar el curso:', error);
+  }
+};
+
+const confirmarEliminacion = async (id) => {
+  if (window.confirm('¿Estás seguro de que deseas eliminar este curso?')) {
+    try {
+      await cursosService.deleteCurso(id);
+      await cargarDatos();
+      alert('Curso eliminado con éxito.');
+    } catch (error) {
+      console.error('Error al eliminar el curso:', error);
+      alert('Error al eliminar el curso.');
+    }
+  }
+};
+
+const formatearFechas = (inicio, fin) => {
+  const options = { year: 'numeric', month: 'short', day: 'numeric' };
+  const fechaInicio = new Date(inicio).toLocaleDateString('es-CL', options);
+  const fechaFin = new Date(fin).toLocaleDateString('es-CL', options);
+  return `${fechaInicio} - ${fechaFin}`;
+};
+
+const getEstadoTexto = (estado) => {
+    const estadoMap = { P: 'Planificado', E: 'En Curso', F: 'Finalizado', C: 'Cancelado' };
+    return estadoMap[estado] || 'Desconocido';
+};
+
+const getEstadoClass = (estado) => {
+    const classMap = { P: 'badge-info', E: 'badge-success', F: 'badge-secondary', C: 'badge-danger' };
+    return classMap[estado] || 'badge-dark';
+};
+</script>
+
+<style scoped>
+/* Estilos eliminados para heredar los globales y mantener consistencia */
+</style>
+
+
+
 
 <script setup>
 import { reactive, ref, computed, onMounted } from 'vue'
