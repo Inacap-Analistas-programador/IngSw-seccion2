@@ -123,7 +123,7 @@ import BaseButton from '@/components/Reutilizables/BaseButton.vue'
 import BaseAlert from '@/components/Reutilizables/BaseAlert.vue'
 import NotificationToast from '@/components/Reutilizables/NotificationToast.vue'
 import AppIcons from '@/components/icons/AppIcons.vue'
-import acreditacionService from '@/services/acreditacionService.js'
+// No usamos servicios remotos: datos locales para visualización sin API
 
 export default {
   name: 'ManualAcreditation',
@@ -139,6 +139,12 @@ export default {
     return {
       searchTerm: '',
       selectedParticipant: null,
+      // Datos de ejemplo locales para mostrar la pantalla sin consumir la API
+      participants: [
+        { per_id: 1, name: 'Juan Pérez González', rut: '12.345.678-9', currentCourse: 'Formación Inicial', paymentStatus: 'Confirmado', paymentConfirmed: true, accreditationStatus: 'Pendiente' },
+        { per_id: 2, name: 'María García Silva', rut: '11.222.333-4', currentCourse: 'Primeros Auxilios', paymentStatus: 'Pendiente', paymentConfirmed: false, accreditationStatus: 'Pendiente' },
+        { per_id: 3, name: 'Carlos Rodríguez', rut: '10.111.222-3', currentCourse: 'Liderazgo', paymentStatus: 'Confirmado', paymentConfirmed: true, accreditationStatus: 'Acreditado' }
+      ],
       acreditationSuccess: false,
       isMobile: window.innerWidth <= 768,
       paymentSuccess: false,
@@ -202,43 +208,38 @@ export default {
     },
 
     handleSearch() {
-      const term = this.searchTerm.trim()
+      const term = this.searchTerm.trim().toLowerCase()
       if (!term) { this.selectedParticipant = null; return }
-      acreditacionService.buscar(term)
-        .then((p) => {
-          if (!p) {
-            this.selectedParticipant = null
-            this.acreditationSuccess = false
-            this.paymentSuccess = false
-          } else {
-            this.selectedParticipant = p
-          }
-        })
-        .catch((e) => {
-          console.error('Error buscando participante:', e)
-          this.selectedParticipant = null
-        })
+
+      // Buscar en datos locales (por RUT exacto o por nombre parcial)
+      const found = this.participants.find(p => {
+        return (p.rut && p.rut.toLowerCase() === term) || (p.name && p.name.toLowerCase().includes(term))
+      })
+
+      if (!found) {
+        this.selectedParticipant = null
+        this.acreditationSuccess = false
+        this.paymentSuccess = false
+      } else {
+        // Clonar para edición local
+        this.selectedParticipant = Object.assign({}, found)
+      }
     },
 
     acreditarParticipante() {
       if (!this.canAcredit || !this.selectedParticipant) return
-      const { rut, per_id } = this.selectedParticipant
-      acreditacionService.acreditar({ rut, per_id })
-        .then((ok) => {
-          if (ok) {
-            this.selectedParticipant.acreditationStatus = 'Acreditado'
-            const msg = `${this.selectedParticipant.name} acreditado correctamente`
-            this.acreditationSuccessMessage = msg
-            this.acreditationSuccess = true
-            setTimeout(() => {
-              this.acreditationSuccess = false
-              this.acreditationSuccessMessage = ''
-            }, 3500)
-          } else {
-            console.warn('No se pudo acreditar (respuesta no ok)')
-          }
-        })
-        .catch((e) => console.error('Error acreditando:', e))
+
+      // Simular acreditación local (no API)
+      this.selectedParticipant.acreditationStatus = 'Acreditado'
+      this.selectedParticipant.paymentConfirmed = true
+      this.selectedParticipant.paymentStatus = 'Confirmado'
+      const msg = `${this.selectedParticipant.name} acreditado correctamente`
+      this.acreditationSuccessMessage = msg
+      this.acreditationSuccess = true
+      setTimeout(() => {
+        this.acreditationSuccess = false
+        this.acreditationSuccessMessage = ''
+      }, 3500)
     },
 
     handlePagar() {

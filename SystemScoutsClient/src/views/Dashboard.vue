@@ -231,7 +231,8 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import AppIcons from '@/components/icons/AppIcons.vue'
-import dashboardService from '@/services/dashboardService.js'
+import { cursos as cursosApi, cuotas as cuotasApi } from '@/services/cursosService.js'
+import { personas as personasApi } from '@/services/personasService.js'
 
 // Sin datos mock: todo proviene del servicio/API
 
@@ -409,25 +410,48 @@ function getPagoStatusLabel(curso) {
 
 onMounted(() => {
   ;(async () => {
+    // Obtener cursos desde el servicio de cursos
     try {
-      const cursos = await dashboardService.obtenerCursosResumen()
-      cursosList.value = Array.isArray(cursos) ? cursos : []
+      const rawCursos = await cursosApi.list()
+      let cursosArr = []
+      if (Array.isArray(rawCursos)) cursosArr = rawCursos
+      else if (rawCursos && Array.isArray(rawCursos.results)) cursosArr = rawCursos.results
+      else if (rawCursos && Array.isArray(rawCursos.data)) cursosArr = rawCursos.data
+      cursosList.value = cursosArr.map(c => ({
+        id: c.id ?? c.CUS_ID ?? c.pk ?? null,
+        title: c.title || c.nombre || c.CUS_NOMBRE || c.name || '',
+        inscritos: Number(c.inscritos ?? c.inscritos_total ?? c.inscripciones ?? 0),
+        capacidad: Number(c.capacidad ?? c.CUS_CAPACIDAD ?? c.capacity ?? 0),
+        valor: Number(c.valor ?? c.valor_cuota ?? c.price ?? 0)
+      }))
     } catch (e) {
       console.warn('Dashboard: error obteniendo cursos', e)
       cursosList.value = []
     }
 
+    // Obtener cuotas por curso (si existe endpoint 'cuotas') y mapear valores
     try {
-      const cuotasMap = await dashboardService.obtenerCuotasPorCurso()
-      if (cuotasMap && typeof cuotasMap === 'object') {
+      const rawCuotas = await cuotasApi.list()
+      const cuotasArr = Array.isArray(rawCuotas) ? rawCuotas : (rawCuotas && Array.isArray(rawCuotas.results) ? rawCuotas.results : [])
+      const cuotasMap = {}
+      cuotasArr.forEach(q => {
+        const cid = q.curso || q.CUS_ID || q.curso_id || q.id || q.pk
+        const val = Number(q.valor ?? q.monto ?? q.price ?? q.amount ?? 0)
+        if (cid != null) cuotasMap[cid] = val
+      })
+      if (Object.keys(cuotasMap).length) {
         cursosList.value = cursosList.value.map(c => ({ ...c, valor: cuotasMap[c.id] ?? c.valor ?? 0 }))
       }
     } catch (e) {
       console.warn('Dashboard: cuotas no disponibles', e)
     }
 
+    // Obtener total de personas
     try {
-      const total = await dashboardService.getTotalPersonas()
+      const rawPersonas = await personasApi.list()
+      let total = 0
+      if (Array.isArray(rawPersonas)) total = rawPersonas.length
+      else if (rawPersonas && typeof rawPersonas === 'object') total = rawPersonas.count ?? (Array.isArray(rawPersonas.results) ? rawPersonas.results.length : 0)
       totalPersonas.value = Number.isFinite(total) ? total : 0
     } catch (e) {
       console.warn('Dashboard: personas no disponibles', e)

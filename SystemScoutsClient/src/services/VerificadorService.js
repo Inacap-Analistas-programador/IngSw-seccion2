@@ -1,5 +1,5 @@
-import { ref, onMounted, onUnmounted } from 'vue' // Hooks de Vue para reactividad y ciclo de vida
-import { Html5QrcodeScanner, Html5QrcodeScanType } from 'html5-qrcode'  
+import { ref } from 'vue' // solo usamos refs dentro del factory
+import { Html5QrcodeScanner, Html5QrcodeScanType } from 'html5-qrcode'
 import { request } from './apiClient'
 // La librería principal para escanear código QR y ScanType para limitar tipos de escaneo
 
@@ -43,21 +43,12 @@ export async function ObtenerDatos(rut, curso) {
     }
 }
 
-// Simula el tiempo de respuesta de una API por 2 segundos
+// Constantes de temporización
 const TIEMPO_VERIFICACION = 2000
-// Tiempo que el resultado (verde/rojo) permanece en pantalla 5 segundos
 const TIEMPO_MOSTRAR_RESULTADO = 5000
 
-// El texto principal que ve el usuario (Esperando..., Verificando...etc.)
-const resultadoTexto = ref('Esperando escaneo...')
-// Muestra el último ID que fue escaneado.
-const idEscaneado = ref('Ninguno')
-// Controla el color del cuadro de resultado (se asigna a 'verde' o 'rojo' en el CSS).
-const resultadoClase = ref('')
-// Referencia al <div id="lector"> en el template. Vue lo conectará al HTML.
-const lectorRef = ref(null)
-// Variable para guardar la instancia del escáner y poder usarla en todas las funciones.
-let QR_Scanner = null
+// NOTA: Este archivo expone utilidades y una fábrica createVerifier().
+// La fábrica devuelve refs y métodos para controlar el lector desde un componente.
 
 function verificarUsuarioEnAPI(id) {
   // Retorna una promesa para simular el tiempo de espera (asincronía)
@@ -79,66 +70,14 @@ function verificarUsuarioEnAPI(id) {
 }
 
 async function Acreditacion(verificar) {
-
-  // Pone la UI en estado de "Cargando"
-  resultadoClase.value = '' // Limpia el color (verde/rojo) anterior
-  resultadoTexto.value = '🔄 Verificando ID...' // Muestra mensaje de carga
-  idEscaneado.value = verificar // Muestra el ID que se está procesando
-
-  try {
-    // Llama a la API simulada y espera (await) su respuesta
-    const resultadoVerificacion = await verificarUsuarioEnAPI(verificar)
-
-    // Procesa la respuesta de la "API"
-    if (resultadoVerificacion.verificado) {
-      // Éxito: ID Acreditado
-      resultadoClase.value = 'verde'
-      resultadoTexto.value = `✅ ACREDITADO: ${resultadoVerificacion.nombre}`
-    } else {
-      // Falla: ID No Acreditado
-      resultadoClase.value = 'rojo'
-      resultadoTexto.value = `❌ NO ACREDITADO: ${resultadoVerificacion.nombre}`
-    }
-  } catch (error) {
-    // Manejo de errores (si la promesa falla, ej: error de red)
-    console.error('Error durante la verificación:', error)
-    resultadoClase.value = 'rojo'
-    resultadoTexto.value = '⚠️ ERROR DE CONEXIÓN CON EL SERVIDOR'
-  }
-
-  // Limpia la pantalla después de mostrar el resultado
-  // Se ejecuta después de TIEMPO_MOSTRAR_RESULTADO (5 segundos)
-  setTimeout(() => {
-    resultadoTexto.value = 'Esperando escaneo...'
-    resultadoClase.value = ''
-    idEscaneado.value = 'Ninguno'
-  }, TIEMPO_MOSTRAR_RESULTADO)
+  // kept for backwards compatibility but not used by factory directly
+  // This function is left to not break existing imports; prefer createVerifier().
+  return verificarUsuarioEnAPI(verificar)
 }
 
 async function EscaneoExitoso(text) {
-  // Pausa el escáner y Evita que escanee el mismo QR 10 veces mientras se verifica.
-  if (QR_Scanner) {
-    try {
-      await QR_Scanner.pause()
-    } catch (e) {
-      console.warn('Error al pausar el escáner:', e)
-    }
-  }
-
-  // Inicia el proceso de acreditación con el texto del QR
-  await Acreditacion(text)
-
-  // Reanuda el escáner después de mostrar el resultado
-  // Espera 6 segundos del resultado para evitar posibles errores 
-  setTimeout(() => {
-    if (QR_Scanner) {
-      try {
-        QR_Scanner.resume() // Vuelve a encender el lector
-      } catch (e) {
-        console.warn('Error al reanudar el escáner:', e)
-      }
-    }
-  }, TIEMPO_MOSTRAR_RESULTADO + 1000) // 5000ms + 1000ms = 6 segundos
+  // kept for backwards compatibility; prefer EscaneoExitosoLocal returned by factory
+  return Acreditacion(text)
 }
 
 // Función para que el tamaño del QrBox se adapte automáticamente
@@ -151,31 +90,100 @@ const calcularQrBox = (tamañoAncho, tamañoLargo) => {
     height: qrboxSize
   }
 }
+// Factory que crea una instancia controlable del verificador.
+export function createVerifier(options = {}) {
+  // options: { lectorRef, elementId }
+  const lectorRef = options.lectorRef || null
 
-onMounted(() => {
-  if (lectorRef.value) {
+  const resultadoTexto = ref('Esperando escaneo...')
+  const idEscaneado = ref('Ninguno')
+  const resultadoClase = ref('')
+
+  let QR_Scanner = null
+
+  async function verificarUsuarioEnAPISim(id) {
+    // simula verificación (usa la misma lógica que verificarUsuarioEnAPI)
+    return new Promise(resolve => {
+      setTimeout(() => {
+        const idLimpio = id.trim()
+        const acreditado = (typeof ID_Prueba !== 'undefined') ? ID_Prueba.includes(idLimpio) : false
+        resolve({ id: idLimpio, verificado: acreditado, nombre: acreditado ? 'Usuario Acreditado' : 'Usuario Desconocido' })
+      }, TIEMPO_VERIFICACION)
+    })
+  }
+
+  async function AcreditacionLocal(verificar) {
+    resultadoClase.value = ''
+    resultadoTexto.value = '🔄 Verificando ID...'
+    idEscaneado.value = verificar
+
+    try {
+      const resultadoVerificacion = await verificarUsuarioEnAPISim(verificar)
+      if (resultadoVerificacion.verificado) {
+        resultadoClase.value = 'verde'
+        resultadoTexto.value = `✅ ACREDITADO: ${resultadoVerificacion.nombre}`
+      } else {
+        resultadoClase.value = 'rojo'
+        resultadoTexto.value = `❌ NO ACREDITADO: ${resultadoVerificacion.nombre}`
+      }
+    } catch (error) {
+      console.error('Error durante la verificación:', error)
+      resultadoClase.value = 'rojo'
+      resultadoTexto.value = '⚠️ ERROR DE CONEXIÓN CON EL SERVIDOR'
+    }
+
+    setTimeout(() => {
+      resultadoTexto.value = 'Esperando escaneo...'
+      resultadoClase.value = ''
+      idEscaneado.value = 'Ninguno'
+    }, TIEMPO_MOSTRAR_RESULTADO)
+  }
+
+  async function EscaneoExitosoLocal(text) {
+    if (QR_Scanner && typeof QR_Scanner.pause === 'function') {
+      try { await QR_Scanner.pause() } catch (e) { console.warn('Error al pausar el escáner:', e) }
+    }
+
+    await AcreditacionLocal(text)
+
+    setTimeout(() => {
+      if (QR_Scanner && typeof QR_Scanner.resume === 'function') {
+        try { QR_Scanner.resume() } catch (e) { console.warn('Error al reanudar el escáner:', e) }
+      }
+    }, TIEMPO_MOSTRAR_RESULTADO + 1000)
+  }
+
+  function start() {
+    const elementId = (lectorRef && lectorRef.value && lectorRef.value.id) ? lectorRef.value.id : (options.elementId || 'lector')
+    if (QR_Scanner) return
     QR_Scanner = new Html5QrcodeScanner(
-      'lector',
-      { 
-        fps: 10, 
-        // qrbox usa la función calcularQrBox de arriba para ajustar el tamaño de manera dinámica
-        qrbox: calcularQrBox ,
-        // supportedScanTypes limita el escaneo solo a cámara 
+      elementId,
+      {
+        fps: 10,
+        qrbox: calcularQrBox,
         supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
       },
-      false 
+      false
     )
-
-    QR_Scanner.render(EscaneoExitoso)
+    QR_Scanner.render(EscaneoExitosoLocal)
   }
-})
 
-onUnmounted(() => {
-  if (QR_Scanner) {
-    try {
-      QR_Scanner.clear()
-    } catch (error) {
-      console.warn('Error al detener el escáner al desmontar:', error)
-    }
+  function stop() {
+    if (!QR_Scanner) return
+    try { QR_Scanner.clear() } catch (err) { console.warn('Error al detener el escáner:', err) }
+    QR_Scanner = null
   }
-})
+
+  function pause() { if (QR_Scanner && QR_Scanner.pause) QR_Scanner.pause().catch(()=>{}) }
+  function resume() { if (QR_Scanner && QR_Scanner.resume) QR_Scanner.resume().catch(()=>{}) }
+
+  return {
+    start,
+    stop,
+    pause,
+    resume,
+    resultadoTexto,
+    resultadoClase,
+    idEscaneado
+  }
+}

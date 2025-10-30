@@ -294,7 +294,6 @@ import BaseSelect from '@/components/Reutilizables/BaseSelect.vue'
 import BaseButton from '@/components/Reutilizables/BaseButton.vue'
 import BaseAlert from '@/components/Reutilizables/BaseAlert.vue'
 import BaseModal from '@/components/Reutilizables/BaseModal.vue'
-import { personasEjemplo } from '@/data/personasEjemplo.js'
 
 export default {
   name: 'GestionPersonas',
@@ -345,13 +344,6 @@ export default {
     filtrandoEnProceso: false,
       personas: [] // Será cargado desde la BD en producción
     };
-  },
-  created() {
-    // Cargar datos de ejemplo para desarrollo - será reemplazado por llamada a la BD
-    this.personas = personasEjemplo;
-    
-    // enriquecer personas con campos tipo BD al crear
-    this.enrichPersonas();
   },
   computed: {
     filtrosActivos() {

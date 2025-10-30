@@ -13,7 +13,7 @@ import * as pagosService from './pagosService'
 import * as archivosService from './archivosService'
 import * as reportesService from './reportesService'
 // usuariosRolesService and CorreosService are legacy files removed after migration
-import * as dashboardService from './dashboardService'
+// dashboardService removed — functionality split into per-section services (cursos, pagos, personas, etc.)
 
 // Export everything as named exports. Prefer importing from '@/services' in views.
 export {
@@ -29,7 +29,6 @@ export {
   archivosService,
   reportesService,
   // Removed legacy CorreosService,
-  dashboardService,
 }
 
 // Backwards-compat aliases (safe to import old names from this barrel):

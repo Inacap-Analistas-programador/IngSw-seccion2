@@ -67,11 +67,11 @@ function onAvatarError() {
   <nav class="navbar">
     <!-- Logo y título -->
     <div class="navbar-left">
-      <router-link class="brand" :to="{ name: 'dashboard' }" aria-label="Ir al Dashboard">
+      <router-link class="brand" to="/dashboard" aria-label="Ir al Dashboard">
         <img :src="logoSrc" alt="Logo Scouts" class="logo" />
         <span class="title">S.S.B</span>
       </router-link>
-  <router-link class="dash-link" :to="{ name: 'dashboard' }">Panel de Control</router-link>
+  <router-link class="dash-link" to="/dashboard">Panel de Control</router-link>
     </div>
 
     <!-- Usuario (avatar + nombre/rol + salir) - Solo visible si autenticado -->
