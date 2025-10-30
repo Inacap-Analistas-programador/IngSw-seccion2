@@ -31,12 +31,12 @@
           :key="index"
           :class="['step', { 
             active: currentStep === index, 
-            completed: currentStep > index,
-            disabled: currentStep < index
+            completed: step.completed,
+            disabled: currentStep < index && !step.completed
           }]"
         >
           <div class="step-number">
-            <span v-if="currentStep <= index">{{ index + 1 }}</span>
+            <span v-if="!step.completed">{{ index + 1 }}</span>
             <span v-else>✓</span>
           </div>
           <div class="step-label">{{ step.label }}</div>
@@ -49,7 +49,7 @@
     <div class="form-container">
       <form @submit.prevent="submitForm" class="scouts-form">
         <!-- Paso 1: Selección de Curso -->
-        <div v-if="currentStep === 0" class="form-step">
+        <div v-show="currentStep === 0" class="form-step">
           <h2 class="step-title">Selección de Curso</h2>
           <p class="step-description">Seleccione el curso al que desea pre-inscribirse</p>
           
@@ -57,7 +57,11 @@
             <div 
               v-for="curso in cursosDisponibles" 
               :key="curso.id"
-              :class="['course-option', { selected: formData.cursoId === curso.id }]"
+              :class="['course-option', { 
+                selected: formData.cursoId === curso.id,
+                disponible: curso.estado === 'disponible',
+                lleno: curso.estado === 'lleno'
+              }]"
               @click="selectCurso(curso)"
             >
               <div class="course-icon">{{ curso.icono }}</div>
@@ -80,10 +84,14 @@
             <p><strong>{{ getCursoSeleccionado().nombre }}</strong></p>
             <p>{{ getCursoSeleccionado().fechas }} - {{ getCursoSeleccionado().ubicacion }}</p>
           </div>
+
+          <div v-else class="no-course-selected">
+            <p>⚠️ Por favor seleccione un curso para continuar</p>
+          </div>
         </div>
 
         <!-- Paso 2: Datos Personales -->
-        <div v-if="currentStep === 1" class="form-step">
+        <div v-show="currentStep === 1" class="form-step">
           <h2 class="step-title">Datos Personales</h2>
           
           <div class="form-section">
@@ -128,13 +136,25 @@
             <h3 class="section-title">Foto para Credencial</h3>
             <FileUploader
               v-model="formData.fotoParticipante"
-              label="Seleccionar foto del participante *"
-              accept="image/jpeg,image/jpg,image/png"
+              :preview-url="fotoPreviewUrl"
+              label="Foto de cara del participante *"
+              accept="image/jpeg,image/png,image/jpg"
               :required="true"
               class="form-field"
-              @file-changed="handleFileChange"
+              @file-changed="handleFileChanged"
             />
-            <p class="field-note">Formatos aceptados: JPEG, JPG o PNG. Tamaño máximo: 5MB. Foto frontal clara para la credencial.</p>
+            <p class="field-note">Formato: JPEG o PNG. Foto frontal clara para la credencial.</p>
+            
+            <!-- Vista previa de la imagen -->
+            <div v-if="fotoPreviewUrl" class="photo-preview">
+              <h4>Vista previa de la foto:</h4>
+              <div class="preview-container">
+                <img :src="fotoPreviewUrl" alt="Vista previa de la foto" class="preview-image" />
+                <button type="button" @click="removePhoto" class="remove-photo-btn">
+                  ❌ Eliminar foto
+                </button>
+              </div>
+            </div>
           </div>
 
           <div class="form-section">
@@ -166,7 +186,7 @@
         </div>
 
         <!-- Paso 3: Información Scout -->
-        <div v-if="currentStep === 2" class="form-step">
+        <div v-show="currentStep === 2" class="form-step">
           <h2 class="step-title">Información Scout</h2>
           
           <div class="form-section">
@@ -243,7 +263,7 @@
         </div>
 
         <!-- Paso 4: Salud y Alimentación -->
-        <div v-if="currentStep === 3" class="form-step">
+        <div v-show="currentStep === 3" class="form-step">
           <h2 class="step-title">Salud y Alimentación</h2>
           
           <div class="form-section">
@@ -309,7 +329,7 @@
         </div>
 
         <!-- Paso 5: Información Adicional -->
-        <div v-if="currentStep === 4" class="form-step">
+        <div v-show="currentStep === 4" class="form-step">
           <h2 class="step-title">Información Adicional</h2>
           
           <div class="form-section">
@@ -407,126 +427,85 @@
         </div>
 
         <!-- Paso 6: Resumen y Confirmación -->
-        <div v-if="currentStep === 5" class="form-step">
+        <div v-show="currentStep === 5" class="form-step">
           <h2 class="step-title">Resumen y Confirmación</h2>
           
+          <div class="completion-message" v-if="allStepsCompleted">
+            <div class="completion-badge">
+              <div class="completion-icon">🎉</div>
+              <h3>¡Todos los pasos completados exitosamente!</h3>
+              <p>El formulario ha sido completado en su totalidad. Revise la información a continuación y confirme su pre-inscripción.</p>
+            </div>
+          </div>
+          
           <div class="summary-container">
-            <!-- Estado: Antes de enviar (mostrar resumen y botón de envío) -->
-            <div v-if="!formSubmitted" class="pre-submission-content">
-              <div class="summary-section">
-                <h3 class="summary-title">Resumen de Pre-Inscripción</h3>
-                
-                <div class="summary-grid">
-                  <div class="summary-item">
-                    <strong>Curso:</strong>
-                    <span>{{ getCursoSeleccionado().nombre }}</span>
-                  </div>
-                  <div class="summary-item">
-                    <strong>Fecha:</strong>
-                    <span>{{ getCursoSeleccionado().fechas }}</span>
-                  </div>
-                  <div class="summary-item">
-                    <strong>Ubicación:</strong>
-                    <span>{{ getCursoSeleccionado().ubicacion }}</span>
-                  </div>
+            <div class="summary-section">
+              <h3 class="summary-title">Resumen de Pre-Inscripción</h3>
+              
+              <div class="summary-grid">
+                <div class="summary-item">
+                  <strong>Curso:</strong>
+                  <span>{{ getCursoSeleccionado().nombre }}</span>
                 </div>
-              </div>
-
-              <div class="summary-section">
-                <h3 class="summary-title">Datos del Participante</h3>
-                
-                <div class="summary-grid">
-                  <div class="summary-item">
-                    <strong>Nombre:</strong>
-                    <span>{{ formData.nombres }} {{ formData.apellidos }}</span>
-                  </div>
-                  <div class="summary-item">
-                    <strong>RUT:</strong>
-                    <span>{{ formData.rut }}</span>
-                  </div>
-                  <div class="summary-item">
-                    <strong>Email:</strong>
-                    <span>{{ formData.email }}</span>
-                  </div>
-                  <div class="summary-item">
-                    <strong>Teléfono:</strong>
-                    <span>{{ formData.telefono }}</span>
-                  </div>
-                  <div class="summary-item">
-                    <strong>Grupo Scout:</strong>
-                    <span>{{ getLabel(grupos, formData.grupo) }}</span>
-                  </div>
-                  <div class="summary-item">
-                    <strong>Rama:</strong>
-                    <span>{{ getLabel(ramas, formData.rama) }}</span>
-                  </div>
-                  <div v-if="formData.tieneVehiculo" class="summary-item">
-                    <strong>Patente Vehículo:</strong>
-                    <span>{{ formData.patenteVehiculo }}</span>
-                  </div>
-                  <div class="summary-item">
-                    <strong>Foto:</strong>
-                    <span>{{ formData.fotoParticipante ? '✓ Subida' : '❌ Pendiente' }}</span>
-                  </div>
+                <div class="summary-item">
+                  <strong>Fecha:</strong>
+                  <span>{{ getCursoSeleccionado().fechas }}</span>
                 </div>
-              </div>
-
-              <div class="verification-prompt">
-                <h3>Verificación Final</h3>
-                <p>Por favor revise cuidadosamente toda la información antes de confirmar su pre-inscripción.</p>
-                <div class="verification-check">
-                  <BaseCheckBox
-                    v-model="formData.verificado"
-                    label="Confirmo que toda la información proporcionada es correcta *"
-                    :required="true"
-                    class="checkbox-field"
-                  />
+                <div class="summary-item">
+                  <strong>Ubicación:</strong>
+                  <span>{{ getCursoSeleccionado().ubicacion }}</span>
                 </div>
               </div>
             </div>
 
-            <!-- Estado: Después de enviar (mostrar confirmación) -->
-            <div v-else class="post-submission-content">
-              <!-- Sección de Confirmación "Ya estás pre-inscrito" -->
-              <div class="final-confirmation-section">
-                <div class="confirmation-badge">
-                  <div class="confirmation-icon">✅</div>
-                  <div class="confirmation-content">
-                    <h3 class="confirmation-title">¡Ya estás pre-inscrito!</h3>
-                    <p class="confirmation-message">Tu pre-inscripción ha sido registrada exitosamente en el sistema</p>
-                    
-                    <div class="confirmation-details">
-                      <div class="confirmation-item">
-                        <strong>Número de Pre-Inscripción:</strong>
-                        <span class="inscription-number">#{{ numeroInscripcion }}</span>
-                      </div>
-                      <div class="confirmation-item">
-                        <strong>Estado:</strong>
-                        <span class="status-badge confirmed">Confirmado</span>
-                      </div>
-                      <div class="confirmation-item">
-                        <strong>Próximo paso:</strong>
-                        <span>Esperar confirmación vía email</span>
-                      </div>
-                    </div>
+            <div class="summary-section">
+              <h3 class="summary-title">Datos del Participante</h3>
+              
+              <div class="summary-grid">
+                <div class="summary-item">
+                  <strong>Nombre:</strong>
+                  <span>{{ formData.nombres }} {{ formData.apellidos }}</span>
+                </div>
+                <div class="summary-item">
+                  <strong>RUT:</strong>
+                  <span>{{ formData.rut }}</span>
+                </div>
+                <div class="summary-item">
+                  <strong>Email:</strong>
+                  <span>{{ formData.email }}</span>
+                </div>
+                <div class="summary-item">
+                  <strong>Teléfono:</strong>
+                  <span>{{ formData.telefono }}</span>
+                </div>
+                <div class="summary-item">
+                  <strong>Grupo Scout:</strong>
+                  <span>{{ getLabel(grupos, formData.grupo) }}</span>
+                </div>
+                <div class="summary-item">
+                  <strong>Rama:</strong>
+                  <span>{{ getLabel(ramas, formData.rama) }}</span>
+                </div>
+                <div v-if="formData.tieneVehiculo" class="summary-item">
+                  <strong>Patente Vehículo:</strong>
+                  <span>{{ formData.patenteVehiculo }}</span>
+                </div>
+                <div class="summary-item">
+                  <strong>Foto:</strong>
+                  <span>{{ formData.fotoParticipante ? '✓ Subida' : '❌ Pendiente' }}</span>
+                </div>
+              </div>
+            </div>
 
-                    <div class="confirmation-actions">
-                      <BaseButton
-                        variant="primary"
-                        @click="imprimirComprobante"
-                        class="action-button"
-                      >
-                        📄 Imprimir Comprobante
-                      </BaseButton>
-                      <BaseButton
-                        variant="outline"
-                        @click="volverAlInicio"
-                        class="action-button"
-                      >
-                        ← Volver al Inicio
-                      </BaseButton>
-                    </div>
-                  </div>
+            <!-- Sección de Verificación -->
+            <div class="verification-section">
+              <div class="verification-badge">
+                <img src="@/assets/Logo_Boyscout_Chile.png" alt="Logo Scouts Chile" class="verification-logo">
+                <div class="verification-content">
+                  <div class="verified-tick">✓</div>
+                  <h3>¡Pre-inscripción Lista para Confirmar!</h3>
+                  <p>El participante está listo para ser pre-inscrito en el sistema</p>
+                  <p class="verification-note">Al confirmar, recibirá un correo de confirmación con los siguientes pasos</p>
                 </div>
               </div>
             </div>
@@ -534,9 +513,9 @@
         </div>
 
         <!-- Navegación del Formulario -->
-        <div class="form-navigation" v-if="!formSubmitted">
+        <div class="form-navigation">
           <BaseButton
-            v-if="currentStep > 0 && currentStep < steps.length - 1"
+            v-if="currentStep > 0"
             type="button"
             variant="secondary"
             @click="previousStep"
@@ -563,7 +542,7 @@
             v-if="currentStep === steps.length - 1"
             type="submit"
             variant="success"
-            :disabled="!formValid || submitting || !formData.verificado"
+            :disabled="!formValid || submitting"
             :loading="submitting"
             class="nav-button submit-button"
           >
@@ -654,17 +633,17 @@ export default {
     const currentStep = ref(0)
     const submitting = ref(false)
     const showSuccessModal = ref(false)
-    const formSubmitted = ref(false)
     const numeroInscripcion = ref('')
+    const fotoPreviewUrl = ref('')
 
-    const steps = [
-      { label: 'Curso', valid: false },
-      { label: 'Datos Personales', valid: false },
-      { label: 'Información Scout', valid: false },
-      { label: 'Salud', valid: false },
-      { label: 'Adicional', valid: false },
-      { label: 'Confirmación', valid: false }
-    ]
+    const steps = ref([
+      { label: 'Curso', valid: false, completed: false },
+      { label: 'Datos Personales', valid: false, completed: false },
+      { label: 'Información Scout', valid: false, completed: false },
+      { label: 'Salud', valid: false, completed: false },
+      { label: 'Adicional', valid: false, completed: false },
+      { label: 'Confirmación', valid: false, completed: false }
+    ])
 
     const formData = reactive({
       // Paso 1
@@ -705,10 +684,7 @@ export default {
       requiereAlojamiento: false,
       trabajaConNNAJ: false,
       aceptaTerminos: false,
-      consideraciones: '',
-      
-      // Paso 6
-      verificado: false
+      consideraciones: ''
     })
 
     const systemAlert = reactive({
@@ -815,29 +791,13 @@ export default {
     const currentStepValid = computed(() => {
       const validations = {
         0: () => formData.cursoId !== '',
-        1: () => {
-          const basicInfoValid = formData.nombres && 
-                                formData.apellidos && 
-                                formData.rut && 
-                                formData.fechaNacimiento &&
-                                formData.email && 
-                                formData.telefono
-          
-          const telefonoValid = telefonoRules(formData.telefono) === true
-          const fotoValid = formData.fotoParticipante !== null
-          
-          return basicInfoValid && telefonoValid && fotoValid
-        },
-        2: () => formData.region && 
-                 formData.distrito && 
-                 formData.grupo && 
-                 formData.rama && 
-                 formData.rol && 
-                 formData.nivel,
-        3: () => formData.alimentacion && 
-                 formData.contactoEmergenciaNombre && 
-                 formData.contactoEmergenciaTelefono && 
-                 formData.contactoEmergenciaParentesco &&
+        1: () => formData.nombres && formData.apellidos && formData.rut && 
+                 formData.email && formData.telefono && formData.fotoParticipante &&
+                 telefonoRules(formData.telefono) === true,
+        2: () => formData.region && formData.distrito && formData.grupo && 
+                 formData.rama && formData.rol && formData.nivel,
+        3: () => formData.alimentacion && formData.contactoEmergenciaNombre && 
+                 formData.contactoEmergenciaTelefono && formData.contactoEmergenciaParentesco &&
                  telefonoRules(formData.contactoEmergenciaTelefono) === true,
         4: () => formData.aceptaTerminos && 
                  (formData.tieneVehiculo ? formData.patenteVehiculo !== '' : true),
@@ -850,10 +810,85 @@ export default {
       return currentStepValid.value && formData.aceptaTerminos
     })
 
-    // Watch para debug y verificar cambios en tiempo real
-    watch(formData, (newValue) => {
-      console.log('Form data updated:', newValue)
-    }, { deep: true })
+    const allStepsCompleted = computed(() => {
+      return steps.value.slice(0, -1).every(step => step.completed)
+    })
+
+    // Watchers para actualizar el estado de completado de cada paso
+    watch(() => formData.cursoId, (newVal) => {
+      steps.value[0].completed = !!newVal
+      steps.value[0].valid = !!newVal
+    })
+
+    watch(() => [
+      formData.nombres,
+      formData.apellidos,
+      formData.rut,
+      formData.email,
+      formData.telefono,
+      formData.fotoParticipante
+    ], () => {
+      const isValid = formData.nombres && formData.apellidos && formData.rut && 
+                     formData.email && formData.telefono && formData.fotoParticipante &&
+                     telefonoRules(formData.telefono) === true
+      steps.value[1].completed = isValid
+      steps.value[1].valid = isValid
+    })
+
+    watch(() => [
+      formData.region,
+      formData.distrito,
+      formData.grupo,
+      formData.rama,
+      formData.rol,
+      formData.nivel
+    ], () => {
+      const isValid = formData.region && formData.distrito && formData.grupo && 
+                     formData.rama && formData.rol && formData.nivel
+      steps.value[2].completed = isValid
+      steps.value[2].valid = isValid
+    })
+
+    watch(() => [
+      formData.alimentacion,
+      formData.contactoEmergenciaNombre,
+      formData.contactoEmergenciaTelefono,
+      formData.contactoEmergenciaParentesco
+    ], () => {
+      const isValid = formData.alimentacion && formData.contactoEmergenciaNombre && 
+                     formData.contactoEmergenciaTelefono && formData.contactoEmergenciaParentesco &&
+                     telefonoRules(formData.contactoEmergenciaTelefono) === true
+      steps.value[3].completed = isValid
+      steps.value[3].valid = isValid
+    })
+
+    watch(() => [
+      formData.aceptaTerminos,
+      formData.tieneVehiculo,
+      formData.patenteVehiculo
+    ], () => {
+      const isValid = formData.aceptaTerminos && 
+                     (formData.tieneVehiculo ? formData.patenteVehiculo !== '' : true)
+      steps.value[4].completed = isValid
+      steps.value[4].valid = isValid
+    })
+
+    // Watcher para mantener la vista previa de la foto
+    watch(() => formData.fotoParticipante, (newFile) => {
+      if (newFile) {
+        // Crear URL para vista previa
+        if (fotoPreviewUrl.value) {
+          URL.revokeObjectURL(fotoPreviewUrl.value)
+        }
+        fotoPreviewUrl.value = URL.createObjectURL(newFile)
+      } else {
+        // Limpiar vista previa si no hay archivo
+        if (fotoPreviewUrl.value) {
+          URL.revokeObjectURL(fotoPreviewUrl.value)
+          fotoPreviewUrl.value = ''
+        }
+      }
+    })
 
     // Methods
     const showAlert = (type, title, message) => {
@@ -884,10 +919,17 @@ export default {
       return option ? option.label : ''
     }
 
-    // Manejar cambio de archivo
-    const handleFileChange = (file) => {
+    // Manejo de archivos de foto
+    const handleFileChanged = (file) => {
       formData.fotoParticipante = file
-      console.log('Archivo seleccionado:', file)
+    }
+
+    const removePhoto = () => {
+      formData.fotoParticipante = null
+      if (fotoPreviewUrl.value) {
+        URL.revokeObjectURL(fotoPreviewUrl.value)
+        fotoPreviewUrl.value = ''
+      }
     }
 
     // Inicializar teléfono con formato
@@ -942,10 +984,16 @@ export default {
       }
     }
 
+    // Navegación corregida
     const nextStep = () => {
       if (currentStepValid.value) {
-        currentStep.value++
-        window.scrollTo({ top: 0, behavior: 'smooth' })
+        // Marcar el paso actual como completado
+        steps.value[currentStep.value].completed = true
+        
+        if (currentStep.value < steps.value.length - 1) {
+          currentStep.value++
+          window.scrollTo({ top: 0, behavior: 'smooth' })
+        }
       } else {
         showAlert('error', 'Campos incompletos', 'Por favor complete todos los campos requeridos antes de continuar.')
       }
@@ -958,59 +1006,9 @@ export default {
       }
     }
 
-    // Función para guardar datos en JSON local
-    const guardarDatosEnJSON = (datos) => {
-      try {
-        // Crear copia de los datos sin el archivo (porque File no es serializable)
-        const datosParaGuardar = { ...datos }
-        
-        // Convertir el archivo a base64 si existe
-        if (datosParaGuardar.fotoParticipante instanceof File) {
-          // Para simplificar, solo guardamos información del archivo, no el contenido completo
-          datosParaGuardar.fotoParticipante = {
-            name: datosParaGuardar.fotoParticipante.name,
-            size: datosParaGuardar.fotoParticipante.size,
-            type: datosParaGuardar.fotoParticipante.type,
-            lastModified: datosParaGuardar.fotoParticipante.lastModified
-          }
-        }
-
-        // Crear objeto con timestamp para identificar
-        const registro = {
-          id: numeroInscripcion.value,
-          timestamp: new Date().toISOString(),
-          datos: datosParaGuardar
-        }
-
-        // Convertir a JSON
-        const datosJSON = JSON.stringify(registro, null, 2)
-        
-        // Crear blob para descarga
-        const blob = new Blob([datosJSON], { type: 'application/json' })
-        const url = URL.createObjectURL(blob)
-        
-        // Crear enlace de descarga
-        const link = document.createElement('a')
-        link.href = url
-        link.download = `preinscripcion_${numeroInscripcion.value}.json`
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        
-        // Liberar URL
-        URL.revokeObjectURL(url)
-        
-        console.log('Datos guardados en JSON:', registro)
-        return true
-      } catch (error) {
-        console.error('Error al guardar datos en JSON:', error)
-        return false
-      }
-    }
-
     const submitForm = async () => {
-      if (!formValid.value || !formData.verificado) {
-        showAlert('error', 'Formulario incompleto', 'Por favor complete todos los campos requeridos, acepte los términos y condiciones y verifique que la información es correcta.')
+      if (!formValid.value) {
+        showAlert('error', 'Formulario incompleto', 'Por favor complete todos los campos requeridos y acepte los términos y condiciones.')
         return
       }
 
@@ -1018,25 +1016,22 @@ export default {
 
       try {
         // Simulación de envío a API Django
-        await new Promise(resolve => setTimeout(resolve, 2000))
+        await new Promise(resolve => setTimeout(resolve, 3000))
+        
+        // Marcar todos los pasos como completados
+        steps.value.forEach(step => {
+          step.completed = true
+          step.valid = true
+        })
         
         // Generar número de pre-inscripción
         const timestamp = new Date().getTime().toString().slice(-6)
         numeroInscripcion.value = `SC${timestamp}`
         
-        // Guardar datos en JSON local
-        const guardadoExitoso = guardarDatosEnJSON(formData)
-        
-        if (guardadoExitoso) {
-          formSubmitted.value = true
-          showSuccessModal.value = true
-          showAlert('exito', 'Pre-inscripción exitosa', `Su pre-inscripción #${numeroInscripcion.value} ha sido registrada correctamente. Los datos se han guardado localmente.`)
-        } else {
-          throw new Error('Error al guardar datos localmente')
-        }
+        showSuccessModal.value = true
+        showAlert('exito', 'Pre-inscripción exitosa', `Su pre-inscripción #${numeroInscripcion.value} ha sido registrada correctamente.`)
         
       } catch (error) {
-        console.error('Error en el envío:', error)
         showAlert('error', 'Error en la pre-inscripción', 'Ha ocurrido un error al procesar su solicitud. Por favor intente nuevamente.')
       } finally {
         submitting.value = false
@@ -1045,9 +1040,6 @@ export default {
 
     const handleModalClose = () => {
       showSuccessModal.value = false
-    }
-
-    const volverAlInicio = () => {
       // Resetear formulario para nueva pre-inscripción
       Object.keys(formData).forEach(key => {
         if (typeof formData[key] === 'boolean') {
@@ -1059,10 +1051,20 @@ export default {
         }
       })
       formData.fotoParticipante = null
-      formData.cursoId = ''
-      formSubmitted.value = false
+      
+      // Limpiar vista previa de foto
+      if (fotoPreviewUrl.value) {
+        URL.revokeObjectURL(fotoPreviewUrl.value)
+        fotoPreviewUrl.value = ''
+      }
+      
+      // Resetear estados de los pasos
+      steps.value.forEach(step => {
+        step.completed = false
+        step.valid = false
+      })
+      
       currentStep.value = 0
-      showSuccessModal.value = false
     }
 
     const imprimirComprobante = () => {
@@ -1072,7 +1074,11 @@ export default {
     onMounted(() => {
       // Inicialización cuando el componente se monta
       console.log('Formulario de pre-inscripción Scouts Biobío montado')
-      systemAlert.visible = true
+      
+      // Mostrar alerta de bienvenida después de un breve delay
+      setTimeout(() => {
+        systemAlert.visible = true
+      }, 500)
     })
 
     return {
@@ -1082,8 +1088,8 @@ export default {
       systemAlert,
       submitting,
       showSuccessModal,
-      formSubmitted,
       numeroInscripcion,
+      fotoPreviewUrl,
       cursosDisponibles,
       regiones,
       distritos,
@@ -1095,11 +1101,13 @@ export default {
       telefonoRules,
       currentStepValid,
       formValid,
+      allStepsCompleted,
       clearSystemAlert,
       selectCurso,
       getCursoSeleccionado,
       getLabel,
-      handleFileChange,
+      handleFileChanged,
+      removePhoto,
       initializeTelefono,
       initializeTelefonoEmergencia,
       formatTelefono,
@@ -1108,7 +1116,6 @@ export default {
       previousStep,
       submitForm,
       handleModalClose,
-      volverAlInicio,
       imprimirComprobante
     }
   }
@@ -1116,11 +1123,9 @@ export default {
 </script>
 
 <style scoped>
-/* Estilos mejorados con colores oscuros para mejor legibilidad */
 .formulario-scouts {
   min-height: 100vh;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  color: #000000;
 }
 
 .form-header {
@@ -1155,20 +1160,17 @@ export default {
   font-size: 2.5rem;
   margin-bottom: 0.5rem;
   font-weight: 700;
-  color: white;
 }
 
 .page-subtitle {
   font-size: 1.3rem;
   opacity: 0.9;
   margin-bottom: 0.25rem;
-  color: white;
 }
 
 .institution {
   font-size: 1rem;
   opacity: 0.8;
-  color: white;
 }
 
 .form-alert {
@@ -1177,13 +1179,10 @@ export default {
   padding: 0 2rem;
 }
 
-/* Estilos mejorados para el progreso */
 .form-progress {
   background: white;
   padding: 1.5rem 2rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  position: relative;
-  z-index: 1;
 }
 
 .progress-steps {
@@ -1200,7 +1199,7 @@ export default {
   flex-direction: column;
   align-items: center;
   position: relative;
-  z-index: 3; /* Aumentado para estar sobre la línea */
+  z-index: 2;
   flex: 1;
 }
 
@@ -1209,7 +1208,7 @@ export default {
   height: 50px;
   border-radius: 50%;
   background: #e9ecef;
-  color: #000000;
+  color: #6c757d;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1218,8 +1217,6 @@ export default {
   margin-bottom: 0.5rem;
   transition: all 0.3s ease;
   border: 3px solid transparent;
-  position: relative;
-  z-index: 4; /* Más alto que la línea */
 }
 
 .step.active .step-number {
@@ -1227,28 +1224,25 @@ export default {
   color: white;
   border-color: #1e3a8a;
   transform: scale(1.1);
-  box-shadow: 0 0 0 4px rgba(44, 90, 160, 0.2);
 }
 
 .step.completed .step-number {
   background: #28a745;
   color: white;
   border-color: #1e7e34;
-  box-shadow: 0 0 0 4px rgba(40, 167, 69, 0.2);
 }
 
 .step.disabled .step-number {
   background: #f8f9fa;
   color: #dee2e6;
+  cursor: not-allowed;
 }
 
 .step-label {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #000000;
+  color: #6c757d;
   text-align: center;
-  position: relative;
-  z-index: 3;
 }
 
 .step.active .step-label {
@@ -1262,42 +1256,16 @@ export default {
 .step-line {
   position: absolute;
   top: 25px;
-  left: 50%;
   right: -50%;
+  width: 100%;
   height: 3px;
   background: #e9ecef;
-  z-index: 2; /* Menor que los círculos */
-  transform: translateY(-50%);
-}
-
-.step:last-child .step-line {
-  display: none;
+  z-index: 1;
 }
 
 .step.active .step-line,
 .step.completed .step-line {
   background: #2c5aa0;
-}
-
-/* Asegurar que la línea no sobresalga en los extremos */
-.progress-steps::before,
-.progress-steps::after {
-  content: '';
-  position: absolute;
-  top: 25px;
-  width: 25%;
-  height: 3px;
-  background: white;
-  z-index: 2;
-  transform: translateY(-50%);
-}
-
-.progress-steps::before {
-  left: -25%;
-}
-
-.progress-steps::after {
-  right: -25%;
 }
 
 .form-container {
@@ -1311,12 +1279,11 @@ export default {
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-  color: #000000;
 }
 
 .form-step {
   padding: 2rem;
-  animation: fadeInUp 0.5s ease-out;
+  animation: fadeInUp 0.3s ease-out;
 }
 
 @keyframes fadeInUp {
@@ -1339,7 +1306,7 @@ export default {
 }
 
 .step-description {
-  color: #000000;
+  color: #6c757d;
   font-size: 1.1rem;
   margin-bottom: 2rem;
 }
@@ -1355,7 +1322,7 @@ export default {
 }
 
 .section-title {
-  color: #000000;
+  color: #495057;
   font-size: 1.3rem;
   margin-bottom: 1.5rem;
   padding-left: 0.5rem;
@@ -1382,7 +1349,7 @@ export default {
 
 .field-note {
   font-size: 0.85rem;
-  color: #000000;
+  color: #6c757d;
   margin-top: -0.5rem;
   margin-bottom: 1rem;
   font-style: italic;
@@ -1414,7 +1381,6 @@ export default {
   align-items: flex-start;
   gap: 1rem;
   position: relative;
-  color: #000000;
 }
 
 .course-option:hover {
@@ -1426,6 +1392,15 @@ export default {
 .course-option.selected {
   border-color: #2c5aa0;
   background: linear-gradient(135deg, #f8fbff 0%, #e3f2fd 100%);
+}
+
+.course-option.disponible {
+  cursor: pointer;
+}
+
+.course-option.lleno {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .course-icon {
@@ -1445,13 +1420,13 @@ export default {
 }
 
 .course-dates {
-  color: #000000;
+  color: #495057;
   font-weight: 500;
   margin-bottom: 0.25rem;
 }
 
 .course-location {
-  color: #000000;
+  color: #6c757d;
   font-size: 0.9rem;
   margin-bottom: 0.75rem;
 }
@@ -1463,7 +1438,7 @@ export default {
 }
 
 .course-cupo {
-  color: #000000;
+  color: #495057;
   font-size: 0.9rem;
 }
 
@@ -1494,12 +1469,64 @@ export default {
   border-radius: 8px;
   padding: 1rem 1.5rem;
   margin-top: 1rem;
-  color: #000000;
 }
 
 .selected-course-info h4 {
   color: #2c5aa0;
   margin-bottom: 0.5rem;
+}
+
+.no-course-selected {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  padding: 1rem 1.5rem;
+  margin-top: 1rem;
+  color: #856404;
+}
+
+/* Estilos para la vista previa de la foto */
+.photo-preview {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.photo-preview h4 {
+  color: #495057;
+  margin-bottom: 1rem;
+}
+
+.preview-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.preview-image {
+  max-width: 200px;
+  max-height: 200px;
+  border-radius: 8px;
+  border: 2px solid #2c5aa0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.remove-photo-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.3s ease;
+}
+
+.remove-photo-btn:hover {
+  background: #c82333;
 }
 
 /* Estilos para checkboxes */
@@ -1511,7 +1538,6 @@ export default {
 
 .checkbox-field {
   margin-bottom: 0;
-  color: #000000;
 }
 
 .terms-container {
@@ -1519,7 +1545,6 @@ export default {
   border-radius: 8px;
   padding: 1.5rem;
   margin-bottom: 1.5rem;
-  color: #000000;
 }
 
 .terms-content {
@@ -1528,22 +1553,48 @@ export default {
 
 .terms-content p {
   margin-bottom: 0.75rem;
-  color: #000000;
 }
 
 .terms-content ul {
   margin-left: 1.5rem;
-  color: #000000;
+  color: #495057;
 }
 
 .terms-content li {
   margin-bottom: 0.5rem;
-  color: #000000;
 }
 
 .terms-checkbox {
   font-weight: 600;
-  color: #000000;
+}
+
+/* Mensaje de completado */
+.completion-message {
+  margin-bottom: 2rem;
+}
+
+.completion-badge {
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+  border: 2px solid #28a745;
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  color: #155724;
+}
+
+.completion-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.completion-badge h3 {
+  margin-bottom: 0.5rem;
+  font-size: 1.5rem;
+}
+
+.completion-badge p {
+  font-size: 1.1rem;
+  opacity: 0.9;
 }
 
 /* Estilos para el resumen */
@@ -1557,7 +1608,6 @@ export default {
   background: #f8f9fa;
   border-radius: 8px;
   padding: 1.5rem;
-  color: #000000;
 }
 
 .summary-title {
@@ -1582,133 +1632,59 @@ export default {
   background: white;
   border-radius: 6px;
   border-left: 4px solid #2c5aa0;
-  color: #000000;
 }
 
 .summary-item strong {
-  color: #000000;
+  color: #495057;
 }
 
-.summary-item span {
-  color: #000000;
-}
-
-/* Verificación final antes del envío */
-.verification-prompt {
-  background: #fff3cd;
-  border: 1px solid #ffeaa7;
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-top: 2rem;
-  color: #000000;
-}
-
-.verification-prompt h3 {
-  color: #856404;
-  margin-bottom: 1rem;
-}
-
-.verification-check {
-  margin-top: 1rem;
-}
-
-/* Sección de Confirmación Final - ¡Ya estás pre-inscrito! */
-.final-confirmation-section {
+/* Sección de verificación */
+.verification-section {
   margin-top: 2rem;
   padding: 2rem;
-  background: linear-gradient(135deg, #f0f9ff 0%, #e6f7ff 100%);
+  background: linear-gradient(135deg, #f8fff8 0%, #e8f5e8 100%);
   border-radius: 12px;
-  border: 3px solid #2c5aa0;
-  text-align: center;
+  border: 2px solid #28a745;
 }
 
-.confirmation-badge {
+.verification-badge {
   display: flex;
-  flex-direction: column;
   align-items: center;
   gap: 1.5rem;
+  text-align: left;
 }
 
-.confirmation-icon {
-  font-size: 4rem;
-  width: 100px;
-  height: 100px;
+.verification-logo {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 3px solid #28a745;
+  background: white;
+  padding: 0.5rem;
+}
+
+.verification-content {
+  flex: 1;
+}
+
+.verified-tick {
+  width: 40px;
+  height: 40px;
   background: #28a745;
   color: white;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
-}
-
-.confirmation-content {
-  flex: 1;
-  color: #000000;
-}
-
-.confirmation-title {
-  color: #2c5aa0;
-  font-size: 2rem;
-  margin-bottom: 1rem;
-  font-weight: 700;
-}
-
-.confirmation-message {
-  color: #000000;
-  font-size: 1.2rem;
-  margin-bottom: 1.5rem;
-}
-
-.confirmation-details {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-.confirmation-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 1rem;
-  background: white;
-  border-radius: 8px;
-  border: 1px solid #e9ecef;
-}
-
-.confirmation-item strong {
-  color: #000000;
+  font-size: 1.5rem;
   margin-bottom: 0.5rem;
 }
 
-.inscription-number {
-  color: #2c5aa0;
-  font-weight: 700;
-  font-size: 1.2rem;
-}
-
-.status-badge {
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  font-weight: 600;
+.verification-note {
   font-size: 0.9rem;
-}
-
-.status-badge.confirmed {
-  background: #d4edda;
-  color: #155724;
-}
-
-.confirmation-actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.action-button {
-  min-width: 200px;
+  color: #28a745;
+  font-style: italic;
+  margin-top: 0.5rem;
 }
 
 /* Navegación */
@@ -1738,7 +1714,6 @@ export default {
 .success-modal {
   text-align: center;
   padding: 1rem;
-  color: #000000;
 }
 
 .success-icon {
@@ -1758,7 +1733,6 @@ export default {
   padding: 1.5rem;
   margin: 1.5rem 0;
   text-align: left;
-  color: #000000;
 }
 
 .detail-item {
@@ -1768,7 +1742,6 @@ export default {
   margin-bottom: 0.75rem;
   padding-bottom: 0.75rem;
   border-bottom: 1px solid #e9ecef;
-  color: #000000;
 }
 
 .detail-item:last-child {
@@ -1828,24 +1801,6 @@ export default {
 
 .action-button {
   min-width: 180px;
-}
-
-/* Estilos globales para inputs y placeholders */
-:deep(.form-field input),
-:deep(.form-field textarea),
-:deep(.form-field select) {
-  color: #000000 !important;
-}
-
-:deep(.form-field input::placeholder),
-:deep(.form-field textarea::placeholder) {
-  color: #666666 !important;
-  opacity: 0.8;
-}
-
-:deep(.form-field label) {
-  color: #000000 !important;
-  font-weight: 600;
 }
 
 /* Responsive */
@@ -1912,17 +1867,25 @@ export default {
     width: 100%;
   }
   
-  .confirmation-badge {
+  .verification-badge {
     flex-direction: column;
     text-align: center;
   }
   
-  .confirmation-actions {
+  .modal-verification {
     flex-direction: column;
   }
   
-  .confirmation-details {
-    grid-template-columns: 1fr;
+  .completion-badge {
+    padding: 1.5rem;
+  }
+  
+  .completion-badge h3 {
+    font-size: 1.3rem;
+  }
+  
+  .preview-container {
+    text-align: center;
   }
 }
 
@@ -1942,16 +1905,19 @@ export default {
     margin-left: 0;
   }
   
-  .confirmation-title {
-    font-size: 1.5rem;
+  .summary-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
   }
   
-  .confirmation-message {
-    font-size: 1rem;
+  .photo-preview {
+    padding: 1rem;
   }
   
-  .action-button {
-    min-width: 100%;
+  .preview-image {
+    max-width: 150px;
+    max-height: 150px;
   }
 }
 </style>
