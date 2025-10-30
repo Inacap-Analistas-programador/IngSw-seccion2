@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'ApiCoreScouts',
+    'SystemScoutsApi.ApiAuth.apps.ApiAuthConfig',
     
     'rest_framework',
     'corsheaders',

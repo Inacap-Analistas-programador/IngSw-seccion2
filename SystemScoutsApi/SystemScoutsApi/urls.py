@@ -1,7 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
 from django.shortcuts import redirect
-from ApiCoreScouts.Views import auth_views
 
 
 from ApiCoreScouts.Routers.Usuarios_router import router as usuario_router
@@ -21,10 +20,6 @@ urlpatterns = [
     path('api/archivos/', include(archivo_router.urls)),
     path('api/mantenedores/', include(mantenedor_router.urls)),
     path('api/pagos/', include(pago_router.urls)),
-    # Auth y acciones auxiliares
-    path('api/auth/login/', auth_views.login),
-    path('api/personas/qr-token/', auth_views.qr_token),
-    path('api/personas/qr-email/', auth_views.qr_email),
-    path('api/personas/acreditacion/manual/search/', auth_views.acreditacion_manual_search),
-    path('api/personas/acreditacion/manual/acreditar/', auth_views.acreditacion_manual_acreditar),
+    #Authentication
+    path("api/auth/", include("SystemScoutsApi.ApiAuth.urls")),
 ]
