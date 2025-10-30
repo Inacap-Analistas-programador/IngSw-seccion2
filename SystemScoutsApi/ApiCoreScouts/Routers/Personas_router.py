@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from ..Api_Views.Persona_view import *
+from ..Views.Persona_view import *
 
 router = DefaultRouter()
 router.register(r'personas', PersonaViewSet, basename='persona')
