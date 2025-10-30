@@ -53,6 +53,14 @@ function logout() {
   router.push('/')
 }
 
+function goToLogin() {
+  // Si hay token, limpiarlo para forzar el acceso a la pantalla de login
+  try {
+    localStorage.removeItem('token')
+  } catch (e) {}
+  router.push({ name: 'login' })
+}
+
 function onLogoutImgError() {
   // Fallback to bundled SVG if /public/logout.png is missing
   logoutSrc.value = logoutDefault
@@ -91,7 +99,7 @@ function onAvatarError() {
     <!-- Botón de Login cuando no está autenticado -->
     <Transition name="user-fade">
       <div v-if="!isAuthenticated" class="navbar-actions">
-        <button class="login-btn" @click="router.push('/')" title="Iniciar sesión" aria-label="Iniciar sesión">
+        <button class="login-btn" @click="goToLogin" title="Iniciar sesión" aria-label="Iniciar sesión">
           Iniciar Sesión
         </button>
       </div>
@@ -111,7 +119,7 @@ function onAvatarError() {
   align-items: center;
   position: sticky;
   top: 0;
-  z-index: 1000;
+  z-index: 1100; /* mayor que la sidebar (999) para garantizar clicabilidad */
   font-family: "Segoe UI", Arial, sans-serif;
 }
 
