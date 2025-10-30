@@ -5,7 +5,7 @@
       <!-- Sin sesión iniciada: solo mostrar Formulario -->
       <div v-if="!isLoggedIn">
         <span class="nav-section-title">ACCESO PÚBLICO</span>
-        <router-link to="/inscripciones" class="nav-item">Formulario de Pre-inscripción</router-link>
+        <router-link to="/inscripciones" class="nav-item">Pre-inscripción</router-link>
       </div>
       
       <!-- Con sesión: mostrar menú completo (por defecto admin) -->
@@ -35,7 +35,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import authService from '@/services/authService'
 
@@ -43,8 +43,25 @@ import authService from '@/services/authService'
 // Backend auth fue deshabilitado: mostrar el menú completo en UI-only mode
 const usuario = ref({ nombre: 'Usuario Demo', rol: 'Administradora Regional' })
 
-// Forzar menú visible (no depende de token en localStorage)
-const isLoggedIn = ref(true)
+// isLoggedIn: derivado del token en localStorage para reflejar estado real de autenticación
+const STORAGE_TOKEN_KEY = 'token'
+function hasToken() {
+  try {
+    return !!localStorage.getItem(STORAGE_TOKEN_KEY)
+  } catch (e) {
+    return false
+  }
+}
+
+const isLoggedIn = ref(hasToken())
+
+// Escuchar cambios en localStorage (otras pestañas o logout/login) para mantener sincronizado
+function onStorage(e) {
+  if (!e) return
+  if (e.key === STORAGE_TOKEN_KEY) {
+    isLoggedIn.value = !!e.newValue
+  }
+}
 
 // Desplegable de Mantenedores
 const showMantenedores = ref(false)
@@ -95,6 +112,12 @@ onMounted(async () => {
     }
     // No actualizamos estado de autenticación ni consultamos authService en modo UI-only
   })
+  // Registrar listener de storage para detectar login/logout en otras pestañas
+  window.addEventListener('storage', onStorage)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('storage', onStorage)
 })
 </script>
 
@@ -104,7 +127,7 @@ onMounted(async () => {
   flex-direction: column;
   background: var(--color-primary);
   color: #fff;
-  width: 240px; /* ligeramente más compacto */
+  width: 256px; /* ampliar para cubrir la zona derecha y eliminar franja blanca */
   height: calc(100vh - 64px); /* Altura total menos la navbar reducida */
   position: fixed;
   top: 64px; /* Altura ajustada de la navbar */
@@ -115,6 +138,8 @@ onMounted(async () => {
   font-weight: 400; /* Regular */
   box-sizing: border-box;
 }
+
+/* Nota: ancho aumentado para ocupar el espacio a la derecha y eliminar la franja blanca */
 /* 2. Navegación */
 .sidebar-nav {
   flex-grow: 1;
