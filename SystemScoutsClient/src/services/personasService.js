@@ -1,31 +1,22 @@
-const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:8000/api').replace(/\/$/, '')
+import { request } from './apiClient'
 
-async function request(path, options = {}) {
-  const normPath = String(path).replace(/^\//, '')
-  const needsSlash = !/\?(.*)$/.test(normPath) && !normPath.endsWith('/')
-  const url = `${API_BASE}/${normPath}${needsSlash ? '/' : ''}`
+const makeCrud = base => ({
+  list: (params) => request(`${base}${params ? `?${new URLSearchParams(params)}` : ''}`),
+  get: (id) => request(`${base}${id}/`),
+  create: (data) => request(base, { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => request(`${base}${id}/`, { method: 'PUT', body: JSON.stringify(data) }),
+  partialUpdate: (id, data) => request(`${base}${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
+  remove: (id) => request(`${base}${id}/`, { method: 'DELETE' }),
+})
 
-  const isGet = !options.method || options.method.toUpperCase() === 'GET'
-  const headers = { ...(options.headers || {}) }
-  if (!isGet && !('Content-Type' in headers)) {
-    headers['Content-Type'] = 'application/json'
-  }
+// The API registers these resources under the 'personas' prefix (see API root).
+export const personas = makeCrud('personas/personas')
+export const grupos = makeCrud('personas/grupos')
+export const formadores = makeCrud('personas/formadores')
+export const individuales = makeCrud('personas/individuales')
+export const niveles = makeCrud('personas/niveles')
+export const personaCursos = makeCrud('personas/cursos') // persona-curso router registered under personas
+export const estadoCursos = makeCrud('personas/estado-cursos')
+export const vehiculos = makeCrud('personas/vehiculos')
 
-  const res = await fetch(url, {
-    headers,
-    ...options
-  })
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`${res.status} ${res.statusText}: ${text}`)
-  }
-  return res.status === 204 ? null : res.json()
-}
-
-export default {
-  async obtenerPersonas() {
-    const data = await request('personas') 
-    if (!Array.isArray(data)) return []
-    return data
-  },
-}
+export default { personas, grupos, formadores, individuales, niveles, personaCursos, estadoCursos, vehiculos }

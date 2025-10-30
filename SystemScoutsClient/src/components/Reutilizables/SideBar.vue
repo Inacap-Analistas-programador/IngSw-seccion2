@@ -10,8 +10,6 @@
       
       <!-- Con sesión: mostrar menú completo (por defecto admin) -->
       <div v-else>
-        <span class="nav-section-title">NAVEGACIÓN PRINCIPAL</span>
-        
         <router-link to="/usuarios" class="nav-item">Usuarios y Roles</router-link>
         <router-link to="/cursos-capacitaciones" class="nav-item">Cursos y Capacitaciones</router-link>
         <router-link to="/inscripciones" class="nav-item">Inscripciones</router-link>
@@ -23,7 +21,7 @@
         <router-link to="/reportes" class="nav-item">Reportes Excel</router-link>
         <router-link to="/verificador-qr" class="nav-item">Verificador QR</router-link>
 
-        <!-- Apartado desplegable: Pantallas 2 -->
+  <!-- Apartado desplegable: Pantallas 2 -->
         <div class="nav-item nav-collapsible" @click="togglePantallas2">
           <span>Pantallas 2</span>
           <span class="caret" :class="{ open: showPantallas2 }">▾</span>
@@ -43,10 +41,11 @@ import { useRoute } from 'vue-router'
 import authService from '@/services/authService'
 
 // Se mantiene el rol para condicionar el menú (por defecto admin para pruebas)
+// Backend auth fue deshabilitado: mostrar el menú completo en UI-only mode
 const usuario = ref({ nombre: 'Usuario Demo', rol: 'Administradora Regional' })
 
-// Verificar si hay sesión iniciada (reactivo)
-const isLoggedIn = ref(!!localStorage.getItem('token'))
+// Forzar menú visible (no depende de token en localStorage)
+const isLoggedIn = ref(true)
 
 // Desplegable de Mantenedores
 const showMantenedores = ref(false)
@@ -80,27 +79,7 @@ function togglePantallas2() {
 }
 
 onMounted(async () => {
-  // Actualizar estado de login
-  isLoggedIn.value = !!localStorage.getItem('token')
-  
-  // Cargar información del usuario actual si está logueado
-  if (isLoggedIn.value) {
-    try {
-      const currentUser = await authService.getCurrentUser()
-      usuario.value = {
-        nombre: currentUser.name,
-        rol: currentUser.role
-      }
-      console.log('Usuario cargado:', usuario.value) // Debug
-    } catch (error) {
-      console.error('Error al cargar usuario:', error)
-      // Usar valores por defecto si falla
-      usuario.value = {
-        nombre: 'Usuario Demo',
-        rol: 'Administradora Regional'
-      }
-    }
-  }
+  // No consultamos el backend de auth en modo UI-only; usar usuario por defecto
   
   const route = useRoute()
   // Abrir automáticamente si se navega a /mantenedores
@@ -115,20 +94,7 @@ onMounted(async () => {
       showMantenedores.value = p.startsWith('/mantenedores')
       showPantallas2.value = p.startsWith('/dashboard-2') || p.startsWith('/inscripciones-2')
     }
-    // Actualizar estado de autenticación al cambiar de ruta
-    isLoggedIn.value = !!localStorage.getItem('token')
-    if (isLoggedIn.value) {
-      try {
-        const currentUser = await authService.getCurrentUser()
-        usuario.value = {
-          nombre: currentUser.name,
-          rol: currentUser.role
-        }
-        console.log('Usuario actualizado:', usuario.value) // Debug
-      } catch (error) {
-        console.error('Error al actualizar usuario:', error)
-      }
-    }
+    // No actualizamos estado de autenticación ni consultamos authService en modo UI-only
   })
 })
 </script>
@@ -139,7 +105,7 @@ onMounted(async () => {
   flex-direction: column;
   background: var(--color-primary);
   color: #fff;
-  width: 250px;
+  width: 240px; /* ligeramente más compacto */
   height: calc(100vh - 64px); /* Altura total menos la navbar reducida */
   position: fixed;
   top: 64px; /* Altura ajustada de la navbar */
@@ -148,11 +114,13 @@ onMounted(async () => {
   z-index: 999;
   overflow-y: auto;
   font-weight: 400; /* Regular */
+  box-sizing: border-box;
 }
 /* 2. Navegación */
 .sidebar-nav {
-  flex-grow: 1; 
-  padding-top: 15px;
+  flex-grow: 1;
+  padding-top: 20px; /* más separación respecto a la navbar */
+  padding-bottom: 8px;
 }
 .nav-section-title {
   display: block;
@@ -165,22 +133,32 @@ onMounted(async () => {
   letter-spacing: 0.05em; /* Espaciado */
 }
 .nav-item {
-  display: block;
+  display: flex; /* permite alinear iconos y texto */
+  align-items: center;
+  gap: 12px;
   color: #fff;
   text-decoration: none;
-  padding: 12px 20px; /* Padding para clic cómodo */
-  transition: background 0.2s;
+  padding: 12px 18px; /* Padding para clic cómodo */
+  transition: background 0.15s ease, padding 0.12s ease;
   /* Botones (14–16 px, Medium/500) */
-  font-size: 0.9375rem; /* 15px */
-  font-weight: 500; /* Medium */
+  font-size: 0.95rem; /* 15.2px */
+  font-weight: 600; /* Medium/Bold para mejor legibilidad */
+  width: 100%;
+  box-sizing: border-box;
+  border-left: 4px solid transparent; /* para indicar activo */
+  min-height: 44px; /* tamaño mínimo, clickable fácil */
+}
+.nav-item:hover {
+  background: rgba(255,255,255,0.05);
 }
 .nav-item:hover {
   background: var(--color-primary-hover);
 }
 .router-link-exact-active {
   /* Botones (Bold/600) para estado activo */
-  font-weight: 600; /* Bold */
+  font-weight: 700; /* Bold */
   background: var(--color-primary-hover);
+  border-left-color: var(--color-warning); /* marca visual a la izquierda */
 }
 
 /* Desplegable */
@@ -189,19 +167,25 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
+  padding: 12px 18px;
 }
 .caret { transition: transform 0.2s ease; }
 .caret.open { transform: rotate(180deg); }
 .submenu {
-  background: rgba(0,0,0,0.15);
-  padding: 6px 0 8px 0;
+  background: rgba(0,0,0,0.08);
+  padding: 4px 0 6px 0;
 }
 .submenu-item {
   display: block;
-  color: rgba(255,255,255,0.9);
+  color: rgba(255,255,255,0.95);
   text-decoration: none;
-  padding: 8px 32px;
+  padding: 10px 32px;
   font-size: 0.9rem;
+  font-weight: 500;
+}
+.submenu-item:hover, .submenu-item.router-link-exact-active {
+  background: rgba(255,255,255,0.04);
+  color: #fff;
 }
 .submenu-item:hover, .submenu-item.router-link-exact-active {
   background: var(--color-primary-hover);

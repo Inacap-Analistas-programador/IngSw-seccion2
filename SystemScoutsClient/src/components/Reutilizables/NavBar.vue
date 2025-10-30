@@ -124,8 +124,9 @@ function onAvatarError() {
 
 .brand {
   display: inline-flex;
+  flex-direction: column; /* apila logo y texto verticalmente */
   align-items: center;
-  gap: 12px;
+  gap: 4px; /* espacio entre logo y título */
   text-decoration: none;
   color: inherit;
 }
@@ -141,10 +142,13 @@ function onAvatarError() {
 }
 
 .title {
-  font-size: 1.15rem;
-  font-weight: bold;
+  font-size: 0.95rem;
+  font-weight: 700;
   color: #ffffff;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.4px;
+  line-height: 1;
+  display: block;
+  text-align: center;
 }
 
 .dash-link {

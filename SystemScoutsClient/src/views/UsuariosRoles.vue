@@ -72,8 +72,8 @@
             <td data-label="Nombre">{{ usuario.nombre }}</td>
             <td data-label="Usuario">{{ usuario.username }}</td>
             <td data-label="Rol">
-              <span class="rol-badge" :class="`rol-${usuario.rol.toLowerCase()}`">
-                {{ usuario.rol }}
+              <span class="rol-badge" :class="rolClass(usuario)">
+                {{ getRolLabel(usuario.perfil_id) || usuario.rol }}
               </span>
             </td>
             <td data-label="Estado">
@@ -413,6 +413,17 @@ export default {
     await this.cargarDatos()
   },
   methods: {
+    getRolLabel(perfilId) {
+      if (perfilId === null || perfilId === undefined || perfilId === '') return ''
+      const opt = this.rolesOptions.find(r => String(r.value) === String(perfilId))
+      return opt ? opt.label : ''
+    },
+
+    rolClass(usuario) {
+      const label = this.getRolLabel(usuario.perfil_id) || usuario.rol || ''
+      return `rol-${String(label).toLowerCase()}`
+    },
+
     async cargarDatos() {
       // Cargar datos mock en memoria para modo solo-pantallas
       this.cargando = true
@@ -469,9 +480,9 @@ export default {
         )
       }
       
-      // Filtrar por rol
+      // Filtrar por rol (comparar por perfil_id que es el value en rolesOptions)
       if (this.filtroRol) {
-        resultado = resultado.filter(u => u.rol === this.filtroRol)
+        resultado = resultado.filter(u => String(u.perfil_id || '') === String(this.filtroRol))
       }
       
       // Filtrar por estado

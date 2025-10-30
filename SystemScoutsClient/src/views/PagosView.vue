@@ -499,7 +499,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import pagosService from '@/services/pagosService.js'
-import personasService from '@/services/personasService.js'
+import { personas as personasService } from '@/services/personasService'
 import cursosService from '@/services/cursosService.js'
 import BaseModal from '@/components/Reutilizables/BaseModal.vue'
 import NotificationToast from '@/components/Reutilizables/NotificationToast.vue'
@@ -1091,16 +1091,6 @@ function mostrarAlerta(mensaje, tipo) {
 }
 
 /* ==================== FORMULARIOS ==================== */
-form {
-  padding: 32px;
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
-  margin-bottom: 24px;
-}
 
 .form-group {
   display: flex;

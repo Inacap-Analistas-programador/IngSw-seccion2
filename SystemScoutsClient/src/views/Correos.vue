@@ -124,7 +124,8 @@ import { reactive, computed, ref, onMounted, nextTick } from 'vue'
 import BaseButton from '../components/Reutilizables/BaseButton.vue'
 import AppIcons from '@/components/icons/AppIcons.vue'
 import QRCode from 'qrcode'
-import personasService from '@/services/personasService.js'
+import { personas as personasService } from '@/services/personasService'
+import authViewsService from '@/services/auth_viewsService.js'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
 
@@ -132,15 +133,6 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
 const rows = ref([])
 const loading = ref(true)
 const error = ref(null)
-
-// Datos mock para presentación
-const MOCK_ROWS = [
-  { id: 1, nombre: 'Juan Pérez', email: 'juan.perez@scout.cl', curso: 'Curso Básico de Formación', cargo: 'Dirigente', estadoPago: 'Pagado', estadoCorreo: 'Enviado', diasPendiente: null, vigente: true },
-  { id: 2, nombre: 'María González', email: 'maria.gonzalez@scout.cl', curso: 'Técnicas de Campamento', cargo: 'Participante', estadoPago: 'Pendiente', estadoCorreo: 'Pendiente', diasPendiente: 5, vigente: true },
-  { id: 3, nombre: 'Pedro Silva', email: 'pedro.silva@scout.cl', curso: 'Liderazgo Scout', cargo: 'Coordinador', estadoPago: 'Pagado', estadoCorreo: 'Enviado', diasPendiente: null, vigente: true },
-  { id: 4, nombre: 'Ana Martínez', email: 'ana.martinez@scout.cl', curso: 'Curso Básico de Formación', cargo: 'Participante', estadoPago: 'Pendiente', estadoCorreo: 'Pendiente', diasPendiente: 3, vigente: true },
-  { id: 5, nombre: 'Carlos Rojas', email: 'carlos.rojas@scout.cl', curso: 'Primeros Auxilios Avanzado', cargo: 'Dirigente', estadoPago: 'Pagado', estadoCorreo: 'Enviado', diasPendiente: null, vigente: true }
-]
 
 const filters = reactive({ curso: 'Todos', cargo: 'Todos', estadoPago: 'Todos', estadoCorreo: 'Todos' })
 const seleccion = reactive({})
@@ -152,22 +144,45 @@ onMounted(async () => {
 	try {
 		loading.value = true
 		error.value = null
-		const personas = await personasService.listarBasic()
-		rows.value = (personas || []).map(p => ({
-			id: p.id,
-			nombre: p.nombre,
-			email: p.email || '',
+		const personas = await personasService.list()
+
+		// Asegurarnos de que 'personas' es un array antes de usar .map.
+		// La API puede devolver la lista directa, o un objeto con { data: [...] } / { results: [...] }.
+		let list = []
+		if (Array.isArray(personas)) {
+			list = personas
+		} else if (personas && Array.isArray(personas.data)) {
+			list = personas.data
+		} else if (personas && Array.isArray(personas.results)) {
+			list = personas.results
+		} else if (personas && Array.isArray(personas.personas)) {
+			// Algunos endpoints devuelven un objeto con la lista en la clave 'personas'
+			list = personas.personas
+		} else {
+			// Si recibimos un objeto inesperado, adjuntamos las keys para facilitar debug
+			const keys = personas && typeof personas === 'object' ? Object.keys(personas) : []
+			console.warn('Respuesta inesperada de personasService.list():', personas)
+			throw new Error('Respuesta inesperada de la API de personas. Keys recibidas: ' + (keys.length ? keys.join(', ') : 'ninguna'))
+		}
+
+		rows.value = list.map(p => ({
+			id: p.id || p.PER_ID || null,
+			// Normalizar posibles nombres de campo desde el backend
+			nombre: p.nombre || p.nombre_completo || p.full_name || p.PER_NOMBRES || '',
+			email: p.email || p.mail || p.correo || p.PER_MAIL || '',
 			curso: p.curso || 'Sin curso', // TODO: si viene desde persona-curso
 			cargo: p.cargo || 'Participante', // TODO: desde relaciones
 			estadoPago: 'Pendiente', // TODO: enlazar pagos
 			estadoCorreo: 'Pendiente',
 			diasPendiente: null,
-			vigente: p.vigente !== false
+			// Normalizar campo 'vigente' que en el modelo es PER_VIGENTE
+			vigente: (p.vigente !== undefined ? p.vigente : (p.PER_VIGENTE !== undefined ? p.PER_VIGENTE : true)) !== false
 		}))
-	} catch (e) {
-		console.error('Error cargando personas, usando datos mock:', e)
-		error.value = null // No mostrar error en presentación
-		rows.value = MOCK_ROWS
+		} catch (e) {
+			// Si falla la petición a la API, mostrar el error y no usar mocks
+			console.error('Error cargando personas desde API:', e)
+			error.value = (e && e.message) ? e.message : String(e)
+			rows.value = []
 	} finally {
 		loading.value = false
 	}
@@ -218,35 +233,26 @@ async function marcarEnviado() {
 		}
 	}
 	
-	// Llamar al backend para generar token firmado y persistirlo
-	try {
-	const response = await fetch(`${API_BASE}/api/personas/qr-token/`, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({
+		// Llamar al backend (servicio `auth_views`) para generar token firmado y persistirlo
+		try {
+			const payload = {
 				ids: selIds.map(id => Number(id)),
 				tipo: 'correo-enviado',
 				expSeconds: 24 * 3600,
-				usuId: 1  // TODO: usar usuario autenticado
-			})
-		})
-		
-		if (!response.ok) {
-			const err = await response.json()
-			throw new Error(err.detail || 'Error al generar QR')
+				usuId: 1 // TODO: usar usuario autenticado
+			}
+			const result = await authViewsService.qr_token(payload)
+			const token = result && result.token
+
+			// Renderizar QR con el token del backend
+			if (!token) throw new Error('Respuesta inválida del servidor')
+			mostrarQR.value = true
+			await nextTick()
+			await QRCode.toCanvas(qrCanvas.value, token, { width: 220 })
+		} catch (e) {
+			console.error('Error generando QR desde backend:', e)
+			alert('No se pudo generar el QR: ' + e.message)
 		}
-		
-		const result = await response.json()
-		const token = result.token
-		
-		// Renderizar QR con el token del backend
-		mostrarQR.value = true
-		await nextTick()
-		await QRCode.toCanvas(qrCanvas.value, token, { width: 220 })
-	} catch (e) {
-		console.error('Error generando QR desde backend:', e)
-		alert('No se pudo generar el QR: ' + e.message)
-	}
 }
 
 function cerrarQR() {
@@ -260,32 +266,27 @@ async function enviarPorCorreo() {
 		return
 	}
 
-	try {
-	const response = await fetch(`${API_BASE}/api/personas/qr-email/`, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({
+		try {
+			const payload = {
 				ids: selIds.map(id => Number(id)),
 				tipo: 'correo-enviado',
 				expSeconds: 24 * 3600,
 				usuId: 1
-			})
-		})
-		const result = await response.json()
-		if (!response.ok) throw new Error(result.detail || 'Error al enviar correos')
-
-		// Marcar como enviados localmente
-		for (const r of rows.value) {
-			if (selIds.includes(String(r.id)) && r.vigente && r.email) {
-				r.estadoCorreo = 'Enviado'
 			}
-		}
+			const result = await authViewsService.qr_email(payload)
 
-		alert(`✅ Envío completado\n\nSolicitados: ${result.solicitados}\nProcesados (vigentes con email): ${result.procesados}\nEnviados: ${result.enviados}\n\nRevisa la consola del servidor para ver los correos.`)
-	} catch (e) {
-		console.error('Error enviando correos:', e)
-		alert('❌ No se pudieron enviar los correos: ' + e.message)
-	}
+			// Marcar como enviados localmente
+			for (const r of rows.value) {
+				if (selIds.includes(String(r.id)) && r.vigente && r.email) {
+					r.estadoCorreo = 'Enviado'
+				}
+			}
+
+			alert(`✅ Envío completado\n\nSolicitados: ${result.solicitados}\nProcesados (vigentes con email): ${result.procesados}\nEnviados: ${result.enviados}\n\nRevisa la consola del servidor para ver los correos.`)
+		} catch (e) {
+			console.error('Error enviando correos:', e)
+			alert('❌ No se pudieron enviar los correos: ' + e.message)
+		}
 }
 </script>
 
