@@ -18,7 +18,6 @@
         <router-link to="/correos" class="nav-item">Envío de Correos</router-link>
         <router-link to="/mantenedores" class="nav-item">Mantenedores</router-link>
         <router-link to="/manual-acreditacion" class="nav-item">Acreditación Manual</router-link>
-        <router-link to="/reportes" class="nav-item">Reportes Excel</router-link>
         <router-link to="/verificador-qr" class="nav-item">Verificador QR</router-link>
 
   <!-- Apartado desplegable: Pantallas 2 -->

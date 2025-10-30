@@ -1,6 +1,6 @@
 from rest_framework.routers import DefaultRouter
 from django.urls import path, include
-from ..Views.Archivos_view import *
+from ..View.Archivos_view import *
 
 router = DefaultRouter()
 router.register(r'archivos', ArchivoViewSet, basename='archivos')

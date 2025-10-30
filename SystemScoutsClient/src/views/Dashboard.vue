@@ -24,23 +24,10 @@
             <p class="control-subtitle">Sistema de Gestión de Cursos Scout</p>
           </header>
 
-          <!-- Navegación por pestañas -->
-          <nav class="tabs-nav" v-if="false">
-            <button 
-              v-for="tab in tabs" 
-              :key="tab.id"
-              :class="['tab-btn', { active: activeTab === tab.id }]"
-              @click="activeTab = tab.id"
-            >
-              <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path v-if="tab.id === 'resumen'" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-              </svg>
-              <span class="tab-label">{{ tab.label }}</span>
-            </button>
-          </nav>
+
 
           <!-- Vista Resumen -->
-          <div v-show="activeTab === 'resumen'" class="tab-content">
+          <div class="tab-content">
             <!-- Indicadores críticos tipo semáforo -->
             <div class="semaforo-grid">
               <div :class="['semaforo-card', getSemaforoClass('inscritos')]" @click="goToGestionPersonas">
@@ -249,12 +236,7 @@ import dashboardService from '@/services/dashboardService.js'
 // Sin datos mock: todo proviene del servicio/API
 
 const router = useRouter()
-const activeTab = ref('resumen')
 const showCursosModal = ref(false)
-
-const tabs = [
-  { id: 'resumen', label: 'Resumen', icon: '📊' }
-]
 
 const cursosList = ref([])
 const totalPersonas = ref(0)
@@ -263,23 +245,7 @@ const sortedCursos = computed(() =>
   [...cursosList.value].sort((a, b) => (a.title || '').localeCompare(b.title || '', 'es', { sensitivity: 'base' }))
 )
 
-function cursoAlert(curso) {
-  if (!curso || !curso.capacidad) return 'ok'
-  if (curso.inscritos >= curso.capacidad) return 'full'
-  if (curso.inscritos >= curso.capacidad * 0.7) return 'near'
-  return 'ok'
-}
 
-function chartPercent(curso) {
-  const cap = Math.max(0, Number(curso.capacidad) || 0)
-  const ins = Math.max(0, Math.min(Number(curso.inscritos) || 0, cap))
-  return cap === 0 ? 0 : Math.round((ins / cap) * 100)
-}
-
-function getStatusLabel(status) {
-  const labels = { ok: 'Normal', near: 'Casi lleno', full: 'Completo' }
-  return labels[status] || 'Normal'
-}
 
 function getAlertIcon(type) {
   const icons = { full: '🔴', near: '🟡', bajo: '🟢' }
@@ -342,10 +308,6 @@ const cursosConPagosPendientes = computed(() => {
   return pagosBars.value.filter(c => c.unpaid > 0).sort((a, b) => b.unpaid - a.unpaid)
 })
 
-function getCursoPaid(cursoId) {
-  return pagosSumByCourse.value[cursoId] || 0
-}
-
 function fmtCurrency(amount) {
   try {
     return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(Number(amount || 0))
@@ -364,36 +326,13 @@ const kpi = computed(() => {
   return { totalCursos, totalInscritos, ingresosProyectados, ingresosPagados, ingresosPendientes }
 })
 
-const kpiPaymentPercent = computed(() => {
-  if (kpi.value.ingresosProyectados === 0) return 0
-  return Math.round((kpi.value.ingresosPagados / kpi.value.ingresosProyectados) * 100)
-})
 
-function getBarHeight(value, type, maxValue = null) {
-  const allCapacities = sortedCursos.value.map(c => c.capacidad)
-  const max = Math.max(...allCapacities, 1)
-  if (type === 'capacidad') {
-    return (value / max) * 100
-  }
-  if (type === 'inscritos') {
-    const capMax = maxValue || max
-    return (value / max) * 100
-  }
-  return 0
-}
 
-function getCursoShortName(title) {
-  const words = title.split(' ')
-  if (words.length <= 2) return title
-  return words.slice(0, 2).join(' ')
-}
 
-function getDonutDash() {
-  const circumference = 2 * Math.PI * 80
-  const percent = kpiPaymentPercent.value
-  const dashLength = (percent / 100) * circumference
-  return `${dashLength} ${circumference}`
-}
+
+
+
+
 
 const alerts = computed(() => {
   const result = []
@@ -409,14 +348,11 @@ const alerts = computed(() => {
   return result.slice(0, 6)
 })
 
-const closedAlerts = ref([])
-
-const visibleAlerts = computed(() => {
-  return alerts.value.filter(alert => !closedAlerts.value.includes(alert.id))
-})
+const visibleAlerts = computed(() => alerts.value)
 
 function closeAlert(alertId) {
-  closedAlerts.value.push(alertId)
+  // Filter out the closed alert from the alerts array
+  alerts.value = alerts.value.filter(alert => alert.id !== alertId)
 }
 
 function goToGestionPersonas() {
@@ -427,19 +363,11 @@ function goToCursoEdit(cursoId) {
   router.push({ path: '/cursos-capacitaciones', query: { edit: cursoId } })
 }
 
-function goToGraficos() {
-  activeTab.value = 'graficos'
-}
 
-function scrollToTable() {
-  const table = document.querySelector('.data-section')
-  if (table) {
-    table.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
-}
 
 function showAlerts() {
-  closedAlerts.value = []
+  // Recalculate alerts based on current course data
+  alerts.value = alerts.value.slice()
 }
 
 function getDirectivoCount(curso) {
@@ -568,58 +496,7 @@ onMounted(() => {
   font-size: 1rem;
 }
 
-.tabs-nav {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 2rem;
-  padding: 0.5rem;
-  background: var(--color-background);
-  border-radius: 12px;
-}
 
-.tab-btn {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  border: none;
-  background: transparent;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.tab-btn:hover {
-  background: var(--color-background-mute);
-}
-
-.tab-btn.active {
-  background: var(--color-primary);
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(44,82,130,0.3);
-}
-
-.tab-icon {
-  width: 20px;
-  height: 20px;
-}
-
-.tab-label {
-  font-size: 0.95rem;
-}
-
-.tab-content {
-  animation: fadeIn 0.4s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
 
 .semaforo-grid {
   display: grid;
@@ -957,193 +834,9 @@ onMounted(() => {
   border-color: #fecaca; /* red-200 */
 }
 
-.progress-bar {
-  position: relative;
-  width: 100%;
-  height: 28px;
-  background: #e2e8f0;
-  border-radius: 999px;
-  overflow: hidden;
-}
 
-.progress-fill {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: width 0.3s ease;
-}
 
-.progress-fill.ok {
-  background: linear-gradient(90deg, #22c55e, #16a34a);
-}
 
-.progress-fill.near {
-  background: linear-gradient(90deg, #f59e0b, #d97706);
-}
-
-.progress-fill.full {
-  background: linear-gradient(90deg, #ef4444, #dc2626);
-}
-
-.progress-text {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.charts-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 2rem;
-}
-
-.chart-card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 1.5rem;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-}
-
-.chart-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 1.5rem;
-}
-
-.chart-canvas {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-/* Gráfico de barras verticales */
-.bar-chart {
-  display: flex;
-  justify-content: space-around;
-  align-items: flex-end;
-  height: 300px;
-  padding: 1rem;
-  background: #f8fafc;
-  border-radius: 12px;
-}
-
-.bar-group {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-  flex: 1;
-  max-width: 120px;
-}
-
-.bar-container {
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  height: 250px;
-}
-
-.bar {
-  position: relative;
-  width: 35px;
-  min-height: 20px;
-  border-radius: 6px 6px 0 0;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding-top: 6px;
-}
-
-.bar:hover {
-  filter: brightness(1.1);
-  transform: scaleY(1.02);
-}
-
-.bar-capacidad {
-  background: #3b82f6;
-}
-
-.bar-inscritos {
-  background: #f59e0b;
-}
-
-.bar-value {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #fff;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
-}
-
-.bar-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #475569;
-  text-align: center;
-  max-width: 100%;
-  word-wrap: break-word;
-}
-
-/* Gráfico de dona */
-.donut-chart {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 2rem;
-}
-
-.donut-svg {
-  width: 200px;
-  height: 200px;
-  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.1));
-}
-
-.donut-percent {
-  font-size: 2rem;
-  font-weight: 800;
-  fill: #1e293b;
-}
-
-.donut-label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  fill: #64748b;
-}
-
-/* Leyenda de gráficos */
-.chart-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  justify-content: center;
-  padding: 1rem;
-  background: #f8fafc;
-  border-radius: 8px;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  color: #475569;
-}
-
-.legend-color {
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
-}
 
 /* Gráfico de pagos por curso */
 .chart-card-full {
@@ -1647,17 +1340,7 @@ onMounted(() => {
     grid-template-columns: 1fr;
   }
 
-  .charts-grid {
-    grid-template-columns: 1fr;
-  }
 
-  .tabs-nav {
-    flex-wrap: wrap;
-  }
-
-  .tab-btn {
-    flex: 1 1 45%;
-  }
 
   .alert-toast {
     min-width: 280px;
@@ -1679,10 +1362,7 @@ onMounted(() => {
     font-size: 1.25rem;
   }
 
-  .tab-btn {
-    flex: 1 1 100%;
-    font-size: 0.875rem;
-  }
+
 
   .table-container {
     font-size: 0.875rem;

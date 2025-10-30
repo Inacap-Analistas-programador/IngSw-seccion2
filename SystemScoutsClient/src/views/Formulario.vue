@@ -596,7 +596,7 @@
   </section>
 
   <!--:::::::::::::::::::::: BOTONES DE ACCIÓN ::::::::::::::::::::::::::::::::::-->
-        <div class="botones-formulario">
+        <div class="botones-formulario" style="display: flex; justify-content: center; align-items: center; gap: 20px; width: 100%;">
           <button type="button" class="btn-vaciar" @click="limpiarFormulario">VACIAR</button>
           <button type="submit" class="btn-enviar" @click.prevent="enviarFormulario">ENVIAR</button>
         </div>
@@ -604,8 +604,10 @@
 
     </form>
   </div>
+  
   <!--:::::::::::::::::::::: BOTON FLOTANTE ::::::::::::::::::::::::::::::::::-->
-  <button class="btn-volver" @click="volverArriba">↑</button>
+  <button class="btn-volver" @click="scrollArriba" title="Volver al inicio">↑</button>
+
 
 </template>
 
@@ -621,12 +623,15 @@ import { ref, computed } from 'vue';
 import InputBase from '@/components/Reutilizables/InputBase.vue';
 
 // :::::::::::::::::: LOGICA BOTON FLOTANTE :::::::::::::::::::::::::
-const volverArriba = () => {
-  window.scrollTo({
+function scrollArriba(){
+  const main = document.querySelector('main');
+  main.scrollTo({
     top: 0,
-    behavior: "smooth"
+    behavior: 'smooth'
   });
-};
+
+}
+
 
 
 // :::::::::::::::::: VARIABLES PARA CAPTURAR VALORES :::::::::::::::::::::::::
@@ -952,6 +957,7 @@ const comunasDisponibles = computed(() => {
     box-shadow: 0 4px 10px rgba(21, 101, 192, 0.4);
     transition: all 0.3s ease;
     z-index: 9999;
+    scroll-padding-top: 29px;
   }
 
   .btn-volver:hover {
@@ -1034,7 +1040,7 @@ button:disabled {
     justify-content: center; /* Centra verticalmente */ 
     align-items: center; /* Centra horizontalmente */ 
     min-height: 100vh; /* Ocupa todo el alto de la ventana */ 
-    background: linear-gradient(135deg, #4a90e2, #cfe2f3); 
+    background: linear-gradient(135deg, #2c5cdd, #2563eb, #3b82f6);
 } 
 
 textarea { 
@@ -1090,7 +1096,7 @@ form {
     flex-direction: column; 
     gap: 10px; 
     width: 100%; 
-    max-width: 400px; /* Controla el ancho del formulario */ 
+    max-width: 600px; /* Aumentado el ancho máximo del formulario */ 
     background: rgb(255, 255, 255); /* Opcional: fondo blanco */ 
     padding: 70px; 
     border-radius: 10px; 
@@ -1112,7 +1118,7 @@ h1 {
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
   letter-spacing: 8px;
   text-transform: capitalize;
-  width: 47%;
+  width: 70%; /* Aumentado para coincidir con el nuevo ancho del formulario */
   margin-bottom: 20px;
   box-sizing: border-box;
 }
@@ -1207,7 +1213,6 @@ input:focus, select:focus, textarea:focus {
   }
 /*:::::::::::::::::::::::::::::::::::::::::::::::::::::::*/
   .btn-vaciar {
-  margin-right: 40px;
   margin-top: 20px;
   display: inline-block;
   justify-content: center;

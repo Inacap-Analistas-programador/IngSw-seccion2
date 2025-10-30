@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from ..Views.Pagos_view import *
+from ..View.Pagos_view import *
 
 router = DefaultRouter()
 router.register(r'proveedor', ProveedorViewSet, basename='proveedor')
