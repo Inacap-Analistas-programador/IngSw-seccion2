@@ -10,8 +10,9 @@ const PagosView = () => import('@/views/PagosView.vue')
 const Correos = () => import('@/views/Correos.vue')
 const ManualAcreditation = () => import('@/views/ManualAcreditation.vue')
 const VerificadorQR = () => import('@/views/VerificadorQR.vue')
-const Usuarios = () => import('@/views/Gestionpersonas.vue')
+const UsuariosRoles = () => import('@/views/UsuariosRoles.vue')
 const CursosCapacitaciones = () => import('@/views/CRUDcursos.vue')
+const Reportes = () => import('@/views/Reportes.vue')
 const Login = () => import('@/views/Login.vue')
 const FormularioPreInscripcion = () => import('@/views/Formulario.vue')
 const FormularioPreInscripcion2 = () => import('@/views/Formulario 2.vue')
@@ -22,7 +23,7 @@ const router = createRouter({
     { path: '/', name: 'login', component: Login },
     { path: '/dashboard', name: 'dashboard', component: Dashboard, meta: { requiresAuth: true } },
   { path: '/dashboard-2', name: 'dashboard2', component: Dashboard2, meta: { requiresAuth: true } },
-    { path: '/usuarios', name: 'usuarios', component: Usuarios, meta: { requiresAuth: true } },
+    { path: '/usuarios', name: 'usuarios', component: UsuariosRoles, meta: { requiresAuth: true } },
   // Mantenedores admite pestaña vía parámetro opcional
   { path: '/mantenedores/:tab?', name: 'mantenedores', component: Mantenedores, props: true, meta: { requiresAuth: true } },
     { path: '/gestionpersonas', name: 'gestionpersonas', component: Gestionpersonas, meta: { requiresAuth: true } },
@@ -31,6 +32,7 @@ const router = createRouter({
   { path: '/verificador-qr', name: 'verificadorqr', component: VerificadorQR, meta: { requiresAuth: true, requiresAuth: true } },
     { path: '/correos', name: 'correos', component: Correos, meta: { requiresAuth: true } },
     { path: '/cursos-capacitaciones', name: 'cursoscapacitaciones', component: CursosCapacitaciones, meta: { requiresAuth: true } },
+    { path: '/reportes', name: 'reportes', component: Reportes, meta: { requiresAuth: true } },
     { path: '/inscripciones', name: 'formularioPreInscripcion', component: FormularioPreInscripcion },
   { path: '/inscripciones-2', name: 'formularioPreInscripcion2', component: FormularioPreInscripcion2 },
     // fallback
