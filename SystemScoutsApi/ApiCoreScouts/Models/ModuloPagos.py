@@ -46,8 +46,14 @@ class Pago_Persona(models.Model):
         (1, 'Ingreso'),
         (2, 'Egreso'),
     ]
+    PAP_TIPO = models.IntegerField(choices=PAP_TIPO_OPCION, null=True, db_column='PAP_TIPO')
     PAP_VALOR = models.DecimalField(max_digits=21, decimal_places=6, null=False, db_column='PAP_VALOR')
-    PAP_OBSERVACION = models.CharField(max_length=500, null=True)
+    PAP_ESTADO_OPCION = [
+        (1,'Pagado'),
+        (2, 'Anulado')
+    ]
+    PAP_ESTADO = models.IntegerField(choices=PAP_ESTADO_OPCION, null=False, db_column='PAP_ESTADO')
+    PAP_OBSERVACION = models.CharField(max_length=500, null=True, db_column='PAP_OBSERVACION')
 
     class Meta:
         db_table = 'PAGO_PERSONA'

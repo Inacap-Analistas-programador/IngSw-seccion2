@@ -87,9 +87,10 @@ class Persona_Curso(models.Model):
     ROL_ID = models.ForeignKey(Rol, on_delete=models.PROTECT, null=False, db_column='ROL_ID')
     ALI_ID = models.ForeignKey(Alimentacion, on_delete=models.PROTECT, blank=True, null=True, db_column='ALI_ID')
     NIV_ID = models.ForeignKey(Nivel, on_delete=models.PROTECT, null=True, db_column='NIV_ID')
-    PEC_OBSERVACION = models.CharField(max_length=500, blank=True, null=True)
-    PEC_REGISTRO = models.BooleanField(default=False, null=False)
-    PEC_ACREDITACION = models.BooleanField(default=False, null=False)
+    PEC_OBSERVACION = models.CharField(max_length=500, blank=True, null=True, db_column='PEC_OBSERVACION')
+    PEC_REGISTRO = models.BooleanField(default=False, null=False, db_column='PEC_REGISTRO')
+    PEC_ACREDITACION = models.BooleanField(default=False, null=False, db_column='PEC_ACREDITACION')
+    PEC_ENVIO_CORREO_QR = models.BooleanField(default=False, null=False, db_column='PEC_ENVIO_CORREO_QR')
 
     class Meta:
         db_table = 'PERSONA_CURSO'
