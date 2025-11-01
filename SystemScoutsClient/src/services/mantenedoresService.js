@@ -1,5 +1,6 @@
 import { request } from './apiClient'
 
+// Función genérica para crear endpoints CRUD
 const makeCrud = base => ({
   list: (params) => request(`${base}${params ? `?${new URLSearchParams(params)}` : ''}`),
   get: (id) => request(`${base}${id}/`),
@@ -9,6 +10,7 @@ const makeCrud = base => ({
   remove: (id) => request(`${base}${id}/`, { method: 'DELETE' }),
 })
 
+// Exportaciones individuales para cada mantenedor
 export const conceptoContable = makeCrud('concepto-contable')
 export const tipoCursos = makeCrud('tipo-cursos')
 export const tipoArchivos = makeCrud('tipo-archivos')
@@ -25,7 +27,24 @@ export const region = makeCrud('region')
 export const provincia = makeCrud('provincia')
 export const comuna = makeCrud('comuna')
 
-export default {
-  conceptoContable, tipoCursos, tipoArchivos, alimentacion, rol, cargo, rama,
-  estadoCivil, nivel, zona, distrito, grupo, region, provincia, comuna
+// Objeto unificado para exportar, incluyendo una función de lista genérica
+const mantenedores = {
+  list: (mantenedor) => request(`mantenedores/${mantenedor}`), // CORREGIDO: Añadido el prefijo
+  conceptoContable,
+  tipoCursos,
+  tipoArchivos,
+  alimentacion,
+  rol,
+  cargo,
+  rama,
+  estadoCivil,
+  nivel,
+  zona,
+  distrito,
+  grupo,
+  region,
+  provincia,
+  comuna
 }
+
+export default mantenedores
