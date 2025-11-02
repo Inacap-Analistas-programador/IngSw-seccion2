@@ -372,7 +372,10 @@ onMounted(() => {
       if (!response.ok) throw new Error('Error en la respuesta del servidor')
       const data = await response.json()
       
-      cursosList.value = data.map(c => ({
+      // Ensure we're working with an array of courses
+      const cursosData = Array.isArray(data) ? data : (data.results || data.data || [])
+      
+      cursosList.value = cursosData.map(c => ({
         id: c.CUS_ID,
         title: c.CUS_NOMBRE,
         rama: c.CUS_RAMA,
@@ -399,7 +402,10 @@ onMounted(() => {
       // Obtener datos de pagos
       const pagosResponse = await fetch('http://127.0.0.1:8000/api/cuotas/')
       if (!pagosResponse.ok) throw new Error('Error obteniendo datos de pagos')
-      const pagosData = await pagosResponse.json()
+      const pagosDataRaw = await pagosResponse.json()
+      
+      // Ensure we're working with an array of pagos
+      const pagosData = Array.isArray(pagosDataRaw) ? pagosDataRaw : (pagosDataRaw.results || pagosDataRaw.data || [])
       
       // Agrupar pagos por curso
       pagosData.forEach(pago => {
