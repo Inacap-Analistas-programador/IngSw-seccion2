@@ -113,14 +113,20 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import AppIcons from '@/components/icons/AppIcons.vue'
 
-// Sin datos mock: todo proviene del servicio/API
-
 const router = useRouter()
-const showCursosModal = ref(false)
 
+// State management
+const showCursosModal = ref(false)
 const cursosList = ref([])
 const totalPersonas = ref(0)
+const pagosSumByCourse = ref({})
+const pagosCountPaidByCourse = ref({})
+const directivosByCourse = ref({})
+const coordinadoresByCourse = ref({})
+const directoresByCourse = ref({})
+const closedAlerts = ref([])
 
+// Computed properties
 const sortedCursos = computed(() =>
   [...cursosList.value].sort((a, b) => (a.title || '').localeCompare(b.title || '', 'es', { sensitivity: 'base' }))
 )
@@ -172,14 +178,7 @@ function getSemaforoClass(indicator) {
   return 'ok'
 }
 
-// Pagos no enlazados aún: dejamos montos en 0 hasta habilitar API de pagos
-const pagosSumByCourse = ref({})
-const pagosCountPaidByCourse = ref({})
-const directivosByCourse = ref({})
-// Additional role counts (if available from API later)
-const coordinadoresByCourse = ref({})
-const directoresByCourse = ref({})
-
+// Computed properties for pagos
 const pagosBars = computed(() => {
   return sortedCursos.value.map(c => {
     const valor = Number(c.valor || 0)
@@ -284,29 +283,79 @@ const kpi = computed(() => {
 
 const alerts = computed(() => {
   const result = []
+
+  // Add system error alerts
+  if (errorState.value.message) {
+    result.push({
+      id: 'system-error',
+      title: 'Error del Sistema',
+      type: 'error',
+      label: errorState.value.message
+    })
+  }
+
+  // Add course-specific alerts
   sortedCursos.value.forEach(c => {
     const cap = Number(c.capacidad) || 0
     const ins = Number(c.inscritos) || 0
+    
     if (cap) {
       const ratio = ins / cap
-      if (ratio >= 1) result.push({ id: `${c.id}-full`, title: c.title, type: 'full', label: 'Completo' })
-      else if (ratio >= 0.85) result.push({ id: `${c.id}-near`, title: c.title, type: 'near', label: 'Casi lleno' })
-      else if (ratio <= 0.25) result.push({ id: `${c.id}-bajo`, title: c.title, type: 'bajo', label: 'Baja inscripción' })
+      if (ratio >= 1) {
+        result.push({ 
+          id: `${c.id}-full`, 
+          title: c.title, 
+          type: 'full', 
+          label: 'Completo' 
+        })
+      } else if (ratio >= 0.85) {
+        result.push({ 
+          id: `${c.id}-near`, 
+          title: c.title, 
+          type: 'near', 
+          label: 'Casi lleno' 
+        })
+      } else if (ratio <= 0.25) {
+        result.push({ 
+          id: `${c.id}-bajo`, 
+          title: c.title, 
+          type: 'bajo', 
+          label: 'Baja inscripción' 
+        })
+      }
     }
 
-    // Formadores alerts: notify only when formadores are insufficient (<4)
+    // Check for insufficient formadores
     const formCount = getDirectivoCount(c)
     if (formCount < 4) {
-      result.push({ id: `${c.id}-formadores-low`, title: c.title, type: 'formadores-low', label: 'Formadores insuficientes' })
+      result.push({ 
+        id: `${c.id}-formadores-low`, 
+        title: c.title, 
+        type: 'formadores-low', 
+        label: 'Formadores insuficientes' 
+      })
     }
   })
+
+  // Add pagos errors if any
+  if (errorState.value.pagos) {
+    result.push({
+      id: 'pagos-error',
+      title: 'Error en Pagos',
+      type: 'error',
+      label: 'Error al cargar los datos de pagos'
+    })
+  }
+
   return result.slice(0, 6)
 })
 
-// Track closed alerts so we don't attempt to mutate a computed property
-const closedAlerts = ref([])
-
-const visibleAlerts = computed(() => alerts.value.filter(alert => !closedAlerts.value.includes(alert.id)))
+// Track active error states
+const errorState = ref({
+  loading: false,
+  cursos: false,
+  pagos: false
+})
 
 function closeAlert(alertId) {
   if (!closedAlerts.value.includes(alertId)) closedAlerts.value.push(alertId)
@@ -364,74 +413,110 @@ function getPagoStatusLabel(curso) {
   return 'Crítico'
 }
 
-onMounted(() => {
-  const fetchData = async () => {
-    try {
-      // Obtener cursos
-      const response = await fetch('http://127.0.0.1:8000/api/cursos/')
-      if (!response.ok) throw new Error('Error en la respuesta del servidor')
-      const data = await response.json()
-      
-      // Ensure we're working with an array of courses
-      const cursosData = Array.isArray(data) ? data : (data.results || data.data || [])
-      
-      cursosList.value = cursosData.map(c => ({
-        id: c.CUS_ID,
-        title: c.CUS_NOMBRE,
-        rama: c.CUS_RAMA,
-        inscritos: c.CUS_INSCRITOS || 0,
-        capacidad: c.CUS_CAPACIDAD || 0,
-        valor: c.CUS_VALOR || 0,
-        estado: c.CUS_ESTADO,
-        alimentacion: c.CUS_ALIMENTACION,
-        directivos: c.CUS_DIRECTIVOS || 0,
-        coordinadores: c.CUS_COORDINADORES || 0,
-        directores: c.CUS_DIRECTORES || 0
-      }))
+onMounted(async () => {
+  try {
+    // Reset all data structures
+    cursosList.value = []
+    totalPersonas.value = 0
+    pagosSumByCourse.value = {}
+    pagosCountPaidByCourse.value = {}
+    directivosByCourse.value = {}
+    coordinadoresByCourse.value = {}
+    directoresByCourse.value = {}
 
-      // Actualizar conteos totales
-      totalPersonas.value = cursosList.value.reduce((sum, curso) => sum + (curso.inscritos || 0), 0)
-      
-      // Actualizar conteos de roles por curso
-      cursosList.value.forEach(curso => {
-        directivosByCourse.value[curso.id] = curso.directivos
-        coordinadoresByCourse.value[curso.id] = curso.coordinadores
-        directoresByCourse.value[curso.id] = curso.directores
+    // Fetch cursos with error handling
+    const cursosResp = await fetch('http://127.0.0.1:8000/api/cursos/', {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json'
+      }
+    })
+
+    if (!cursosResp.ok) {
+      throw new Error(`Error obteniendo cursos: ${cursosResp.status}`)
+    }
+
+    const cursosData = await cursosResp.json()
+    const cursos = Array.isArray(cursosData) ? cursosData : (cursosData.results || [])
+
+    // Process cursos data
+    cursosList.value = cursos.map(c => ({
+      id: c.CUS_ID,
+      title: c.CUS_NOMBRE,
+      rama: c.CUS_RAMA,
+      inscritos: c.CUS_INSCRITOS || 0,
+      capacidad: c.CUS_CAPACIDAD || 0,
+      valor: c.CUS_VALOR || 0,
+      estado: c.CUS_ESTADO,
+      alimentacion: c.CUS_ALIMENTACION,
+      directivos: c.CUS_DIRECTIVOS || 0,
+      coordinadores: c.CUS_COORDINADORES || 0,
+      directores: c.CUS_DIRECTORES || 0
+    }))
+
+    // Update counters and role assignments
+    totalPersonas.value = cursosList.value.reduce((sum, c) => sum + (c.inscritos || 0), 0)
+
+    cursosList.value.forEach(c => {
+      directivosByCourse.value[c.id] = c.directivos
+      coordinadoresByCourse.value[c.id] = c.coordinadores
+      directoresByCourse.value[c.id] = c.directores
+    })
+
+    // Fetch and process pagos
+    try {
+      const pagosResp = await fetch('http://127.0.0.1:8000/api/cuotas/', {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
+        }
       })
 
-      // Obtener datos de pagos
-      const pagosResponse = await fetch('http://127.0.0.1:8000/api/cuotas/')
-      if (!pagosResponse.ok) throw new Error('Error obteniendo datos de pagos')
-      const pagosDataRaw = await pagosResponse.json()
-      
-      // Ensure we're working with an array of pagos
-      const pagosData = Array.isArray(pagosDataRaw) ? pagosDataRaw : (pagosDataRaw.results || pagosDataRaw.data || [])
-      
-      // Agrupar pagos por curso
-      pagosData.forEach(pago => {
-        const cursoId = pago.CUO_CURSO
+      if (!pagosResp.ok) {
+        throw new Error(`Error obteniendo pagos: ${pagosResp.status}`)
+      }
+
+      const pagosRaw = await pagosResp.json()
+      const pagos = Array.isArray(pagosRaw) ? pagosRaw : (pagosRaw.results || [])
+
+      // Reset pagos data before processing
+      pagosSumByCourse.value = {}
+      pagosCountPaidByCourse.value = {}
+
+      // Process pagos with validation
+      pagos.forEach(p => {
+        const cursoId = p.CUO_CURSO
+        if (!cursoId) return
+
+        // Initialize counters for this curso if needed
         if (!pagosSumByCourse.value[cursoId]) {
           pagosSumByCourse.value[cursoId] = 0
           pagosCountPaidByCourse.value[cursoId] = 0
         }
-        if (pago.CUO_PAGADO) {
-          pagosSumByCourse.value[cursoId] += Number(pago.CUO_VALOR) || 0
-          pagosCountPaidByCourse.value[cursoId]++
+
+        if (p.CUO_PAGADO) {
+          const monto = Number(p.CUO_VALOR)
+          if (!isNaN(monto) && monto > 0) {
+            pagosSumByCourse.value[cursoId] += monto
+            pagosCountPaidByCourse.value[cursoId]++
+          }
         }
       })
-
     } catch (error) {
-      console.error('Error fetching dashboard data:', error)
-      alerts.value = [{
-        id: 'api-error',
-        type: 'error',
-        title: 'Error de conexión',
-        message: 'No se pudo conectar con el servidor. Por favor, verifica tu conexión e intenta nuevamente.'
-      }]
+      console.error('Error procesando pagos:', error)
+      // Continue with empty pagos data rather than failing completely
     }
+  } catch (error) {
+    console.error('Error cargando datos del dashboard:', error)
+    // Reset all data on error
+    cursosList.value = []
+    totalPersonas.value = 0
+    pagosSumByCourse.value = {}
+    pagosCountPaidByCourse.value = {}
+    directivosByCourse.value = {}
+    coordinadoresByCourse.value = {}
+    directoresByCourse.value = {}
   }
-
-  fetchData()
 })
 </script>
 
