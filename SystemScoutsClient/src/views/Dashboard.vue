@@ -117,8 +117,6 @@ import { useRouter } from 'vue-router'
 import AppIcons from '@/components/icons/AppIcons.vue'
 import { cursos as cursosApi, cuotas as cuotasApi } from '@/services/cursosService.js'
 import { personas as personasApi } from '@/services/personasService.js'
-import ssbCursos from '@/assets/ssb_cursos.json'
-import ssbCuotas from '@/assets/ssb_cuotas.json'
 
 // Sin datos mock: todo proviene del servicio/API
 
@@ -389,25 +387,12 @@ onMounted(() => {
     } catch (e) {
       console.warn('Dashboard: error obteniendo cursos', e)
       cursosList.value = []
-    }
-
-    // Fallback local JSON (extractado desde ssb.sql) si no hay datos de la API
-    if (!cursosList.value || cursosList.value.length === 0) {
-      try {
-        const fallback = (ssbCursos || []).map(c => ({
-          id: c.id,
-          title: c.title,
-          inscritos: c.inscritos || 0,
-          capacidad: c.capacidad || 0,
-          valor: c.valor || 0
-        }))
-        if (fallback.length) {
-          console.info('Dashboard: usando fallback ssb_cursos.json con', fallback.length, 'cursos')
-          cursosList.value = fallback
-        }
-      } catch (err) {
-        console.warn('Dashboard: fallo fallback ssb json', err)
-      }
+      alerts.value = [{
+        id: 'api-error',
+        type: 'error',
+        title: 'Error de conexión',
+        message: 'No se pudo conectar con el servidor. Por favor, verifica tu conexión e intenta nuevamente.'
+      }]
     }
 
     // Obtener cuotas por curso (si existe endpoint 'cuotas') y mapear valores
