@@ -10,11 +10,11 @@ const makeCrud = base => ({
 })
 
 export const cursos = makeCrud('cursos')
-export const cuotas = makeCrud('cuotas')
-export const fechas = makeCrud('fechas')
-export const alimentaciones = makeCrud('alimentaciones')
-export const coordinadores = makeCrud('coordinadores')
-export const secciones = makeCrud('secciones')
-export const formadores = makeCrud('formadores')
+export const cuotas = makeCrud('cursos/cuotas')
+export const fechas = makeCrud('cursos/fechas')
+export const alimentaciones = makeCrud('cursos/alimentaciones')
+export const coordinadores = makeCrud('cursos/coordinadores')
+export const secciones = makeCrud('cursos/secciones')
+export const formadores = makeCrud('cursos/formadores')
 
 export default { cursos, cuotas, fechas, alimentaciones, coordinadores, secciones, formadores }

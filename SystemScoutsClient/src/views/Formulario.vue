@@ -6,53 +6,54 @@
   <!--:::::::::::::::::::::::::            Datos Personales         ::::::::::::::::::::::::::::::::::-->
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
-
+  
   <!--::::::::::::::::::::::::::::::::::CURSO DE PARTICIPACIÓN::::::::::::::::::::::::::::::::::::::::-->
   <section>
     <div class="seleccioneCurso"></div> <!-- Titulo Eleccion de Cursos-->
           <h2>Seleccione Curso</h2>
 
     <label for="curso">¿En qué curso participará?</label>
-    <select id="curso" v-model="cursoSeleccionado" required>
-      <option disabled value="">Seleccione un curso</option>
+    <select id="curso" v-model="cursoSeleccionado" required @change="handleCursoChange">
+      <option value="">Seleccione un curso</option>
       <option value="liderazgoJuvenil">Curso de Liderazgo Juvenil</option>
       <option value="primerosAuxilios">Curso de Primeros Auxilios en Campamento</option>
       <option value="gestionAmbiental">Curso de Gestión Ambiental Scout</option>
     </select>
   </section>
 
-
-  <section>
-          <h2>Datos Personales</h2>
+  <transition name="fade">
+    <div v-if="cursoSeleccionado" class="resto-formulario">
+      <section>
+              <h2>Datos Personales</h2>
   <!-- :::::::::::::::::: INPUTS BÁSICOS ::::::::::::::::::::::::: -->
-        <InputBase v-model="nombre" label="Nombre Completo:" type="text" placeholder="nombre completo" />
+        <InputBase v-model="nombre" label="Nombres:" type="text" placeholder="PRIMER Y SEGUNDO NOMBRE" />
+        <InputBase v-model="apellidoMaterno" label="Apellido Materno:" type="text" placeholder="APELLIDO MATERNO" />
+        <InputBase v-model="apellidoPaterno" label="Apellido Paterno:" type="text" placeholder="APELLIDO PATERNO" />
         <InputBase v-model="rut" label="RUT:" type="text" placeholder="XXXXXXXX-X" rules="rut" />
         <InputBase v-model="fechaNacimiento" label="Fecha de Nacimiento:" type="date" />
+        <InputBase v-model="email" label="Correo Electrónico:" type="email" placeholder="Ingrese EMAIL" />
+
   <!--::::::::::::::::::: NUMERO DE CELULAR CON +569:::::::::::::::::::::::::-->
               <label for="numeroCelular">Número de Celular:</label>
       <div style="display: flex; align-items: center; gap: 6px;">
-        <span style="background-color: #f2f2f2; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px;">+569</span>
+        <span style="background-color: #f2f2f2; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px;">+56</span>
         <input
           id="numeroCelular"
           v-model="numeroCelular"
           type="tel"
-          placeholder="97643210"
-          maxlength="8"
+          placeholder="976432101"
+          maxlength="9"
         />
       </div>
-        <InputBase v-model="email" label="Correo Electrónico:" type="email" placeholder="Ingrese EMAIL" />
-        <InputBase v-model="edad" label="Edad" type="number" placeholder="Ingrese su edad" min="0" max="120"/>
 
 <!-- :::::::::::::::::: SELECTOR DE REGIONES ::::::::::::::::::::::::: -->
-<label for="region">Región:</label>
-<select id="region" v-model="regionSeleccionada">
+<label for="Provincia">Provincia:</label>
+<select id="Provincia" v-model="regionSeleccionada">
   <option disabled value="">Seleccione una región</option>
   <option v-for="region in Object.keys(comunasPorRegion)" :key="region" :value="region">
     {{ region }}
   </option>
 </select>
-
-
 
 <!-- :::::::::::::::::: SELECTOR DE CIUDADES ::::::::::::::::::::::::: -->
 <transition name="desplegar">
@@ -83,7 +84,6 @@
 </transition>
 
 
-
   <!-- :::::::::::::::::: INPUT DIRECCION ::::::::::::::::::::::::: -->
       <InputBase v-model="direccion" label="Dirección:" type="text" placeholder="Ingrese Dirección" />
 
@@ -98,22 +98,16 @@
         <option value="conviviente_civil">Conviviente Civil</option>
       </select>
 
-  <!-- :::::::::::::::::: SELECTOR DE RELIGIÓN ::::::::::::::::::::::::: --> 
-        <label for="religion">Religión:</label>
-        <select id="religion" v-model="religion">
-          <option disabled value="">Seleccione su religión</option>
-          <option value="catolica">Católica</option>
-          <option value="evangelica">Evangélica / Protestante</option>
-          <option value="testigos_de_jehova">Testigos de Jehová</option>
-          <option value="mormona">Iglesia de Jesucristo de los Santos de los Últimos Días (Mormona)</option>
-          <option value="adventista">Adventista del Séptimo Día</option>
-          <option value="judia">Judía</option>
-          <option value="islamica">Islámica</option>
-          <option value="budista">Budista</option>
-          <option value="agnostica">Agnóstica</option>
-          <option value="atea">Atea</option>
-          <option value="otra">Otra</option>
-        </select>
+    <!-- :::::::::::::::::: INPUT APODO CREDENCIAL ::::::::::::::::::::::::: -->
+      <label for="profesion">Apodo para Credencial:</label>
+      <input
+        id="apodoCredencial"
+        v-model="apodoCredencial"
+        type="text"
+        placeholder="Ingrese su apodo o nombre para credencial"
+        maxlength="50"
+        @input="profesion = profesion.toUpperCase()"
+      />
 
   <!-- ::::::::::::::::::::: FOTO (Selfie o Subida) ::::::::::::::::::::: -->
 <label for="foto">Sube o toma tu foto (selfie):</label>
@@ -169,22 +163,13 @@
 
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
-  <!--:::::::::::::::::::::::::              Datos Scout            ::::::::::::::::::::::::::::::::::-->
+  <!--:::::::::::::::::::::::::          INFORMACION ASOCIACION       ::::::::::::::::::::::::::::::::-->
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
   <section>
-    <div class="datosScout"></div> <!-- titulo Datos Scout-->
-          <h2>Datos Scout</h2>
-  <!-- :::::::::::::::::: INPUT APODO CREDENCIAL ::::::::::::::::::::::::: -->
-      <label for="profesion">Apodo para Credencial:</label>
-      <input
-        id="apodoCredencial"
-        v-model="apodoCredencial"
-        type="text"
-        placeholder="Ingrese su apodo o nombre para credencial"
-        maxlength="50"
-        @input="profesion = profesion.toUpperCase()"
-      />
+    <div class="datosScout"></div> <!-- TITULO iNFORMACVION ACOCIACION-->
+          <h2>Informacion Asociacion</h2>
+
 
   <!-- :::::::::::::::::: SELECTOR DE ROL EN EL CURSO ::::::::::::::::::::::::: -->
       <label for="rol">Rol en el curso:</label>
@@ -297,42 +282,6 @@
         <option value="Caminantes">Caminantes</option>
       </select>
 
-    <!-- :::::::::::::::::: INPUT DE CARGO EN LA UNIDAD ::::::::::::::::::::::::: -->
-      <label for="cargo">¿Tienes cargo en tu unidad?</label>
-      <select id="cargo" v-model="opcionCargo">
-        <option disabled value="">Seleccione una opción</option>
-        <option value="escribir">Sí</option>
-        <option value="ninguno">No</option>
-      </select>
-
-                  <Transition name="desplegar">
-                    <div v-if="opcionCargo === 'escribir'" class="campo">
-                    <label for="cargoTexto">Escriba su cargo:</label>
-                    <input
-                      id="cargoTexto"
-                      type="text"
-                      v-model="cargoTexto"
-                      placeholder="Ingrese su cargo..."
-                      maxlength="50"
-                      :disabled="opcionCargo !== 'escribir'"/>
-                    </div>
-                  </Transition>
-
-  <!-- :::::::::::::::::: INPUT TIEMPO EN LA UNIDAD ::::::::::::::::::::::::: -->
-    <label for="tiempoUnidad">¿Cuánto tiempo lleva en su unidad?</label>
-    <div style="display: flex; gap: 10px; align-items: center;">
-      <!-- AÑOS -->
-      <select id="años" v-model="añosUnidad" style="padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
-        <option disabled value="">Años</option>
-        <option v-for="n in 20" :key="n" :value="n">{{ n }} año{{ n > 1 ? 's' : '' }}</option>
-      </select>
-
-      <!-- MESES -->
-      <select id="meses" v-model="mesesUnidad" style="padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
-        <option disabled value="">Meses</option>
-        <option v-for="m in 11" :key="m" :value="m">{{ m }} mes{{ m > 1 ? 'es' : '' }}</option>
-      </select>
-    </div>
 
   <!--::::::::::::::::::::::SELECTOR DISTRITO:::::::::::::::::::::::::::::::::::::::::::::::-->
       <label for="distrito">Distrito al que pertenece:</label>
@@ -478,15 +427,23 @@
 
       <label for="numeroEmergencia">Número de contacto de emergencia:</label>
       <div style="display: flex; align-items: center; gap: 6px;">
-        <span style="background-color: #f2f2f2; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px;">+569</span>
+        <span style="background-color: #f2f2f2; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px;">+56</span>
         <input
           id="numeroEmergencia"
           v-model="numeroEmergencia"
           type="tel"
-          placeholder="97643210"
-          maxlength="8"
+          placeholder="974643210"
+          maxlength="9"
         />
       </div>
+
+<!--:::::::::::::::::::::: ALOJAMIENTO :::::::::::::::::::::::::::::::::::::::::::::::::::-->
+<label for="necesitaAlojamiento">¿Necesita Alojamiento?</label>
+<select id="necesitaAlojamiento" v-model="necesitaAlojamiento" required>
+  <option disabled value="">Seleccione una opción</option>
+  <option value="si">Sí</option>
+  <option value="no">No</option>
+</select>
 
 <!--:::::::::::::::::::::: VEHÍCULO PROPIO :::::::::::::::::::::::::::::::::::::::::::::::::::-->
 <label for="vehiculoPropio">¿Viene en vehículo propio?</label>
@@ -495,6 +452,8 @@
   <option value="si">Sí</option>
   <option value="no">No</option>
 </select>
+
+
 
 <!--:::::::::::::::::::::: CAMPOS SOLO SI SELECCIONA "SI" :::::::::::::::::::::::::::::::::::::::::::::::::::-->
               <transition name="desplegar">
@@ -536,8 +495,8 @@
   <section>
       <div class="informacionAdicional"></div> <!-- Titulo Informacion Adicional-->
           <h2>Informacion Adicional</h2>
-  <!-- :::::::::::::::::: INPUT TEXT AREA DE CONSIDERACIONES ::::::::::::::::::::::::: -->
-        <label for="consideraciones">Consideraciones:</label>
+  <!-- :::::::::::::::::: INPUT TEXT AREA DE OTROS ::::::::::::::::::::::::: -->
+        <label for="consideraciones">Otros:</label>
         <textarea            id="consideraciones"
           v-model="consideraciones"
           placeholder="Ingrese cualquier comentario o consideración"
@@ -562,6 +521,24 @@
       <option value="si">Sí</option>
       <option value="no">No</option>
     </select>
+                <transition name="desplegar">
+                  <div v-if="haTrabajadoConNinos === 'si'" class="campo">
+                    <label for="tiempoTrabajoNinos">¿Cuánto tiempo?</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                      <!-- AÑOS -->
+                      <select id="añosTrabajadoNinos" v-model="añosTrabajoNinos" style="padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
+                        <option disabled value="">Años</option>
+                        <option v-for="n in 20" :key="n" :value="n">{{ n }} año{{ n > 1 ? 's' : '' }}</option>
+                      </select>
+
+                      <!-- MESES -->
+                      <select id="mesesTrabajadoNinos" v-model="mesesTrabajoNinos" style="padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
+                        <option disabled value="">Meses</option>
+                        <option v-for="m in 11" :key="m" :value="m">{{ m }} mes{{ m > 1 ? 'es' : '' }}</option>
+                      </select>
+                    </div>
+                  </div>
+                </transition>
 
   <!--::::::::::::::::::::::BENEFICIARIO:::::::::::::::::::::::::::::::::::::::::::::::-->
     <label for="beneficiario">¿Eres o fuiste beneficiario?</label>
@@ -594,20 +571,19 @@
       </select>
 
   </section>
+    </div>
+  </transition>
 
   <!--:::::::::::::::::::::: BOTONES DE ACCIÓN ::::::::::::::::::::::::::::::::::-->
         <div class="botones-formulario" style="display: flex; justify-content: center; align-items: center; gap: 20px; width: 100%;">
           <button type="button" class="btn-vaciar" @click="limpiarFormulario">VACIAR</button>
           <button type="submit" class="btn-enviar" @click.prevent="enviarFormulario">ENVIAR</button>
         </div>
-
-
-    </form>
-  </div>
-  
+    
   <!--:::::::::::::::::::::: BOTON FLOTANTE ::::::::::::::::::::::::::::::::::-->
   <button class="btn-volver" @click="scrollArriba" title="Volver al inicio">↑</button>
-
+</form>
+  </div>
 
 </template>
 
@@ -634,9 +610,19 @@ function scrollArriba(){
 
 
 
+// :::::::::::::::::: MANEJO DE SELECCIÓN DE CURSO :::::::::::::::::::::::::
+const handleCursoChange = () => {
+  if (!cursoSeleccionado.value) {
+    // Cuando se selecciona "Seleccione un curso", limpiamos el formulario
+    limpiarFormulario();
+  }
+};
+
 // :::::::::::::::::: VARIABLES PARA CAPTURAR VALORES :::::::::::::::::::::::::
 
 const nombre = ref("");
+const apellidoPaterno = ref("");
+const apellidoMaterno = ref("");
 const rut = ref("");
 const fechaNacimiento = ref("");
 const numeroCelular = ref("");
@@ -669,6 +655,8 @@ const ramaAvanzadoSeleccionada = ref("");
 const nombreEmergencia = ref("");
 const numeroEmergencia = ref("");
 const haTrabajadoConNinos = ref("");
+const añosTrabajoNinos = ref("");
+const mesesTrabajoNinos = ref("");
 const esBeneficiario = ref("");
 const tiempoBeneficiario = ref("");
 const esMiembroActivo = ref("");
@@ -689,6 +677,9 @@ const comunaSeleccionada = ref("");
 
 function limpiarFormulario() {
   nombre.value = "";
+  apellidoPaterno.value = "";
+  apellidoMaterno.value = "";
+  necesitaAlojamiento.value = "";
   rut.value = "";
   fechaNacimiento.value = "";
   numeroCelular.value = "";
@@ -916,6 +907,7 @@ const comunasPorRegion = {
 };
 
 // :::::::::::::::::: LOGICA FILTRO DE LISTA DE CUIDADES Y COMUNAS :::::::::::::::::::::::::
+
 // Ciudades disponibles según la región elegida
 const ciudadesDisponibles = computed(() => {
   return regionSeleccionada.value ? comunasPorRegion[regionSeleccionada.value] : {};
@@ -938,6 +930,25 @@ const comunasDisponibles = computed(() => {
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
 
 <style scoped>
+/* Estilos para la transición del formulario */
+.fade-enter-active,
+.fade-leave-active {
+  transition: all 1s ease;
+  max-height: 9999px;
+  opacity: 1;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+}
+
+.resto-formulario {
+  transition: all 1s ease;
+}
+
 * { font-family: "Calibri", sans-serif; } 
 
   /* Estilos para el botón flotante que en template tiene la clase `btn-volver` */
