@@ -6,41 +6,50 @@ import authService from '@/services/authService.js'
 import logoutDefault from '@/assets/logout_default.svg'
 import avatarDefault from '@/assets/avatar_default.svg'
 
-// User state (avatar + name)
+// Estado del usuario
 const user = ref({ name: 'Usuario', role: 'Invitado', avatarUrl: null })
+const avatarSrc = ref(avatarDefault)
+const logoutSrc = ref(logoutDefault)
+const isAuthenticated = ref(false)
+
 const router = useRouter()
 const route = useRoute()
-const logoutSrc = ref('/logout.png')
-const avatarSrc = ref(avatarDefault)
 
-// Estado reactivo de autenticación
-const isAuthenticated = ref(!!localStorage.getItem('token'))
+// Actualiza estado de autenticación y carga info de usuario
+async function updateAuthState() {
+  const token = localStorage.getItem('token')
+  isAuthenticated.value = !!token
 
-// Función para actualizar el estado de autenticación
-function updateAuthState() {
-  const hasToken = !!localStorage.getItem('token')
-  isAuthenticated.value = hasToken
-  
-  if (hasToken) {
-    // Cargar info del usuario
-    authService.getCurrentUser().then(u => {
+  if (token) {
+    try {
+      const u = await authService.getCurrentUser()
       if (u) {
-        user.value = { name: u.name || 'Usuario', role: u.role || 'Invitado', avatarUrl: u.avatarUrl || null }
+        user.value = {
+          name: u.name || 'Usuario',
+          role: u.role || 'Invitado',
+          avatarUrl: u.avatarUrl || null
+        }
         avatarSrc.value = u.avatarUrl || avatarDefault
       }
-    })
+    } catch (err) {
+      console.error('Error al cargar usuario', err)
+      // Si falla, limpiar token
+      localStorage.removeItem('token')
+      isAuthenticated.value = false
+    }
+  } else {
+    user.value = { name: 'Usuario', role: 'Invitado', avatarUrl: null }
+    avatarSrc.value = avatarDefault
   }
 }
 
-// Escuchar cambios de ruta para detectar login/logout
+// Observa cambios de ruta para actualizar auth state
 watch(() => route.path, () => {
   updateAuthState()
 })
 
 onMounted(() => {
   updateAuthState()
-  
-  // Escuchar eventos de storage (cambios en otras pestañas)
   window.addEventListener('storage', updateAuthState)
 })
 
@@ -48,41 +57,43 @@ onUnmounted(() => {
   window.removeEventListener('storage', updateAuthState)
 })
 
+// Función de logout
 function logout() {
   authService.logout()
+  localStorage.removeItem('token')
+  updateAuthState()
   router.push('/')
 }
 
+// Ir a login (limpia token si existiera)
 function goToLogin() {
-  // Si hay token, limpiarlo para forzar el acceso a la pantalla de login
-  try {
-    localStorage.removeItem('token')
-  } catch (e) {}
+  localStorage.removeItem('token')
+  updateAuthState()
   router.push({ name: 'login' })
 }
 
-function onLogoutImgError() {
-  // Fallback to bundled SVG if /public/logout.png is missing
-  logoutSrc.value = logoutDefault
-}
-
+// Fallback imágenes
 function onAvatarError() {
   avatarSrc.value = avatarDefault
+}
+
+function onLogoutImgError() {
+  logoutSrc.value = logoutDefault
 }
 </script>
 
 <template>
   <nav class="navbar">
-    <!-- Logo y título -->
+    <!-- Logo -->
     <div class="navbar-left">
       <router-link class="brand" to="/dashboard" aria-label="Ir al Dashboard">
         <img :src="logoSrc" alt="Logo Scouts" class="logo" />
         <span class="title">S.S.B</span>
       </router-link>
-  <router-link class="dash-link" to="/dashboard">Panel de Control</router-link>
+      <router-link class="dash-link" to="/dashboard">Panel de Control</router-link>
     </div>
 
-    <!-- Usuario (avatar + nombre/rol + salir) - Solo visible si autenticado -->
+    <!-- Usuario autenticado -->
     <Transition name="user-fade">
       <div v-if="isAuthenticated" class="navbar-user">
         <img :src="avatarSrc" @error="onAvatarError" alt="Usuario" class="avatar" />
@@ -96,7 +107,7 @@ function onAvatarError() {
       </div>
     </Transition>
 
-    <!-- Botón de Login cuando no está autenticado -->
+    <!-- Usuario no autenticado -->
     <Transition name="user-fade">
       <div v-if="!isAuthenticated" class="navbar-actions">
         <button class="login-btn" @click="goToLogin" title="Iniciar sesión" aria-label="Iniciar sesión">

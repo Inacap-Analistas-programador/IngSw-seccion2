@@ -11,7 +11,7 @@
 
       <form class="login-form" @submit.prevent="handleLogin">
         <InputBase
-            ref="usernameInputRef"
+          ref="usernameInputRef"
           v-model="username"
           label="Usuario"
           placeholder="Tu usuario"
@@ -39,7 +39,7 @@
               </button>
             </template>
           </InputBase>
-  </div>
+        </div>
 
         <div class="actions-row">
           <BaseButton :disabled="loading" type="submit" variant="primary" size="lg" block>
@@ -64,7 +64,6 @@
       />
     </div>
   </div>
-  
 </template>
 
 <script setup>
@@ -78,7 +77,6 @@ import NotificationToast from '@/components/Reutilizables/NotificationToast.vue'
 
 const username = ref('')
 const password = ref('')
-const errorMessage = ref('')
 const usernameError = ref('')
 const passwordError = ref('')
 const loading = ref(false)
@@ -88,8 +86,10 @@ let toastTimer = null
 const usernameInputRef = ref(null)
 const shake = ref(false)
 
+const router = useRouter()
+const route = useRoute()
+
 function showToast(message) {
-  // Evita duplicados y reinicia el timer si llega el mismo mensaje
   if (alerta.value.mensaje !== message) {
     alerta.value = { mensaje: message, tipo: 'error' }
   }
@@ -110,94 +110,67 @@ async function focusUsername(selectAll = true) {
 
 function triggerShake() {
   shake.value = false
-  // nextTick para reiniciar la animación si ya estaba activa
   nextTick(() => {
     shake.value = true
     setTimeout(() => (shake.value = false), 500)
   })
 }
 
-// Limpiar errores de campo al escribir
 watch(username, () => { if (usernameError.value) usernameError.value = '' })
 watch(password, () => { if (passwordError.value) passwordError.value = '' })
 
-const router = useRouter()
-const route = useRoute()
-
-// el ojo ahora vive dentro del input, no necesitamos sincronizar alturas
-
+// ===== LOGIN =====
 const handleLogin = async () => {
   try {
-    errorMessage.value = ''
-    usernameError.value = ''
-    passwordError.value = ''
     loading.value = true
-
-    // Validación básica
     if (!username.value || !password.value) {
-      if (!username.value) usernameError.value = 'Ingresa tu usuario'
-      if (!password.value) passwordError.value = 'Ingresa tu contraseña'
-      const msg = !username.value && !password.value
-        ? 'Debes ingresar usuario y contraseña'
-        : 'Completa los campos requeridos'
-      showToast(msg)
-        focusUsername()
+      showToast('Debes completar usuario y contraseña')
       return
     }
 
-    // ===== MODO PRESENTACIÓN: Login ficticio =====
-    // Usuario: admin / Contraseña: admin
-    // TODO: Para producción, descomentar la llamada real al backend
-    if (username.value === 'admin' && password.value === 'admin') {
-      // Simular token y usuario
-      localStorage.setItem('token', 'demo-token-' + Date.now())
-      localStorage.setItem('currentUser', JSON.stringify({
-        name: 'Administrador',
-        role: 'Admin',
-        avatarUrl: null
-      }))
-      const redirectTo = route.query.redirect || '/dashboard'
-      router.push(redirectTo)
-    } else {
-      // Credenciales incorrectas
-      const msg = 'Usuario y contraseña están equivocados'
-      errorMessage.value = msg
-      usernameError.value = ''
-      passwordError.value = msg
-      showToast(msg)
-      password.value = ''
-      focusUsername()
-      triggerShake()
-    }
-
-    /* ===== LOGIN REAL (descomentado para producción) =====
     const data = await authService.login(username.value, password.value)
-    if (data && data.token) {
-      const redirectTo = route.query.redirect || '/dashboard'
-      router.push(redirectTo)
+
+    if (data.access) {
+      localStorage.setItem('token', data.access)
+      router.push('/dashboard')
+      window.location.reload()
     } else {
-      const msg = 'Usuario y contraseña están equivocados'
-      errorMessage.value = msg
-      usernameError.value = ''
-      passwordError.value = msg
-      showToast(msg)
-      password.value = ''
-      focusUsername()
+      showToast('Usuario o contraseña incorrectos')
       triggerShake()
     }
-    */
   } catch (err) {
     console.error(err)
-    const msg = 'Ocurrió un error al iniciar sesión'
-    errorMessage.value = msg
-    usernameError.value = ''
-    passwordError.value = msg
-    showToast(msg)
-    focusUsername(false)
+    showToast(err.message || 'Error al iniciar sesión')
+    triggerShake()
   } finally {
     loading.value = false
   }
-};
+}
+
+// ===== FETCH USUARIOS PROTEGIDOS =====
+const usuarios = ref([])
+
+async function cargarUsuarios() {
+  try {
+    const token = localStorage.getItem('accessToken')
+    if (!token) return
+
+    const response = await fetch('http://127.0.0.1:8000/api/usuarios/', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (!response.ok) throw new Error('Error al obtener usuarios')
+
+    usuarios.value = await response.json()
+    console.log(usuarios.value)
+  } catch (err) {
+    console.error(err)
+    showToast(err.message || 'Error al cargar usuarios')
+  }
+}
 
 </script>
 

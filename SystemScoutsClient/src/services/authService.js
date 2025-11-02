@@ -1,60 +1,41 @@
-// Auth service: login, current user and logout helpers.
-// - login() calls backend /api/auth/login/
-// - current user info stored in localStorage
-// - token persisted under 'token' key for apiClient to pick up
+const API_URL = 'http://127.0.0.1:8000';
 
-import { request } from './apiClient'
+export default {
+  async login(username, password) {
+    const response = await fetch(`${API_URL}/login/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ USU_USERNAME: username, password })
+    });
 
-const STORAGE_KEY = 'currentUser'
-
-async function getCurrentUser() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      return {
-        name: parsed.name || parsed.nombre || 'Usuario',
-        role: parsed.role || parsed.rol || '',
-        avatarUrl: parsed.avatarUrl || parsed.foto || parsed.avatar || null,
-      }
+    // Leer el body una sola vez
+    const text = await response.text(); // siempre funciona
+    let data;
+    try {
+      data = JSON.parse(text); // intenta parsear como JSON
+    } catch (e) {
+      console.error('No JSON received:', text);
+      throw new Error('Respuesta inesperada del servidor');
     }
-  } catch (e) {
-    // ignore
-  }
-  // Default placeholder user
-  return {
-    name: 'Usuario',
-    role: '',
-    avatarUrl: null,
-  }
-}
 
-function setCurrentUser(user) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(user || {}))
-}
+    if (!response.ok) {
+      throw new Error(data.detail || 'Error al iniciar sesión');
+    }
 
-async function login(username, password) {
-  const data = await request('auth/login', {
-    method: 'POST',
-    body: JSON.stringify({ username, password })
-  })
-  if (data && data.token) {
-    localStorage.setItem('token', data.token)
+    if (data.access) {
+      localStorage.setItem('accessToken', data.access);
+      localStorage.setItem('refreshToken', data.refresh);
+    }
+
+    return data;
+  },
+
+  logout() {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+  },
+
+  getAccessToken() {
+    return localStorage.getItem('accessToken');
   }
-  if (data && data.user) {
-    setCurrentUser({
-      name: data.user.USU_USERNAME,
-      role: 'Administradora Regional', // Rol por defecto para frontend
-      avatarUrl: data.user.USU_RUTA_FOTO || null
-    })
-  }
-  return data
-}
-
-function logout() {
-  // Clear any stored auth/user information
-  localStorage.removeItem(STORAGE_KEY)
-  localStorage.removeItem('token')
-}
-
-export default { getCurrentUser, setCurrentUser, login, logout }
+};
