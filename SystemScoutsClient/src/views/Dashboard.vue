@@ -17,96 +17,98 @@
     </div>
 
     <div class="layout-content">
-      <main class="main">
+      <div class="main">
         <div class="control-panel">
           <header class="control-header">
             <h1>Centro de Control</h1>
             <p class="control-subtitle">Sistema de Gestión de Cursos Scout</p>
           </header>
 
+          <div class="dashboard-content">
+            <!-- Tabla centrada arriba -->
+            <div class="table-section">
+              <div class="table-container large">
+                <table class="data-table large">
+                  <thead>
+                    <tr>
+                      <th>Curso</th>
+                      <th>Rama</th>
+                      <th class="text-center">Formadores</th>
+                      <th class="text-center">Coordinadores</th>
+                      <th class="text-center">Directores</th>
+                      <th class="text-center">Requeridos</th>
+                      <th class="text-center">Estado</th>
+                      <th class="text-right">Capacidad</th>
+                      <th class="text-right">Esperado</th>
+                      <th class="text-center">Alimentación</th>
+                      <th class="text-center">Activo</th>
+                      <th class="text-center">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="curso in sortedCursos" :key="curso.id" :class="'row-' + getDirectivoStatus(curso)">
+                      <td>
+                        <div class="curso-name-wrapper">
+                          <span class="curso-name">{{ curso.title }}</span>
+                        </div>
+                      </td>
+                      <td>{{ curso.rama || (curso.ramas ? (Array.isArray(curso.ramas) ? curso.ramas.join(', ') : String(curso.ramas)) : '—') }}</td>
+                      <td class="text-center">{{ getDirectivoCount(curso) }}</td>
+                      <td class="text-center">{{ getCoordinadorCount(curso) }}</td>
+                      <td class="text-center">{{ getDirectorCount(curso) }}</td>
+                      <td class="text-center">{{ getDirectivoRequired(curso) }}</td>
+                      <td class="text-center"><span :class="['status-badge', getDirectivoStatus(curso)]">{{ getDirectivoStatus(curso) === 'ok' ? 'OK' : (getDirectivoStatus(curso) === 'near' ? 'Casi' : 'Faltan') }}</span></td>
+                      <td class="text-right">{{ curso.capacidad ?? '-' }}</td>
+                      <td class="text-right">{{ fmtCurrency((pagosMap[curso.id] && pagosMap[curso.id].expected) || 0) }}</td>
+                      <td class="text-center">{{ curso.alimentacion ? 'Sí' : 'No' }}</td>
+                      <td class="text-center">{{ isCursoActive(curso) ? 'Activo' : 'Inactivo' }}</td>
+                      <td class="text-center">{{ curso.estado || computeCourseState(curso) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
 
-
-          <!-- Vista Resumen: large table (left) + chart (right) -->
-          <div class="tab-content">
-            <div class="dashboard-grid">
-              <!-- Left: cursos table -->
-              <div class="left-panel">
-                <div class="table-container large">
-                  <table class="data-table large">
-                    <thead>
-                      <tr>
-                        <th>Curso</th>
-                        <th>Rama</th>
-                        <th class="text-center">Formadores</th>
-                        <th class="text-center">Coordinadores</th>
-                        <th class="text-center">Directores</th>
-                        <th class="text-center">Requeridos</th>
-                        <th class="text-center">Estado</th>
-                        <th class="text-right">Capacidad</th>
-                        <th class="text-right">Esperado</th>
-                        <th class="text-center">Alimentación</th>
-                        <th class="text-center">Activo</th>
-                        <th class="text-center">Estado</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="curso in sortedCursos" :key="curso.id" :class="'row-' + getDirectivoStatus(curso)">
-                        <td>
-                          <div class="curso-name-wrapper">
-                            <span class="curso-name">{{ curso.title }}</span>
-                          </div>
-                        </td>
-                        <td>{{ curso.rama || (curso.ramas ? (Array.isArray(curso.ramas) ? curso.ramas.join(', ') : String(curso.ramas)) : '—') }}</td>
-                        <td class="text-center">{{ getDirectivoCount(curso) }}</td>
-                        <td class="text-center">{{ getCoordinadorCount(curso) }}</td>
-                        <td class="text-center">{{ getDirectorCount(curso) }}</td>
-                        <td class="text-center">{{ getDirectivoRequired(curso) }}</td>
-                        <td class="text-center"><span :class="['status-badge', getDirectivoStatus(curso)]">{{ getDirectivoStatus(curso) === 'ok' ? 'OK' : (getDirectivoStatus(curso) === 'near' ? 'Casi' : 'Faltan') }}</span></td>
-                        <td class="text-right">{{ curso.capacidad ?? '-' }}</td>
-                        <td class="text-right">{{ fmtCurrency((pagosMap[curso.id] && pagosMap[curso.id].expected) || 0) }}</td>
-                        <td class="text-center">{{ curso.alimentacion ? 'Sí' : 'No' }}</td>
-                        <td class="text-center">{{ isCursoActive(curso) ? 'Activo' : 'Inactivo' }}</td>
-                        <td class="text-center">{{ curso.estado || computeCourseState(curso) }}</td>
-                      </tr>
-                    </tbody>
-                  </table>
+            <!-- Gráfico centrado abajo -->
+            <div class="chart-card-full">
+              <div class="chart-header">
+                <h3>Pagos por Curso</h3>
+                <p class="chart-description">Montos estimados vs. recibidos por curso</p>
+              </div>
+              <div class="column-chart">
+                <div class="chart-axis">
+                  <div v-for="tick in 5" :key="tick" class="axis-label">
+                    {{ formatAxisLabel(chartMax * (5-tick) / 4) }}
+                  </div>
+                </div>
+                <div class="chart-bars">
+                  <div v-for="curso in chartData" :key="curso.id" class="bar-group">
+                    <div class="bar-wrapper">
+                      <div class="bar bar-expected" :style="{ height: barHeight(curso.expected) + 'px' }">
+                        <span class="bar-value">{{ fmtCurrency(curso.expected) }}</span>
+                      </div>
+                      <div class="bar bar-received" :style="{ height: barHeight(curso.paid) + 'px' }">
+                        <span class="bar-value">{{ fmtCurrency(curso.paid) }}</span>
+                      </div>
+                    </div>
+                    <span class="bar-label">{{ curso.title }}</span>
+                  </div>
                 </div>
               </div>
-
-              <!-- Right: column chart (expected vs received) -->
-              <div class="right-panel">
-                <div class="chart-card">
-                  <h3 class="chart-title">Recaudación: Esperado vs Recaudado</h3>
-                  <div class="chart-wrapper">
-                    <svg viewBox="0 0 800 420" preserveAspectRatio="xMidYMid meet" class="column-chart">
-                      <!-- axes and labels -->
-                      <g>
-                        <!-- y axis lines and labels (100k..500k steps of 100k) -->
-                        <g v-for="(v, idx) in [500000,400000,300000,200000,100000]" :key="v">
-                          <line :x1="60" :x2="760" :y1="(420 - ((v - chartMin) / (chartMax - chartMin) * 320) - 40)" :y2="(420 - ((v - chartMin) / (chartMax - chartMin) * 320) - 40)" stroke="#e2e8f0" />
-                          <text x="40" :y="(420 - ((v - chartMin) / (chartMax - chartMin) * 320) - 36)" font-size="12" fill="#64748b">{{ fmtCurrency(v) }}</text>
-                        </g>
-                      </g>
-
-                      <g>
-                        <!-- bars -->
-                        <g v-for="(d, i) in chartData" :key="d.id">
-                          <!-- expected (left) -->
-                          <rect :x="(80 + i * 140)" :y="(420 - 40 - barHeight(d.expected))" width="40" :height="barHeight(d.expected)" fill="#c7d2fe" />
-                          <!-- paid (right) -->
-                          <rect :x="(80 + i * 140 + 50)" :y="(420 - 40 - barHeight(d.paid))" width="40" :height="barHeight(d.paid)" fill="#60a5fa" />
-                          <!-- labels -->
-                          <text :x="(80 + i * 140 + 25)" y="405" font-size="12" text-anchor="middle" fill="#334155">{{ d.title }}</text>
-                        </g>
-                      </g>
-                    </svg>
-                  </div>
+              <div class="chart-legend">
+                <div class="legend-item">
+                  <span class="legend-color expected"></span>
+                  <span>Monto Estimado</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-color received"></span>
+                  <span>Monto Recibido</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   </div>
 </template>
@@ -228,6 +230,12 @@ function barHeight(value) {
   if (!value || value <= chartMin) return 0
   const max = chartMax.value || 500000
   return Math.round(((value - chartMin) / (max - chartMin)) * h)
+}
+
+// Format axis labels for the chart
+function formatAxisLabel(value) {
+  return value >= 1000000 ? `${(value / 1000000).toFixed(1)}M` : 
+         value >= 1000 ? `${(value / 1000).toFixed(0)}K` : value
 }
 
 function fmtCurrency(amount) {
@@ -370,6 +378,38 @@ function getPagoStatusLabel(curso) {
 
 onMounted(() => {
   ;(async () => {
+    // Datos de prueba para el gráfico
+    cursosList.value = [
+      {
+        id: 1,
+        title: 'Curso Básico',
+        inscritos: 15,
+        capacidad: 20,
+        valor: 150000
+      },
+      {
+        id: 2,
+        title: 'Curso Avanzado',
+        inscritos: 10,
+        capacidad: 15,
+        valor: 200000
+      },
+      {
+        id: 3,
+        title: 'Curso Especialidad',
+        inscritos: 8,
+        capacidad: 12,
+        valor: 180000
+      }
+    ]
+
+    // Datos de prueba para pagos
+    pagosSumByCourse.value = {
+      1: 1500000, // 10 pagos completos
+      2: 1200000, // 6 pagos completos
+      3: 720000   // 4 pagos completos
+    }
+
     // Obtener cursos desde el servicio de cursos
     try {
       const rawCursos = await cursosApi.list()
@@ -607,71 +647,95 @@ onMounted(() => {
 }
 
 .table-container {
-  overflow-x: hidden; /* avoid horizontal scrollbar */
+  width: 100%;
+  overflow-x: auto;
   max-width: 100%;
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
-}
-
-/* Hide any potential scrollbars just in case of sub-pixel rounding */
-.table-container::-webkit-scrollbar {
-  height: 0;
-}
-.table-container {
-  scrollbar-width: none; /* Firefox */
 }
 
 .data-table {
   width: 100%;
-  border-collapse: collapse;
-  background: #fff;
-  table-layout: fixed;
-}
-/* Ensure padding is included within width to avoid overflow */
-.data-table, .data-table th, .data-table td {
-  box-sizing: border-box;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--color-background-soft);
+  border-radius: 10px;
+  overflow: hidden;
+  font-size: 1.05rem;
+  margin-bottom: 0;
 }
 
 .data-table thead {
-  /* Minimal flat header, brand color */
-  background: #1e3a5f;
+  background: var(--color-background-mute);
 }
 
 .data-table th {
-  padding: 0.75rem 0.85rem;
+  background: var(--color-background-mute);
+  color: var(--color-text);
+  font-weight: 700;
+  padding: 12px 10px;
+  border-bottom: 2px solid var(--color-border);
   text-align: left;
-  font-weight: 600;
-  color: #fff;
-  font-size: 0.8125rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  white-space: nowrap;
 }
 
 .data-table td {
-  padding: 0.75rem 0.85rem;
-  border-bottom: 1px solid #e2e8f0;
-  color: #475569;
-  vertical-align: middle;
-  font-size: 0.9rem;
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.data-table tr:nth-child(even) {
+  background: var(--color-background-soft);
+}
+
+.data-table tr:last-child td {
+  border-bottom: none;
 }
 
 /* Dashboard two-column layout */
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: 1fr 420px;
-  gap: 2rem;
-  align-items: start;
+.dashboard-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+  align-items: center;
+  padding: 1rem;
 }
 
-.left-panel .data-table.large th,
-.left-panel .data-table.large td {
-  padding: 0.75rem 0.6rem;
+.table-section {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .table-container.large {
-  max-height: 720px;
+  max-height: 400px;
   overflow: auto;
+  margin-bottom: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-background-soft);
+}
+
+.chart-card-full {
+  width: 100%;
+  max-width: 1000px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: var(--color-surface);
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  box-shadow: 0 4px 18px rgba(40,92,168,0.13);
+}
+
+.data-table.large th,
+.data-table.large td {
+  padding: 0.75rem 0.6rem;
+}
+
+/* Chart section styles */
+.chart-card-full {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
 }
 
 .right-panel .chart-card {
@@ -712,6 +776,182 @@ onMounted(() => {
 
 .text-right {
   text-align: right;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 16px;
+  border-radius: 14px;
+  font-size: 1em;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  margin-right: 2px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+.badge-success {
+  background: var(--color-semaforo-green);
+  color: #fff;
+  border: 1px solid transparent;
+}
+
+.badge-warning {
+  background: var(--color-semaforo-yellow);
+  color: #fff;
+  border: 1px solid transparent;
+}
+
+.badge-pending {
+  background: var(--color-semaforo-red);
+  color: #fff;
+  border: 1px solid transparent;
+}
+
+/* Column Chart Styles */
+.chart-card-full {
+  background: var(--color-surface);
+  border-radius: 12px;
+  padding: 24px;
+  margin-top: 2rem;
+  border: 1.5px solid var(--color-border);
+  box-shadow: 0 4px 18px rgba(40,92,168,0.13);
+}
+
+.chart-header {
+  margin-bottom: 24px;
+}
+
+.chart-header h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 8px 0;
+}
+
+.chart-description {
+  color: var(--color-text-light);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.column-chart {
+  display: flex;
+  height: 400px;
+  margin: 20px 0;
+  padding-bottom: 40px;
+}
+
+.chart-axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-right: 12px;
+  border-right: 1px solid var(--color-border);
+  height: 320px;
+  margin-bottom: 40px;
+}
+
+.axis-label {
+  font-size: 0.8rem;
+  color: var(--color-text-light);
+  padding: 4px 8px;
+  text-align: right;
+  min-width: 80px;
+}
+
+.chart-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 40px;
+  padding: 0 20px;
+  flex: 1;
+  overflow-x: auto;
+  height: 360px;
+}
+
+.bar-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 100px;
+}
+
+.bar-wrapper {
+  display: flex;
+  gap: 4px;
+  height: 320px;
+  align-items: flex-end;
+  margin-bottom: 12px;
+}
+
+.bar {
+  width: 40px;
+  min-height: 2px;
+  border-radius: 4px 4px 0 0;
+  position: relative;
+  transition: height 0.3s ease;
+}
+
+.bar-expected {
+  background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  opacity: 0.3;
+}
+
+.bar-received {
+  background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+}
+
+.bar-value {
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  background: var(--color-surface);
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.bar-label {
+  font-size: 0.9rem;
+  color: var(--color-text);
+  text-align: center;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 8px;
+}
+
+.chart-legend {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 20px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.legend-color.expected {
+  background: var(--color-primary);
+  opacity: 0.3;
+}
+
+.legend-color.received {
+  background: var(--color-primary);
 }
 
 .curso-name-wrapper {
