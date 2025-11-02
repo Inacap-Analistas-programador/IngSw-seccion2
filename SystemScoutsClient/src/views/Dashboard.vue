@@ -19,11 +19,6 @@
     <div class="layout-content">
       <div class="main">
         <div class="control-panel">
-          <header class="control-header">
-            <h1>Centro de Control</h1>
-            <p class="control-subtitle">Sistema de Gestión de Cursos Scout</p>
-          </header>
-
           <div class="dashboard-content">
             <!-- Tabla centrada arriba -->
             <div class="table-section">
@@ -117,8 +112,6 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import AppIcons from '@/components/icons/AppIcons.vue'
-import { cursos as cursosApi, cuotas as cuotasApi } from '@/services/cursosService.js'
-import { personas as personasApi } from '@/services/personasService.js'
 
 // Sin datos mock: todo proviene del servicio/API
 
@@ -182,12 +175,7 @@ function getSemaforoClass(indicator) {
 // Pagos no enlazados aún: dejamos montos en 0 hasta habilitar API de pagos
 const pagosSumByCourse = ref({})
 const pagosCountPaidByCourse = ref({})
-const directivosByCourse = ref({
-  1: 4,  // Curso Básico Scout: tiene 4 de 3 requeridos (OK)
-  2: 7,  // Curso de Especialidades: tiene 7 de 2 requeridos (OK)
-  3: 0,  // Formación de Dirigentes: tiene 0 de 3 requeridos (CRÍTICO)
-  4: 1   // Capacitación de Liderazgo: tiene 1 de 2 requeridos (ADVERTENCIA)
-})
+const directivosByCourse = ref({})
 // Additional role counts (if available from API later)
 const coordinadoresByCourse = ref({})
 const directoresByCourse = ref({})
@@ -377,56 +365,57 @@ function getPagoStatusLabel(curso) {
 }
 
 onMounted(() => {
-  ;(async () => {
-    // Datos de prueba para el gráfico
-    cursosList.value = [
-      {
-        id: 1,
-        title: 'Curso Básico',
-        inscritos: 15,
-        capacidad: 20,
-        valor: 150000
-      },
-      {
-        id: 2,
-        title: 'Curso Avanzado',
-        inscritos: 10,
-        capacidad: 15,
-        valor: 200000
-      },
-      {
-        id: 3,
-        title: 'Curso Especialidad',
-        inscritos: 8,
-        capacidad: 12,
-        valor: 180000
-      }
-    ]
-
-    // Datos de prueba para pagos
-    pagosSumByCourse.value = {
-      1: 1500000, // 10 pagos completos
-      2: 1200000, // 6 pagos completos
-      3: 720000   // 4 pagos completos
-    }
-
-    // Obtener cursos desde el servicio de cursos
+  const fetchData = async () => {
     try {
-      const rawCursos = await cursosApi.list()
-      let cursosArr = []
-      if (Array.isArray(rawCursos)) cursosArr = rawCursos
-      else if (rawCursos && Array.isArray(rawCursos.results)) cursosArr = rawCursos.results
-      else if (rawCursos && Array.isArray(rawCursos.data)) cursosArr = rawCursos.data
-      cursosList.value = cursosArr.map(c => ({
-        id: c.id ?? c.CUS_ID ?? c.pk ?? null,
-        title: c.title || c.nombre || c.CUS_NOMBRE || c.name || '',
-        inscritos: Number(c.inscritos ?? c.inscritos_total ?? c.inscripciones ?? 0),
-        capacidad: Number(c.capacidad ?? c.CUS_CAPACIDAD ?? c.capacity ?? 0),
-        valor: Number(c.valor ?? c.valor_cuota ?? c.price ?? 0)
+      // Obtener cursos
+      const response = await fetch('http://127.0.0.1:8000/api/cursos/')
+      if (!response.ok) throw new Error('Error en la respuesta del servidor')
+      const data = await response.json()
+      
+      cursosList.value = data.map(c => ({
+        id: c.CUS_ID,
+        title: c.CUS_NOMBRE,
+        rama: c.CUS_RAMA,
+        inscritos: c.CUS_INSCRITOS || 0,
+        capacidad: c.CUS_CAPACIDAD || 0,
+        valor: c.CUS_VALOR || 0,
+        estado: c.CUS_ESTADO,
+        alimentacion: c.CUS_ALIMENTACION,
+        directivos: c.CUS_DIRECTIVOS || 0,
+        coordinadores: c.CUS_COORDINADORES || 0,
+        directores: c.CUS_DIRECTORES || 0
       }))
-    } catch (e) {
-      console.warn('Dashboard: error obteniendo cursos', e)
-      cursosList.value = []
+
+      // Actualizar conteos totales
+      totalPersonas.value = cursosList.value.reduce((sum, curso) => sum + (curso.inscritos || 0), 0)
+      
+      // Actualizar conteos de roles por curso
+      cursosList.value.forEach(curso => {
+        directivosByCourse.value[curso.id] = curso.directivos
+        coordinadoresByCourse.value[curso.id] = curso.coordinadores
+        directoresByCourse.value[curso.id] = curso.directores
+      })
+
+      // Obtener datos de pagos
+      const pagosResponse = await fetch('http://127.0.0.1:8000/api/cuotas/')
+      if (!pagosResponse.ok) throw new Error('Error obteniendo datos de pagos')
+      const pagosData = await pagosResponse.json()
+      
+      // Agrupar pagos por curso
+      pagosData.forEach(pago => {
+        const cursoId = pago.CUO_CURSO
+        if (!pagosSumByCourse.value[cursoId]) {
+          pagosSumByCourse.value[cursoId] = 0
+          pagosCountPaidByCourse.value[cursoId] = 0
+        }
+        if (pago.CUO_PAGADO) {
+          pagosSumByCourse.value[cursoId] += Number(pago.CUO_VALOR) || 0
+          pagosCountPaidByCourse.value[cursoId]++
+        }
+      })
+
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error)
       alerts.value = [{
         id: 'api-error',
         type: 'error',
@@ -434,46 +423,9 @@ onMounted(() => {
         message: 'No se pudo conectar con el servidor. Por favor, verifica tu conexión e intenta nuevamente.'
       }]
     }
+  }
 
-    // Obtener cuotas por curso (si existe endpoint 'cuotas') y mapear valores
-    try {
-      const rawCuotas = await cuotasApi.list()
-      const cuotasArr = Array.isArray(rawCuotas) ? rawCuotas : (rawCuotas && Array.isArray(rawCuotas.results) ? rawCuotas.results : [])
-      const cuotasMap = {}
-      cuotasArr.forEach(q => {
-        const cid = q.curso || q.CUS_ID || q.curso_id || q.id || q.pk
-        const val = Number(q.valor ?? q.monto ?? q.price ?? q.amount ?? 0)
-        if (cid != null) cuotasMap[cid] = val
-      })
-      if (Object.keys(cuotasMap).length) {
-        cursosList.value = cursosList.value.map(c => ({ ...c, valor: cuotasMap[c.id] ?? c.valor ?? 0 }))
-      }
-    } catch (e) {
-      console.warn('Dashboard: cuotas no disponibles', e)
-    }
-
-    // Obtener total de personas
-    try {
-      // fetch roles per curso (coordinadores / directores) if available
-      if (dashboardService.obtenerRolesPorCurso) {
-        const roles = await dashboardService.obtenerRolesPorCurso()
-        if (roles && typeof roles === 'object') {
-          coordinadoresByCourse.value = roles.coordinadores || {}
-          directoresByCourse.value = roles.directores || {}
-        }
-      }
-    } catch (e) {
-      console.warn('Dashboard: roles por curso no disponibles', e)
-    }
-
-    try {
-      const total = await dashboardService.getTotalPersonas()
-      totalPersonas.value = Number.isFinite(total) ? total : 0
-    } catch (e) {
-      console.warn('Dashboard: personas no disponibles', e)
-      totalPersonas.value = 0
-    }
-  })()
+  fetchData()
 })
 </script>
 
