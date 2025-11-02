@@ -131,7 +131,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import AppIcons from '@/components/icons/AppIcons.vue'
-import { cursos as cursosApi } from '@/services/cursosService.js'
+import { cursos as cursosApi, cuotas as cuotasApi } from '@/services/cursosService.js'
 import { personas as personasApi } from '@/services/personasService.js'
 
 const router = useRouter()
@@ -154,19 +154,19 @@ function getAlertIcon(type) {
   return icons[type] || '⚠️'
 }
 
-// Header abbreviation map and helper
+// Header label map (no abbreviations — show full names)
 const headerMap = {
   'Curso': 'Curso',
   'Rama': 'Rama',
-  'Formadores': 'Form.',
-  'Coordinadores': 'Coord.',
-  'Directores': 'Dir.',
-  'Requeridos': 'Req.',
+  'Formadores': 'Formadores',
+  'Coordinadores': 'Coordinadores',
+  'Directores': 'Directores',
+  'Requeridos': 'Requeridos',
   'Estado': 'Estado',
-  'Vigencia': 'Vig.',
-  'Capacidad': 'Cap.',
-  'Esperado': 'Esp.',
-  'Alimentación': 'Alim.',
+  'Vigencia': 'Vigencia',
+  'Capacidad': 'Capacidad',
+  'Esperado': 'Esperado',
+  'Alimentación': 'Alimentación',
   'Activo': 'Activo',
   // special key for second Estado column (course state)
   'EstadoCurso': 'Estado'
@@ -468,72 +468,71 @@ function getPagoStatusLabel(curso) {
 
 onMounted(() => {
   ;(async () => {
-    // Obtener cursos desde el servicio de cursos
     try {
-      const rawCursos = await cursosApi.list()
-      let cursosArr = []
-      if (Array.isArray(rawCursos)) cursosArr = rawCursos
-      else if (rawCursos && Array.isArray(rawCursos.results)) cursosArr = rawCursos.results
-      else if (rawCursos && Array.isArray(rawCursos.data)) cursosArr = rawCursos.data
-      cursosList.value = cursosArr.map(c => ({
+      // Fetch cursos data
+      const response = await cursosApi.list()
+      const cursosData = Array.isArray(response) ? response : (response.results || response.data || [])
+      console.log('Cursos data:', cursosData)
+
+      // Map cursos data
+      cursosList.value = cursosData.map(c => ({
         id: c.id ?? c.CUS_ID ?? c.pk ?? null,
         title: c.title || c.nombre || c.CUS_NOMBRE || c.name || '',
         inscritos: Number(c.inscritos ?? c.inscritos_total ?? c.inscripciones ?? 0),
         capacidad: Number(c.capacidad ?? c.CUS_CAPACIDAD ?? c.capacity ?? 0),
         valor: Number(c.valor ?? c.valor_cuota ?? c.price ?? 0)
       }))
-    } catch (e) {
-      console.warn('Dashboard: error obteniendo cursos', e)
-      cursosList.value = []
-    }
 
-    // Obtener cuotas por curso (si existe endpoint 'cuotas') y mapear valores
-    try {
-      const rawCuotas = await cuotasApi.list()
-      const cuotasArr = Array.isArray(rawCuotas) ? rawCuotas : (rawCuotas && Array.isArray(rawCuotas.results) ? rawCuotas.results : [])
-      const cuotasMap = {}
-      cuotasArr.forEach(q => {
-        const cid = q.curso || q.CUS_ID || q.curso_id || q.id || q.pk
-        const val = Number(q.valor ?? q.monto ?? q.price ?? q.amount ?? 0)
-        if (cid != null) cuotasMap[cid] = val
-      })
-      if (Object.keys(cuotasMap).length) {
-        cursosList.value = cursosList.value.map(c => ({ ...c, valor: cuotasMap[c.id] ?? c.valor ?? 0 }))
-      }
-    } catch (e) {
-      console.warn('Dashboard: cuotas no disponibles', e)
-    }
-
-    try {
-      // fetch roles per curso from personas service
-      const rolesByPerson = await personasApi.list()
-      const roles = { coordinadores: {}, directores: {} }
-      
-      if (Array.isArray(rolesByPerson)) {
-        rolesByPerson.forEach(p => {
-          if (p.curso_id && p.rol) {
-            if (p.rol.toLowerCase().includes('coordinador')) {
-              roles.coordinadores[p.curso_id] = (roles.coordinadores[p.curso_id] || 0) + 1
-            } else if (p.rol.toLowerCase().includes('director')) {
-              roles.directores[p.curso_id] = (roles.directores[p.curso_id] || 0) + 1
-            }
-          }
-        })
-        coordinadoresByCourse.value = roles.coordinadores
-        directoresByCourse.value = roles.directores
-      }
-    } catch (e) {
-      console.warn('Dashboard: roles por curso no disponibles', e)
-    }
-
-    // Obtener total de personas
-    try {
+      // Fetch personas data
       const personas = await personasApi.list()
-      const total = Array.isArray(personas) ? personas.length : 0
-      totalPersonas.value = Number.isFinite(total) ? total : 0
-    } catch (e) {
-      console.warn('Dashboard: personas no disponibles', e)
-      totalPersonas.value = 0
+      const personasData = Array.isArray(personas) ? personas : (personas.results || personas.data || [])
+      console.log('Personas data:', personasData)
+
+      // Map roles data
+      const roles = { coordinadores: {}, directores: {}, formadores: {} }
+      personasData.forEach(p => {
+        if (p.curso_id && p.rol) {
+          const rol = p.rol.toLowerCase()
+          if (rol.includes('coordinador')) {
+            roles.coordinadores[p.curso_id] = (roles.coordinadores[p.curso_id] || 0) + 1
+          } else if (rol.includes('director')) {
+            roles.directores[p.curso_id] = (roles.directores[p.curso_id] || 0) + 1
+          } else if (rol.includes('formador')) {
+            roles.formadores[p.curso_id] = (roles.formadores[p.curso_id] || 0) + 1
+          }
+        }
+      })
+
+      // Update role counts
+      coordinadoresByCourse.value = roles.coordinadores
+      directoresByCourse.value = roles.directores
+      directivosByCourse.value = roles.formadores
+
+      // Fetch cuotas data
+      const cuotasResponse = await cuotasApi.list()
+      const cuotasData = Array.isArray(cuotasResponse) ? cuotasResponse : (cuotasResponse.results || cuotasResponse.data || [])
+      console.log('Cuotas data:', cuotasData)
+
+      // Map pagos data
+      const pagos = { sums: {}, counts: {} }
+      cuotasData.forEach(q => {
+        const cursoId = q.curso_id || q.CUS_ID || q.curso || q.id
+        if (cursoId && q.pagado) {
+          pagos.sums[cursoId] = (pagos.sums[cursoId] || 0) + Number(q.valor || q.monto || 0)
+          pagos.counts[cursoId] = (pagos.counts[cursoId] || 0) + 1
+        }
+      })
+
+      // Update pagos data
+      pagosSumByCourse.value = pagos.sums
+      pagosCountPaidByCourse.value = pagos.counts
+
+      // Update total personas
+      totalPersonas.value = personasData.length
+
+      console.log('Dashboard data loaded successfully')
+    } catch (error) {
+      console.error('Error loading dashboard data:', error)
     }
   })()
 })
@@ -1609,4 +1608,53 @@ onMounted(() => {
 
 .column-chart text { font-family: "Segoe UI", Roboto, system-ui, sans-serif; font-weight: 600; }
 
+</style>
+
+/* Styles adapted from Correos.vue datatable for a cleaner table appearance
+   These rules target the existing .table-container .data-table structure
+   used by the Dashboard and are intentionally scoped to avoid broad site changes. */
+<style scoped>
+.table-container.datatable-visual, .table-container {
+  overflow-x: auto;
+}
+
+.table-container .data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--color-background-soft, #f8fafc);
+  border-radius: 10px;
+  overflow: hidden;
+  font-size: 1.05rem;
+  margin-bottom: 0;
+}
+
+.table-container .data-table th {
+  background: var(--color-background-mute, #f1f5f9);
+  color: var(--color-text, #1e293b);
+  font-weight: 700;
+  padding: 12px 10px;
+  border-bottom: 2px solid var(--color-border, #e2e8f0);
+  text-align: left;
+}
+
+.table-container .data-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  color: var(--color-text, #334155);
+}
+
+.table-container .data-table tr:nth-child(even) {
+  background: var(--color-background-soft, #f8fafc);
+}
+
+.table-container .data-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* compact override for existing .data-table styles in dashboard when .large is used */
+.table-container.large .data-table th,
+.table-container.large .data-table td {
+  padding: 0.75rem 0.6rem;
+}
 </style>
