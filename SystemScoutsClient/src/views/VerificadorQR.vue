@@ -1,4 +1,4 @@
-ya si <template>
+<template>
   <div class="verificador-container">
     <h2>Pantalla de Verificación</h2>
     <div id="lector" ref="lectorRef"></div>
@@ -12,24 +12,16 @@ ya si <template>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import { createVerifier } from '@/services/VerificadorService.js'
+import {verificarUsuario} from '@/services/VerificadorService.js'
 
-// Refs usadas en la plantilla
-const lectorRef = ref(null)
-
-// Crear la instancia del verificador (factory)
-const verifier = createVerifier({ lectorRef })
-const { resultadoTexto, resultadoClase, idEscaneado, start, stop } = verifier
-
-onMounted(() => {
-  start()
-})
-
-onUnmounted(() => {
-  stop()
-})
+const { 
+  resultadoTexto, 
+  idEscaneado, 
+  resultadoClase, 
+  lectorRef 
+} = verificarUsuario()
 </script>
+
 
 <style scoped>
 
