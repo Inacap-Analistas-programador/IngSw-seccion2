@@ -7,13 +7,25 @@
       <div class="filtros-left">
         <InputBase v-model="searchQuery" placeholder="Buscar por nombre, RUT, email..." @keydown.enter.prevent="filtrar" />
         <BaseSelect v-model="selectedRole" :options="roleOptions" placeholder="Todos los roles" />
-        <BaseSelect v-model="selectedCourse" :options="courseOptions" placeholder="Todos los cursos" />
+        <BaseSelect v-model="selectedCourse" :options="courseOptions" placeholder="Todos los grupos" />
         <BaseSelect v-model="selectedRama" :options="ramaOptions" placeholder="Todas las ramas" />
       </div>
       <div class="filtros-right">
         <BaseButton class="btn-search" variant="primary" @click="filtrar">🔎 Buscar</BaseButton>
+        <BaseButton class="btn-add" variant="success" @click="abrirModalCrear">➕ Nueva Persona</BaseButton>
+        <BaseButton class="btn-import" variant="info" @click="abrirModalImportar">📥 Importar Excel</BaseButton>
         <BaseButton class="btn-export" variant="secondary" @click="exportarExcel">📊 Exportar</BaseButton>
       </div>
+    </div>
+
+    <!-- Indicadores de carga y error -->
+    <div v-if="cargandoPersonas" class="estado-carga">
+      <p>🔄 Cargando personas...</p>
+    </div>
+    
+    <div v-if="errorCarga" class="mensaje-error">
+      <p>❌ {{ errorCarga }}</p>
+      <BaseButton @click="cargarPersonas" variant="primary">🔄 Reintentar</BaseButton>
     </div>
 
     <!-- Mensaje de filtro activo -->
@@ -39,18 +51,18 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="p in personasFiltradas" :key="p.rut" :class="{ 'persona-anulada': p.estado === 'Anulado' }">
-          <td data-label="Nombre">{{ p.nombre }}</td>
-          <td data-label="RUT">{{ p.rut }}</td>
-          <td data-label="Email">{{ p.email }}</td>
-          <td data-label="Rol">{{ p.rol }}</td>
-          <td data-label="Rama">{{ p.rama }}</td>
-          <td data-label="Grupo">{{ p.grupo }}</td>
+        <tr v-for="p in personasFiltradas" :key="p.PER_RUN" :class="{ 'persona-anulada': !p.PER_VIGENTE }">
+          <td data-label="Nombre">{{ `${p.PER_NOMBRES || ''} ${p.PER_APELPTA || ''} ${p.PER_APELMAT || ''}`.trim() }}</td>
+          <td data-label="RUT">{{ p.PER_RUN }}-{{ p.PER_DV }}</td>
+          <td data-label="Email">{{ p.PER_MAIL }}</td>
+          <td data-label="Rol">{{ p.PER_ROL || 'Sin rol' }}</td>
+          <td data-label="Rama">{{ p.PER_RAMA || 'Sin rama' }}</td>
+          <td data-label="Grupo">{{ p.PER_GRUPO || 'Sin grupo' }}</td>
           <td data-label="Estado">
             <span
-              :class="['estado', p.estado.toLowerCase().replace(/\s+/g, '-')]"
+              :class="['estado', p.PER_VIGENTE ? 'activo' : 'inactivo']"
             >
-              {{ p.estado }}
+              {{ p.PER_VIGENTE ? 'Activo' : 'Inactivo' }}
             </span>
           </td>
           <td>
@@ -88,13 +100,21 @@
       </div>
 
   <!-- Ver/Editar persona -->
-  <BaseModal v-model="editModalVisible" @close="cancelarEdicion">
+  <BaseModal v-model="editModalVisible" @close="cancelarEdicion" class="persona-modal">
         <template #default>
           <div class="modal-edit">
                 <header class="modal-header">
-                  <h3>{{ modoSoloLectura ? 'Ver' : 'Editar' }} - {{ personaEditada?.nombre || '' }}</h3>
+                  <h3>{{ modoSoloLectura ? 'Ver' : 'Editar' }} - {{ `${personaEditada?.PER_NOMBRES || ''} ${personaEditada?.PER_APELPTA || ''}`.trim() }}</h3>
                   <div class="header-actions" v-if="!modoSoloLectura">
-                    <BaseButton class="btn-save" type="button" variant="primary" @click="guardarEdicion">💾 Guardar</BaseButton>
+                    <BaseButton 
+                      class="btn-save" 
+                      type="button" 
+                      variant="primary" 
+                      @click="guardarEdicion"
+                      :disabled="guardandoPersona"
+                    >
+                      {{ guardandoPersona ? '⏳ Guardando...' : '💾 Guardar' }}
+                    </BaseButton>
                   </div>
                 </header>
 
@@ -103,14 +123,14 @@
                   <button :class="{active: modalTab === 'hist'}" @click="modalTab='hist'">Historial</button>
                 </div>
 
-                <form v-if="modalTab==='info'" @submit.prevent="guardarEdicion" class="modal-form">
+                <form v-if="modalTab==='info'" @submit.prevent="" class="modal-form">
                   <!-- Sección de Foto de Perfil -->
                   <div class="foto-perfil-section">
                     <div class="foto-container">
                       <img 
                         v-if="personaEditada.foto" 
                         :src="personaEditada.foto" 
-                        :alt="`Foto de ${personaEditada.nombre}`"
+                        :alt="`Foto de ${personaEditada.PER_NOMBRES}`"
                         class="foto-perfil"
                         @error="handleImageError"
                       />
@@ -147,78 +167,90 @@
                   
                   <div class="row">
                     <label>Nombre</label>
-                    <input v-model="personaEditada.nombre" :readonly="modoSoloLectura" required />
+                    <input v-model="personaEditada.PER_NOMBRES" :readonly="modoSoloLectura" required />
+                  </div>
+                  <div class="row">
+                    <label>Apellido Paterno</label>
+                    <input v-model="personaEditada.PER_APELPTA" :readonly="modoSoloLectura" />
+                  </div>
+                  <div class="row">
+                    <label>Apellido Materno</label>
+                    <input v-model="personaEditada.PER_APELMAT" :readonly="modoSoloLectura" />
                   </div>
                   <div class="row">
                     <label>RUT</label>
-                    <input v-model="personaEditada.rut" :readonly="modoSoloLectura" required />
+                    <div class="rut-container">
+                      <input v-model="personaEditada.PER_RUN" :readonly="modoSoloLectura" />
+                      <span class="rut-separator">-</span>
+                      <input v-model="personaEditada.PER_DV" :readonly="modoSoloLectura" class="rut-dv" maxlength="1" />
+                    </div>
                   </div>
                   <div class="row">
                     <label>Email</label>
-                    <input v-model="personaEditada.email" :readonly="modoSoloLectura" type="email" />
+                    <input v-model="personaEditada.PER_MAIL" :readonly="modoSoloLectura" type="email" />
                   </div>
                   <div class="row">
                     <label>Teléfono</label>
-                    <input v-model="personaEditada.telefono" :readonly="modoSoloLectura" />
+                    <input v-model="personaEditada.PER_FONO" :readonly="modoSoloLectura" />
                   </div>
                   <div class="row">
                     <label>Profesión</label>
-                    <input v-model="personaEditada.profesion" :readonly="modoSoloLectura" />
+                    <input v-model="personaEditada.PER_PROFESION" :readonly="modoSoloLectura" />
                   </div>
                   <div class="row">
                     <label>Fecha Nac.</label>
-                    <input v-model="personaEditada.fecha_nac" :readonly="modoSoloLectura" type="date" />
+                    <input v-model="personaEditada.PER_FECHA_NAC" :readonly="modoSoloLectura" type="date" />
                   </div>
                   <div class="row">
                     <label>Dirección</label>
-                    <input v-model="personaEditada.direccion" :readonly="modoSoloLectura" />
+                    <input v-model="personaEditada.PER_DIRECCION" :readonly="modoSoloLectura" />
                   </div>
                   <div class="row">
                     <label>Contacto Emerg.</label>
-                    <input v-model="personaEditada.contacto_emergencia" :readonly="modoSoloLectura" />
+                    <input v-model="personaEditada.PER_CONTACTO_EMERGENCIA" :readonly="modoSoloLectura" />
                   </div>
                   <div class="row">
                     <label>Tel. Emerg.</label>
-                    <input v-model="personaEditada.telefono_emergencia" :readonly="modoSoloLectura" />
+                    <input v-model="personaEditada.PER_TELEFONO_EMERGENCIA" :readonly="modoSoloLectura" />
                   </div>
                   <div class="row">
                     <label>Alergias</label>
-                    <input v-model="personaEditada.alergias" :readonly="modoSoloLectura" />
+                    <input v-model="personaEditada.PER_ALERGIAS" :readonly="modoSoloLectura" />
                   </div>
                   <div class="row">
                     <label>Limitación</label>
-                    <input v-model="personaEditada.limitacion" :readonly="modoSoloLectura" />
+                    <input v-model="personaEditada.PER_LIMITACION" :readonly="modoSoloLectura" />
                   </div>
                   <div class="row">
                     <label>Apodo</label>
-                    <input v-model="personaEditada.apodo" :readonly="modoSoloLectura" />
+                    <input v-model="personaEditada.PER_APODO" :readonly="modoSoloLectura" />
                   </div>
                   <div class="row">
                     <label>Religión</label>
-                    <input v-model="personaEditada.religion" :readonly="modoSoloLectura" />
+                    <input v-model="personaEditada.PER_RELIGION" :readonly="modoSoloLectura" />
                   </div>
                   <div class="row">
                     <label>Tiempo NNAJ</label>
-                    <input v-model="personaEditada.tiempo_nnaj" :readonly="modoSoloLectura" />
+                    <input v-model="personaEditada.PER_TIEMPO_NNAJ" :readonly="modoSoloLectura" type="number" />
                   </div>
                   <div class="row">
                     <label>Tiempo Adulto</label>
-                    <input v-model="personaEditada.tiempo_adulto" :readonly="modoSoloLectura" />
+                    <input v-model="personaEditada.PER_TIEMPO_ADULTO" :readonly="modoSoloLectura" type="number" />
                   </div>
                   <div class="row">
                     <label>Vigente</label>
-                    <select v-model="personaEditada.vigente" :disabled="modoSoloLectura">
+                    <select v-model="personaEditada.PER_VIGENTE" :disabled="modoSoloLectura">
                       <option :value="true">Si</option>
                       <option :value="false">No</option>
                     </select>
                   </div>
                   <div class="row">
                     <label>Rol</label>
-                    <BaseSelect v-model="personaEditada.rol" :options="roleOptions" :disabled="modoSoloLectura" />
+                    <BaseSelect v-model="personaEditada.PER_ROL" :options="roleOptions" :disabled="modoSoloLectura" />
                   </div>
                   <div class="row">
                     <label>Rama</label>
-                    <BaseSelect v-model="personaEditada.rama" :options="ramaOptions" :disabled="modoSoloLectura" />
+                    <BaseSelect v-model="personaEditada.PER_RAMA" :options="ramaOptions" :disabled="modoSoloLectura" />
                   </div>
                 </form>
 
@@ -283,6 +315,334 @@
           </div>
         </template>
       </BaseModal>
+      
+      <!-- Modal de Creación de Persona -->
+      <BaseModal v-model="crearModalVisible" title="Nueva Persona" @close="cerrarModalCrear" class="persona-modal">
+        <template #default>
+          <div class="modal-crear">
+            <form @submit.prevent="guardarPersonaNueva" class="modal-form">
+              <div class="row">
+                <label>Nombres *</label>
+                <InputBase 
+                  v-model="personaNueva.PER_NOMBRES" 
+                  placeholder="Ej: Juan Carlos" 
+                  :disabled="guardandoPersona"
+                  required
+                />
+              </div>
+              
+              <div class="row">
+                <label>Apellido Paterno *</label>
+                <InputBase 
+                  v-model="personaNueva.PER_APELPTA" 
+                  placeholder="Ej: González" 
+                  :disabled="guardandoPersona"
+                  required
+                />
+              </div>
+              
+              <div class="row">
+                <label>Apellido Materno</label>
+                <InputBase 
+                  v-model="personaNueva.PER_APELMAT" 
+                  placeholder="Ej: Pérez" 
+                  :disabled="guardandoPersona"
+                />
+              </div>
+              
+              <div class="row">
+                <label>RUT *</label>
+                <div class="rut-container">
+                  <InputBase 
+                    v-model="personaNueva.PER_RUN" 
+                    placeholder="12345678" 
+                    :disabled="guardandoPersona"
+                    required
+                  />
+                  <span class="rut-separator">-</span>
+                  <InputBase 
+                    v-model="personaNueva.PER_DV" 
+                    placeholder="9" 
+                    maxlength="1"
+                    class="rut-dv"
+                    :disabled="guardandoPersona"
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div class="row">
+                <label>Email *</label>
+                <InputBase 
+                  v-model="personaNueva.PER_MAIL" 
+                  type="email"
+                  placeholder="juan.gonzalez@email.com" 
+                  :disabled="guardandoPersona"
+                  required
+                />
+              </div>
+
+              <div class="row">
+                <label>Teléfono</label>
+                <InputBase 
+                  v-model="personaNueva.PER_FONO" 
+                  placeholder="+56912345678" 
+                  :disabled="guardandoPersona"
+                />
+              </div>
+
+              <div class="row">
+                <label>Tipo de Teléfono</label>
+                <BaseSelect 
+                  v-model="personaNueva.PER_TIPO_FONO" 
+                  :options="[
+                    { value: 1, label: 'Fono Fijo' },
+                    { value: 2, label: 'Celular' },
+                    { value: 3, label: 'Celular/WhatsApp' },
+                    { value: 4, label: 'WhatsApp' }
+                  ]"
+                  :disabled="guardandoPersona"
+                />
+              </div>
+
+              <div class="row">
+                <label>Profesión</label>
+                <InputBase 
+                  v-model="personaNueva.PER_PROFESION" 
+                  placeholder="Ej: Ingeniero" 
+                  :disabled="guardandoPersona"
+                />
+              </div>
+              
+              <div class="row">
+                <label>Fecha de Nacimiento *</label>
+                <InputBase 
+                  v-model="personaNueva.PER_FECHA_NAC" 
+                  type="date"
+                  :disabled="guardandoPersona"
+                  required
+                />
+              </div>
+              
+              <div class="row">
+                <label>Dirección</label>
+                <InputBase 
+                  v-model="personaNueva.PER_DIRECCION" 
+                  placeholder="Calle Los Pinos #123" 
+                  :disabled="guardandoPersona"
+                />
+              </div>
+
+              <div class="row">
+                <label>Contacto Emergencia</label>
+                <InputBase 
+                  v-model="personaNueva.PER_CONTACTO_EMERGENCIA" 
+                  placeholder="María González" 
+                  :disabled="guardandoPersona"
+                />
+              </div>
+
+              <div class="row">
+                <label>Tel. Emergencia</label>
+                <InputBase 
+                  v-model="personaNueva.PER_TELEFONO_EMERGENCIA" 
+                  placeholder="+56987654321" 
+                  :disabled="guardandoPersona"
+                />
+              </div>
+
+              <div class="row">
+                <label>Alergias</label>
+                <InputBase 
+                  v-model="personaNueva.PER_ALERGIAS" 
+                  placeholder="Ninguna conocida" 
+                  :disabled="guardandoPersona"
+                />
+              </div>
+
+              <div class="row">
+                <label>Limitación</label>
+                <InputBase 
+                  v-model="personaNueva.PER_LIMITACION" 
+                  placeholder="Ninguna" 
+                  :disabled="guardandoPersona"
+                />
+              </div>
+              
+              <div class="row">
+                <label>Apodo</label>
+                <InputBase 
+                  v-model="personaNueva.PER_APODO" 
+                  placeholder="Ej: Juanito" 
+                  :disabled="guardandoPersona"
+                />
+              </div>
+
+              <div class="row">
+                <label>Religión</label>
+                <InputBase 
+                  v-model="personaNueva.PER_RELIGION" 
+                  placeholder="Católica, Evangélica, etc." 
+                  :disabled="guardandoPersona"
+                />
+              </div>
+
+              <div class="row">
+                <label>Tiempo NNAJ</label>
+                <InputBase 
+                  v-model="personaNueva.PER_TIEMPO_NNAJ" 
+                  placeholder="0" 
+                  type="number"
+                  :disabled="guardandoPersona"
+                />
+              </div>
+
+              <div class="row">
+                <label>Tiempo Adulto</label>
+                <InputBase 
+                  v-model="personaNueva.PER_TIEMPO_ADULTO" 
+                  placeholder="0" 
+                  type="number"
+                  :disabled="guardandoPersona"
+                />
+              </div>
+
+              <div class="row">
+                <label>Vigente</label>
+                <BaseSelect 
+                  v-model="personaNueva.PER_VIGENTE" 
+                  :options="[
+                    { value: true, label: 'Sí' },
+                    { value: false, label: 'No' }
+                  ]"
+                  :disabled="guardandoPersona"
+                />
+              </div>
+
+              <div class="row">
+                <label>Rol</label>
+                <BaseSelect 
+                  v-model="personaNueva.PER_ROL" 
+                  :options="roleOptions"
+                  :disabled="guardandoPersona"
+                />
+              </div>
+
+              <div class="row">
+                <label>Rama</label>
+                <BaseSelect 
+                  v-model="personaNueva.PER_RAMA" 
+                  :options="ramaOptions"
+                  :disabled="guardandoPersona"
+                />
+              </div>
+              
+              <div class="form-actions">
+                <BaseButton 
+                  type="button" 
+                  variant="secondary" 
+                  @click="cerrarModalCrear"
+                  :disabled="guardandoPersona"
+                >
+                  Cancelar
+                </BaseButton>
+                <BaseButton 
+                  type="submit" 
+                  variant="primary"
+                  :disabled="guardandoPersona"
+                >
+                  {{ guardandoPersona ? '⏳ Guardando...' : '💾 Guardar Persona' }}
+                </BaseButton>
+              </div>
+            </form>
+          </div>
+        </template>
+      </BaseModal>
+
+      <!-- Modal de Importar Excel -->
+      <BaseModal v-model="importarModalVisible" title="Importar Personas desde Excel" @close="cerrarModalImportar" class="persona-modal">
+        <template #default>
+          <div class="modal-importar">
+            <div class="import-content">
+              
+              <!-- Instrucciones -->
+              <div class="import-instructions">
+                <h4>📋 Instrucciones:</h4>
+                <ul>
+                  <li>El archivo debe ser formato Excel (.xlsx o .xls)</li>
+                  <li>La primera fila debe contener los encabezados</li>
+                  <li>Columnas requeridas: <strong>PER_NOMBRES, PER_APELPTA, PER_RUN, PER_DV, PER_MAIL</strong></li>
+                  <li>Columnas opcionales: PER_APELMAT, PER_FECHA_NAC, PER_DIRECCION, PER_FONO, etc.</li>
+                </ul>
+              </div>
+
+              <!-- Selector de archivo -->
+              <div class="file-selector">
+                <input 
+                  ref="excelInput"
+                  type="file" 
+                  accept=".xlsx,.xls"
+                  @change="handleFileSelect"
+                  style="display: none"
+                />
+                <BaseButton 
+                  @click="$refs.excelInput?.click()" 
+                  variant="primary"
+                  :disabled="importandoPersonas"
+                >
+                  📁 Seleccionar Archivo Excel
+                </BaseButton>
+                <span v-if="archivoSeleccionado" class="file-name">
+                  ✅ {{ archivoSeleccionado.name }}
+                </span>
+              </div>
+
+              <!-- Vista previa de datos -->
+              <div v-if="datosVistaPreviaExcel.length > 0" class="preview-section">
+                <h4>📊 Vista Previa (primeras 5 filas):</h4>
+                <div class="preview-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th v-for="header in encabezadosExcel" :key="header">{{ header }}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(fila, index) in datosVistaPreviaExcel.slice(0, 5)" :key="index">
+                        <td v-for="header in encabezadosExcel" :key="header">
+                          {{ fila[header] || '-' }}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p class="preview-info">
+                  Total de filas a importar: <strong>{{ datosVistaPreviaExcel.length }}</strong>
+                </p>
+              </div>
+
+              <!-- Acciones -->
+              <div class="import-actions">
+                <BaseButton 
+                  @click="cerrarModalImportar"
+                  variant="secondary"
+                  :disabled="importandoPersonas"
+                >
+                  ❌ Cancelar
+                </BaseButton>
+                <BaseButton 
+                  @click="importarPersonasExcel"
+                  variant="success"
+                  :disabled="!archivoSeleccionado || importandoPersonas"
+                >
+                  {{ importandoPersonas ? '⏳ Importando...' : '📥 Importar Personas' }}
+                </BaseButton>
+              </div>
+
+            </div>
+          </div>
+        </template>
+      </BaseModal>
     </div>
   </div>
 </template>
@@ -294,6 +654,8 @@ import BaseSelect from '@/components/Reutilizables/BaseSelect.vue'
 import BaseButton from '@/components/Reutilizables/BaseButton.vue'
 import BaseAlert from '@/components/Reutilizables/BaseAlert.vue'
 import BaseModal from '@/components/Reutilizables/BaseModal.vue'
+import personasService from '@/services/personasService.js'
+import * as XLSX from 'xlsx'
 
 export default {
   name: 'GestionPersonas',
@@ -305,26 +667,13 @@ export default {
       selectedRama: '',
   selectedCourse: '',
       roleOptions: [
-        { value: '', label: 'Todos los roles' },
-        { value: 'PARTICIPANTE', label: 'Participante' },
-        { value: 'DIRIGENTE', label: 'Dirigente' },
-        { value: 'APOYO', label: 'Apoyo' }
+        { value: '', label: 'Todos los roles' }
       ],
       ramaOptions: [
-        { value: '', label: 'Todas las ramas' },
-        { value: 'CASTORES', label: 'Castores' },
-        { value: 'LOBATOS', label: 'Lobatos' },
-        { value: 'SCOUTS', label: 'Scouts' },
-        { value: 'PIONEROS', label: 'Pioneros' },
-        { value: 'ROVERS', label: 'Rovers' }
+        { value: '', label: 'Todas las ramas' }
       ],
       courseOptions: [
-        { value: '', label: 'Todos los cursos' },
-        { value: 'PRIMEROS_AUXILIOS', label: 'Primeros Auxilios (RCP y Soporte Vital)' },
-        { value: 'ORIENTACION_NAV', label: 'Orientación y Navegación' },
-        { value: 'CAMPAMENTOS', label: 'Campamentos y Técnicas de Campo' },
-        { value: 'LIDERAZGO_SCOUT', label: 'Liderazgo Scout' },
-        { value: 'FORMACION_DIRIGENTES', label: 'Formación de Dirigentes' }
+        { value: '', label: 'Todos los grupos' }
       ],
   personaSeleccionada: null,
   editModalVisible: false,
@@ -336,12 +685,26 @@ export default {
   confirmModalAnularVisible: false,
   personaAAnular: null,
   
+  // Modal de creación
+  crearModalVisible: false,
+  personaNueva: null,
+  guardandoPersona: false,
+  
+  // Modal de importación
+  importarModalVisible: false,
+  importandoPersonas: false,
+  archivoSeleccionado: null,
+  datosVistaPreviaExcel: [],
+  encabezadosExcel: [],
+  
   // Privilegios del usuario - vendrá de la BD en producción/ Puede que necesite ajustes :P
   esAdministrador: true, // Activado para pruebas - se obtendrá de la BD
   
     filtroAplicado: false,
     filteredPersonas: [],
     filtrandoEnProceso: false,
+    cargandoPersonas: false,
+    errorCarga: null,
       personas: [] // Será cargado desde la BD en producción
     };
   },
@@ -449,14 +812,14 @@ export default {
     ejecutarFiltrado() {
       // Verificar que al menos un filtro esté activo
       const q = (this.searchQuery || '').toLowerCase().trim();
-      const selectedRoleNorm = (this.selectedRole || '').toString().trim().toUpperCase();
-      const selectedRamaNorm = (this.selectedRama || '').toString().trim().toUpperCase();
-      const selectedCourseNorm = (this.selectedCourse || '').toString().trim().toUpperCase();
+      const selectedRoleNorm = (this.selectedRole || '').toString().trim();
+      const selectedRamaNorm = (this.selectedRama || '').toString().trim();
+      const selectedCourseNorm = (this.selectedCourse || '').toString().trim();
 
       const tieneAlgunFiltro = q || selectedRoleNorm || selectedRamaNorm || selectedCourseNorm;
       
       if (!tieneAlgunFiltro) {
-        alert('Debe usar un filtro o mas para poder buscar.');
+        alert('Debe usar al menos un filtro para buscar (nombre/RUT/email, rol, rama o grupo).');
         return;
       }
 
@@ -465,25 +828,39 @@ export default {
       // cerrar detalle si estaba abierto
       this.personaSeleccionada = null;
 
-  // Calcular la instantánea filtrada una vez (no actualizar reactivamente mientras se escribe)
+      // Calcular la instantánea filtrada una vez
+      console.log('🔍 Aplicando filtros:', {
+        busqueda: q,
+        rol: selectedRoleNorm,
+        rama: selectedRamaNorm,
+        grupo: selectedCourseNorm
+      });
+      console.log('📊 Total personas disponibles:', this.personas.length);
 
       this.filteredPersonas = this.personas.filter((p) => {
-        const nombre = (p.nombre || '').toLowerCase();
-        const rut = (p.rut || '').toLowerCase();
-        const email = (p.email || '').toLowerCase();
+        // Usar los campos reales del modelo Django
+        const nombre = (p.PER_NOMBRES || '').toLowerCase();
+        const apellidoPat = (p.PER_APELPTA || '').toLowerCase();
+        const apellidoMat = (p.PER_APELMAT || '').toLowerCase();
+        const nombreCompleto = `${nombre} ${apellidoPat} ${apellidoMat}`.toLowerCase();
+        const rut = (p.PER_RUN || '').toString().toLowerCase();
+        const email = (p.PER_MAIL || '').toLowerCase();
 
-        const coincideBusqueda = nombre.includes(q) || rut.includes(q) || email.includes(q);
+        const coincideBusqueda = !q || nombreCompleto.includes(q) || rut.includes(q) || email.includes(q);
 
-        const pRolNorm = (p.rol || '').toString().trim().toUpperCase();
-        const pRamaNorm = (p.rama || '').toString().trim().toUpperCase();
-        const pCursos = (p.cursos || []).map((c) => ('' + c).toString().trim().toUpperCase());
+        // Filtros de rol, rama y grupo usando los nuevos campos
+        const pRol = (p.PER_ROL || '').toString().trim();
+        const pRama = (p.PER_RAMA || '').toString().trim();
+        const pGrupo = (p.PER_GRUPO || '').toString().trim();
 
-        const coincideRol = selectedRoleNorm ? pRolNorm === selectedRoleNorm : true;
-        const coincideRama = selectedRamaNorm ? pRamaNorm === selectedRamaNorm : true;
-        const coincideCurso = selectedCourseNorm ? pCursos.includes(selectedCourseNorm) : true;
+        const coincideRol = !selectedRoleNorm || pRol === selectedRoleNorm;
+        const coincideRama = !selectedRamaNorm || pRama === selectedRamaNorm;
+        const coincideGrupo = !selectedCourseNorm || pGrupo === selectedCourseNorm;
 
-        return coincideBusqueda && coincideRol && coincideRama && coincideCurso;
+        return coincideBusqueda && coincideRol && coincideRama && coincideGrupo;
       });
+      
+      console.log('✅ Personas filtradas:', this.filteredPersonas.length);
 
       // pequeño comportamiento UX: scrollear la tabla hacia la vista
       this.$nextTick(() => {
@@ -590,64 +967,140 @@ export default {
     }
     ,
     guardarEdicion() {
-      if (!this.personaEditada || !this.personaEditada.rut || !this.personaEditada.nombre) {
-        // validación mínima
+      if (!this.personaEditada || !this.personaEditada.PER_RUN || !this.personaEditada.PER_NOMBRES) {
+        // validación mínima usando campos correctos
         alert('Nombre y RUT son obligatorios');
         return;
       }
 
-      // Mostrar popup de confirmación
-      this.mensajeConfirmacion = `¿Seguro que quieres guardar estos cambios?`;
-      this.confirmModalVisible = true;
-    },
-    
-    confirmarGuardado() {
-      // Cerrar modal de confirmación
-      this.confirmModalVisible = false;
-      
-      // Proceder con el guardado directamente
-      if (this.personaEditada) {
-        this.personaEditada.PER_FECHA_NAC = this.personaEditada.fecha_nac || this.personaEditada.PER_FECHA_NAC || '';
-        this.personaEditada.PER_DIRECCION = this.personaEditada.direccion || this.personaEditada.PER_DIRECCION || '';
-        this.personaEditada.PER_NOM_EMERGENCIA = this.personaEditada.contacto_emergencia || this.personaEditada.PER_NOM_EMERGENCIA || '';
-        this.personaEditada.PER_FONO_EMERGENCIA = this.personaEditada.telefono_emergencia || this.personaEditada.PER_FONO_EMERGENCIA || '';
-        this.personaEditada.PER_ALERGIA_ENFERMEDAD = this.personaEditada.alergias || this.personaEditada.PER_ALERGIA_ENFERMEDAD || '';
-        this.personaEditada.PER_LIMITACION = this.personaEditada.limitacion || this.personaEditada.PER_LIMITACION || '';
-        this.personaEditada.PER_APODO = this.personaEditada.apodo || this.personaEditada.PER_APODO || '';
-        this.personaEditada.PER_RELIGION = this.personaEditada.religion || this.personaEditada.PER_RELIGION || '';
-        this.personaEditada.PER_TIEMPO_NNAJ = this.personaEditada.tiempo_nnaj || this.personaEditada.PER_TIEMPO_NNAJ || '';
-        this.personaEditada.PER_TIEMPO_ADULTO = this.personaEditada.tiempo_adulto || this.personaEditada.PER_TIEMPO_ADULTO || '';
-        this.personaEditada.PER_VIGENTE = this.personaEditada.vigente === undefined ? (this.personaEditada.PER_VIGENTE ?? true) : !!this.personaEditada.vigente;
+      // Validar RUT si están separados los campos
+      if (!this.personaEditada.PER_DV && this.personaEditada.PER_RUN) {
+        alert('El dígito verificador del RUT es obligatorio');
+        return;
       }
 
-      // buscar índice en el array principal personas por rut (único)
-      const idx = this.personas.findIndex((p) => p.rut === this.personaEditada.rut);
-      if (idx !== -1) {
-        // reemplazar el objeto en el array principal (preservar reactividad)
-        this.$set ? this.$set(this.personas, idx, Object.assign({}, this.personaEditada)) : (this.personas.splice(idx, 1, Object.assign({}, this.personaEditada)));
-      } else {
-        // si RUT cambió y no se encontró, intentar emparejar por el rut original seleccionado
-        const originalRut = this.personaSeleccionada && this.personaSeleccionada.rut;
-        const idx2 = this.personas.findIndex((p) => p.rut === originalRut);
-        if (idx2 !== -1) this.personas.splice(idx2, 1, Object.assign({}, this.personaEditada));
-      }
-
-      // actualizar la instantánea filtrada si está presente
-      if (this.filteredPersonas && this.filteredPersonas.length) {
-        const fidx = this.filteredPersonas.findIndex((p) => p.rut === this.personaEditada.rut);
-        if (fidx !== -1) this.filteredPersonas.splice(fidx, 1, Object.assign({}, this.personaEditada));
-        else {
-          // además, si el RUT cambió, intentar encontrar por el original
-          const orig = this.personaSeleccionada && this.personaSeleccionada.rut;
-          const fidx2 = this.filteredPersonas.findIndex((p) => p.rut === orig);
-          if (fidx2 !== -1) this.filteredPersonas.splice(fidx2, 1, Object.assign({}, this.personaEditada));
+      // Validar formato del RUT
+      if (this.personaEditada.PER_RUN && this.personaEditada.PER_DV) {
+        if (!this.validarRutChileno(this.personaEditada.PER_RUN, this.personaEditada.PER_DV)) {
+          alert('El RUT ingresado no es válido');
+          return;
         }
       }
 
-      // cerrar modal mediante la propiedad reactiva
-      this.editModalVisible = false;
-      this.personaSeleccionada = null;
-      this.personaEditada = null;
+      // Mostrar popup de confirmación
+      this.mensajeConfirmacion = `¿Seguro que quieres guardar estos cambios para ${this.personaEditada.PER_NOMBRES} ${this.personaEditada.PER_APELPTA}?`;
+      this.confirmModalVisible = true;
+    },
+    
+    async confirmarGuardado() {
+      // Prevenir ejecución doble
+      if (this.guardandoPersona) {
+        console.log('⚠️ Ya se está guardando, ignorando solicitud duplicada');
+        return;
+      }
+      
+      try {
+        this.confirmModalVisible = false;
+        this.guardandoPersona = true;
+        
+        if (!this.personaEditada) {
+          alert('No hay datos para guardar');
+          return;
+        }
+        
+        if (!this.personaEditada.PER_ID) {
+          alert('Error: No se encontró el ID de la persona');
+          console.error('❌ Persona sin ID:', this.personaEditada);
+          return;
+        }
+        
+        console.log('💾 Guardando cambios en persona:', this.personaEditada);
+        console.log('📝 ID de persona:', this.personaEditada.PER_ID);
+        
+        // Validaciones básicas
+        if (!this.personaEditada.PER_NOMBRES) {
+          alert('El nombre es obligatorio');
+          return;
+        }
+        
+        if (!this.personaEditada.PER_RUN) {
+          alert('El RUT es obligatorio');
+          return;
+        }
+
+        if (!this.personaEditada.PER_DV) {
+          alert('El dígito verificador del RUT es obligatorio');
+          return;
+        }
+
+        // Validar formato de email si está presente
+        if (this.personaEditada.PER_MAIL && !this.validarEmail(this.personaEditada.PER_MAIL)) {
+          alert('El formato del email no es válido');
+          return;
+        }
+        
+        // Preparar datos para actualización - Solo campos básicos primero
+        const datosActualizados = {
+          PER_NOMBRES: this.personaEditada.PER_NOMBRES,
+          PER_APELPTA: this.personaEditada.PER_APELPTA || '',
+          PER_APELMAT: this.personaEditada.PER_APELMAT || '',
+          PER_RUN: this.personaEditada.PER_RUN,
+          PER_DV: this.personaEditada.PER_DV,
+          PER_MAIL: this.personaEditada.PER_MAIL || '',
+          PER_FECHA_NAC: this.personaEditada.PER_FECHA_NAC || null,
+          PER_DIRECCION: this.personaEditada.PER_DIRECCION || '',
+          PER_FONO: this.personaEditada.PER_FONO || '',
+          PER_VIGENTE: this.personaEditada.PER_VIGENTE !== undefined ? this.personaEditada.PER_VIGENTE : true
+        };
+        
+        console.log('📤 Datos a enviar:', datosActualizados);
+        console.log('🌐 URL de actualización: personas/personas/' + this.personaEditada.PER_ID + '/');
+        
+        // Usar la API para actualizar (PATCH para actualización parcial)
+        const personaActualizada = await personasService.personas.partialUpdate(
+          this.personaEditada.PER_ID, 
+          datosActualizados
+        );
+        
+        console.log('✅ Persona actualizada:', personaActualizada);
+        
+        // Actualizar la lista de personas
+        await this.cargarPersonas();
+        
+        // Cerrar modal
+        this.editModalVisible = false;
+        this.personaEditada = null;
+        this.personaSeleccionada = null;
+        
+        console.log('✅ ¡Persona actualizada exitosamente!');
+        alert('¡Persona actualizada exitosamente!');
+        
+      } catch (error) {
+        console.error('❌ Error actualizando persona:', error);
+        console.error('📋 Detalles del error:', {
+          status: error.status,
+          statusText: error.statusText,
+          message: error.message,
+          response: error.response
+        });
+        
+        // Mostrar mensaje de error más específico
+        let mensajeError = 'Error al actualizar la persona. ';
+        
+        if (error.status === 400) {
+          mensajeError += 'Datos inválidos. Verifica que todos los campos estén correctos.';
+        } else if (error.status === 404) {
+          mensajeError += 'Persona no encontrada.';
+        } else if (error.status === 500) {
+          mensajeError += 'Error interno del servidor.';
+        } else {
+          mensajeError += 'Verifica tu conexión e intenta nuevamente.';
+        }
+        
+        alert(mensajeError);
+      } finally {
+        this.guardandoPersona = false;
+      }
     },
     
     cancelarConfirmacion() {
@@ -746,7 +1199,383 @@ export default {
     handleImageError() {
       // Si hay error al cargar la imagen, mostrar placeholder
       this.personaEditada.foto = null;
+    },
+
+    // === MÉTODOS PARA API ===
+    async cargarPersonas() {
+      try {
+        this.cargandoPersonas = true;
+        this.errorCarga = null;
+        
+        console.log('🔄 Intentando cargar personas con relaciones desde API...');
+        const response = await personasService.personasCompletas.list();
+        console.log('📡 Respuesta de la API:', response);
+        
+        // Procesar la respuesta
+        if (Array.isArray(response)) {
+          this.personas = response;
+        } else if (response && response.results && Array.isArray(response.results)) {
+          this.personas = response.results;
+        } else {
+          this.personas = [];
+        }
+        
+        console.log('✅ Personas cargadas:', this.personas.length);
+        
+      } catch (error) {
+        console.error('❌ Error cargando personas:', error);
+        this.errorCarga = 'Error al cargar las personas. Verifica que el backend esté funcionando.';
+        this.personas = [];
+      } finally {
+        this.cargandoPersonas = false;
+      }
+    },
+
+    async cargarOpcionesFiltros() {
+      try {
+        console.log('🔄 Cargando opciones de filtros...');
+        
+        // Cargar roles
+        console.log('📋 Obteniendo roles...');
+        const roles = await personasService.obtenerRoles();
+        this.roleOptions = [{ value: '', label: 'Todos los roles' }, ...roles];
+        console.log('✅ Roles cargados:', roles.length, roles);
+        
+        // Cargar ramas
+        console.log('🌿 Obteniendo ramas...');
+        const ramas = await personasService.obtenerRamas();
+        this.ramaOptions = [{ value: '', label: 'Todas las ramas' }, ...ramas];
+        console.log('✅ Ramas cargadas:', ramas.length, ramas);
+        
+        // Cargar grupos
+        console.log('👥 Obteniendo grupos...');
+        const grupos = await personasService.obtenerGrupos();
+        this.courseOptions = [{ value: '', label: 'Todos los grupos' }, ...grupos];
+        console.log('✅ Grupos cargados:', grupos.length, grupos);
+        
+        console.log('🎉 Todas las opciones de filtros cargadas exitosamente');
+        
+      } catch (error) {
+        console.error('❌ Error cargando opciones de filtros:', error);
+        // Usar opciones básicas de respaldo
+        this.roleOptions = [
+          { value: '', label: 'Todos los roles' },
+          { value: 'Participante', label: 'Participante' },
+          { value: 'Formador Principal', label: 'Formador Principal' },
+          { value: 'Coordinador', label: 'Coordinador' }
+        ];
+        this.ramaOptions = [
+          { value: '', label: 'Todas las ramas' },
+          { value: 'Castores', label: 'Castores' },
+          { value: 'Lobatos', label: 'Lobatos' },
+          { value: 'Scouts', label: 'Scouts' }
+        ];
+        this.courseOptions = [
+          { value: '', label: 'Todos los grupos' },
+          { value: 'Grupo San Jorge', label: 'Grupo San Jorge' },
+          { value: 'Grupo Baden Powell', label: 'Grupo Baden Powell' }
+        ];
+      }
+    },
+
+    // === MÉTODOS PARA CREAR PERSONAS ===
+    abrirModalCrear() {
+      this.personaNueva = {
+        PER_NOMBRES: '',
+        PER_APELPTA: '',
+        PER_APELMAT: '',
+        PER_RUN: '',
+        PER_DV: '',
+        PER_MAIL: '',
+        PER_FECHA_NAC: '',
+        PER_DIRECCION: '',
+        PER_TIPO_FONO: 2, // Celular por defecto
+        PER_FONO: '',
+        PER_APODO: '',
+        PER_PROFESION: '',
+        PER_CONTACTO_EMERGENCIA: '',
+        PER_TELEFONO_EMERGENCIA: '',
+        PER_ALERGIAS: '',
+        PER_LIMITACION: '',
+        PER_RELIGION: '',
+        PER_TIEMPO_NNAJ: 0,
+        PER_TIEMPO_ADULTO: 0,
+        PER_VIGENTE: true,
+        PER_ROL: '',
+        PER_RAMA: ''
+      };
+      this.crearModalVisible = true;
+    },
+
+    cerrarModalCrear() {
+      this.crearModalVisible = false;
+      this.personaNueva = null;
+    },
+
+    // === MÉTODOS PARA IMPORTAR PERSONAS ===
+    abrirModalImportar() {
+      this.importarModalVisible = true;
+      this.archivoSeleccionado = null;
+      this.datosVistaPreviaExcel = [];
+      this.encabezadosExcel = [];
+    },
+
+    cerrarModalImportar() {
+      this.importarModalVisible = false;
+      this.archivoSeleccionado = null;
+      this.datosVistaPreviaExcel = [];
+      this.encabezadosExcel = [];
+    },
+
+    handleFileSelect(event) {
+      const archivo = event.target.files[0];
+      if (!archivo) return;
+
+      this.archivoSeleccionado = archivo;
+      this.procesarArchivoExcel(archivo);
+    },
+
+    async procesarArchivoExcel(archivo) {
+      try {
+        console.log('📁 Procesando archivo:', archivo.name);
+        
+        // Leer el archivo usando FileReader
+        const reader = new FileReader();
+        
+        reader.onload = (e) => {
+          try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            
+            // Obtener la primera hoja
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            
+            // Convertir a JSON
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+            
+            if (jsonData.length === 0) {
+              alert('El archivo Excel está vacío');
+              return;
+            }
+            
+            // La primera fila contiene los encabezados
+            this.encabezadosExcel = jsonData[0];
+            
+            // Las filas restantes contienen los datos
+            const filasDatos = jsonData.slice(1);
+            
+            // Convertir a objetos usando los encabezados
+            this.datosVistaPreviaExcel = filasDatos.map(fila => {
+              const objeto = {};
+              this.encabezadosExcel.forEach((encabezado, index) => {
+                objeto[encabezado] = fila[index] || '';
+              });
+              return objeto;
+            }).filter(objeto => {
+              // Filtrar filas vacías
+              return Object.values(objeto).some(valor => valor && valor.toString().trim() !== '');
+            });
+            
+            console.log('✅ Archivo procesado:', this.datosVistaPreviaExcel.length, 'filas encontradas');
+            
+          } catch (error) {
+            console.error('❌ Error al procesar el contenido del archivo:', error);
+            alert('Error al procesar el archivo. Verifica que sea un archivo Excel válido.');
+          }
+        };
+        
+        reader.onerror = () => {
+          console.error('❌ Error al leer el archivo');
+          alert('Error al leer el archivo');
+        };
+        
+        // Leer el archivo como ArrayBuffer
+        reader.readAsArrayBuffer(archivo);
+        
+      } catch (error) {
+        console.error('❌ Error procesando archivo Excel:', error);
+        alert('Error al procesar el archivo. Verifica que sea un archivo Excel válido.');
+      }
+    },
+
+    async importarPersonasExcel() {
+      if (!this.archivoSeleccionado || this.datosVistaPreviaExcel.length === 0) {
+        alert('Selecciona un archivo válido primero');
+        return;
+      }
+
+      try {
+        this.importandoPersonas = true;
+        
+        console.log('📥 Iniciando importación de', this.datosVistaPreviaExcel.length, 'personas');
+        
+        let personasImportadas = 0;
+        let errores = [];
+
+        for (const fila of this.datosVistaPreviaExcel) {
+          try {
+            // Validar datos obligatorios
+            if (!fila.PER_NOMBRES || !fila.PER_RUN || !fila.PER_DV) {
+              errores.push(`Fila con datos incompletos: ${JSON.stringify(fila)}`);
+              continue;
+            }
+
+            // Preparar datos para crear persona
+            const datosPersona = {
+              PER_NOMBRES: fila.PER_NOMBRES,
+              PER_APELPTA: fila.PER_APELPTA || '',
+              PER_APELMAT: fila.PER_APELMAT || '',
+              PER_RUN: fila.PER_RUN,
+              PER_DV: fila.PER_DV,
+              PER_MAIL: fila.PER_MAIL || '',
+              PER_FECHA_NAC: fila.PER_FECHA_NAC || null,
+              PER_DIRECCION: fila.PER_DIRECCION || '',
+              PER_FONO: fila.PER_FONO || '',
+              PER_VIGENTE: true,
+              ESC_ID: 1,
+              COM_ID: 1,
+              USU_ID: 1
+            };
+
+            // Crear persona usando el servicio
+            await personasService.personas.create(datosPersona);
+            personasImportadas++;
+
+          } catch (error) {
+            console.error('❌ Error creando persona:', error);
+            errores.push(`Error con ${fila.PER_NOMBRES}: ${error.message}`);
+          }
+        }
+
+        // Recargar lista de personas
+        await this.cargarPersonas();
+
+        // Cerrar modal
+        this.cerrarModalImportar();
+
+        // Mostrar resultado
+        let mensaje = `✅ Importación completada!\n`;
+        mensaje += `Personas importadas: ${personasImportadas}\n`;
+        if (errores.length > 0) {
+          mensaje += `Errores: ${errores.length}\n\n`;
+          mensaje += errores.slice(0, 5).join('\n');
+          if (errores.length > 5) {
+            mensaje += `\n... y ${errores.length - 5} errores más.`;
+          }
+        }
+        alert(mensaje);
+
+      } catch (error) {
+        console.error('❌ Error en importación:', error);
+        alert('Error durante la importación. Verifica los datos e intenta nuevamente.');
+      } finally {
+        this.importandoPersonas = false;
+      }
+    },
+
+    validarRutChileno(rut, dv) {
+      if (!rut || !dv) return false;
+      
+      const rutNumerico = parseInt(rut.replace(/\./g, ''));
+      if (isNaN(rutNumerico)) return false;
+      
+      let suma = 0;
+      let multiplicador = 2;
+      
+      const rutString = rutNumerico.toString();
+      for (let i = rutString.length - 1; i >= 0; i--) {
+        suma += parseInt(rutString[i]) * multiplicador;
+        multiplicador = multiplicador === 7 ? 2 : multiplicador + 1;
+      }
+      
+      const resto = suma % 11;
+      let dvCalculado = 11 - resto;
+      
+      if (dvCalculado === 11) dvCalculado = '0';
+      else if (dvCalculado === 10) dvCalculado = 'K';
+      else dvCalculado = dvCalculado.toString();
+      
+      return dv.toUpperCase() === dvCalculado;
+    },
+
+    validarEmail(email) {
+      if (!email) return true; // Email es opcional
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return emailRegex.test(email);
+    },
+
+    async guardarPersonaNueva() {
+      try {
+        this.guardandoPersona = true;
+        
+        // Validaciones
+        if (!this.personaNueva.PER_NOMBRES) {
+          alert('El nombre es obligatorio');
+          return;
+        }
+        
+        if (!this.personaNueva.PER_APELPTA) {
+          alert('El apellido paterno es obligatorio');
+          return;
+        }
+        
+        if (!this.personaNueva.PER_RUN || !this.personaNueva.PER_DV) {
+          alert('El RUT es obligatorio');
+          return;
+        }
+        
+        if (!this.validarRutChileno(this.personaNueva.PER_RUN, this.personaNueva.PER_DV)) {
+          alert('El RUT ingresado no es válido');
+          return;
+        }
+        
+        if (!this.personaNueva.PER_MAIL) {
+          alert('El email es obligatorio');
+          return;
+        }
+        
+        if (!this.personaNueva.PER_FECHA_NAC) {
+          alert('La fecha de nacimiento es obligatoria');
+          return;
+        }
+        
+        // Preparar datos para envío
+        const datosPersona = {
+          ...this.personaNueva,
+          ESC_ID: 1, // Estado civil por defecto (soltero)
+          COM_ID: 1, // Comuna por defecto 
+          USU_ID: 1  // Usuario por defecto
+        };
+        
+        console.log('💾 Guardando nueva persona:', datosPersona);
+        
+        const personaCreada = await personasService.personas.create(datosPersona);
+        console.log('✅ Persona creada:', personaCreada);
+        
+        // Actualizar lista de personas
+        await this.cargarPersonas();
+        
+        // Cerrar modal
+        this.cerrarModalCrear();
+        
+        alert('¡Persona creada exitosamente!');
+        
+      } catch (error) {
+        console.error('❌ Error creando persona:', error);
+        alert('Error al crear la persona. Verifica los datos e intenta nuevamente.');
+      } finally {
+        this.guardandoPersona = false;
+      }
     }
+  },
+  
+  async mounted() {
+    // Cargar personas y opciones de filtros al montar el componente
+    await Promise.all([
+      this.cargarPersonas(),
+      this.cargarOpcionesFiltros()
+    ]);
   }
 };
 </script>
@@ -1160,19 +1989,161 @@ td[data-label="RUT"] {
   white-space: nowrap; 
 }
 
+.estado-carga {
+  text-align: center;
+  padding: 20px;
+  color: #555;
+  font-style: italic;
+}
 
-</style>
+.mensaje-error {
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 15px;
+  border: 1px solid #f5c6cb;
+  border-radius: 5px;
+  margin: 10px 0;
+  text-align: center;
+}
 
-<style scoped>
-.modal-edit {
-  width: 720px;
+.mensaje-error button {
+  margin-top: 10px;
+}
+
+/* Estilos para el modal de creación */
+.modal-crear {
+  width: 800px;
   max-width: calc(100vw - 40px);
   max-height: calc(100vh - 96px);
   overflow: auto;
   box-sizing: border-box;
-  padding: 12px 14px;
+  padding: 24px 32px;
 }
-.modal-header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+
+.modal-crear .modal-form {
+  display:flex;
+  flex-direction:column;
+  gap:15px;
+  padding-right: 8px;
+}
+
+.modal-crear .modal-form .row {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  width: 100%;
+}
+
+.modal-crear .modal-form .row label {
+  width: 180px;
+  flex-shrink: 0;
+  font-weight: 500;
+  color: #333;
+  font-size: 14px;
+  text-align: left;
+  padding-right: 8px;
+}
+
+.modal-crear .modal-form .row input,
+.modal-crear .modal-form .row select {
+  flex: 1;
+  min-width: 280px;
+}
+
+.modal-crear .row:has(.rut-container) {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.modal-crear .row:has(.rut-container) label {
+  width: auto;
+  margin-bottom: 8px;
+}
+
+.modal-crear .rut-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 280px;
+  max-width: 280px;
+}
+
+.modal-crear .rut-container input:first-child {
+  flex: 1;
+  max-width: 200px;
+}
+
+.modal-crear .rut-separator {
+  font-weight: bold;
+  color: #666;
+  font-size: 16px;
+  margin: 0 4px;
+}
+
+.modal-crear .rut-dv {
+  width: 60px !important;
+  min-width: 60px !important;
+  max-width: 60px !important;
+  text-align: center;
+  flex: none !important;
+}
+
+.modal-crear .form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+  margin-top: 10px;
+}
+
+@media (max-width: 600px) {
+  .modal-crear .modal-form .row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  
+  .modal-crear .modal-form .row label {
+    width: auto;
+  }
+  
+  .modal-crear .modal-form .row input,
+  .modal-crear .modal-form .row select {
+    min-width: auto;
+  }
+  
+  .modal-crear .form-actions {
+    flex-direction: column;
+  }
+}
+
+
+</style>
+
+<style scoped>
+/* Modal específico para personas - centrado completo */
+.persona-modal :deep(.modal-overlay) {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 9999 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.modal-edit {
+  width: 800px;
+  max-width: calc(100vw - 40px);
+  max-height: calc(100vh - 96px);
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 24px 32px;
+}
+.modal-header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:20px; }
 .modal-header h3 { margin:0; font-size:18px; color:#214e9c }
 .modal-close { background:transparent; border:none; font-size:18px; cursor:pointer }
 .modal-header .header-actions { display:flex; gap:8px; align-items:center }
@@ -1186,18 +2157,112 @@ td[data-label="RUT"] {
 .modal-form {
   display:flex;
   flex-direction:column;
-  gap:10px;
-  max-height: calc(100vh - 240px);
-  overflow: auto;
+  gap:15px;
   padding-right: 8px;
 }
-.modal-form .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
-.modal-form .row label { width:120px; min-width:100px; font-weight:700; color:#222 }
-.modal-form .row input, .modal-form .row select { flex:1; min-width:140px; padding:8px 10px; border:1px solid #e6e6e6; border-radius:6px }
+
+/* Grid de dos columnas para aprovechar mejor el espacio */
+.form-fields-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 24px;
+  margin-top: 10px;
+}
+
+.form-fields-grid .row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-fields-grid .row.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-fields-grid .row label {
+  font-weight: 700;
+  color: #222;
+  font-size: 14px;
+}
+
+.form-fields-grid .row input,
+.form-fields-grid .row select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #e6e6e6;
+  border-radius: 6px;
+}
+
+.form-fields-grid .row input:disabled,
+.form-fields-grid .row select:disabled {
+  background-color: #f5f5f5;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.form-fields-grid .row input[readonly],
+.form-fields-grid .row select[readonly] {
+  background-color: #f9f9f9;
+  color: #555;
+}
+
+/* Responsive: una columna en pantallas pequeñas */
+@media (max-width: 768px) {
+  .form-fields-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .form-fields-grid .row.full-width {
+    grid-column: 1;
+  }
+}
+
+.modal-form .row { display:flex; gap:15px; align-items:center; flex-wrap:wrap; width: 100%; }
+.modal-form .row label { width:180px; min-width:140px; font-weight:700; color:#222; text-align: left; }
+.modal-form .row input, .modal-form .row select { flex:1; min-width:280px; padding:12px 15px; border:1px solid #e6e6e6; border-radius:6px }
 .modal-form .row input:disabled, .modal-form .row select:disabled { background-color:#f5f5f5; color:#666; cursor:not-allowed }
 .modal-form .row input[readonly], .modal-form .row select[readonly] { background-color:#f9f9f9; color:#555 }
 .modal-form .actions { justify-content:flex-end; margin-top:12px }
 .modal-form .actions .base-button { margin-left:8px }
+
+/* Estilos específicos para RUT en modal de editar */
+.modal-form .row:has(.rut-container) {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.modal-form .row:has(.rut-container) label {
+  width: auto;
+  margin-bottom: 8px;
+}
+
+.modal-form .rut-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 280px;
+  max-width: 280px;
+}
+
+.modal-form .rut-container input:first-child {
+  flex: 1;
+  max-width: 200px;
+}
+
+.modal-form .rut-separator {
+  font-weight: bold;
+  color: #666;
+  font-size: 16px;
+  margin: 0 4px;
+}
+
+.modal-form .rut-dv {
+  width: 60px !important;
+  min-width: 60px !important;
+  max-width: 60px !important;
+  text-align: center;
+  flex: none !important;
+}
 
 /* Estiloss para foto de perfil */
 .foto-perfil-section {
@@ -1470,5 +2535,128 @@ td[data-label="RUT"] {
 .btn-modal-confirm:active,
 .btn-modal-anular:active {
   transform: translateY(0) !important;
+}
+
+/* Estilos para el modal de importar Excel */
+.modal-importar {
+  width: 800px;
+  max-width: calc(100vw - 40px);
+  max-height: calc(100vh - 96px);
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 24px 32px;
+}
+
+.import-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.import-instructions {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.import-instructions h4 {
+  margin: 0 0 12px 0;
+  color: #334155;
+  font-size: 16px;
+}
+
+.import-instructions ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.import-instructions li {
+  margin-bottom: 8px;
+  color: #64748b;
+}
+
+.file-selector {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.file-name {
+  font-weight: 500;
+  color: #059669;
+}
+
+.preview-section {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.preview-section h4 {
+  margin: 0 0 16px 0;
+  color: #334155;
+}
+
+.preview-table {
+  overflow-x: auto;
+  margin-bottom: 12px;
+}
+
+.preview-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.preview-table th,
+.preview-table td {
+  padding: 8px 12px;
+  text-align: left;
+  border: 1px solid #e2e8f0;
+}
+
+.preview-table th {
+  background: #f1f5f9;
+  font-weight: 600;
+  color: #334155;
+}
+
+.preview-table td {
+  background: white;
+  color: #64748b;
+}
+
+.preview-info {
+  margin: 0;
+  font-weight: 500;
+  color: #059669;
+}
+
+.import-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+}
+
+@media (max-width: 600px) {
+  .modal-importar {
+    padding: 16px;
+  }
+  
+  .file-selector {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .import-actions {
+    flex-direction: column;
+  }
 }
 </style>

@@ -26,6 +26,14 @@
             Buscar
           </template>
         </BaseButton>
+        <BaseButton
+          v-if="selectedParticipant"
+          @click="acreditarParticipante"
+          variant="primary"
+          size="md"
+        >
+          <AppIcons name="check" :size="16" style="margin-right: 8px;" /> Acreditar
+        </BaseButton>
       </div>
     </div>
 
@@ -40,10 +48,13 @@
       </div>
       
       <div class="info-grid">
-        <div class="info-section">
+          <div class="info-section">
           <h3>Datos Personales</h3>
           <div class="info-item">
             <strong>Nombre:</strong> {{ selectedParticipant.name }}
+          </div>
+          <div class="info-item">
+            <strong>Apodo:</strong> {{ selectedParticipant.nickname || 'No especificado' }}
           </div>
           <div class="info-item">
             <strong>RUT:</strong> {{ selectedParticipant.rut }}
@@ -54,14 +65,25 @@
         </div>
 
         <div class="info-section">
-          <h3>Estado</h3>
+          <h3>Información Scout</h3>
           <div class="info-item">
-            <strong>Pago:</strong> 
-            <span :class="paymentStatusClass">{{ selectedParticipant.paymentStatus }}</span>
+            <strong>Rama:</strong> {{ selectedParticipant.branchName || 'No especificada' }}
           </div>
           <div class="info-item">
-            <strong>Acreditación:</strong> 
-            <span :class="acreditationStatusClass">{{ selectedParticipant.acreditationStatus }}</span>
+            <strong>Vehículo:</strong> {{ selectedParticipant.vehicle ? 'Sí' : 'No' }}
+          </div>
+          <div class="info-item">
+            <strong>Alimentación:</strong> {{ selectedParticipant.dietType || 'No especificado' }}
+          </div>
+        </div>
+
+        <div class="info-section">
+          <h3>Estado</h3>
+          <div class="info-item">
+            <strong>Estado:</strong> 
+            <span :class="getStatusClass">
+              {{ selectedParticipant.paymentConfirmed ? 'Registrado' : 'Pago Pendiente' }}
+            </span>
           </div>
           
           <!-- Mensaje de estado -->
@@ -92,7 +114,7 @@
           size="lg"
           class="btn-pagar"
         >
-          <AppIcons name="credit-card" :size="18" /> Marcar como Pagado
+          <AppIcons name="credit-card" :size="18" /> Pagar
         </BaseButton>
 
         <!-- Mensaje si ya está acreditado -->
@@ -123,7 +145,8 @@ import BaseButton from '@/components/Reutilizables/BaseButton.vue'
 import BaseAlert from '@/components/Reutilizables/BaseAlert.vue'
 import NotificationToast from '@/components/Reutilizables/NotificationToast.vue'
 import AppIcons from '@/components/icons/AppIcons.vue'
-// No usamos servicios remotos: datos locales para visualización sin API
+import authViewsService from '@/services/auth_viewsService'
+// Usamos `auth_viewsService` para conectar con los endpoints de acreditación
 
 export default {
   name: 'ManualAcreditation',
@@ -141,9 +164,45 @@ export default {
       selectedParticipant: null,
       // Datos de ejemplo locales para mostrar la pantalla sin consumir la API
       participants: [
-        { per_id: 1, name: 'Juan Pérez González', rut: '12.345.678-9', currentCourse: 'Formación Inicial', paymentStatus: 'Confirmado', paymentConfirmed: true, accreditationStatus: 'Pendiente' },
-        { per_id: 2, name: 'María García Silva', rut: '11.222.333-4', currentCourse: 'Primeros Auxilios', paymentStatus: 'Pendiente', paymentConfirmed: false, accreditationStatus: 'Pendiente' },
-        { per_id: 3, name: 'Carlos Rodríguez', rut: '10.111.222-3', currentCourse: 'Liderazgo', paymentStatus: 'Confirmado', paymentConfirmed: true, accreditationStatus: 'Acreditado' }
+        { 
+          per_id: 1, 
+          name: 'Juan Pérez González', 
+          nickname: 'Juanito',
+          rut: '12.345.678-9', 
+          currentCourse: 'Formación Inicial', 
+          branchName: 'Lobatos',
+          vehicle: true,
+          dietType: 'Vegetariano',
+          paymentStatus: 'Confirmado', 
+          paymentConfirmed: true, 
+          accreditationStatus: 'Pendiente' 
+        },
+        { 
+          per_id: 2, 
+          name: 'María García Silva', 
+          nickname: 'Mary',
+          rut: '11.222.333-4', 
+          currentCourse: 'Primeros Auxilios', 
+          branchName: 'Pioneros',
+          vehicle: false,
+          dietType: 'Sin restricciones',
+          paymentStatus: 'Pendiente', 
+          paymentConfirmed: false, 
+          accreditationStatus: 'Pendiente' 
+        },
+        { 
+          per_id: 3, 
+          name: 'Carlos Rodríguez', 
+          nickname: 'Carlitos',
+          rut: '10.111.222-3', 
+          currentCourse: 'Liderazgo', 
+          branchName: 'Rovers',
+          vehicle: true,
+          dietType: 'Sin gluten',
+          paymentStatus: 'Confirmado', 
+          paymentConfirmed: true, 
+          accreditationStatus: 'Acreditado' 
+        }
       ],
       acreditationSuccess: false,
       isMobile: window.innerWidth <= 768,
@@ -183,15 +242,9 @@ export default {
       return 'status-message-info';
     },
 
-    paymentStatusClass() {
-      return this.selectedParticipant?.paymentStatus === 'Confirmado' 
+    getStatusClass() {
+      return this.selectedParticipant?.paymentConfirmed 
         ? 'status-confirmado' 
-        : 'status-pendiente';
-    },
-    
-    acreditationStatusClass() {
-      return this.selectedParticipant?.acreditationStatus === 'Acreditado' 
-        ? 'status-acreditado' 
         : 'status-pendiente';
     }
   },
@@ -207,13 +260,57 @@ export default {
       this.isMobile = window.innerWidth <= 768;
     },
 
-    handleSearch() {
-      const term = this.searchTerm.trim().toLowerCase()
+  async handleSearch() {
+      const term = this.searchTerm.trim()
       if (!term) { this.selectedParticipant = null; return }
 
-      // Buscar en datos locales (por RUT exacto o por nombre parcial)
+      // Primero intentar por API remota (si el backend responde)
+      try {
+        const payload = { rut: term, query: term }
+        const res = await authViewsService.acreditacion_manual_search(payload)
+
+        // Normalizar varias formas de respuesta posibles
+        let person = null
+        if (!res) {
+          person = null
+        } else if (Array.isArray(res) && res.length) {
+          person = res[0]
+        } else if (res.persona) {
+          person = res.persona
+        } else if (res.data && Array.isArray(res.data) && res.data.length) {
+          person = res.data[0]
+        } else if (typeof res === 'object') {
+          person = res
+        }
+
+        if (person) {
+          // Mapear campos de la API al formato local del componente
+          const p = {
+            per_id: person.PER_ID || person.per_id || person.id || null,
+            name: person.PER_NOMBRES || person.nombre || person.name || person.full_name || person.NOMBRE || '',
+            nickname: person.PER_APODO || person.apodo || person.nickname || '',
+            rut: person.PER_RUN || person.rut || person.run || '',
+            currentCourse: person.curso || person.currentCourse || '',
+            branchName: person.rama || person.branchName || '',
+            vehicle: person.PER_VEHICULO === 1 || person.vehicle || false,
+            dietType: person.PER_ALIMENTACION || person.dietType || person.alimentacion || '',
+            paymentConfirmed: person.paymentConfirmed || person.PAGO_CONFIRMADO || person.payment_confirmed || false,
+            paymentStatus: person.payment_status || (person.paymentConfirmed ? 'Confirmado' : 'Pendiente'),
+            accreditationStatus: person.acreditado || person.accredited || person.accreditationStatus || 'Pendiente'
+          }
+          this.selectedParticipant = Object.assign({}, p)
+          return
+        }
+      } catch (err) {
+        // Si falla la llamada, caemos al fallback local
+        console.warn('API de acreditación no disponible, usando datos locales:', err)
+      }
+
+      // Fallback: buscar en datos locales (por RUT exacto o por nombre parcial)
       const found = this.participants.find(p => {
-        return (p.rut && p.rut.toLowerCase() === term) || (p.name && p.name.toLowerCase().includes(term))
+        const rut = p.rut && p.rut.toLowerCase && p.rut.toLowerCase()
+        const name = p.name && p.name.toLowerCase && p.name.toLowerCase()
+        return (rut && rut === term.toLowerCase()) || (name && name.includes(term.toLowerCase()))
       })
 
       if (!found) {
@@ -226,39 +323,56 @@ export default {
       }
     },
 
-    acreditarParticipante() {
-      if (!this.canAcredit || !this.selectedParticipant) return
+    async acreditarParticipante() {
+      if (!this.selectedParticipant) return
 
-      // Simular acreditación local (no API)
-      this.selectedParticipant.acreditationStatus = 'Acreditado'
-      this.selectedParticipant.paymentConfirmed = true
-      this.selectedParticipant.paymentStatus = 'Confirmado'
-      const msg = `${this.selectedParticipant.name} acreditado correctamente`
-      this.acreditationSuccessMessage = msg
-      this.acreditationSuccess = true
-      setTimeout(() => {
-        this.acreditationSuccess = false
-        this.acreditationSuccessMessage = ''
-      }, 3500)
+      // Si el pago está pendiente, redirigir a la página de pagos
+      if (!this.selectedParticipant.paymentConfirmed) {
+        this.$router.push({ name: 'pagos', query: { rut: this.selectedParticipant.rut } })
+        return
+      }
+
+      // Llamar al endpoint de acreditación del backend
+      try {
+        const payload = { per_id: this.selectedParticipant.per_id, rut: this.selectedParticipant.rut }
+        const res = await authViewsService.acreditacion_manual_acreditar(payload)
+
+        // Si la API devolvió la entidad actualizada, usarla; si no, aplicar cambios locales
+        if (res && (res.PER_ID || res.per_id || res.id)) {
+          // Normalizar respuesta similar a handleSearch
+          this.selectedParticipant.acreditationStatus = res.acreditado || res.accreditationStatus || 'Acreditado'
+          this.selectedParticipant.paymentConfirmed = res.paymentConfirmed || true
+          this.selectedParticipant.paymentStatus = res.payment_status || 'Confirmado'
+        } else {
+          this.selectedParticipant.acreditationStatus = 'Acreditado'
+          this.selectedParticipant.paymentConfirmed = true
+          this.selectedParticipant.paymentStatus = 'Confirmado'
+        }
+
+        const msg = `${this.selectedParticipant.name} acreditado correctamente`
+        this.acreditationSuccessMessage = msg
+        this.acreditationSuccess = true
+        setTimeout(() => {
+          this.acreditationSuccess = false
+          this.acreditationSuccessMessage = ''
+        }, 3500)
+      } catch (err) {
+        console.error('Error acreditando participante:', err)
+        // Mostrar notificación de error reutilizando paymentSuccessMessage (simple)
+        this.paymentSuccessMessage = 'Error al acreditar. Intente nuevamente.'
+        this.paymentSuccess = true
+        setTimeout(() => { this.paymentSuccess = false; this.paymentSuccessMessage = '' }, 3500)
+      }
     },
 
     handlePagar() {
-      // Marcar como pagado
-      this.selectedParticipant.paymentStatus = 'Confirmado';
-      this.selectedParticipant.paymentConfirmed = true;
-
-      // Mostrar notificación interna en lugar del alert nativo (evita que aparezca el origen localhost)
-      const notification = `✅ ${this.selectedParticipant.name} marcado como pagado. Ahora puede ser acreditado.`;
-      console.log(notification);
-      // Mostrar BaseAlert controlado por estado
-      this.paymentSuccessMessage = notification;
-      this.paymentSuccess = true;
-
-      // Auto-dismiss del toast después de 3.5 segundos
-      setTimeout(() => {
-        this.paymentSuccess = false;
-        this.paymentSuccessMessage = '';
-      }, 3500);
+      // Redirigir a la página de pagos con el RUT como parámetro
+      if (this.selectedParticipant && this.selectedParticipant.rut) {
+        this.$router.push({
+          name: 'pagos',
+          query: { rut: this.selectedParticipant.rut }
+        });
+      }
     },
 
     showQR() {
@@ -293,8 +407,11 @@ export default {
 .search-box {
   display: flex;
   gap: 10px;
-  max-width: 500px;
+  max-width: 800px;
   margin: 0 auto;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
 }
 
 .search-input {
