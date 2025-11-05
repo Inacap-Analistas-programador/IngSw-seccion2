@@ -26,8 +26,21 @@ export async function request(path, options = {}) {
   const res = await fetch(url, { ...options, headers })
   if (!res.ok) {
     let detail
-    try { detail = await res.json() } catch { detail = await res.text() }
-    throw new Error(`${res.status} ${res.statusText}: ${typeof detail === 'string' ? detail : JSON.stringify(detail)}`)
+    try { 
+      detail = await res.json() 
+    } catch { 
+      try {
+        detail = await res.text()
+      } catch {
+        detail = `HTTP ${res.status} ${res.statusText}`
+      }
+    }
+    
+    const error = new Error(`${res.status} ${res.statusText}: ${typeof detail === 'string' ? detail : JSON.stringify(detail)}`)
+    error.status = res.status
+    error.statusText = res.statusText
+    error.response = detail
+    throw error
   }
   if (res.status === 204) return null
   const contentType = res.headers.get('content-type') || ''

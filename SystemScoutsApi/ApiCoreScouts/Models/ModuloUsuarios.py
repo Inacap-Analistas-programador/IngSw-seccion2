@@ -1,12 +1,36 @@
 from django.db import models
-from .ModuloMantenedores import *
+from django.contrib.auth.models import BaseUserManager, AbstractBaseUser, PermissionsMixin
 from django.contrib.auth.hashers import make_password, check_password
+from .ModuloMantenedores import *
 
-class UsuarioManager(models.Manager):
-    def get_by_natural_key(self, username):
-        return self.get(USU_USERNAME=username)
+class UsuarioManager(BaseUserManager):
+    def create_user(self, USU_USERNAME, password=None, **extra_fields):
+        if not USU_USERNAME:
+            raise ValueError("El usuario debe tener un nombre de usuario")
 
-class Usuario(models.Model):
+        perfil_id = extra_fields.get('PEL_ID')
+        if perfil_id and isinstance(perfil_id, int):
+            extra_fields['PEL_ID'] = Perfil.objects.get(pk=perfil_id)
+
+        user = self.model(USU_USERNAME=USU_USERNAME, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+    
+    def create_superuser(self, USU_USERNAME, password=None, **extra_fields):
+        # Forzar los permisos de admin
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('USU_VIGENTE', True)
+
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('El superusuario debe tener is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('El superusuario debe tener is_superuser=True.')
+
+        return self.create_user(USU_USERNAME, password, **extra_fields)
+
+class Usuario(AbstractBaseUser, PermissionsMixin):
     USU_ID = models.BigAutoField(primary_key=True, db_column='USU_ID')
     PEL_ID = models.ForeignKey('Perfil',on_delete=models.PROTECT, null=False, db_column='PEL_ID')
     USU_USERNAME = models.CharField(max_length=100, unique=True, null=False, db_column='USU_USERNAME')
@@ -17,7 +41,10 @@ class Usuario(models.Model):
     objects = UsuarioManager()
 
     USERNAME_FIELD = 'USU_USERNAME'
-    REQUIRED_FIELDS = []
+    REQUIRED_FIELDS = ['PEL_ID']
+
+    is_staff = models.BooleanField(default=False)
+    is_superuser = models.BooleanField(default=False)
 
     @property
     def is_active(self):
@@ -26,7 +53,6 @@ class Usuario(models.Model):
     @property
     def id(self):
         return self.USU_ID
-
 
     # Django espera estas propiedades
     @property

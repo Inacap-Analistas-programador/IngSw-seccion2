@@ -29,9 +29,13 @@
         <InputBase v-model="nombre" label="Nombres:" type="text" placeholder="PRIMER Y SEGUNDO NOMBRE" />
         <InputBase v-model="apellidoMaterno" label="Apellido Materno:" type="text" placeholder="APELLIDO MATERNO" />
         <InputBase v-model="apellidoPaterno" label="Apellido Paterno:" type="text" placeholder="APELLIDO PATERNO" />
-        <InputBase v-model="rut" label="RUT:" type="text" placeholder="XXXXXXXX-X" rules="rut" />
+        <label for="rut">RUT (sin puntos ni guion):</label>
+        <input id="rut" type="text" v-model="rut" maxlength="9" placeholder="Ej: 123456789" @input="rut = rut.replace(/[^0-9]/g, '')"
+              :class="{ invalido: rut.length > 0 && rut.length < 7 }" required
+          />
+
         <InputBase v-model="fechaNacimiento" label="Fecha de Nacimiento:" type="date" />
-        <InputBase v-model="email" label="Correo Electrónico:" type="email" placeholder="Ingrese EMAIL" />
+        <InputBase v-model="email" label="Correo Electrónico:" type="email" placeholder="INGRESE EMAIL" />
 
   <!--::::::::::::::::::: NUMERO DE CELULAR CON +569:::::::::::::::::::::::::-->
               <label for="numeroCelular">Número de Celular:</label>
@@ -85,7 +89,7 @@
 
 
   <!-- :::::::::::::::::: INPUT DIRECCION ::::::::::::::::::::::::: -->
-      <InputBase v-model="direccion" label="Dirección:" type="text" placeholder="Ingrese Dirección" />
+  <InputBase v-model="direccion" label="Dirección:" type="text" placeholder="INGRESE DIRECCIÓN" />
 
   <!-- :::::::::::::::::: SELECTOR DE ESTADO CIVIL ::::::::::::::::::::::::: -->
       <label for="estadoCivil">Estado Civil:</label>
@@ -104,7 +108,7 @@
         id="apodoCredencial"
         v-model="apodoCredencial"
         type="text"
-        placeholder="Ingrese su apodo o nombre para credencial"
+        placeholder="INGRESE SU APODO O NOMBRE PARA CREDENCIAL"
         maxlength="50"
         @input="profesion = profesion.toUpperCase()"
       />
@@ -156,16 +160,11 @@
 
 </section>
 
-
-
-
-
-
-  <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
-  <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
-  <!--:::::::::::::::::::::::::          INFORMACION ASOCIACION       ::::::::::::::::::::::::::::::::-->
-  <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
-  <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+<!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+<!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+<!--:::::::::::::::::::::::::          INFORMACION ASOCIACION       ::::::::::::::::::::::::::::::::-->
+<!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+<!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
   <section>
     <div class="datosScout"></div> <!-- TITULO iNFORMACVION ACOCIACION-->
           <h2>Informacion Asociacion</h2>
@@ -191,7 +190,7 @@
                       <textarea
                         id="rolOtro"
                         v-model="rolOtro"
-                        placeholder="Ingrese su rol aquí..."
+                        placeholder="INGRESE SU ROL AQUÍ..."
                         rows="3"
                         maxlength="100"
                         :disabled="rolSeleccionado !== 'otro'"
@@ -262,7 +261,7 @@
                             <textarea
                               id="grupoOtro"
                               v-model="grupoOtro"
-                              placeholder="Escriba el nombre de su grupo..."
+                              placeholder="ESCRIBA EL NOMBRE DE SU GRUPO..."
                               rows="3"
                               maxlength="100"
                               :disabled="grupoSeleccionado !== 'otro'"
@@ -309,7 +308,7 @@
                       <textarea
                         id="distritoOtro"
                         v-model="distritoOtro"
-                        placeholder="Escriba el nombre de su Distrito..."
+                        placeholder="ESCRIBA EL NOMBRE DE SU DISTRITO..."
                         rows="3"
                         maxlength="100"
                         :disabled="distritoSeleccionado !== 'Otro'"
@@ -372,7 +371,7 @@
       <div class="saludLogistica"></div> <!-- Salud y Logistica-->
           <h2>Salud y Logistica</h2>
   <!--::::::::::::::::::: INPUT DE ALERGIAS/ENFERMEDADES ::::::::::::::::::::::::: -->
-      <label for="salud">¿Tiene alergias o alguna enfermedad a considerar?</label>
+      <label for="salud">¿Tiene alergias,enfermedad o limitacion considerar?</label>
       <select id="salud" v-model="tieneAlergiaEnfermedad">
         <option disabled value="">Seleccione una opción</option>
         <option value="Si">Sí</option>
@@ -382,14 +381,14 @@
   <!--:::::::::::::::: TEXT AREA BLOQUEADO POR DEFECTO, SE HABILITA AL SELECCIONAR "si" :::::::::::::::::::::::::::::::::-->
                         <transition name="desplegar">
                           <div v-if="tieneAlergiaEnfermedad === 'Si'" class="campo">
-                          <label for="detalleSalud">Detalle de alergias o enfermedades:</label>
+                          <label for="detalleSalud">Detalle alergias,enfermedad o limitacion:</label>
                             <textarea
                                 id="detalleSalud"
                                 v-model="detalleAlergiaEnfermedad"
-                                placeholder="Ingrese la alergia o enfermedad"
+                                placeholder="INGRESE LA ALERGIAS,ENFERMEDAD O LIMITACION"
                                 rows="4"
-                                maxlength="200"
-                              :disabled="tieneAlergiaEnfermedad !== 'si'"
+                                maxlength="255"
+                              :disabled="tieneAlergiaEnfermedad !== 'Si'"
                             ></textarea>
                           </div>
                         </transition>
@@ -437,14 +436,6 @@
         />
       </div>
 
-<!--:::::::::::::::::::::: ALOJAMIENTO :::::::::::::::::::::::::::::::::::::::::::::::::::-->
-<label for="necesitaAlojamiento">¿Necesita Alojamiento?</label>
-<select id="necesitaAlojamiento" v-model="necesitaAlojamiento" required>
-  <option disabled value="">Seleccione una opción</option>
-  <option value="si">Sí</option>
-  <option value="no">No</option>
-</select>
-
 <!--:::::::::::::::::::::: VEHÍCULO PROPIO :::::::::::::::::::::::::::::::::::::::::::::::::::-->
 <label for="vehiculoPropio">¿Viene en vehículo propio?</label>
 <select id="vehiculoPropio" v-model="vehiculoPropio" required>
@@ -452,8 +443,6 @@
   <option value="si">Sí</option>
   <option value="no">No</option>
 </select>
-
-
 
 <!--:::::::::::::::::::::: CAMPOS SOLO SI SELECCIONA "SI" :::::::::::::::::::::::::::::::::::::::::::::::::::-->
               <transition name="desplegar">
@@ -485,6 +474,19 @@
                   />
                 </div>
               </transition>
+
+  <!--:::::::::::::::::::::: ALOJAMIENTO :::::::::::::::::::::::::::::::::::::::::::::::::::-->
+  <div class="campo campo-checkbox">
+  <label>
+    ¿Necesita alojamiento?
+    <input
+      type="checkbox"
+      v-model="necesitaAlojamiento"
+      true-value="si"
+      false-value="no"
+    /> 
+  </label>
+  </div>
   </section>
 
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
@@ -499,7 +501,7 @@
         <label for="consideraciones">Otros:</label>
         <textarea            id="consideraciones"
           v-model="consideraciones"
-          placeholder="Ingrese cualquier comentario o consideración"
+          placeholder="INGRESE CUALQUIER COMENTARIO O CONSIDERACIÓN"
           rows="4"
           maxlength="200"
         ></textarea>
@@ -510,7 +512,7 @@
         id="profesion"
         v-model="profesion"
         type="text"
-        placeholder="Ingrese su profesión"
+        placeholder="INGRESE SU PROFESIÓN"
         maxlength="50"
         @input="profesion = profesion.toUpperCase()"
       />
@@ -540,35 +542,51 @@
                   </div>
                 </transition>
 
-  <!--::::::::::::::::::::::BENEFICIARIO:::::::::::::::::::::::::::::::::::::::::::::::-->
-    <label for="beneficiario">¿Eres o fuiste beneficiario?</label>
-    <select id="beneficiario" v-model="esBeneficiario" required>
-      <option disabled value="">Seleccione una opción</option>
-      <option value="Si">Sí</option>
-      <option value="No">No</option>
-    </select>
 
-                      <!-- Input para el tiempo si selecciona "Sí" -->
-                    <transition name="desplegar">
-                      <div v-if="esBeneficiario === 'Si'" class="campo">
-                      <label for="tiempoBeneficiario">¿Por cuánto tiempo?</label>
-                      <input
-                        id="tiempoBeneficiario"
-                        v-model="tiempoBeneficiario"
-                        type="text"
-                        placeholder="Ingrese el tiempo"
-                        :disabled="esBeneficiario !== 'si'"
-                      />
-                      </div>
-                    </transition>
-  
-  <!--::::::::::::::::::::::MIEMBRO ACTIVO:::::::::::::::::::::::::::::::::::::::::::::::-->
-      <label for="miembroActivo">¿Es un miembro activo?</label>
-      <select id="miembroActivo" v-model="esMiembroActivo" required>
-        <option disabled value="">Seleccione una opción</option>
-        <option value="si">Sí</option>
-        <option value="no">No</option>
+
+
+<!-- ::::::::::::::::: BENEFICIARIO ::::::::::::::::: -->
+<label for="beneficiario">¿Eres o fuiste beneficiario?</label>
+<select id="beneficiario" v-model="esBeneficiario" required>
+  <option disabled value="">Seleccione una opción</option>
+  <option value="si">Sí</option>
+  <option value="no">No</option>
+</select>
+
+<!-- ::::::::::::::::: CAMPO DESPLEGABLE ::::::::::::::::: -->
+<transition name="desplegar">
+  <div v-if="esBeneficiario === 'si'" class="campo">
+    <label for="tiempoBeneficiario">¿Cuánto tiempo?</label>
+    <div style="display: flex; gap: 10px; align-items: center;">
+      
+      <!-- AÑOS -->
+      <select
+        id="añosTiempoBeneficiario"
+        v-model="añosTiempoBeneficiario"
+        style="padding: 8px; border-radius: 6px; border: 1px solid #ccc;"
+      >
+        <option disabled value="">Años</option>
+        <option v-for="n in 20" :key="n" :value="n">
+          {{ n }} año{{ n > 1 ? 's' : '' }}
+        </option>
       </select>
+
+      <!-- MESES -->
+      <select
+        id="mesesTiempoBeneficiario"
+        v-model="mesesTiempoBeneficiario"
+        style="padding: 8px; border-radius: 6px; border: 1px solid #ccc;"
+      >
+        <option disabled value="">Meses</option>
+        <option v-for="m in 11" :key="m" :value="m">
+          {{ m }} mes{{ m > 1 ? 'es' : '' }}
+        </option>
+      </select>
+    </div>
+  </div>
+</transition>
+
+
 
   </section>
     </div>
@@ -666,6 +684,9 @@ const patentePropia = ref("");
 const marcaPropia = ref("");
 const modeloPropio = ref("");
 const cursoSeleccionado = ref("");
+const añosTiempoBeneficiario = ref("");
+const mesesTiempoBeneficiario = ref("");
+
 
 
 // REGION / CIUDAD / COMUNA
@@ -723,6 +744,8 @@ function limpiarFormulario() {
   regionSeleccionada.value = "";
   ciudadSeleccionada.value = "";
   comunaSeleccionada.value = "";
+  añosTiempoBeneficiario.value = "";
+  mesesTiempoBeneficiario.value = "";
 
   
   // Limpia también los demás campos que tengas
@@ -796,7 +819,7 @@ function cerrarCamara() {
   camaraActiva.value = false
 }
 
-// ✅ Nueva función: eliminar la foto actual
+//::::::::::::::::::Nueva función: eliminar la foto actual:::::::::::::::::::::::::
 function eliminarFoto() {
   fotoUrl.value = null
   fotoFinal.value = null
@@ -930,6 +953,48 @@ const comunasDisponibles = computed(() => {
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
 
 <style scoped>
+
+/* :::::::::::::::::::: CHECKBOX MODERNO Y CENTRADO :::::::::::::::::::: */
+.campo-checkbox {
+  display: flex;
+  justify-content: center;      /* Centra horizontalmente */
+  padding: 15px 10px;              /* Espaciado vertical */
+}
+
+.campo-checkbox label {
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+  color: #333;
+  background-color: #f9f9f9;    /* Fondo suave */
+  padding: 10px 20px;           /* Padding interno */
+  border-radius: 8px;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.1); /* Suaviza el bloque */
+  transition: all 0.3s ease;
+}
+
+.campo-checkbox label:hover {
+  background-color: #f0f8ff;    /* Azul muy claro al pasar el mouse */
+  transform: translateY(-2px);
+}
+
+.campo-checkbox input[type="checkbox"] {
+  accent-color: #2196f3;        /* Azul moderno */
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.campo-checkbox input[type="checkbox"]:hover {
+  transform: scale(1.1);
+}
+
+
+.invalido {
+  border: 2px solid #e74c3c; /* rojo para indicar error */
+}
+
 /* Estilos para la transición del formulario */
 .fade-enter-active,
 .fade-leave-active {
@@ -977,28 +1042,38 @@ const comunasDisponibles = computed(() => {
     box-shadow: 0 6px 14px rgba(30, 136, 229, 0.5);
   }
 
+/*:::::::::::::BOTON DE FOTO STYLES::::::::::::::::*/
+/* :::::::::::::::::::: PREVISUALIZACIÓN DE FOTO :::::::::::::::::::: */
+.preview {
+  display: flex;
+  justify-content: center;
+  margin-top: 15px;
+}
 
 .preview img {
-  width: 180px;       /* Ancho fijo */
-  height: 180px;      /* Alto fijo */
-  object-fit: cover;  /* Recorta y centra la imagen sin deformarla */
+  width: 180px;        /* Tamaño fijo para mantener proporción uniforme */
+  height: 180px;
+  object-fit: cover;   /* Recorta y centra sin deformar */
   border-radius: 10px;
   box-shadow: 0 0 6px rgba(0, 0, 0, 0.2);
-  margin-top: 10px;
 }
 
+/* :::::::::::::::::::: BOTONES DE FOTO :::::::::::::::::::: */
 .botones-foto {
   display: flex;
-  gap: 10px; /* separa los botones */
-  margin-top: 10px;
+  justify-content: center; /* Centra los botones horizontalmente */
+  gap: 10px;
+  margin-top: 15px;
 }
 
-.btn-capturar, .btn-eliminar {
+.btn-capturar,
+.btn-eliminar {
   padding: 10px 15px;
   border: none;
   border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 .btn-capturar {
@@ -1006,9 +1081,17 @@ const comunasDisponibles = computed(() => {
   color: white;
 }
 
+.btn-capturar:hover {
+  background-color: #0056b3;
+}
+
 .btn-eliminar {
   background-color: #dc3545;
   color: white;
+}
+
+.btn-eliminar:hover {
+  background-color: #b02a37;
 }
 
 button:disabled {
@@ -1016,6 +1099,7 @@ button:disabled {
   cursor: not-allowed;
 }
 
+/* :::::::::::::::::::: BOTÓN DE CAPTURA :::::::::::::::::::: */
 .btn-foto {
   background: linear-gradient(135deg, #2196f3, #1e88e5);
   color: white;
@@ -1044,6 +1128,35 @@ button:disabled {
 .btn-foto::before {
   content: "📸 ";
 }
+
+/* :::::::::::::::::::: CONTENEDOR DE CÁMARA :::::::::::::::::::: */
+.camara-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;         /* Centra horizontalmente */
+  justify-content: center;     /* Centra verticalmente */
+  margin-top: 20px;
+  gap: 10px;
+  background: #f9f9f9;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;            /* Mantiene proporción del formulario */
+  box-sizing: border-box;
+}
+
+/* :::::::::::::::::::: VIDEO DE CÁMARA :::::::::::::::::::: */
+.camara-container video {
+  width: 100%;
+  height: 280px;
+  max-width: 350px;
+  border-radius: 10px;
+  border: 2px solid #2196f3;
+  object-fit: cover;           /* Evita deformación */
+  background-color: #000;      /* Fondo oscuro mientras carga */
+}
+
 
 .formulario { 
     display: flex; 
