@@ -13,7 +13,11 @@
         <BaseSelect v-model="filtros.tipoCurso" :options="tiposCursoOptions" placeholder="Filtrar por tipo" optionLabel="text" />
         <BaseSelect v-model="filtros.responsable" :options="personasOptions" placeholder="Filtrar por responsable" optionLabel="text" />
       </div>
-      <BaseButton @click="abrirModalCrear" class="create-button">+ Nuevo Curso</BaseButton>
+      <div class="filters-actions">
+        <BaseButton @click="aplicarFiltros" class="search-button">Buscar</BaseButton>
+        <BaseButton @click="limpiarFiltros" variant="secondary">Limpiar</BaseButton>
+        <BaseButton @click="abrirModalCrear" class="create-button">+ Nuevo Curso</BaseButton>
+      </div>
     </div>
 
     <!-- Indicador de Carga -->
@@ -37,7 +41,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="c in cursosPaginados" :key="c.CUR_ID">
+          <tr v-for="c in cursosFiltrados" :key="c.CUR_ID">
             <td>{{ c.CUR_DESCRIPCION || '-' }}</td>
             <td>{{ c.CUR_CODIGO || '-' }}</td>
             <td>{{ getTipoCursoName(c.TCU_ID) }}</td>
@@ -46,23 +50,18 @@
             <td><span :class="['badge', getEstadoClass(c.CUR_ESTADO)]">{{ getEstadoText(c.CUR_ESTADO) }}</span></td>
             <td class="actions-cell">
               <BaseButton @click="abrirModalEditar(c)" variant="secondary" size="sm">Editar</BaseButton>
-              <BaseButton @click="confirmarEliminacion(c.CUR_ID)" variant="danger" size="sm">Eliminar</BaseButton>
-              <BaseButton @click="abrirModalSecciones(c)" variant="tertiary" size="sm">Secciones</BaseButton>
+              <BaseButton @click="deshabilitarCurso(c)" variant="danger" size="sm">Deshabilitar</BaseButton>
+              <BaseButton @click="abrirModalVer(c)" variant="tertiary" size="sm">Ver</BaseButton>
             </td>
           </tr>
-          <tr v-if="cursosPaginados.length === 0">
+          <tr v-if="cursosFiltrados.length === 0">
             <td colspan="7" class="no-results">No se encontraron cursos que coincidan con los filtros.</td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <!-- Paginación -->
-    <div class="pagination">
-      <BaseButton :disabled="currentPage === 1" @click="currentPage--">Anterior</BaseButton>
-      <span>Página {{ currentPage }} de {{ totalPages }}</span>
-      <BaseButton :disabled="currentPage === totalPages" @click="currentPage++">Siguiente</BaseButton>
-    </div>
+    
 
     <!-- Modal de Creación/Edición de Curso -->
     <BaseModal v-model="mostrarModal" @close="cerrarModal">
@@ -80,6 +79,9 @@
           <div class="form-group"><label>Cuota sin Almuerzo</label><InputBase type="number" v-model="form.CUR_COTA_SIN_ALMUERZO" /></div>
           <div class="form-group"><label>Modalidad</label><BaseSelect v-model="form.CUR_MODALIDAD" :options="opcionesModalidad" optionLabel="text" /></div>
           <div class="form-group"><label>Tipo (Presencial/Online)</label><BaseSelect v-model="form.CUR_TIPO_CURSO" :options="opcionesTipoPresencial" optionLabel="text" /></div>
+          <div class="form-group"><label>Administra</label><BaseSelect v-model="form.CUR_ADMINISTRA" :options="opcionesAdministra" optionLabel="text" /></div>
+          <div class="form-group"><label>Comuna (lugar)</label><BaseSelect v-model="form.COM_ID_LUGAR" :options="comunasOptions" optionLabel="text" /></div>
+          <div class="form-group"><label>Cargo Responsable</label><BaseSelect v-model="form.CAR_ID_RESPONSABLE" :options="cargosOptions" optionLabel="text" /></div>
           <div class="form-group span-2"><label>Lugar</label><InputBase v-model="form.CUR_LUGAR" /></div>
           
           <!-- Mapa Interactivo -->
@@ -144,6 +146,52 @@
             </div>
             <BaseButton @click="agregarFecha" class="add-button">Añadir Período</BaseButton>
           </div>
+
+          <!-- Sección de Gestión de Secciones -->
+          <hr class="section-divider">
+          <h4>Secciones del Curso</h4>
+          
+          <!-- Tabla de Secciones Existentes -->
+          <table class="fechas-table">
+            <thead>
+              <tr>
+                <th>Sección</th>
+                <th>Rama</th>
+                <th>Participantes</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="seccionesCurso.length === 0">
+                <td colspan="4" class="no-results-small">No hay secciones definidas.</td>
+              </tr>
+              <tr v-for="seccion in seccionesCurso" :key="seccion.CUS_ID">
+                <td>{{ seccion.CUS_SECCION }}</td>
+                <td>{{ getRamaName(seccion.RAM_ID) }}</td>
+                <td>{{ seccion.CUS_CANT_PARTICIPANTE }}</td>
+                <td>
+                  <BaseButton @click="eliminarSeccion(seccion.CUS_ID)" variant="danger" size="sm">Eliminar</BaseButton>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Formulario para Añadir Nueva Sección -->
+          <div class="add-fecha-form">
+            <div class="form-group">
+              <label>Sección #</label>
+              <InputBase type="number" v-model="nuevaSeccion.CUS_SECCION" placeholder="Ej: 1, 2, 3..." />
+            </div>
+            <div class="form-group">
+              <label>Rama</label>
+              <BaseSelect v-model="nuevaSeccion.RAM_ID" :options="ramasOptions" optionLabel="text" />
+            </div>
+            <div class="form-group">
+              <label>Participantes</label>
+              <InputBase type="number" v-model="nuevaSeccion.CUS_CANT_PARTICIPANTE" placeholder="Cantidad" />
+            </div>
+            <BaseButton @click="agregarSeccion" class="add-button">Añadir Sección</BaseButton>
+          </div>
         </div>
 
       </div>
@@ -153,56 +201,59 @@
       </template>
     </BaseModal>
 
-    <!-- Modal de Gestión de Secciones -->
-    <BaseModal v-model="mostrarModalSecciones" @close="cerrarModalSecciones">
-      <template #title>Gestionar Secciones del Curso</template>
+    <!-- Modal de Detalle de Curso -->
+    <BaseModal v-model="mostrarModalVer" @close="cerrarModalVer">
+      <template #title>Detalle del Curso</template>
       <div class="modal-body">
-        <p v-if="cursoSeleccionado"><strong>Curso:</strong> {{ cursoSeleccionado.CUR_DESCRIPCION }}</p>
-        
-        <!-- Tabla de Secciones Existentes -->
+        <div v-if="cursoSeleccionado" class="detalle-curso">
+          <p><strong>Descripción:</strong> {{ cursoSeleccionado.CUR_DESCRIPCION }}</p>
+          <p><strong>Código:</strong> {{ cursoSeleccionado.CUR_CODIGO }}</p>
+          <p><strong>Tipo:</strong> {{ getTipoCursoName(cursoSeleccionado.TCU_ID) }}</p>
+          <p><strong>Responsable:</strong> {{ getPersonaName(cursoSeleccionado.PER_ID_RESPONSABLE) }}</p>
+          <p><strong>Estado:</strong> {{ getEstadoText(cursoSeleccionado.CUR_ESTADO) }}</p>
+          <p><strong>Lugar:</strong> {{ cursoSeleccionado.CUR_LUGAR }}</p>
+          <p><strong>Coordenadas:</strong> {{ cursoSeleccionado.CUR_COORD_LATITUD }}, {{ cursoSeleccionado.CUR_COORD_LONGITUD }}</p>
+          <p><strong>Observación:</strong> {{ cursoSeleccionado.CUR_OBSERVACION || '-' }}</p>
+        </div>
+        <h4 class="mt-16">Períodos</h4>
         <table class="fechas-table">
           <thead>
             <tr>
-              <th>Sección N°</th>
-              <th>Rama</th>
-              <th>N° Participantes</th>
-              <th>Acciones</th>
+              <th>Inicio</th>
+              <th>Término</th>
+              <th>Tipo</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-if="seccionesCurso.length === 0">
-              <td colspan="4" class="no-results-small">No hay secciones definidas para este curso.</td>
-            </tr>
-            <tr v-for="seccion in seccionesCurso" :key="seccion.CUS_ID">
-              <td>{{ seccion.CUS_SECCION }}</td>
-              <td>{{ getRamaName(seccion.RAM_ID) }}</td>
-              <td>{{ seccion.CUS_CANT_PARTICIPANTE }}</td>
-              <td>
-                <BaseButton @click="eliminarSeccion(seccion.CUS_ID)" variant="danger" size="sm">Eliminar</BaseButton>
-              </td>
+            <tr v-if="fechasCurso.length === 0"><td colspan="3" class="no-results-small">Sin períodos</td></tr>
+            <tr v-for="f in fechasCurso" :key="f.CUF_ID">
+              <td>{{ formatDateSimple(f.CUF_FECHA_INICIO) }}</td>
+              <td>{{ formatDateSimple(f.CUF_FECHA_TERMINO) }}</td>
+              <td>{{ opcionesTipoFecha.find(t => t.value === f.CUF_TIPO)?.text }}</td>
             </tr>
           </tbody>
         </table>
-
-        <!-- Formulario para Añadir Nueva Sección -->
-        <div class="add-fecha-form section-divider">
-          <div class="form-group">
-            <label>N° de Sección</label>
-            <InputBase type="number" v-model="nuevaSeccion.CUS_SECCION" />
-          </div>
-          <div class="form-group">
-            <label>Rama</label>
-            <BaseSelect v-model="nuevaSeccion.RAM_ID" :options="ramasOptions" optionLabel="text" />
-          </div>
-          <div class="form-group">
-            <label>N° Participantes</label>
-            <InputBase type="number" v-model="nuevaSeccion.CUS_CANT_PARTICIPANTE" />
-          </div>
-          <BaseButton @click="agregarSeccion" class="add-button">Añadir Sección</BaseButton>
-        </div>
+        <h4 class="mt-16">Secciones</h4>
+        <table class="fechas-table">
+          <thead>
+            <tr>
+              <th>Sección</th>
+              <th>Rama</th>
+              <th>Participantes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="seccionesCurso.length === 0"><td colspan="3" class="no-results-small">Sin secciones</td></tr>
+            <tr v-for="s in seccionesCurso" :key="s.CUS_ID">
+              <td>{{ s.CUS_SECCION }}</td>
+              <td>{{ getRamaName(s.RAM_ID) }}</td>
+              <td>{{ s.CUS_CANT_PARTICIPANTE }}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
       <template #footer>
-        <BaseButton @click="cerrarModalSecciones" variant="secondary">Cerrar</BaseButton>
+        <BaseButton @click="cerrarModalVer" variant="secondary">Cerrar</BaseButton>
       </template>
     </BaseModal>
 
@@ -210,14 +261,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
-// Se comentan los servicios reales
-// import { cursos, fechas } from '@/services/cursosService.js'
-// import { personas } from '@/services/personasService.js'
-// import mantenedores from '@/services/mantenedoresService.js'
-
-// Se importan los datos estáticos
-import { mockCursos, mockPersonas, mockTiposCurso, mockRamas, mockSecciones } from '@/services/mockData.js'
+import { ref, computed, onMounted } from 'vue'
+import { request } from '@/services/apiClient.js'
+import { cursos as cursosApi, fechas as fechasApi, secciones as seccionesApi } from '@/services/cursosService.js'
 
 import InputBase from '@/components/Reutilizables/InputBase.vue'
 import BaseButton from '@/components/Reutilizables/BaseButton.vue'
@@ -227,22 +273,24 @@ import MapEmbed from '@/components/Reutilizables/MapEmbed.vue'
 
 // --- Estado y Reactividad ---
 const isLoading = ref(true)
+const isLoadingData = ref(false) // Guard para prevenir cargas duplicadas
 const cursosList = ref([])
+const cursosFiltrados = ref([])
 const personasList = ref([])
 const tiposCursoList = ref([])
 const fechasCurso = ref([])
-const ramaslist = ref([]) // Para el modal de secciones
-const seccionesList = ref([]) // Lista completa de secciones
-const seccionesCurso = ref([]) // Secciones del curso seleccionado
-const mostrarModalSecciones = ref(false)
+const fechasCursoList = ref([]) // Caché de todas las fechas
+const ramaslist = ref([])
+const seccionesList = ref([])
+const seccionesCurso = ref([])
+const mostrarModalVer = ref(false)
 const cursoSeleccionado = ref(null)
 
 const mostrarModal = ref(false)
 const esEdicion = ref(false)
-const isTrulyNew = ref(false) // Para diferenciar un nuevo curso de uno existente
-
-const currentPage = ref(1)
-const itemsPerPage = ref(10)
+const isTrulyNew = ref(false)
+const isSaving = ref(false) // Bandera para prevenir múltiples clics
+const isDisabling = ref(false) // Bandera para prevenir múltiples deshabilitar
 
 const filtros = ref({
   searchQuery: '',
@@ -296,130 +344,91 @@ const opcionesTipoFecha = [
   { value: 3, text: 'Híbrido' },
 ]
 
-// --- Lógica de Carga de Datos ---
+// --- Cargar datos desde API ---
 async function cargarDatos() {
+  // Guard: prevenir múltiples cargas simultáneas (Vue 3 Strict Mode ejecuta setup 2x)
+  if (isLoadingData.value) return
+  isLoadingData.value = true
   isLoading.value = true
+  
   try {
-    // Simular una pequeña demora de red
-    await new Promise(resolve => setTimeout(resolve, 500))
-
-    // Cargar datos desde el archivo mock
-    cursosList.value = JSON.parse(JSON.stringify(mockCursos)) // Usar JSON para crear una copia profunda y evitar mutaciones
-    personasList.value = mockPersonas
-    tiposCursoList.value = mockTiposCurso
-    ramaslist.value = mockRamas
-    seccionesList.value = JSON.parse(JSON.stringify(mockSecciones))
-
+    const [cursosData, personasApi, tiposApi, ramasApi, seccionesData, fechasData, comunasApi, cargosApi] = await Promise.all([
+      cursosApi.list(),
+      request('personas/personas'),
+      request('mantenedores/tipo-cursos'),
+      request('mantenedores/rama'),
+      seccionesApi.list().catch(() => []),
+      fechasApi.list().catch(() => []),
+      request('mantenedores/comuna').catch(() => []),
+      request('mantenedores/cargo').catch(() => []),
+    ])
+    // Enlazar fechas a cada curso para mostrar rango en la tabla
+    const fechasByCurso = (fechasData || []).reduce((acc, f) => {
+      const id = f.CUR_ID
+      if (!acc[id]) acc[id] = []
+      acc[id].push(f)
+      return acc
+    }, {})
+    cursosList.value = (cursosData || []).map(c => ({
+      ...c,
+      fechas: fechasByCurso[c.CUR_ID] ? fechasByCurso[c.CUR_ID].sort((a,b) => new Date(a.CUF_FECHA_INICIO) - new Date(b.CUF_FECHA_INICIO)) : []
+    }))
+    personasList.value = personasApi || []
+    tiposCursoList.value = tiposApi || []
+    ramaslist.value = ramasApi || []
+    fechasCursoList.value = fechasData || [] // Guardar en caché
+  seccionesList.value = seccionesData || []
+  comunasList.value = comunasApi || []
+  cargosList.value = cargosApi || []
+    aplicarFiltros()
   } catch (e) {
-    console.error('Error cargando datos estáticos:', e)
+    console.error('Error cargando datos desde API:', e)
+    cursosList.value = []
+    cursosFiltrados.value = []
   } finally {
     isLoading.value = false
+    isLoadingData.value = false
   }
 }
 
 onMounted(cargarDatos)
 
-// --- Lógica de Filtros y Paginación ---
-const cursosFiltrados = computed(() => {
-  let items = cursosList.value
+// --- Filtros controlados por botón ---
+function aplicarFiltros() {
+  let items = [...cursosList.value]
   const { searchQuery, estado, tipoCurso, responsable } = filtros.value
-
   if (searchQuery) {
-    const q = searchQuery.toLowerCase()
-    items = items.filter(c => 
-      (c.CUR_DESCRIPCION || '').toLowerCase().includes(q) ||
-      (c.CUR_CODIGO || '').toLowerCase().includes(q)
-    )
+    const q = String(searchQuery).toLowerCase()
+    items = items.filter(c => (c.CUR_DESCRIPCION || '').toLowerCase().includes(q) || (c.CUR_CODIGO || '').toLowerCase().includes(q))
   }
-  if (estado !== null) {
-    items = items.filter(c => c.CUR_ESTADO === estado)
-  }
-  if (tipoCurso !== null) {
-    items = items.filter(c => c.TCU_ID === tipoCurso)
-  }
-  if (responsable !== null) {
-    items = items.filter(c => c.PER_ID_RESPONSABLE === responsable)
-  }
-  return items
-})
+  if (estado !== null && estado !== undefined && estado !== '') items = items.filter(c => Number(c.CUR_ESTADO) === Number(estado))
+  if (tipoCurso !== null && tipoCurso !== undefined && tipoCurso !== '') items = items.filter(c => Number(c.TCU_ID) === Number(tipoCurso))
+  if (responsable !== null && responsable !== undefined && responsable !== '') items = items.filter(c => Number(c.PER_ID_RESPONSABLE) === Number(responsable))
+  cursosFiltrados.value = items
+}
 
-const totalPages = computed(() => Math.max(1, Math.ceil(cursosFiltrados.value.length / itemsPerPage.value)))
+function limpiarFiltros() {
+  filtros.value = { searchQuery: '', estado: null, tipoCurso: null, responsable: null }
+  aplicarFiltros()
+}
 
-const cursosPaginados = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage.value
-  return cursosFiltrados.value.slice(start, start + itemsPerPage.value)
-})
-
-watch(totalPages, (newTotal) => {
-  if (currentPage.value > newTotal) {
-    currentPage.value = newTotal
-  }
-})
-
-// --- Lógica del Modal de Secciones ---
-const nuevaSeccion = ref({
-  CUS_SECCION: 1,
-  RAM_ID: null,
-  CUS_CANT_PARTICIPANTE: 20,
-})
-
-const ramasOptions = computed(() => 
-  ramaslist.value.map(r => ({ value: r.RAM_ID, text: r.RAM_DESCRIPCION }))
-)
+const ramasOptions = computed(() => ramaslist.value.map(r => ({ value: r.RAM_ID, text: r.RAM_DESCRIPCION })))
 
 function getRamaName(id) {
   const rama = ramaslist.value.find(r => r.RAM_ID === id)
   return rama ? rama.RAM_DESCRIPCION : 'No definida'
 }
 
-function abrirModalSecciones(curso) {
-  cursoSeleccionado.value = curso
-  // Filtrar las secciones que pertenecen al curso seleccionado
-  seccionesCurso.value = seccionesList.value.filter(s => s.CUR_ID === curso.CUR_ID)
-  mostrarModalSecciones.value = true
-}
-
-function cerrarModalSecciones() {
-  mostrarModalSecciones.value = false
-  cursoSeleccionado.value = null
-}
-
-function agregarSeccion() {
-  if (!nuevaSeccion.value.RAM_ID) {
-    alert('Debe seleccionar una rama.')
-    return
-  }
-  
-  const seccion = {
-    CUS_ID: Date.now(), // ID temporal
-    CUR_ID: cursoSeleccionado.value.CUR_ID,
-    ...nuevaSeccion.value
-  }
-  
-  seccionesList.value.push(seccion) // Añadir a la lista global
-  seccionesCurso.value.push(seccion) // Añadir a la lista del modal
-
-  // Limpiar formulario
-  nuevaSeccion.value.CUS_SECCION = Math.max(...seccionesCurso.value.map(s => s.CUS_SECCION), 0) + 1
-  nuevaSeccion.value.RAM_ID = null
-}
-
-function eliminarSeccion(seccionId) {
-  if (!window.confirm('¿Seguro que desea eliminar esta sección?')) return
-
-  seccionesList.value = seccionesList.value.filter(s => s.CUS_ID !== seccionId)
-  seccionesCurso.value = seccionesCurso.value.filter(s => s.CUS_ID !== seccionId)
-}
-
 
 // --- Lógica del Modal (Crear/Editar) ---
 async function abrirModalCrear() {
   form.value = inicializarFormulario()
-  form.value.CUR_ID = Date.now() // Asignar un ID temporal para la gestión local
   isTrulyNew.value = true
   esEdicion.value = true // Activar modo "edición" para mostrar las sub-secciones
   fechasCurso.value = []
   seccionesCurso.value = []
+  nuevoPeriodo.value = { CUF_FECHA_INICIO: '', CUF_FECHA_TERMINO: '', CUF_TIPO: 1 }
+  nuevaSeccion.value = { CUS_SECCION: '', RAM_ID: null, CUS_CANT_PARTICIPANTE: '' }
   mostrarModal.value = true
 }
 
@@ -431,6 +440,9 @@ async function abrirModalEditar(curso) {
     CUR_FECHA_SOLICITUD: curso.CUR_FECHA_SOLICITUD ? curso.CUR_FECHA_SOLICITUD.split('T')[0] : '',
   }
   await cargarFechasDelCurso(curso.CUR_ID)
+  await cargarSeccionesDelCurso(curso.CUR_ID)
+  nuevoPeriodo.value = { CUF_FECHA_INICIO: '', CUF_FECHA_TERMINO: '', CUF_TIPO: 1 }
+  nuevaSeccion.value = { CUS_SECCION: '', RAM_ID: null, CUS_CANT_PARTICIPANTE: '' }
   mostrarModal.value = true
 }
 
@@ -445,14 +457,23 @@ const nuevoPeriodo = ref({
   CUF_TIPO: 1,
 })
 
+// --- Lógica de Fechas del Curso ---
 async function cargarFechasDelCurso(cursoId) {
   if (!cursoId) {
     fechasCurso.value = []
     return
   }
-  // Simulación: encontrar las fechas en los datos estáticos
-  const curso = cursosList.value.find(c => c.CUR_ID === cursoId)
-  fechasCurso.value = curso ? JSON.parse(JSON.stringify(curso.fechas)) : []
+  try {
+    // Solo cargar si aún no tenemos fechas en caché
+    if (!Array.isArray(fechasCursoList.value) || fechasCursoList.value.length === 0) {
+      const todas = await fechasApi.list()
+      fechasCursoList.value = todas || []
+    }
+    fechasCurso.value = (fechasCursoList.value || []).filter(f => Number(f.CUR_ID) === Number(cursoId))
+  } catch (e) {
+    console.error('Error cargando fechas:', e)
+    fechasCurso.value = []
+  }
 }
 
 async function agregarFecha() {
@@ -465,87 +486,199 @@ async function agregarFecha() {
     return
   }
   
-  // Simulación: añadir la fecha a la lista local
-  const nuevaFecha = {
-    CUF_ID: Date.now(), // ID único temporal
-    ...nuevoPeriodo.value,
-    CUR_ID: form.value.CUR_ID,
-  }
-  fechasCurso.value.push(nuevaFecha)
-
-  // Actualizar también la lista principal de cursos
-  const cursoIndex = cursosList.value.findIndex(c => c.CUR_ID === form.value.CUR_ID)
-  if (cursoIndex !== -1) {
-    cursosList.value[cursoIndex].fechas.push(nuevaFecha)
-  }
+  const creada = await fechasApi.create({ ...nuevoPeriodo.value, CUR_ID: form.value.CUR_ID })
+  fechasCurso.value.push(creada)
+  fechasCursoList.value.push(creada) // Actualizar caché
 
   nuevoPeriodo.value.CUF_FECHA_INICIO = ''
   nuevoPeriodo.value.CUF_FECHA_TERMINO = ''
+  alert('Período agregado exitosamente.')
 }
 
 async function eliminarFecha(fechaId) {
   if (!window.confirm('¿Seguro que desea eliminar este período?')) return
   
-  // Simulación: eliminar de la lista local
+  await fechasApi.remove(fechaId)
   fechasCurso.value = fechasCurso.value.filter(f => f.CUF_ID !== fechaId)
+  fechasCursoList.value = fechasCursoList.value.filter(f => f.CUF_ID !== fechaId) // Actualizar caché
+  alert('Período eliminado exitosamente.')
+}
 
-  // Actualizar también la lista principal de cursos
-  const cursoIndex = cursosList.value.findIndex(c => c.CUR_ID === form.value.CUR_ID)
-  if (cursoIndex !== -1) {
-    cursosList.value[cursoIndex].fechas = cursosList.value[cursoIndex].fechas.filter(f => f.CUF_ID !== fechaId)
+// --- Lógica de Secciones del Curso ---
+const nuevaSeccion = ref({
+  CUS_SECCION: '',
+  RAM_ID: null,
+  CUS_CANT_PARTICIPANTE: '',
+})
+
+async function cargarSeccionesDelCurso(cursoId) {
+  try {
+    if (!Array.isArray(seccionesList.value) || seccionesList.value.length === 0) {
+      const all = await seccionesApi.list()
+      seccionesList.value = all || []
+    }
+    seccionesCurso.value = (seccionesList.value || []).filter(s => Number(s.CUR_ID) === Number(cursoId))
+  } catch (e) {
+    console.error('Error cargando secciones:', e)
+    seccionesCurso.value = []
   }
+}
+
+async function agregarSeccion() {
+  if (!form.value.CUR_ID) {
+    alert('Guarde primero el curso para poder añadirle secciones.')
+    return
+  }
+  if (!nuevaSeccion.value.CUS_SECCION || !nuevaSeccion.value.RAM_ID || !nuevaSeccion.value.CUS_CANT_PARTICIPANTE) {
+    alert('Debe llenar todos los campos de la sección.')
+    return
+  }
+  
+  const payload = {
+    CUR_ID: form.value.CUR_ID,
+    CUS_SECCION: Number(nuevaSeccion.value.CUS_SECCION),
+    RAM_ID: Number(nuevaSeccion.value.RAM_ID),
+    CUS_CANT_PARTICIPANTE: Number(nuevaSeccion.value.CUS_CANT_PARTICIPANTE)
+  }
+  
+  const creada = await seccionesApi.create(payload)
+  seccionesCurso.value.push(creada)
+  seccionesList.value.push(creada)
+
+  nuevaSeccion.value.CUS_SECCION = ''
+  nuevaSeccion.value.RAM_ID = null
+  nuevaSeccion.value.CUS_CANT_PARTICIPANTE = ''
+  
+  alert('Sección agregada exitosamente.')
+}
+
+async function eliminarSeccion(seccionId) {
+  if (!window.confirm('¿Seguro que desea eliminar esta sección?')) return
+  
+  await seccionesApi.remove(seccionId)
+  seccionesCurso.value = seccionesCurso.value.filter(s => s.CUS_ID !== seccionId)
+  seccionesList.value = seccionesList.value.filter(s => s.CUS_ID !== seccionId)
+  
+  alert('Sección eliminada exitosamente.')
 }
 
 // --- Lógica de Guardado Principal ---
 async function guardarCurso() {
+  // Prevenir múltiples clics
+  if (isSaving.value) return
+  isSaving.value = true
+
   try {
+    // Validar campos obligatorios
+    if (!form.value.CUR_DESCRIPCION?.trim()) {
+      alert('La descripción del curso es obligatoria.')
+      return
+    }
+    if (!form.value.CUR_CODIGO?.trim()) {
+      alert('El código del curso es obligatorio.')
+      return
+    }
+    if (!form.value.TCU_ID) {
+      alert('Debes seleccionar un tipo de curso.')
+      return
+    }
+    if (!form.value.PER_ID_RESPONSABLE) {
+      alert('Debes seleccionar un responsable.')
+      return
+    }
+
     const payload = { ...form.value }
+    // Sanitizar payload: eliminar campos calculados / solo lectura
+    delete payload.fechas
+    delete payload.secciones
+    delete payload.CUR_FECHA_HORA
     payload.CUR_COTA_CON_ALMUERZO = Number(payload.CUR_COTA_CON_ALMUERZO)
     payload.CUR_COTA_SIN_ALMUERZO = Number(payload.CUR_COTA_SIN_ALMUERZO)
+    // Convertir FKs y enums a números por seguridad
+    payload.TCU_ID = Number(payload.TCU_ID)
+    payload.PER_ID_RESPONSABLE = Number(payload.PER_ID_RESPONSABLE)
+    payload.CAR_ID_RESPONSABLE = payload.CAR_ID_RESPONSABLE ? Number(payload.CAR_ID_RESPONSABLE) : null
+    payload.COM_ID_LUGAR = payload.COM_ID_LUGAR ? Number(payload.COM_ID_LUGAR) : null
+    payload.CUR_MODALIDAD = Number(payload.CUR_MODALIDAD || 1)
+    payload.CUR_TIPO_CURSO = Number(payload.CUR_TIPO_CURSO || 1)
+    payload.CUR_ADMINISTRA = Number(payload.CUR_ADMINISTRA || 1)
+    payload.CUR_ESTADO = Number(payload.CUR_ESTADO !== undefined ? payload.CUR_ESTADO : 0)
 
     if (isTrulyNew.value) {
-      // Simulación: añadir el nuevo curso a la lista
-      const nuevoCurso = {
-        ...payload,
-        fechas: [...fechasCurso.value] // Adjuntar las fechas temporales
+      // Obtener usuario actual para USU_ID
+      try {
+        const perfil = await request('auth/perfil')
+        if (perfil?.usuario?.user_id) {
+          payload.USU_ID = perfil.usuario.user_id
+        } else {
+          payload.USU_ID = 1 // Fallback
+        }
+      } catch (e) {
+        console.warn('No se pudo obtener USU_ID, usando default:', e)
+        payload.USU_ID = 1 // Default fallback
       }
-      cursosList.value.unshift(nuevoCurso)
-      isTrulyNew.value = false // Ya no es nuevo
+
+      const creado = await cursosApi.create(payload)
+      cursosList.value.unshift(creado)
+      await cargarFechasDelCurso(creado.CUR_ID)
+      await cargarSeccionesDelCurso(creado.CUR_ID)
+      isTrulyNew.value = false
+      alert('Curso creado exitosamente.')
     } else {
-      // Simulación: encontrar y actualizar el curso en la lista
+      // En edición, no modifica USU_ID
+      const actualizado = await cursosApi.update(payload.CUR_ID, payload)
       const index = cursosList.value.findIndex(c => c.CUR_ID === payload.CUR_ID)
       if (index !== -1) {
-        cursosList.value[index] = { 
-          ...cursosList.value[index], 
-          ...payload,
-          fechas: [...fechasCurso.value] // Actualizar también las fechas
-        }
+        // preservar fechas y secciones ya cargadas en memoria si existen
+        const fechasLocal = cursosList.value[index].fechas
+        const seccionesLocal = cursosList.value[index].secciones
+        cursosList.value[index] = { ...actualizado, fechas: fechasLocal || [], secciones: seccionesLocal || [] }
       }
+      alert('Curso actualizado exitosamente.')
     }
-    cerrarModal();
+    aplicarFiltros()
+    cerrarModal()
   } catch (e) {
-    console.error('Error al guardar el curso (simulación):', e)
-    alert('Error al guardar el curso. Revisa la consola para más detalles.')
+    console.error('Error al guardar el curso:', e)
+    console.error('Response:', e.response?.data)
+    alert(`Error al guardar: ${e.response?.data?.detail || e.message || 'Error desconocido'}`)
+  } finally {
+    isSaving.value = false
   }
 }
 
-// --- Lógica de Eliminación ---
-async function confirmarEliminacion(id) {
-  if (!window.confirm('¿Estás seguro de que deseas eliminar este curso?')) return
+// --- Deshabilitar (CUR_ESTADO=2) ---
+async function deshabilitarCurso(curso) {
+  if (!window.confirm('¿Deshabilitar este curso?')) return
+  if (isDisabling.value) return // Prevenir múltiples clics
+  isDisabling.value = true
   
-  // Simulación: eliminar el curso de la lista
-  cursosList.value = cursosList.value.filter(c => c.CUR_ID !== id)
-  // No es necesario recargar datos
+  try {
+    // El modelo no tiene CUR_VIGENTE, usamos CUR_ESTADO=2 (Anulado)
+    const actualizado = await cursosApi.partialUpdate(curso.CUR_ID, { CUR_ESTADO: 2 })
+    Object.assign(curso, actualizado)
+    aplicarFiltros()
+    alert('Curso deshabilitado exitosamente.')
+  } catch (e) {
+    console.error('Error al deshabilitar curso:', e)
+    console.error('Response:', e.response?.data)
+    alert(`Error al deshabilitar: ${e.response?.data?.detail || e.message || 'Error desconocido'}`)
+  } finally {
+    isDisabling.value = false
+  }
 }
 
 // --- Funciones de Formato y Ayuda ---
-const personasOptions = computed(() => 
-  personasList.value.map(p => ({ value: p.PER_ID, text: `${p.PER_NOMBRE} ${p.PER_APELLIDO_PATERNO}` }))
-)
+const personasOptions = computed(() => personasList.value.map(p => ({ value: p.PER_ID, text: `${p.PER_NOMBRE} ${p.PER_APELLIDO_PATERNO}` })))
 
 const tiposCursoOptions = computed(() => 
   tiposCursoList.value.map(tc => ({ value: tc.TCU_ID, text: tc.TCU_DESCRIPCION }))
 )
+
+const comunasList = ref([])
+const cargosList = ref([])
+const comunasOptions = computed(() => comunasList.value.map(c => ({ value: c.COM_ID, text: c.COM_DESCRIPCION })))
+const cargosOptions = computed(() => cargosList.value.map(c => ({ value: c.CAR_ID, text: c.CAR_DESCRIPCION })))
 
 function formatDates(curso) {
   if (curso.fechas && curso.fechas.length > 0) {
@@ -579,6 +712,23 @@ function getEstadoText(e) {
 function getEstadoClass(e) {
   const map = { 0: 'badge-warning', 1: 'badge-success', 2: 'badge-danger', 3: 'badge-secondary' }
   return map[e] || 'badge-dark'
+}
+
+const opcionesAdministra = [
+  { value: 1, text: 'Zona' },
+  { value: 2, text: 'Distrito' },
+]
+
+function abrirModalVer(curso) {
+  cursoSeleccionado.value = curso
+  cargarFechasDelCurso(curso.CUR_ID)
+  seccionesCurso.value = seccionesList.value.filter(s => s.CUR_ID === curso.CUR_ID)
+  mostrarModalVer.value = true
+}
+
+function cerrarModalVer() {
+  mostrarModalVer.value = false
+  cursoSeleccionado.value = null
 }
 </script>
 

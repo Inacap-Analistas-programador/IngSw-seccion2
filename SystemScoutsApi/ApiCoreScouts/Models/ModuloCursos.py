@@ -16,7 +16,7 @@ class Curso(models.Model):
     CUR_DESCRIPCION = models.CharField(max_length=255, db_column='CUR_DESCRIPCION')
     CUR_OBSERVACION = models.CharField(max_length=255, blank=True, null=True, db_column='CUR_OBSERVACION')
     CUR_ADMINISTRA_OPCION = [
-        (2, 'Zona'),
+        (1, 'Zona'),
         (2, 'Distrito'),
     ]
     CUR_ADMINISTRA = models.IntegerField(choices=CUR_ADMINISTRA_OPCION, null=False, db_column='CUR_ADMINISTRA')
