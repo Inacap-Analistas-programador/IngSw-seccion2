@@ -1,22 +1,22 @@
 <template>
   <div class="mantenedores-scouts">
-    <!-- SideBar Restaurada -->
-    <div class="sidebar">
-      <div class="sidebar-header">
+    <!-- Selector de Mantenedores en lugar de Sidebar -->
+    <div class="mantenedor-selector">
+      <div class="selector-header">
         <h2>⚙️ Mantenedores</h2>
       </div>
-      <ul class="sidebar-menu">
-        <li 
-          v-for="tab in tabs" 
-          :key="tab.id"
-          class="sidebar-item"
-          :class="{ active: activeTab === tab.id }"
-          @click="activeTab = tab.id"
-        >
-          <span class="sidebar-icon">{{ tab.icon }}</span>
-          <span class="sidebar-label">{{ tab.label }}</span>
-        </li>
-      </ul>
+      <div class="selector-container">
+        <select v-model="activeTab" class="mantenedor-dropdown">
+          <option 
+            v-for="tab in tabs" 
+            :key="tab.id"
+            :value="tab.id"
+          >
+            {{ tab.icon }} {{ tab.label }}
+          </option>
+        </select>
+        <div class="dropdown-icon">▼</div>
+      </div>
     </div>
 
     <!-- Main Content -->
@@ -1541,30 +1541,23 @@ export default {
 
 <style scoped>
 .mantenedores-scouts {
-  display: flex;
   min-height: 100vh;
   background: #f5f5f5;
 }
 
-/* SideBar Styles */
-.sidebar {
-  width: 280px;
+/* Selector de Mantenedores */
+.mantenedor-selector {
   background: #1e3d73;
   color: white;
-  height: 100vh;
-  position: fixed;
-  left: 0;
-  top: 0;
-  overflow-y: auto;
+  padding: 15px 30px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.sidebar-header {
-  padding: 25px 20px;
-  border-bottom: 2px solid #2c5aa0;
-  background: #2c5aa0;
+.selector-header {
+  margin-bottom: 15px;
 }
 
-.sidebar-header h2 {
+.selector-header h2 {
   margin: 0;
   font-size: 1.4rem;
   display: flex;
@@ -1572,45 +1565,41 @@ export default {
   gap: 10px;
 }
 
-.sidebar-menu {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+.selector-container {
+  position: relative;
+  max-width: 400px;
 }
 
-.sidebar-item {
-  padding: 16px 20px;
+.mantenedor-dropdown {
+  width: 100%;
+  padding: 12px 45px 12px 16px;
+  border: 2px solid #2c5aa0;
+  border-radius: 8px;
+  background: white;
+  color: #333;
+  font-size: 1rem;
+  appearance: none;
   cursor: pointer;
-  transition: all 0.3s ease;
-  border-bottom: 1px solid #2c5aa0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  transition: border-color 0.3s ease;
 }
 
-.sidebar-item:hover {
-  background: #2c5aa0;
+.mantenedor-dropdown:focus {
+  outline: none;
+  border-color: #ff6b35;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
 }
 
-.sidebar-item.active {
-  background: #ff6b35;
-  border-left: 4px solid #fff;
-}
-
-.sidebar-icon {
-  font-size: 1.2rem;
-  width: 24px;
-  text-align: center;
-}
-
-.sidebar-label {
-  font-weight: 500;
+.dropdown-icon {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #2c5aa0;
+  pointer-events: none;
 }
 
 /* Main Content Styles */
 .main-content {
-  flex: 1;
-  margin-left: 280px;
   padding: 0;
   min-height: 100vh;
 }
@@ -2002,14 +1991,8 @@ export default {
 
 /* Responsive */
 @media (max-width: 768px) {
-  .sidebar {
-    width: 100%;
-    height: auto;
-    position: relative;
-  }
-  
-  .main-content {
-    margin-left: 0;
+  .mantenedor-selector {
+    padding: 15px 20px;
   }
   
   .mantenedor-header {
