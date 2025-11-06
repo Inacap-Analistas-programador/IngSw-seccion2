@@ -150,6 +150,7 @@ import ModernMainScrollbar from '@/components/Reutilizables/ModernMainScrollbar.
 import QRCode from 'qrcode'
 import { personas as personasService, personaCursos as personaCursosService } from '@/services/personasService'
 import authViewsService from '@/services/auth_viewsService.js'
+import { rol } from '@/services/mantenedoresService'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
 // Flag temporal: cuando es false, 'Estado correo' NO se conecta a la API (sin PEC_ENVIO_CORREO_QR)
@@ -161,13 +162,13 @@ const loading = ref(true)
 const error = ref(null)
 
 // Filtros editables (UI)
-const filters = reactive({ curso: 'Todos', cargo: 'Todos', estadoPersona: 'Todos', estadoCorreo: 'Todos' })
+const filters = reactive({ curso: 'Todos', rol: 'Todos', estadoPersona: 'Todos', estadoCorreo: 'Todos' })
 // Filtros aplicados (se actualizan al presionar Buscar)
-const appliedFilters = reactive({ curso: 'Todos', cargo: 'Todos', estadoPersona: 'Todos', estadoCorreo: 'Todos' })
+const appliedFilters = reactive({ curso: 'Todos', rol: 'Todos', estadoPersona: 'Todos', estadoCorreo: 'Todos' })
 // Aplica los filtros al presionar el botón Buscar
 function applyFilters() {
 	appliedFilters.curso = filters.curso
-	appliedFilters.cargo = filters.cargo
+	appliedFilters.rol = filters.rol
 	appliedFilters.estadoPersona = filters.estadoPersona
 	appliedFilters.estadoCorreo = filters.estadoCorreo
 }
@@ -262,7 +263,7 @@ onMounted(async () => {
 			apellidoMaterno: p.PER_APELMAT || p.PER_APELLIDO_MATERNO || p.apellido_materno || p.apellidoMaterno || p.apellido2 || '',
 			email: p.PER_MAIL || p.email || p.mail || p.correo || '',
 			curso: p.curso || 'Sin curso', // TODO: si viene desde persona-curso
-			cargo: p.cargo || 'Participante', // TODO: desde relaciones
+			rol: p.rol || 'Participante', // TODO: desde relaciones
 			// Estado de la persona (normalizado)
 			estadoPersona: p.estadoPersona || p.estado || p.PER_ESTADO || 'Preinscrito',
 			// Estado de pago (PAP_ESTADO): normalizar a Pagado / Pendiente
@@ -298,7 +299,9 @@ const cursos = computed(() => {
 
 function matchesFilter(row) {
 	if (appliedFilters.curso !== 'Todos' && row.curso !== appliedFilters.curso) return false
-	if (appliedFilters.cargo !== 'Todos' && row.cargo !== appliedFilters.cargo) return false
+	if (appliedFilters.rol !== 'Todos' && row.rol !== appliedFilters.rol
+		
+	) return false
 	if (appliedFilters.estadoPersona !== 'Todos' && row.estadoPersona !== appliedFilters.estadoPersona) return false
 	if (appliedFilters.estadoCorreo !== 'Todos' && row.estadoCorreo !== appliedFilters.estadoCorreo) return false
 	return true

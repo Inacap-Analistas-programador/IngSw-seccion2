@@ -24,7 +24,7 @@
       <BaseSelect 
         v-model="filtroRol" 
         :options="rolesOptions" 
-        placeholder="Todos los roles"
+        placeholder="Todos los perfiles"
         class="filtro-item"
         @change="filtrarUsuarios"
       />
@@ -51,96 +51,84 @@
       <p>Cargando usuarios...</p>
     </div>
 
-    <!-- Tabla de usuarios -->
-    <div v-else class="table-wrapper">
+    <!-- Card estilo Correos -->
+    <section class="correos-card usuarios-card">
+      <div class="correos-card-header">
+        <span class="correos-card-title blue-bar">Lista de Usuarios</span>
+        <div class="correos-card-actions">
+          <BaseButton variant="primary" @click="cambiarEstadoMasivo(false)" :disabled="selectedCount === 0" title="Desactivar todos los seleccionados">
+            <AppIcons name="alert" :size="16" /> Desactivar
+          </BaseButton>
+          <BaseButton variant="primary" @click="cambiarEstadoMasivo(true)" :disabled="selectedCount === 0" title="Activar todos los seleccionados">
+            <AppIcons name="check" :size="16" /> Activar
+          </BaseButton>
+          <BaseButton variant="primary" @click="accionEditarSelected" :disabled="!canEditOne" title="Editar usuario seleccionado">
+            <AppIcons name="edit" :size="16" /> Editar
+          </BaseButton>
+          <BaseButton variant="primary" @click="abrirModalCrear" title="Crear nuevo usuario">
+            <AppIcons name="add" :size="16" /> Nuevo
+          </BaseButton>
+        </div>
+      </div>
+      <div class="usuarios-seleccion-resumen">
+        <span>Seleccionados: <strong>{{ selectedCount }}</strong></span>
+        <template v-if="canEditOne && selectedUsuario">
+          <span> | Usuario: <strong>{{ selectedUsuario.username }}</strong></span>
+          <span class="badge-mini" :class="selectedUsuario.activo ? 'mini-ok' : 'mini-off'">{{ selectedUsuario.activo ? 'Activo' : 'Inactivo' }}</span>
+        </template>
+      </div>
+
+  <!-- Tabla de usuarios -->
+  <div v-if="!cargando" class="table-wrapper usuarios-table-wrapper">
       <table class="usuarios-table">
         <thead>
           <tr>
-            <th>Nombre</th>
             <th>Usuario</th>
-            <th>Rol</th>
+            <th>PERFIL</th>
             <th>Estado</th>
-            <th>Acciones</th>
           </tr>
         </thead>
         <tbody>
           <tr 
             v-for="usuario in usuariosFiltrados" 
             :key="usuario.id"
-            :class="{ 'usuario-inactivo': !usuario.activo }"
+            :class="{ 'usuario-inactivo': !usuario.activo, 'row-selected': isSelected(usuario.id) }"
+            @click="toggleRowSelection(usuario)"
           >
-            <td data-label="Nombre">{{ usuario.nombre }}</td>
-            <td data-label="Usuario">{{ usuario.username }}</td>
-            <td data-label="Rol">
+            <td data-label="Usuario">
+              <div class="user-cell">
+                <img
+                  class="avatar"
+                  :src="usuario.foto || avatarDataUrl(usuario.nombre || usuario.username)"
+                  :alt="`Foto de ${usuario.username}`"
+                />
+                <span class="username">{{ usuario.username }}</span>
+              </div>
+            </td>
+            <td data-label="Perfil" :class="{ 'col-perfil': true }">
               <span class="rol-badge" :class="rolClass(usuario)">
                 {{ getRolLabel(usuario.perfil_id) || usuario.rol }}
               </span>
             </td>
             <td data-label="Estado">
-              <span 
-                :class="['estado-badge', usuario.activo ? 'estado-activo' : 'estado-inactivo']"
-              >
+              <span :class="['estado-badge', usuario.activo ? 'estado-activo' : 'estado-inactivo']">
                 {{ usuario.activo ? 'Activo' : 'Inactivo' }}
               </span>
             </td>
-            <td data-label="Acciones">
-              <div class="acciones-buttons">
-                <BaseButton 
-                  class="btn-editar" 
-                  variant="primary" 
-                  size="sm"
-                  @click="abrirModalEditar(usuario)"
-                  title="Editar usuario"
-                >
-                  Editar
-                </BaseButton>
-                <BaseButton 
-                  v-if="usuario.activo"
-                  class="btn-desactivar" 
-                  variant="danger" 
-                  size="sm"
-                  @click="confirmarCambioEstado(usuario, false)"
-                  title="Desactivar usuario"
-                >
-                  Desactivar
-                </BaseButton>
-                <BaseButton 
-                  v-else
-                  class="btn-activar" 
-                  variant="success" 
-                  size="sm"
-                  @click="cambiarEstado(usuario, true)"
-                  title="Activar usuario"
-                >
-                  Activar
-                </BaseButton>
-                <BaseButton 
-                  class="btn-eliminar" 
-                  variant="danger" 
-                  size="sm"
-                  @click="confirmarEliminar(usuario)"
-                  title="Eliminar usuario"
-                >
-                  Eliminar
-                </BaseButton>
-              </div>
-            </td>
           </tr>
           <tr v-if="usuariosFiltrados.length === 0" class="empty-row">
-            <td colspan="5">
+            <td colspan="3">
               <div class="empty-state">
                 <p>No se encontraron usuarios</p>
-                <BaseButton variant="primary" @click="limpiarFiltros">
-                  Mostrar todos
-                </BaseButton>
+                <BaseButton variant="primary" @click="limpiarFiltros">Mostrar todos</BaseButton>
               </div>
             </td>
           </tr>
         </tbody>
       </table>
-    </div>
+  </div>
+  </section>
 
-    <!-- Modal para crear/editar usuario -->
     <BaseModal v-model="modalVisible" @close="cerrarModal">
       <template #default>
         <div class="modal-usuario">
@@ -156,26 +144,36 @@
                 v-model="usuarioForm.username" 
                 placeholder="Ej: jperez"
                 required
-                :disabled="procesando"
               />
               <small class="form-hint">Este nombre se mostrará en la tabla</small>
             </div>
 
             <div class="form-group">
-              <label for="rol">Rol <span class="required">*</span></label>
+              <label for="rol">Perfil <span class="required">*</span></label>
               <BaseSelect 
                 id="rol"
                 v-model="usuarioForm.rol" 
                 :options="rolesOptions"
-                placeholder="Seleccionar rol"
+                placeholder="Seleccionar perfil"
                 required
                 :disabled="procesando"
                 @change="cargarPermisosDelRol"
               />
             </div>
 
+            <!-- Foto de Usuario (solo se muestra siempre, pero requerida por pedido para edición) -->
+            <div class="form-group">
+              <label for="foto">Foto de Usuario</label>
+              <input id="foto" class="file-input" type="file" accept="image/*" @change="onFotoChange" :disabled="procesando" />
+              <div v-if="usuarioForm.foto" class="avatar-preview-wrapper">
+                <img :src="usuarioForm.foto" alt="Preview Foto" class="avatar-preview" />
+              </div>
+              <small class="form-hint">Opcional. Si no se selecciona, se mostrarán iniciales.</small>
+            </div>
+
             <!-- Permisos personalizados por aplicación -->
-            <div class="form-group" v-if="(modoEdicion || usuarioForm.rol) && aplicaciones.length > 0">
+            <!-- Permisos ocultos en modo edición segun requerimiento -->
+            <div class="form-group" v-if="(!modoEdicion && usuarioForm.rol) && aplicaciones.length > 0">
               <label>Permisos del Usuario</label>
               <p class="form-hint">Configure los permisos específicos para este usuario en cada módulo del sistema</p>
               
@@ -224,11 +222,13 @@
               </div>
             </div>
 
+            <!-- Gestión de contraseña -->
+            <!-- Modo crear: pedir contraseña -->
             <div class="form-group" v-if="!modoEdicion">
               <label for="password">Contraseña <span class="required">*</span></label>
-              <InputBase 
+              <InputBase
                 id="password"
-                v-model="usuarioForm.password" 
+                v-model="usuarioForm.password"
                 type="password"
                 placeholder="Ingrese contraseña (mínimo 6 caracteres)"
                 :required="!modoEdicion"
@@ -239,9 +239,9 @@
 
             <div class="form-group" v-if="!modoEdicion">
               <label for="confirmPassword">Confirmar Contraseña <span class="required">*</span></label>
-              <InputBase 
+              <InputBase
                 id="confirmPassword"
-                v-model="usuarioForm.confirmPassword" 
+                v-model="usuarioForm.confirmPassword"
                 type="password"
                 placeholder="Confirme contraseña"
                 :required="!modoEdicion"
@@ -252,12 +252,43 @@
               </small>
             </div>
 
+            <!-- Modo edición: mostrar contraseña enmascarada y opción para cambiar -->
+            <div class="form-group" v-if="modoEdicion">
+              <label>Contraseña</label>
+              <div v-if="!changePassword" class="password-masked-row">
+                <span class="password-masked" title="Contraseña protegida">••••••••</span>
+                <BaseButton size="sm" variant="primary" type="button" @click="activarCambioPassword" :disabled="procesando">Cambiar</BaseButton>
+              </div>
+              <div v-else class="password-change-fields">
+                <InputBase
+                  id="newPassword"
+                  v-model="usuarioForm.password"
+                  type="password"
+                  placeholder="Nueva contraseña"
+                  :disabled="procesando"
+                />
+                <InputBase
+                  id="newPassword2"
+                  v-model="usuarioForm.confirmPassword"
+                  type="password"
+                  placeholder="Confirmar nueva contraseña"
+                  :disabled="procesando"
+                />
+                <div class="password-actions-inline">
+                  <BaseButton size="sm" variant="primary" type="button" @click="confirmarNuevoPassword" :disabled="procesando || !passwordTemporalValido">Aplicar</BaseButton>
+                  <BaseButton size="sm" variant="primary" type="button" @click="cancelarCambioPassword" :disabled="procesando">Cancelar</BaseButton>
+                </div>
+                <small class="form-hint" v-if="usuarioForm.password && usuarioForm.password.length < 6" style="color:#e74c3c;">Mínimo 6 caracteres</small>
+                <small class="form-hint" v-if="usuarioForm.password && usuarioForm.confirmPassword && usuarioForm.password !== usuarioForm.confirmPassword" style="color:#e74c3c;">Las contraseñas no coinciden</small>
+              </div>
+            </div>
+
             
 
             <div class="form-actions">
               <BaseButton 
                 type="button" 
-                variant="secondary" 
+                variant="primary" 
                 @click="cerrarModal"
                 :disabled="procesando"
               >
@@ -284,14 +315,14 @@
           <p>{{ mensajeConfirmacion }}</p>
           <div class="form-actions">
             <BaseButton 
-              variant="secondary" 
+              variant="primary" 
               @click="cancelarAccion"
               :disabled="procesando"
             >
               Cancelar
             </BaseButton>
             <BaseButton 
-              variant="danger" 
+              variant="primary" 
               @click="ejecutarAccion"
               :disabled="procesando"
             >
@@ -342,8 +373,9 @@ export default {
   },
   data() {
     return {
-      usuarios: [],
-      usuariosFiltrados: [],
+    usuarios: [],
+    usuariosFiltrados: [],
+    selectedIds: [],
       aplicaciones: [], // Módulos del sistema con permisos
       searchQuery: '',
       filtroRol: '',
@@ -356,6 +388,7 @@ export default {
       // Modal
       modalVisible: false,
       modoEdicion: false,
+      changePassword: false,
       usuarioForm: {
         username: '',
         rol: '',
@@ -389,23 +422,37 @@ export default {
   },
   computed: {
     formularioValido() {
-      if (!this.usuarioForm.username || !this.usuarioForm.rol) {
-        return false
-      }
-      
+      if (!this.usuarioForm.username || !this.usuarioForm.rol) return false
+
+      // Validación en modo creación (password obligatorio)
       if (!this.modoEdicion) {
-        if (!this.usuarioForm.password || !this.usuarioForm.confirmPassword) {
-          return false
-        }
-        if (this.usuarioForm.password !== this.usuarioForm.confirmPassword) {
-          return false
-        }
-        if (this.usuarioForm.password.length < 6) {
-          return false
-        }
+        if (!this.usuarioForm.password || !this.usuarioForm.confirmPassword) return false
+        if (this.usuarioForm.password !== this.usuarioForm.confirmPassword) return false
+        if (this.usuarioForm.password.length < 6) return false
       }
-      
+
+      // En modo edición solo validar si se decidió cambiar la contraseña
+      if (this.modoEdicion && this.changePassword) {
+        if (!this.usuarioForm.password || !this.usuarioForm.confirmPassword) return false
+        if (this.usuarioForm.password !== this.usuarioForm.confirmPassword) return false
+        if (this.usuarioForm.password.length < 6) return false
+      }
       return true
+    }
+    ,
+    selectedCount() {
+      return this.selectedIds.length
+    },
+    canEditOne() {
+      return this.selectedIds.length === 1
+    },
+    selectedUsuario() {
+      if (this.selectedIds.length !== 1) return null
+      const id = this.selectedIds[0]
+      return this.usuariosFiltrados.find(u => u.id === id) || this.usuarios.find(u => u.id === id) || null
+    },
+    allSelected() {
+      return this.usuariosFiltrados.length > 0 && this.selectedIds.length === this.usuariosFiltrados.length
     }
   },
   async mounted() {
@@ -413,6 +460,21 @@ export default {
     await this.cargarDatos()
   },
   methods: {
+    getIniciales(texto) {
+      if (!texto) return 'U'
+      const partes = String(texto).trim().split(/\s+/)
+      const ini = (partes[0]?.[0] || '') + (partes[1]?.[0] || '')
+      return ini.toUpperCase() || (String(texto)[0] || 'U').toUpperCase()
+    },
+
+    avatarDataUrl(texto) {
+      const initials = this.getIniciales(texto)
+      const bg = '#E6F0FF'
+      const fg = '#1E40AF'
+      const svg = `<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><defs><clipPath id="r"><rect rx="32" ry="32" width="64" height="64"/></clipPath></defs><g clip-path="url(#r)"><rect width="64" height="64" fill="${bg}"/><text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="24" fill="${fg}">${initials}</text></g></svg>`
+      return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg)
+    },
+
     getRolLabel(perfilId) {
       if (perfilId === null || perfilId === undefined || perfilId === '') return ''
       const opt = this.rolesOptions.find(r => String(r.value) === String(perfilId))
@@ -443,7 +505,7 @@ export default {
           { value: 9, label: 'Apoderado' }
         ]
 
-        this.rolesOptions = [ { value: '', label: 'Todos los roles' }, ...roles ]
+  this.rolesOptions = [ { value: '', label: 'Todos los perfiles' }, ...roles ]
 
         // Usuarios mock — campos usados en la vista
         this.usuarios = [
@@ -525,6 +587,7 @@ export default {
         password: '',
         confirmPassword: '',
         activo: true,
+        foto: '',
         permisos: permisosVacios
       }
     },
@@ -562,6 +625,7 @@ export default {
     
     async abrirModalEditar(usuario) {
       this.modoEdicion = true
+      this.changePassword = false
       console.log('Usuario a editar:', usuario)
       console.log('Perfil ID del usuario:', usuario.perfil_id)
 
@@ -583,6 +647,7 @@ export default {
         activo: usuario.activo,
         password: '',
         confirmPassword: '',
+        foto: usuario.foto || '',
         permisos: permisosForm
       }
 
@@ -612,6 +677,7 @@ export default {
     cerrarModal() {
       this.modalVisible = false
       this.usuarioForm = this.getFormularioVacio()
+      this.changePassword = false
     },
     
     async guardarUsuario() {
@@ -630,6 +696,8 @@ export default {
         
         if (!this.modoEdicion) {
           datosUsuario.password = this.usuarioForm.password
+        } else if (this.changePassword) {
+          datosUsuario.password = this.usuarioForm.password
         }
         
         let usuarioId
@@ -643,6 +711,7 @@ export default {
             this.usuarios[idx].perfil_id = this.usuarioForm.rol
             this.usuarios[idx].rol = roleOpt ? roleOpt.label : this.usuarios[idx].rol
             this.usuarios[idx].activo = this.usuarioForm.activo
+            this.usuarios[idx].foto = this.usuarioForm.foto
             usuarioId = this.usuarioForm.id
             this.mostrarNotificacion('Usuario actualizado exitosamente', 'success')
           } else {
@@ -657,7 +726,8 @@ export default {
             username: this.usuarioForm.username,
             perfil_id: this.usuarioForm.rol,
             rol: roleOpt ? roleOpt.label : '',
-            activo: this.usuarioForm.activo
+            activo: this.usuarioForm.activo,
+            foto: this.usuarioForm.foto || ''
           }
           this.usuarios.push(nuevoUsuario)
           usuarioId = newId
@@ -763,6 +833,68 @@ export default {
     
     cerrarNotificacion() {
       this.notificacion.visible = false
+    },
+    isSelected(id) {
+      return this.selectedIds.includes(id)
+    },
+    toggleRowSelection(usuario) {
+      const id = usuario.id
+      const idx = this.selectedIds.indexOf(id)
+      if (idx === -1) this.selectedIds.push(id)
+      else this.selectedIds.splice(idx, 1)
+    },
+    toggleSelectAll(e) {
+      const checked = e.target.checked
+      if (checked) this.selectedIds = this.usuariosFiltrados.map(u => u.id)
+      else this.selectedIds = []
+    },
+    accionEditarSelected() {
+      if (this.canEditOne && this.selectedUsuario) {
+        this.abrirModalEditar(this.selectedUsuario)
+      }
+    },
+    cambiarEstadoMasivo(nuevoEstado) {
+      if (this.selectedIds.length === 0) return
+      this.procesando = true
+      try {
+        let cambios = 0
+        this.usuarios.forEach(u => {
+          if (this.selectedIds.includes(u.id)) {
+            u.activo = nuevoEstado
+            cambios += 1
+          }
+        })
+        this.usuariosFiltrados = [...this.usuarios]
+        this.mostrarNotificacion(`${cambios} usuario(s) ${nuevoEstado ? 'activado(s)' : 'desactivado(s)'}`, 'success')
+      } finally {
+        this.procesando = false
+      }
+    },
+    activarCambioPassword() {
+      this.changePassword = true
+      this.usuarioForm.password = ''
+      this.usuarioForm.confirmPassword = ''
+    },
+    cancelarCambioPassword() {
+      this.changePassword = false
+      this.usuarioForm.password = ''
+      this.usuarioForm.confirmPassword = ''
+    },
+    confirmarNuevoPassword() {
+      if (this.formularioValido) {
+        this.mostrarNotificacion('Nueva contraseña lista para guardar', 'success')
+      } else {
+        this.mostrarNotificacion('Revise la nueva contraseña', 'warning')
+      }
+    },
+    onFotoChange(e) {
+      const file = e.target.files && e.target.files[0]
+      if (!file) return
+      const reader = new FileReader()
+      reader.onload = (evt) => {
+        this.usuarioForm.foto = evt.target.result
+      }
+      reader.readAsDataURL(file)
     }
   }
 }
@@ -849,6 +981,7 @@ export default {
 .usuarios-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed; /* Asegura que el header abarque todo el ancho y no se descuadre */
 }
 
 .usuarios-table thead {
@@ -865,13 +998,49 @@ export default {
   letter-spacing: 0.5px;
 }
 
+.col-check { width: 36px; text-align: center; }
+.col-check input { cursor: pointer; }
+
 .usuarios-table tbody tr {
   border-bottom: 1px solid #e0e0e0;
   transition: background-color 0.2s;
+  cursor: pointer;
+  position: relative; /* Para estabilizar pseudo-elemento y evitar cualquier "salto" visual */
+}
+
+/* Reservar siempre el espacio visual de la barra azul para que al seleccionar no parezca que se mueve */
+.usuarios-table tbody tr::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px; /* Igual que la barra de selección */
+  background: transparent; /* Invisible cuando no está seleccionado */
+  pointer-events: none;
 }
 
 .usuarios-table tbody tr:hover {
   background-color: #f8f9fa;
+}
+
+/* Selección más notoria */
+.usuarios-table tbody tr.row-selected {
+  /* Más azul y sin cambios de layout */
+  background: linear-gradient(90deg, #c7d2fe 0%, #e3edff 70%);
+  position: relative;
+  box-shadow: inset 0 0 0 1px #bfdbfe;
+}
+.usuarios-table tbody tr.row-selected:hover {
+  /* Mantener el mismo fondo al hacer hover para que no "se mueva" visualmente */
+  background: linear-gradient(90deg, #c7d2fe 0%, #e3edff 70%);
+}
+.usuarios-table tbody tr.row-selected::before {
+  background: #1d4ed8; /* Solo cambiamos el color; ya existe el pseudo-elemento en todas las filas */
+}
+.usuarios-table tbody tr.row-selected .username {
+  /* Mantener el mismo grosor para evitar reflow, solo cambiar color */
+  color: #1d4ed8;
 }
 
 .usuarios-table tbody tr.usuario-inactivo {
@@ -880,6 +1049,32 @@ export default {
 
 .usuarios-table td {
   padding: 1rem;
+  vertical-align: middle;
+}
+
+/* Usuario + Avatar */
+.user-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0; /* para que el ellipsis funcione dentro de celdas de ancho fijo */
+}
+
+.user-cell .avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #e6eef8;
+  background: #eef2f7;
+}
+
+.user-cell .username {
+  font-weight: 600;
+  color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Badges */
@@ -942,6 +1137,89 @@ export default {
   flex-wrap: wrap;
 }
 
+/* Toolbar superior */
+
+/* Card estilo Correos reutilizado */
+.correos-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 18px rgba(40,92,168,0.13);
+  margin: 0 auto 28px auto;
+  padding: 22px 22px 16px 22px;
+  max-width: 1400px;
+  width: 100%;
+  box-sizing: border-box;
+  border: 1.5px solid #dbe4f3;
+}
+.correos-card-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  gap: 10px;
+}
+.correos-card-title {
+  font-size: 1.18rem;
+  font-weight: 700;
+  color: #1d4ed8;
+  position: relative;
+  padding-left: 14px;
+}
+.blue-bar::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 6px;
+  background: #1d4ed8;
+  border-radius: 4px;
+}
+.correos-card-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 12px;
+  justify-content: flex-end;
+}
+.correos-card-actions :deep(button),
+.correos-card-actions button {
+  min-width: 150px;
+  padding: 10px 16px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(40,92,168,0.08);
+  border: none;
+  transition: all 0.25s ease;
+}
+.correos-card-actions button:hover {
+  filter: brightness(0.95);
+  box-shadow: 0 4px 16px rgba(40,92,168,0.13);
+}
+.usuarios-seleccion-resumen {
+  font-size: 0.85rem;
+  color: #475569;
+  margin-bottom: 8px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.badge-mini {
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  background: #e5e7eb;
+  color: #374151;
+}
+.badge-mini.mini-ok { background:#d1fae5; color:#065f46; }
+.badge-mini.mini-off { background:#e5e7eb; color:#555; }
+.usuarios-table-wrapper { margin-top: 4px; }
+
+/* Eliminado duplicado de estilos de selección que sobreescribía el gradiente */
+
 /* Empty state */
 .empty-row td {
   padding: 3rem 1rem;
@@ -959,8 +1237,8 @@ export default {
 
 /* Modal */
 .modal-usuario {
-  padding: 2rem;
-  max-width: 800px;
+  padding: 1.5rem 1.75rem; /* compactar */
+  max-width: 720px; /* más angosto */
   width: 90vw;
 }
 
@@ -972,20 +1250,21 @@ export default {
 
 .modal-header h3 {
   margin: 0;
-  font-size: 1.75rem;
+  font-size: 1.25rem; /* título más pequeño */
+  font-weight: 600;
   color: #2c3e50;
 }
 
 .usuario-form {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.1rem; /* más compacto */
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.4rem; /* menor separación */
 }
 
 .form-group label {
@@ -999,10 +1278,65 @@ export default {
 }
 
 .form-hint {
-  font-size: 0.9rem;
-  color: #7f8c8d;
-  margin-top: 0.25rem;
-  margin-bottom: 1rem;
+  font-size: 0.78rem; /* más pequeño */
+  color: #64748b;
+  margin-top: 0.1rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Password change area */
+.password-masked-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.password-masked {
+  display: inline-block;
+  letter-spacing: 2px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 6px 10px; /* más bajo */
+  color: #475569;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.password-actions-inline {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+/* Avatar preview in modal */
+.avatar-preview-wrapper {
+  margin-top: 0.4rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: #f8fafc;
+  padding: 6px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+}
+.avatar-preview {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #dbe4f3;
+  background: #eef2f7;
+}
+
+/* Estilo para input de archivo para cuadrar con inputs */
+input[type="file"].file-input {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  color: #1f2937;
 }
 
 /* Permisos Container - Estilo Discord */
@@ -1058,11 +1392,11 @@ export default {
 
 .form-actions {
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
   justify-content: flex-end;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e0e0e0;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e2e8f0;
 }
 
 /* Modal confirmación */
