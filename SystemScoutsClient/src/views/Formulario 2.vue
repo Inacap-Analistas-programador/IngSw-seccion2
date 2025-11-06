@@ -1,3 +1,5 @@
+[file name]: Formulario 2.vue
+[file content begin]
 <template>
   <div class="formulario-scouts">
     <!-- Header del Formulario -->
@@ -56,17 +58,9 @@
             <h3 class="section-title">Información Básica</h3>
             <div class="form-grid">
               <InputBase
-                v-model="formData.nombrePaterno"
-                label="Nombre Paterno *"
-                placeholder="Ingrese su nombre paterno"
-                :required="true"
-                class="form-field"
-              />
-              
-              <InputBase
-                v-model="formData.nombreMaterno"
-                label="Nombre Materno *"
-                placeholder="Ingrese su nombre materno"
+                v-model="formData.nombres"
+                label="Nombres *"
+                placeholder="Ingrese sus nombres"
                 :required="true"
                 class="form-field"
               />
@@ -158,12 +152,13 @@
                 placeholder="Seleccione tipo"
                 :required="true"
                 class="form-field"
+                @change="actualizarFormatoTelefono"
               />
               
               <InputBase
                 v-model="formData.telefono"
                 label="Teléfono *"
-                placeholder="+56 9 1234 5678"
+                :placeholder="telefonoPlaceholder"
                 :required="true"
                 class="form-field telefono-field"
               />
@@ -551,7 +546,7 @@
               <div class="summary-grid">
                 <div class="summary-item">
                   <strong>Nombre Completo:</strong>
-                  <span>{{ formData.nombrePaterno }} {{ formData.nombreMaterno }} {{ formData.apellidoPaterno }} {{ formData.apellidoMaterno }}</span>
+                  <span>{{ formData.nombres }} {{ formData.apellidoPaterno }} {{ formData.apellidoMaterno }}</span>
                 </div>
                 <div class="summary-item">
                   <strong>RUT:</strong>
@@ -664,7 +659,7 @@
           </div>
           <div class="detail-item">
             <strong>Participante:</strong>
-            <span>{{ formData.nombrePaterno }} {{ formData.nombreMaterno }} {{ formData.apellidoPaterno }} {{ formData.apellidoMaterno }}</span>
+            <span>{{ formData.nombres }} {{ formData.apellidoPaterno }} {{ formData.apellidoMaterno }}</span>
           </div>
           <div class="detail-item">
             <strong>Rol:</strong>
@@ -724,6 +719,7 @@ export default {
     const fotoPreviewUrl = ref('')
     const mostrarCampoMMAA = ref(false)
     const mostrarEducacionFormador = ref(false)
+    const telefonoPlaceholder = ref('+56 9 1234 5678')
 
     const steps = ref([
       { label: 'Datos Personales', valid: false, completed: false },
@@ -736,8 +732,7 @@ export default {
 
     const formData = reactive({
       // Paso 1 - Datos Personales
-      nombrePaterno: '',
-      nombreMaterno: '',
+      nombres: '',
       apellidoPaterno: '',
       apellidoMaterno: '',
       rut: '',
@@ -944,13 +939,33 @@ export default {
       }
     ]
 
+    // Método para actualizar el formato del teléfono según el tipo seleccionado
+    const actualizarFormatoTelefono = () => {
+      // Limpiar el campo de teléfono cuando cambia el tipo
+      formData.telefono = ''
+      
+      // Actualizar el placeholder según el tipo de teléfono
+      switch (formData.tipoTelefono) {
+        case 'movil':
+          telefonoPlaceholder.value = '+56 9 1234 5678'
+          break
+        case 'casa':
+          telefonoPlaceholder.value = '+56 41 123 4567'
+          break
+        case 'trabajo':
+          telefonoPlaceholder.value = '+56 41 123 4567'
+          break
+        default:
+          telefonoPlaceholder.value = '+56 9 1234 5678'
+      }
+    }
+
     // Computed properties corregidas
     const currentStepValid = computed(() => {
       switch (currentStep.value) {
         case 0: // Datos Personales
           return !!(
-            formData.nombrePaterno &&
-            formData.nombreMaterno &&
+            formData.nombres &&
             formData.apellidoPaterno &&
             formData.rut &&
             formData.fechaNacimiento &&
@@ -1154,6 +1169,7 @@ export default {
       })
       
       currentStep.value = 0
+      telefonoPlaceholder.value = '+56 9 1234 5678'
     }
 
     // Watchers para campos condicionales
@@ -1200,6 +1216,7 @@ export default {
       fotoPreviewUrl,
       mostrarCampoMMAA,
       mostrarEducacionFormador,
+      telefonoPlaceholder,
       estadosCiviles,
       tiposTelefono,
       regiones,
@@ -1229,13 +1246,15 @@ export default {
       nextStep,
       previousStep,
       submitForm,
-      handleModalClose
+      handleModalClose,
+      actualizarFormatoTelefono
     }
   }
 }
 </script>
 
 <style scoped>
+/* Los estilos permanecen exactamente iguales */
 .formulario-scouts {
   min-height: 100vh;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
@@ -2022,3 +2041,4 @@ export default {
   }
 }
 </style>
+[file content end]
