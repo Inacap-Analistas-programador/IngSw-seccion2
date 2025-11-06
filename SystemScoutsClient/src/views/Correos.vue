@@ -1,7 +1,13 @@
 <template>
+	<ModernMainScrollbar>
 	<div class="correos-bg">
 		<div class="correos-container">
-			<h2 class="correos-subtitle">Gestión de Comunicaciones</h2>
+			<div class="correos-header">
+				<div class="page-header">
+					<h3>Envío de Correo</h3>
+					<p>Administra, crea y organiza los envíos de correo de formación.</p>
+				</div>
+			</div>
 
 			<!-- Barra de filtros global -->
 			<div class="filters-bar">
@@ -131,6 +137,7 @@
 					<NotificationToast v-if="showToast" :message="toastMessage" :icon="toastIcon" @close="showToast = false" />
 				</div>
 		</div>
+	</ModernMainScrollbar>
 	</template>
 
 
@@ -139,6 +146,7 @@ import { reactive, computed, ref, onMounted, nextTick } from 'vue'
 import BaseButton from '../components/Reutilizables/BaseButton.vue'
 import AppIcons from '@/components/icons/AppIcons.vue'
 import NotificationToast from '@/components/Reutilizables/NotificationToast.vue'
+import ModernMainScrollbar from '@/components/Reutilizables/ModernMainScrollbar.vue'
 import QRCode from 'qrcode'
 import { personas as personasService, personaCursos as personaCursosService } from '@/services/personasService'
 import authViewsService from '@/services/auth_viewsService.js'
@@ -459,25 +467,29 @@ async function enviarPorCorreo() {
 	width: 100%;
 	max-width: 1400px;
 	margin: 0 auto;
-	padding: 16px 0 32px 0;
+	/* Agrega gutter horizontal para que no choque con el borde de la sidebar */
+	padding: 16px 16px 32px 16px;
 }
-.correos-title {
-	background: #285ca8;
-	color: #fff;
-	font-size: 1.6rem;
-	font-weight: bold;
-	border-radius: 10px 10px 0 0;
-	padding: 16px 20px;
-	margin: 0 0 12px 0;
-	box-shadow: 0 2px 8px rgba(40,92,168,0.10);
+.correos-header {
+	width: 100%;
+	max-width: 1300px;
+	margin: 0 auto 20px auto;
+	padding: 0 22px;
+	box-sizing: border-box;
 }
-.correos-subtitle {
-	font-size: 1.25rem;
+.page-header { margin-bottom: 12px; }
+.page-header h3 {
+	font-size: 24px;
 	font-weight: 600;
-	margin: 0 0 18px 0;
-	color: var(--color-primary);
-	padding-left: 8px;
+	color: #111827;
+	margin: 0 0 4px 0;
 }
+.page-header p {
+	font-size: 14px;
+	color: #6b7280;
+	margin: 0;
+}
+/* eliminados estilos antiguos de título tipo banner y subtítulo azul */
 .correos-card {
 	background: var(--color-surface);
 	border-radius: 12px;
@@ -624,9 +636,13 @@ input[type="checkbox"] {
 	gap: 12px;
 	align-items: center;
 	justify-content: flex-start;
-	margin: 10px 0 0 0;
-	padding: 0 8px 12px 50px;
+	margin: 10px auto 0 auto;
+	/* Mismo ancho/gutter que el card */
+	padding: 0 22px 12px 22px;
 	flex-wrap: wrap;
+	width: 100%;
+	max-width: 1300px;
+	box-sizing: border-box;
 }
 .filters-bar label {
 	font-weight: 600;
@@ -651,6 +667,12 @@ input[type="checkbox"] {
 	}
 	.correos-card {
 		padding: 8px 0 6px 0;
+	}
+	.filters-bar {
+		padding: 0 8px 12px 8px;
+		margin-left: 0;
+		margin-right: 0;
+		max-width: 100%;
 	}
 	.correos-card-actions {
 		flex-direction: column;
