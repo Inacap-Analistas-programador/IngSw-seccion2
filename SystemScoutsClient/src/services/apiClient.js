@@ -6,7 +6,7 @@
 const API_BASE = (import.meta.env?.VITE_API_BASE || 'http://localhost:8000/api').replace(/\/$/, '')
 
 function getAuthHeaders() {
-  const token = localStorage.getItem('token')
+  const token = localStorage.getItem('token') || localStorage.getItem('accessToken')
   if (!token) return {}
   // Adjust prefix if your backend expects a different scheme
   return { Authorization: `Bearer ${token}` }

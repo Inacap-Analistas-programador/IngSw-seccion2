@@ -50,6 +50,17 @@
               Procesando...
             </template>
           </BaseButton>
+          <!-- Botón de auto-login solo para desarrollo -->
+          <button
+            v-if="showAutoLogin"
+            type="button"
+            class="dev-auto-btn"
+            @click="autoLogin"
+            :disabled="loading"
+            title="Autenticar con credenciales de desarrollo"
+          >
+            Autologin (dev)
+          </button>
         </div>
       </form>
 
@@ -88,6 +99,13 @@ const shake = ref(false)
 
 const router = useRouter()
 const route = useRoute()
+
+// Configuración de autologin
+const isDev = !!import.meta.env?.DEV
+const enableAutoLogin = String(import.meta.env?.VITE_ENABLE_AUTOLOGIN ?? 'true').toLowerCase() === 'true'
+const showAutoLogin = isDev && enableAutoLogin
+const AUTO_USERNAME = import.meta.env?.VITE_AUTO_USER ?? 'admin'
+const AUTO_PASSWORD = import.meta.env?.VITE_AUTO_PASS ?? 'admin'
 
 function showToast(message) {
   if (alerta.value.mensaje !== message) {
@@ -145,6 +163,14 @@ const handleLogin = async () => {
   } finally {
     loading.value = false
   }
+}
+
+// Autologin de desarrollo: rellena y reutiliza el mismo flujo
+async function autoLogin() {
+  if (loading.value) return
+  username.value = AUTO_USERNAME
+  password.value = AUTO_PASSWORD
+  await handleLogin()
 }
 
 // ===== FETCH USUARIOS PROTEGIDOS =====
@@ -226,6 +252,21 @@ async function cargarUsuarios() {
 .append-btn { border: none; background: transparent; padding: 6px; border-radius: 6px; color: #6b7280; cursor: pointer; }
 .append-btn:hover { background: rgba(0,0,0,0.05); color: var(--color-text); }
 .actions-row { margin-top: 8px; }
+
+/* Estilo del botón de autologin (solo dev) */
+.dev-auto-btn {
+  margin-top: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px dashed rgba(99,102,241,0.6);
+  background: rgba(99,102,241,0.06);
+  color: var(--color-primary);
+  font-weight: 600;
+  cursor: pointer;
+}
+.dev-auto-btn:hover { background: rgba(99,102,241,0.12); }
+.dev-auto-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .login-footer { margin-top: 12px; text-align: center; color: #667085; }
 </style>

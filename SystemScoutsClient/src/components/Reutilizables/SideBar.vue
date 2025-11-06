@@ -44,10 +44,10 @@ import authService from '@/services/authService'
 const usuario = ref({ nombre: 'Usuario Demo', rol: 'Administradora Regional' })
 
 // isLoggedIn: derivado del token en localStorage para reflejar estado real de autenticación
-const STORAGE_TOKEN_KEY = 'token'
+const STORAGE_TOKEN_KEYS = ['token', 'accessToken']
 function hasToken() {
   try {
-    return !!localStorage.getItem(STORAGE_TOKEN_KEY)
+    return STORAGE_TOKEN_KEYS.some((k) => !!localStorage.getItem(k))
   } catch (e) {
     return false
   }
@@ -58,8 +58,9 @@ const isLoggedIn = ref(hasToken())
 // Escuchar cambios en localStorage (otras pestañas o logout/login) para mantener sincronizado
 function onStorage(e) {
   if (!e) return
-  if (e.key === STORAGE_TOKEN_KEY) {
-    isLoggedIn.value = !!e.newValue
+  if (STORAGE_TOKEN_KEYS.includes(e.key)) {
+    // Recalcular por si cambia una u otra clave
+    isLoggedIn.value = hasToken()
   }
 }
 

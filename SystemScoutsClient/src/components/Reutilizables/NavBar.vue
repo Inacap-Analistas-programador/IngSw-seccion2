@@ -17,10 +17,12 @@ const route = useRoute()
 
 // Actualiza estado de autenticación y carga info de usuario
 async function updateAuthState() {
-  const token = localStorage.getItem('token')
+  const token = localStorage.getItem('token') || localStorage.getItem('accessToken')
+  const wasAuthenticated = isAuthenticated.value
   isAuthenticated.value = !!token
 
-  if (token) {
+  // Solo actualizar datos de usuario si cambió el estado de autenticación
+  if (token && !wasAuthenticated) {
     try {
       const u = await authService.getCurrentUser()
       if (u) {
@@ -35,18 +37,30 @@ async function updateAuthState() {
       console.error('Error al cargar usuario', err)
       // Si falla, limpiar token
       localStorage.removeItem('token')
+      localStorage.removeItem('accessToken')
+      localStorage.removeItem('refreshToken')
       isAuthenticated.value = false
     }
-  } else {
+  } else if (!token && wasAuthenticated) {
+    // Solo resetear si se cerró sesión
     user.value = { name: 'Usuario', role: 'Invitado', avatarUrl: null }
     avatarSrc.value = avatarDefault
   }
 }
 
-// Observa cambios de ruta para actualizar auth state
-watch(() => route.path, () => {
-  updateAuthState()
-})
+// Solo verificar token en cambios de ruta, sin refrescar datos
+function checkAuthOnRouteChange() {
+  const token = localStorage.getItem('token') || localStorage.getItem('accessToken')
+  const hasToken = !!token
+  
+  // Solo actualizar si cambió el estado
+  if (hasToken !== isAuthenticated.value) {
+    updateAuthState()
+  }
+}
+
+// Observa cambios de ruta solo para verificar token
+watch(() => route.path, checkAuthOnRouteChange)
 
 onMounted(() => {
   updateAuthState()
@@ -61,6 +75,8 @@ onUnmounted(() => {
 function logout() {
   authService.logout()
   localStorage.removeItem('token')
+  localStorage.removeItem('accessToken')
+  localStorage.removeItem('refreshToken')
   updateAuthState()
   router.push('/')
 }
@@ -68,6 +84,8 @@ function logout() {
 // Ir a login (limpia token si existiera)
 function goToLogin() {
   localStorage.removeItem('token')
+  localStorage.removeItem('accessToken')
+  localStorage.removeItem('refreshToken')
   updateAuthState()
   router.push({ name: 'login' })
 }

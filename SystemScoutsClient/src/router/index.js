@@ -45,7 +45,11 @@ const DISABLE_AUTH_GUARD = String(import.meta.env.VITE_DISABLE_AUTH_GUARD || '')
 router.beforeEach((to, from, next) => {
   if (DISABLE_AUTH_GUARD) return next()
   
-  const token = localStorage.getItem('token')
+  let token = localStorage.getItem('token') || localStorage.getItem('accessToken')
+  // Normalizar: si sólo existe accessToken, duplica en 'token' para compatibilidad
+  if (!localStorage.getItem('token') && token) {
+    try { localStorage.setItem('token', token) } catch {}
+  }
   
   // Verificar autenticación
   if (to.meta?.requiresAuth && !token) {
