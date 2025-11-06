@@ -12,6 +12,8 @@ from ApiCoreScouts.Routers.Personas_router import router as personas_router
 
 from rest_framework_simplejwt.views import ( TokenObtainPairView, TokenRefreshView )
 
+from ApiCoreScouts.View.Verificador_view import verificar_acreditacion_qr
+
 urlpatterns = [
     path('api/usuarios/', include(usuario_router.urls)),
     path('api/personas/', include(personas_router.urls)),
@@ -19,6 +21,7 @@ urlpatterns = [
     path('api/archivos/', include(archivo_router.urls)),
     path('api/mantenedores/', include(mantenedor_router.urls)),
     path('api/pagos/', include(pago_router.urls)),
+    path('api/verificar-qr/', verificar_acreditacion_qr, name='verificar_qr'),
     #Authentication
     path('login/', TokenObtainPairView.as_view(), name='auth_login'), 
     path('refresh/', TokenRefreshView.as_view(), name='auth_perfil'),

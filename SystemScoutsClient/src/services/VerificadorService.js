@@ -14,7 +14,7 @@ export async function ObtenerDatos(rut, curso) {
   if (curso) {
     params.append('curso', curso)
   }
-  const url = `${API_BASE}/api/cursos/?${params.toString()}` 
+  const url = `${API_BASE}/api/verificar-qr/?${params.toString()}`
   console.log('Solicitando a:', url)
 
   try {
