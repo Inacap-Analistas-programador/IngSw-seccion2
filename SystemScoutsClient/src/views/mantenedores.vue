@@ -1019,10 +1019,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Modales para los nuevos mantenedores (estructura similar) -->
-    <!-- Se pueden expandir siguiendo el mismo patrón -->
-
   </div>
 </template>
 
@@ -1542,15 +1538,26 @@ export default {
 <style scoped>
 .mantenedores-scouts {
   min-height: 100vh;
-  background: #f5f5f5;
+  background: linear-gradient(135deg, #2c5aa0 0%, #1e3d73 100%);
+  display: flex;
+  flex-direction: column;
 }
 
 /* Selector de Mantenedores */
 .mantenedor-selector {
+<<<<<<< HEAD
   background: #1e3d73;
   color: white;
   padding: 15px 30px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+=======
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  color: white;
+  padding: 15px 30px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  flex-shrink: 0;
+>>>>>>> 0fa4848af80b082dc89bbe9376feebb88735d69d
 }
 
 .selector-header {
@@ -1573,20 +1580,35 @@ export default {
 .mantenedor-dropdown {
   width: 100%;
   padding: 12px 45px 12px 16px;
+<<<<<<< HEAD
   border: 2px solid #2c5aa0;
   border-radius: 8px;
   background: white;
+=======
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+>>>>>>> 0fa4848af80b082dc89bbe9376feebb88735d69d
   color: #333;
   font-size: 1rem;
   appearance: none;
   cursor: pointer;
+<<<<<<< HEAD
   transition: border-color 0.3s ease;
+=======
+  transition: all 0.3s ease;
+>>>>>>> 0fa4848af80b082dc89bbe9376feebb88735d69d
 }
 
 .mantenedor-dropdown:focus {
   outline: none;
   border-color: #ff6b35;
+<<<<<<< HEAD
   box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+=======
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.3);
+  background: white;
+>>>>>>> 0fa4848af80b082dc89bbe9376feebb88735d69d
 }
 
 .dropdown-icon {
@@ -1598,32 +1620,49 @@ export default {
   pointer-events: none;
 }
 
+<<<<<<< HEAD
 /* Main Content Styles */
 .main-content {
   padding: 0;
   min-height: 100vh;
+=======
+/* Main Content Styles - Ocupa todo el espacio restante */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* Importante para que flex funcione correctamente */
+>>>>>>> 0fa4848af80b082dc89bbe9376feebb88735d69d
 }
 
 .header {
-  background: linear-gradient(135deg, #2c5aa0 0%, #1e3d73 100%);
-  color: white;
+  background: rgba(255, 255, 255, 0.95);
+  color: #2c5aa0;
   padding: 25px 30px;
-  margin-bottom: 0;
+  box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+  flex-shrink: 0;
 }
 
 .header h1 {
   font-size: 1.8rem;
   margin-bottom: 8px;
+  font-weight: 700;
 }
 
 .header p {
   margin: 0;
-  opacity: 0.9;
+  color: #666;
   font-size: 1.1rem;
+  font-weight: 500;
 }
 
+/* Contenedor principal del contenido que se desplaza */
 .mantenedor-section {
+  flex: 1;
   padding: 30px;
+  background: white;
+  margin: 0;
+  overflow-y: auto;
   animation: fadeIn 0.5s ease;
 }
 
@@ -1657,6 +1696,7 @@ export default {
   align-items: center;
   gap: 8px;
   transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(44, 90, 160, 0.2);
 }
 
 .btn-primary:hover {
@@ -1715,11 +1755,13 @@ export default {
   min-width: 200px;
 }
 
+/* Asegurar que el contenido de la tabla sea responsive */
 .table-container {
   background: white;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
   overflow: hidden;
+  min-height: 200px;
 }
 
 .data-table {
@@ -1985,14 +2027,38 @@ export default {
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { 
+    opacity: 0; 
+    transform: translateY(10px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
 }
 
 /* Responsive */
 @media (max-width: 768px) {
+<<<<<<< HEAD
   .mantenedor-selector {
     padding: 15px 20px;
+=======
+  .mantenedores-scouts {
+    min-height: 100vh;
+    height: auto;
+  }
+  
+  .mantenedor-selector {
+    padding: 15px 20px;
+  }
+  
+  .header {
+    padding: 20px;
+  }
+  
+  .mantenedor-section {
+    padding: 20px;
+>>>>>>> 0fa4848af80b082dc89bbe9376feebb88735d69d
   }
   
   .mantenedor-header {
@@ -2019,21 +2085,43 @@ export default {
 }
 
 /* Scrollbar */
-::-webkit-scrollbar {
+.mantenedor-section::-webkit-scrollbar {
   width: 8px;
 }
 
-::-webkit-scrollbar-track {
+.mantenedor-section::-webkit-scrollbar-track {
   background: #f1f1f1;
   border-radius: 4px;
 }
 
-::-webkit-scrollbar-thumb {
+.mantenedor-section::-webkit-scrollbar-thumb {
   background: #c1c1c1;
   border-radius: 4px;
 }
 
-::-webkit-scrollbar-thumb:hover {
+.mantenedor-section::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
+}
+
+/* Mejorar la visualización de las tablas en pantallas pequeñas */
+@media (max-width: 600px) {
+  .data-table {
+    font-size: 0.9rem;
+  }
+  
+  .data-table th,
+  .data-table td {
+    padding: 10px 8px;
+  }
+  
+  .actions {
+    flex-direction: column;
+    gap: 5px;
+  }
+  
+  .btn-action {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+  }
 }
 </style>
