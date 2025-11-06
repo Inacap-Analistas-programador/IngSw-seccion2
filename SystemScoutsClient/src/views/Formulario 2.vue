@@ -6,7 +6,7 @@
         <img src="@/assets/Logo_Boyscout_Chile.png" alt="Logo Scouts Chile" class="logo">
         <div class="header-text">
           <h1 class="page-title">Formulario de Pre-Inscripción</h1>
-          <p class="page-subtitle">Curso Medio - Zona Biobío</p>
+          <p class="page-subtitle">Zona Biobío</p>
           <p class="institution">Asociación de Guías y Scouts de Chile</p>
         </div>
       </div>
@@ -48,68 +48,41 @@
     <!-- Contenido del Formulario -->
     <div class="form-container">
       <form @submit.prevent="submitForm" class="scouts-form">
-        <!-- Paso 1: Selección de Curso -->
+        <!-- Paso 1: Datos Personales -->
         <div v-show="currentStep === 0" class="form-step">
-          <h2 class="step-title">Selección de Curso</h2>
-          <p class="step-description">Seleccione el curso al que desea pre-inscribirse</p>
-          
-          <div class="courses-grid">
-            <div 
-              v-for="curso in cursosDisponibles" 
-              :key="curso.id"
-              :class="['course-option', { 
-                selected: formData.cursoId === curso.id,
-                disponible: curso.estado === 'disponible',
-                lleno: curso.estado === 'lleno'
-              }]"
-              @click="selectCurso(curso)"
-            >
-              <div class="course-icon">{{ curso.icono }}</div>
-              <div class="course-info">
-                <h3 class="course-name">{{ curso.nombre }}</h3>
-                <p class="course-dates">{{ curso.fechas }}</p>
-                <p class="course-location">📍 {{ curso.ubicacion }}</p>
-                <div class="course-meta">
-                  <span class="course-cupo">Cupos: {{ curso.inscritos }}/{{ curso.cupoMaximo }}</span>
-                </div>
-              </div>
-              <div class="course-status" :class="curso.estado">
-                {{ curso.estado === 'disponible' ? 'Disponible' : 'Lleno' }}
-              </div>
-            </div>
-          </div>
-
-          <div v-if="formData.cursoId" class="selected-course-info">
-            <h4>Curso seleccionado:</h4>
-            <p><strong>{{ getCursoSeleccionado().nombre }}</strong></p>
-            <p>{{ getCursoSeleccionado().fechas }} - {{ getCursoSeleccionado().ubicacion }}</p>
-          </div>
-
-          <div v-else class="no-course-selected">
-            <p>⚠️ Por favor seleccione un curso para continuar</p>
-          </div>
-        </div>
-
-        <!-- Paso 2: Datos Personales -->
-        <div v-show="currentStep === 1" class="form-step">
           <h2 class="step-title">Datos Personales</h2>
           
           <div class="form-section">
             <h3 class="section-title">Información Básica</h3>
             <div class="form-grid">
               <InputBase
-                v-model="formData.nombres"
-                label="Nombres *"
-                placeholder="Ingrese sus nombres"
+                v-model="formData.nombrePaterno"
+                label="Nombre Paterno *"
+                placeholder="Ingrese su nombre paterno"
                 :required="true"
                 class="form-field"
               />
               
               <InputBase
-                v-model="formData.apellidos"
-                label="Apellidos *"
-                placeholder="Ingrese sus apellidos"
+                v-model="formData.nombreMaterno"
+                label="Nombre Materno *"
+                placeholder="Ingrese su nombre materno"
                 :required="true"
+                class="form-field"
+              />
+              
+              <InputBase
+                v-model="formData.apellidoPaterno"
+                label="Apellido Paterno *"
+                placeholder="Ingrese su apellido paterno"
+                :required="true"
+                class="form-field"
+              />
+              
+              <InputBase
+                v-model="formData.apellidoMaterno"
+                label="Apellido Materno"
+                placeholder="Ingrese su apellido materno"
                 class="form-field"
               />
               
@@ -129,6 +102,15 @@
                 :required="true"
                 class="form-field"
               />
+
+              <BaseSelect
+                v-model="formData.estadoCivil"
+                :options="estadosCiviles"
+                label="Estado Civil *"
+                placeholder="Seleccione su estado civil"
+                :required="true"
+                class="form-field"
+              />
             </div>
           </div>
 
@@ -145,7 +127,6 @@
             />
             <p class="field-note">Formato: JPEG o PNG. Foto frontal clara para la credencial.</p>
             
-            <!-- Vista previa de la imagen -->
             <div v-if="fotoPreviewUrl" class="photo-preview">
               <h4>Vista previa de la foto:</h4>
               <div class="preview-container">
@@ -170,33 +151,78 @@
                 class="form-field"
               />
               
+              <BaseSelect
+                v-model="formData.tipoTelefono"
+                :options="tiposTelefono"
+                label="Tipo de Teléfono *"
+                placeholder="Seleccione tipo"
+                :required="true"
+                class="form-field"
+              />
+              
               <InputBase
                 v-model="formData.telefono"
                 label="Teléfono *"
                 placeholder="+56 9 1234 5678"
                 :required="true"
-                :rules="telefonoRules"
                 class="form-field telefono-field"
-                @focus="initializeTelefono"
-                @input="formatTelefono"
               />
             </div>
-            <p class="field-note">Formato requerido: +56 9 XXXXXXXX</p>
+          </div>
+
+          <div class="form-section">
+            <h3 class="section-title">Dirección</h3>
+            <div class="form-grid">
+              <InputBase
+                v-model="formData.direccion"
+                label="Dirección *"
+                placeholder="Ingrese su dirección completa"
+                :required="true"
+                class="form-field"
+              />
+              
+              <BaseSelect
+                v-model="formData.region"
+                :options="regiones"
+                label="Región *"
+                placeholder="Seleccione su región"
+                :required="true"
+                class="form-field"
+              />
+              
+              <BaseSelect
+                v-model="formData.provincia"
+                :options="provincias"
+                label="Provincia *"
+                placeholder="Seleccione su provincia"
+                :required="true"
+                class="form-field"
+              />
+              
+              <BaseSelect
+                v-model="formData.comuna"
+                :options="comunas"
+                label="Comuna *"
+                placeholder="Seleccione su comuna"
+                :required="true"
+                class="form-field"
+              />
+            </div>
           </div>
         </div>
 
-        <!-- Paso 3: Información Scout -->
-        <div v-show="currentStep === 2" class="form-step">
+        <!-- Paso 2: Información Scout -->
+        <div v-show="currentStep === 1" class="form-step">
           <h2 class="step-title">Información Scout</h2>
           
           <div class="form-section">
             <h3 class="section-title">Pertenencia Scout</h3>
             <div class="form-grid">
               <BaseSelect
-                v-model="formData.region"
-                :options="regiones"
-                label="Región *"
-                placeholder="Seleccione su región"
+                v-model="formData.zona"
+                :options="zonas"
+                label="Zona *"
+                placeholder="Seleccione su zona"
                 :required="true"
                 class="form-field"
               />
@@ -222,7 +248,7 @@
               <BaseSelect
                 v-model="formData.rama"
                 :options="ramas"
-                label="Rama *"
+                label="Rama de Curso *"
                 placeholder="Seleccione su rama"
                 :required="true"
                 class="form-field"
@@ -245,7 +271,7 @@
               <BaseSelect
                 v-model="formData.nivel"
                 :options="niveles"
-                label="Nivel de Formación *"
+                label="N° Niveles *"
                 placeholder="Seleccione su nivel"
                 :required="true"
                 class="form-field"
@@ -253,17 +279,26 @@
             </div>
             
             <InputBase
+              v-if="mostrarCampoMMAA"
               v-model="formData.numeroMMAA"
               label="Número MMAA"
               placeholder="Ej: 5208"
-              rules="number"
+              class="form-field"
+            />
+
+            <InputBase
+              v-if="mostrarEducacionFormador"
+              v-model="formData.nivelEducacion"
+              label="Nivel de Educación *"
+              placeholder="Ingrese su nivel de educación"
+              :required="formData.rol === 2"
               class="form-field"
             />
           </div>
         </div>
 
-        <!-- Paso 4: Salud y Alimentación -->
-        <div v-show="currentStep === 3" class="form-step">
+        <!-- Paso 3: Salud y Alimentación -->
+        <div v-show="currentStep === 2" class="form-step">
           <h2 class="step-title">Salud y Alimentación</h2>
           
           <div class="form-section">
@@ -283,13 +318,17 @@
                 v-model="formData.alergias"
                 label="Alergias o Enfermedades"
                 placeholder="Describa sus alergias o enfermedades"
-                class="form-field"
+                type="textarea"
+                :rows="4"
+                class="form-field alergias-field"
               />
               
               <InputBase
                 v-model="formData.limitaciones"
                 label="Limitaciones Físicas"
                 placeholder="Describa sus limitaciones físicas"
+                type="textarea"
+                :rows="4"
                 class="form-field"
               />
             </div>
@@ -311,25 +350,14 @@
                 label="Teléfono Emergencia *"
                 placeholder="+56 9 1234 5678"
                 :required="true"
-                :rules="telefonoRules"
-                class="form-field"
-                @focus="initializeTelefonoEmergencia"
-                @input="formatTelefonoEmergencia"
-              />
-              
-              <InputBase
-                v-model="formData.contactoEmergenciaParentesco"
-                label="Parentesco *"
-                placeholder="Ej: Padre, Madre, etc."
-                :required="true"
                 class="form-field"
               />
             </div>
           </div>
         </div>
 
-        <!-- Paso 5: Información Adicional -->
-        <div v-show="currentStep === 4" class="form-step">
+        <!-- Paso 4: Información Adicional -->
+        <div v-show="currentStep === 3" class="form-step">
           <h2 class="step-title">Información Adicional</h2>
           
           <div class="form-section">
@@ -344,19 +372,29 @@
               />
               
               <InputBase
-                v-model="formData.estadoCivil"
-                label="Estado Civil"
-                placeholder="Su estado civil"
+                v-model="formData.apodo"
+                label="Apodo para Credencial"
+                placeholder="Apodo que aparecerá en su credencial"
                 class="form-field"
               />
             </div>
 
-            <InputBase
-              v-model="formData.apodo"
-              label="Apodo para Credencial"
-              placeholder="Apodo que aparecerá en su credencial"
-              class="form-field"
-            />
+            <div class="checkbox-group">
+              <BaseCheckBox
+                v-model="formData.trabajaConNNAJ"
+                label="¿Ha trabajado con Niños, Niñas y Jóvenes?"
+                class="checkbox-field"
+              />
+              
+              <InputBase
+                v-if="formData.trabajaConNNAJ"
+                v-model="formData.rangoEdadNNAJ"
+                label="Rango de edad con el que trabaja *"
+                placeholder="Ej: 6-12 años, 13-17 años"
+                :required="formData.trabajaConNNAJ"
+                class="form-field"
+              />
+            </div>
           </div>
 
           <div class="form-section">
@@ -370,13 +408,31 @@
               />
               
               <div v-if="formData.tieneVehiculo" class="vehicle-info">
-                <InputBase
-                  v-model="formData.patenteVehiculo"
-                  label="Patente del vehículo *"
-                  placeholder="Ej: AB123CD"
-                  :required="formData.tieneVehiculo"
-                  class="form-field"
-                />
+                <div class="form-grid">
+                  <InputBase
+                    v-model="formData.patenteVehiculo"
+                    label="Patente del vehículo *"
+                    placeholder="Ej: AB123CD"
+                    :required="formData.tieneVehiculo"
+                    class="form-field"
+                  />
+                  
+                  <InputBase
+                    v-model="formData.marcaVehiculo"
+                    label="Marca del vehículo *"
+                    placeholder="Ej: Toyota, Chevrolet"
+                    :required="formData.tieneVehiculo"
+                    class="form-field"
+                  />
+                  
+                  <InputBase
+                    v-model="formData.modeloVehiculo"
+                    label="Modelo del vehículo *"
+                    placeholder="Ej: Corolla, Cruze"
+                    :required="formData.tieneVehiculo"
+                    class="form-field"
+                  />
+                </div>
               </div>
               
               <BaseCheckBox
@@ -384,45 +440,72 @@
                 label="¿Requiere alojamiento durante el curso?"
                 class="checkbox-field"
               />
-              
+
               <BaseCheckBox
-                v-model="formData.trabajaConNNAJ"
-                label="¿Ha trabajado con Niños, Niñas y Jóvenes?"
+                v-model="formData.sobreCupo"
+                label="¿Acepta ser considerado para sobre cupo?"
                 class="checkbox-field"
               />
             </div>
           </div>
 
           <div class="form-section">
-            <h3 class="section-title">Términos y Condiciones</h3>
+            <h3 class="section-title">Información Adicional</h3>
             
-            <div class="terms-container">
-              <div class="terms-content">
-                <p><strong>Términos y Condiciones del Curso</strong></p>
-                <p>Al enviar este formulario, acepta los términos y condiciones del curso, incluyendo:</p>
-                <ul>
-                  <li>Compromiso de asistencia completa al curso</li>
-                  <li>Cumplimiento del código de conducta scout</li>
-                  <li>Autorización para uso de datos personales según ley 19.628</li>
-                  <li>Compromiso de completar el proceso de inscripción</li>
-                </ul>
-              </div>
-              
-              <BaseCheckBox
-                v-model="formData.aceptaTerminos"
-                label="Acepto los términos y condiciones del curso *"
-                :required="true"
-                class="checkbox-field terms-checkbox"
-              />
-            </div>
-
             <InputBase
               v-model="formData.consideraciones"
               label="Consideraciones Adicionales"
               placeholder="Otra información que considere importante"
               type="textarea"
+              :rows="3"
               class="form-field"
             />
+          </div>
+        </div>
+
+        <!-- Paso 5: Selección de Curso -->
+        <div v-show="currentStep === 4" class="form-step">
+          <h2 class="step-title">Selección de Curso</h2>
+          <p class="step-description">Seleccione el curso al que desea pre-inscribirse</p>
+          
+          <div class="courses-grid">
+            <div 
+              v-for="curso in cursosDisponibles" 
+              :key="curso.id"
+              :class="['course-option', { 
+                selected: formData.cursoId === curso.id,
+                disponible: curso.estado === 'disponible',
+                lleno: curso.estado === 'lleno'
+              }]"
+              @click="selectCurso(curso)"
+            >
+              <div class="course-icon">{{ curso.icono }}</div>
+              <div class="course-info">
+                <h3 class="course-name">{{ curso.nombre }}</h3>
+                <p class="course-dates">{{ curso.fechas }}</p>
+                <p class="course-location">📍 {{ curso.ubicacion }}</p>
+                <div class="course-meta">
+                  <span class="course-cupo">Cupos: {{ curso.inscritos }}/{{ curso.cupoMaximo }}</span>
+                  <span v-if="curso.sobreCupo" class="sobre-cupo-badge">Sobre Cupo Disponible</span>
+                </div>
+              </div>
+              <div class="course-status" :class="curso.estado">
+                {{ curso.estado === 'disponible' ? 'Disponible' : 'Lleno' }}
+              </div>
+            </div>
+          </div>
+
+          <div v-if="formData.cursoId" class="selected-course-info">
+            <h4>Curso seleccionado:</h4>
+            <p><strong>{{ getCursoSeleccionado().nombre }}</strong></p>
+            <p>{{ getCursoSeleccionado().fechas }} - {{ getCursoSeleccionado().ubicacion }}</p>
+            <p v-if="getCursoSeleccionado().sobreCupo" class="sobre-cupo-info">
+              ⚠️ Este curso acepta sobre cupo
+            </p>
+          </div>
+
+          <div v-else class="no-course-selected">
+            <p>⚠️ Por favor seleccione un curso para continuar</p>
           </div>
         </div>
 
@@ -455,6 +538,10 @@
                   <strong>Ubicación:</strong>
                   <span>{{ getCursoSeleccionado().ubicacion }}</span>
                 </div>
+                <div v-if="formData.sobreCupo" class="summary-item">
+                  <strong>Sobre Cupo:</strong>
+                  <span>✅ Aceptado</span>
+                </div>
               </div>
             </div>
 
@@ -463,8 +550,8 @@
               
               <div class="summary-grid">
                 <div class="summary-item">
-                  <strong>Nombre:</strong>
-                  <span>{{ formData.nombres }} {{ formData.apellidos }}</span>
+                  <strong>Nombre Completo:</strong>
+                  <span>{{ formData.nombrePaterno }} {{ formData.nombreMaterno }} {{ formData.apellidoPaterno }} {{ formData.apellidoMaterno }}</span>
                 </div>
                 <div class="summary-item">
                   <strong>RUT:</strong>
@@ -476,19 +563,27 @@
                 </div>
                 <div class="summary-item">
                   <strong>Teléfono:</strong>
-                  <span>{{ formData.telefono }}</span>
+                  <span>{{ formData.telefono }} ({{ getTipoTelefonoLabel(formData.tipoTelefono) }})</span>
+                </div>
+                <div class="summary-item">
+                  <strong>Dirección:</strong>
+                  <span>{{ formData.direccion }}, {{ getComunaLabel(formData.comuna) }}</span>
                 </div>
                 <div class="summary-item">
                   <strong>Grupo Scout:</strong>
-                  <span>{{ getLabel(grupos, formData.grupo) }}</span>
+                  <span>{{ getGrupoLabel(formData.grupo) }}</span>
                 </div>
                 <div class="summary-item">
                   <strong>Rama:</strong>
-                  <span>{{ getLabel(ramas, formData.rama) }}</span>
+                  <span>{{ getRamaLabel(formData.rama) }}</span>
+                </div>
+                <div class="summary-item">
+                  <strong>Rol:</strong>
+                  <span>{{ getRolLabel(formData.rol) }}</span>
                 </div>
                 <div v-if="formData.tieneVehiculo" class="summary-item">
-                  <strong>Patente Vehículo:</strong>
-                  <span>{{ formData.patenteVehiculo }}</span>
+                  <strong>Vehículo:</strong>
+                  <span>{{ formData.marcaVehiculo }} {{ formData.modeloVehiculo }} - {{ formData.patenteVehiculo }}</span>
                 </div>
                 <div class="summary-item">
                   <strong>Foto:</strong>
@@ -564,16 +659,16 @@
         
         <div class="success-details">
           <div class="detail-item">
-            <strong>Número de Pre-Inscripción:</strong>
-            <span class="inscription-number">#{{ numeroInscripcion }}</span>
-          </div>
-          <div class="detail-item">
             <strong>Curso:</strong>
             <span>{{ getCursoSeleccionado().nombre }}</span>
           </div>
           <div class="detail-item">
             <strong>Participante:</strong>
-            <span>{{ formData.nombres }} {{ formData.apellidos }}</span>
+            <span>{{ formData.nombrePaterno }} {{ formData.nombreMaterno }} {{ formData.apellidoPaterno }} {{ formData.apellidoMaterno }}</span>
+          </div>
+          <div class="detail-item">
+            <strong>Rol:</strong>
+            <span>{{ getRolLabel(formData.rol) }}</span>
           </div>
         </div>
 
@@ -594,13 +689,6 @@
           >
             Aceptar
           </BaseButton>
-          <BaseButton
-            variant="outline"
-            @click="imprimirComprobante"
-            class="action-button"
-          >
-            📄 Imprimir Comprobante
-          </BaseButton>
         </div>
       </div>
     </BaseModal>
@@ -619,7 +707,7 @@ import InputBase from '@/components/Reutilizables/InputBase.vue'
 import FileUploader from '@/components/Reutilizables/FileUploader.vue'
 
 export default {
-  name: 'FormularioPreInscripcion',
+  name: 'FormularioPreInscripcion2',
   components: {
     BaseAlert,
     BaseButton,
@@ -633,58 +721,69 @@ export default {
     const currentStep = ref(0)
     const submitting = ref(false)
     const showSuccessModal = ref(false)
-    const numeroInscripcion = ref('')
     const fotoPreviewUrl = ref('')
+    const mostrarCampoMMAA = ref(false)
+    const mostrarEducacionFormador = ref(false)
 
     const steps = ref([
-      { label: 'Curso', valid: false, completed: false },
       { label: 'Datos Personales', valid: false, completed: false },
       { label: 'Información Scout', valid: false, completed: false },
       { label: 'Salud', valid: false, completed: false },
       { label: 'Adicional', valid: false, completed: false },
+      { label: 'Curso', valid: false, completed: false },
       { label: 'Confirmación', valid: false, completed: false }
     ])
 
     const formData = reactive({
-      // Paso 1
-      cursoId: '',
-      
-      // Paso 2
-      nombres: '',
-      apellidos: '',
+      // Paso 1 - Datos Personales
+      nombrePaterno: '',
+      nombreMaterno: '',
+      apellidoPaterno: '',
+      apellidoMaterno: '',
       rut: '',
       fechaNacimiento: '',
+      estadoCivil: '',
+      direccion: '',
+      region: '',
+      provincia: '',
+      comuna: '',
       email: '',
-      telefono: '+56 9 ',
+      tipoTelefono: 'movil',
+      telefono: '',
       fotoParticipante: null,
       
-      // Paso 3
-      region: '',
+      // Paso 2 - Información Scout
+      zona: '',
       distrito: '',
       grupo: '',
       rama: '',
       rol: '',
       nivel: '',
       numeroMMAA: '',
+      nivelEducacion: '',
       
-      // Paso 4
+      // Paso 3 - Salud
       alimentacion: '',
       alergias: '',
       limitaciones: '',
       contactoEmergenciaNombre: '',
-      contactoEmergenciaTelefono: '+56 9 ',
-      contactoEmergenciaParentesco: '',
+      contactoEmergenciaTelefono: '',
       
-      // Paso 5
+      // Paso 4 - Adicional
       profesion: '',
-      estadoCivil: '',
       apodo: '',
       tieneVehiculo: false,
       patenteVehiculo: '',
+      marcaVehiculo: '',
+      modeloVehiculo: '',
       requiereAlojamiento: false,
       trabajaConNNAJ: false,
-      aceptaTerminos: false,
-      consideraciones: ''
+      rangoEdadNNAJ: '',
+      sobreCupo: false,
+      consideraciones: '',
+      
+      // Paso 5 - Curso
+      cursoId: ''
     })
 
     const systemAlert = reactive({
@@ -695,6 +794,120 @@ export default {
     })
 
     // Datos para selects y opciones
+    const estadosCiviles = [
+      { value: 1, label: 'Soltero' },
+      { value: 2, label: 'Casado' },
+      { value: 3, label: 'Divorciado' },
+      { value: 4, label: 'Viudo' },
+      { value: 5, label: 'Unión Civil' }
+    ]
+
+    const tiposTelefono = [
+      { value: 'movil', label: 'Móvil' },
+      { value: 'casa', label: 'Casa' },
+      { value: 'trabajo', label: 'Trabajo' }
+    ]
+
+    const regiones = [
+      { value: 1, label: 'Región del Biobío' }
+    ]
+
+    const provincias = [
+      { value: 1, label: 'Provincia de Concepción' },
+      { value: 2, label: 'Provincia de Biobío' },
+      { value: 3, label: 'Provincia de Arauco' }
+    ]
+
+    const comunas = [
+      { value: 1, label: 'Concepción' },
+      { value: 2, label: 'Talcahuano' },
+      { value: 3, label: 'Chiguayante' },
+      { value: 4, label: 'San Pedro de la Paz' },
+      { value: 5, label: 'Coronel' },
+      { value: 6, label: 'Lota' },
+      { value: 7, label: 'Penco' },
+      { value: 8, label: 'Tomé' },
+      { value: 9, label: 'Hualpén' },
+      { value: 10, label: 'Florida' },
+      { value: 11, label: 'Santa Juana' },
+      { value: 12, label: 'Hualqui' },
+      { value: 13, label: 'Los Ángeles' },
+      { value: 14, label: 'Cabrero' },
+      { value: 15, label: 'Yumbel' },
+      { value: 16, label: 'Laja' },
+      { value: 17, label: 'Mulchén' },
+      { value: 18, label: 'Nacimiento' },
+      { value: 19, label: 'Negrete' },
+      { value: 20, label: 'Quilaco' },
+      { value: 21, label: 'Quilleco' },
+      { value: 22, label: 'San Rosendo' },
+      { value: 23, label: 'Santa Bárbara' },
+      { value: 24, label: 'Tucapel' },
+      { value: 25, label: 'Antuco' },
+      { value: 26, label: 'Alto Biobío' },
+      { value: 27, label: 'Lebu' },
+      { value: 28, label: 'Arauco' },
+      { value: 29, label: 'Cañete' },
+      { value: 30, label: 'Curanilahue' },
+      { value: 31, label: 'Los Álamos' },
+      { value: 32, label: 'Tirúa' },
+      { value: 33, label: 'Contulmo' }
+    ]
+
+    const zonas = [
+      { value: 1, label: 'Zona Centro' },
+      { value: 2, label: 'Zona Norte' },
+      { value: 3, label: 'Zona Sur' },
+      { value: 4, label: 'Zona Costa' }
+    ]
+
+    const distritos = [
+      { value: 1, label: 'Distrito Centro' },
+      { value: 2, label: 'Distrito Norte' },
+      { value: 3, label: 'Distrito Sur' },
+      { value: 4, label: 'Distrito Costa' }
+    ]
+
+    const grupos = [
+      { value: 1, label: 'Grupo Scout 1 - Concepción' },
+      { value: 2, label: 'Grupo Scout 2 - Talcahuano' },
+      { value: 3, label: 'Grupo Scout 3 - Chiguayante' },
+      { value: 4, label: 'Grupo Scout 4 - San Pedro' },
+      { value: 5, label: 'Grupo Scout 5 - Los Ángeles' },
+      { value: 6, label: 'Grupo Scout 6 - Cabrero' }
+    ]
+
+    const ramas = [
+      { value: 1, label: 'Manada' },
+      { value: 2, label: 'Tropa' },
+      { value: 3, label: 'Comunidad' },
+      { value: 4, label: 'Clan' }
+    ]
+
+    const roles = [
+      { value: 1, label: 'Participante' },
+      { value: 2, label: 'Formador' },
+      { value: 3, label: 'Director' },
+      { value: 4, label: 'Coordinador' },
+      { value: 5, label: 'Apoyo' }
+    ]
+
+    const niveles = [
+      { value: 0, label: 'N° Niveles' },
+      { value: 1, label: 'Nivel Inicial' },
+      { value: 2, label: 'Nivel Medio' },
+      { value: 3, label: 'Nivel Avanzado' }
+    ]
+
+    const tiposAlimentacion = [
+      { value: 1, label: 'Normal' },
+      { value: 2, label: 'Vegetariano' },
+      { value: 3, label: 'Vegano' },
+      { value: 4, label: 'Celíaco' },
+      { value: 5, label: 'Diabético' },
+      { value: 6, label: 'Sin Restricciones' }
+    ]
+
     const cursosDisponibles = [
       {
         id: 1,
@@ -704,6 +917,7 @@ export default {
         cupoMaximo: 26,
         inscritos: 18,
         estado: 'disponible',
+        sobreCupo: true,
         icono: '🏕️'
       },
       {
@@ -714,6 +928,7 @@ export default {
         cupoMaximo: 20,
         inscritos: 20,
         estado: 'lleno',
+        sobreCupo: false,
         icono: '🩹'
       },
       {
@@ -724,170 +939,86 @@ export default {
         cupoMaximo: 25,
         inscritos: 12,
         estado: 'disponible',
+        sobreCupo: true,
         icono: '🌿'
       }
     ]
 
-    const regiones = [
-      { value: 'biobio', label: 'Región del Biobío' },
-      { value: 'nuble', label: 'Región de Ñuble' },
-      { value: 'araucania', label: 'Región de La Araucanía' }
-    ]
-
-    const distritos = [
-      { value: 'norte', label: 'Distrito Norte' },
-      { value: 'sur', label: 'Distrito Sur' },
-      { value: 'centro', label: 'Distrito Centro' },
-      { value: 'costa', label: 'Distrito Costa' }
-    ]
-
-    const grupos = [
-      { value: 'grupo1', label: 'Grupo Scout 1 - Concepción' },
-      { value: 'grupo2', label: 'Grupo Scout 2 - Talcahuano' },
-      { value: 'grupo3', label: 'Grupo Scout 3 - Chiguayante' },
-      { value: 'grupo4', label: 'Grupo Scout 4 - San Pedro' }
-    ]
-
-    const ramas = [
-      { value: 'manada', label: 'Manada (7-10 años)' },
-      { value: 'tropa', label: 'Tropa (11-14 años)' },
-      { value: 'comunidad', label: 'Comunidad (15-17 años)' },
-      { value: 'clan', label: 'Clan (18-20 años)' }
-    ]
-
-    const roles = [
-      { value: 'participante', label: 'Participante' },
-      { value: 'formador', label: 'Formador' },
-      { value: 'director', label: 'Director de Rama' },
-      { value: 'apoyo', label: 'Personal de Apoyo' }
-    ]
-
-    const niveles = [
-      { value: 'inicial', label: 'Nivel Inicial' },
-      { value: 'medio', label: 'Nivel Medio' },
-      { value: 'avanzado', label: 'Nivel Avanzado' },
-      { value: 'ninguno', label: 'Sin formación previa' }
-    ]
-
-    const tiposAlimentacion = [
-      { value: 'normal', label: 'Alimentación Normal' },
-      { value: 'vegetariano', label: 'Vegetariano' },
-      { value: 'vegano', label: 'Vegano' },
-      { value: 'celiaco', label: 'Celíaco' },
-      { value: 'diabetico', label: 'Diabético' }
-    ]
-
-    // Validación personalizada para teléfono chileno
-    const telefonoRules = (value) => {
-      if (!value) return 'Teléfono es requerido'
-      const telefonoRegex = /^\+56\s9\s\d{4}\s\d{4}$/
-      if (!telefonoRegex.test(value)) {
-        return 'Formato requerido: +56 9 XXXXXXXX'
-      }
-      return true
-    }
-
-    // Computed properties
+    // Computed properties corregidas
     const currentStepValid = computed(() => {
-      const validations = {
-        0: () => formData.cursoId !== '',
-        1: () => formData.nombres && formData.apellidos && formData.rut && 
-                 formData.email && formData.telefono && formData.fotoParticipante &&
-                 telefonoRules(formData.telefono) === true,
-        2: () => formData.region && formData.distrito && formData.grupo && 
-                 formData.rama && formData.rol && formData.nivel,
-        3: () => formData.alimentacion && formData.contactoEmergenciaNombre && 
-                 formData.contactoEmergenciaTelefono && formData.contactoEmergenciaParentesco &&
-                 telefonoRules(formData.contactoEmergenciaTelefono) === true,
-        4: () => formData.aceptaTerminos && 
-                 (formData.tieneVehiculo ? formData.patenteVehiculo !== '' : true),
-        5: () => true // Paso de confirmación siempre es válido
+      switch (currentStep.value) {
+        case 0: // Datos Personales
+          return !!(
+            formData.nombrePaterno &&
+            formData.nombreMaterno &&
+            formData.apellidoPaterno &&
+            formData.rut &&
+            formData.fechaNacimiento &&
+            formData.estadoCivil &&
+            formData.direccion &&
+            formData.region &&
+            formData.provincia &&
+            formData.comuna &&
+            formData.email &&
+            formData.telefono &&
+            formData.fotoParticipante
+          )
+        
+        case 1: // Información Scout
+          const scoutValid = !!(
+            formData.zona &&
+            formData.distrito &&
+            formData.grupo &&
+            formData.rama &&
+            formData.rol &&
+            formData.nivel
+          )
+          // Si es formador, validar nivel de educación
+          if (formData.rol === 2) {
+            return scoutValid && !!formData.nivelEducacion
+          }
+          return scoutValid
+        
+        case 2: // Salud
+          return !!(
+            formData.alimentacion &&
+            formData.contactoEmergenciaNombre &&
+            formData.contactoEmergenciaTelefono
+          )
+        
+        case 3: // Adicional
+          let adicionalValid = true
+          // Validar vehículo si está marcado
+          if (formData.tieneVehiculo) {
+            adicionalValid = adicionalValid && !!(
+              formData.patenteVehiculo &&
+              formData.marcaVehiculo &&
+              formData.modeloVehiculo
+            )
+          }
+          // Validar rango de edad si trabaja con NNAJ
+          if (formData.trabajaConNNAJ) {
+            adicionalValid = adicionalValid && !!formData.rangoEdadNNAJ
+          }
+          return adicionalValid
+        
+        case 4: // Curso
+          return !!formData.cursoId
+        
+        case 5: // Confirmación
+          return true
+        
+        default:
+          return false
       }
-      return validations[currentStep.value] ? validations[currentStep.value]() : false
     })
 
     const formValid = computed(() => {
-      return currentStepValid.value && formData.aceptaTerminos
+      return currentStepValid.value
     })
 
     const allStepsCompleted = computed(() => {
       return steps.value.slice(0, -1).every(step => step.completed)
-    })
-
-    // Watchers para actualizar el estado de completado de cada paso
-    watch(() => formData.cursoId, (newVal) => {
-      steps.value[0].completed = !!newVal
-      steps.value[0].valid = !!newVal
-    })
-
-    watch(() => [
-      formData.nombres,
-      formData.apellidos,
-      formData.rut,
-      formData.email,
-      formData.telefono,
-      formData.fotoParticipante
-    ], () => {
-      const isValid = formData.nombres && formData.apellidos && formData.rut && 
-                     formData.email && formData.telefono && formData.fotoParticipante &&
-                     telefonoRules(formData.telefono) === true
-      steps.value[1].completed = isValid
-      steps.value[1].valid = isValid
-    })
-
-    watch(() => [
-      formData.region,
-      formData.distrito,
-      formData.grupo,
-      formData.rama,
-      formData.rol,
-      formData.nivel
-    ], () => {
-      const isValid = formData.region && formData.distrito && formData.grupo && 
-                     formData.rama && formData.rol && formData.nivel
-      steps.value[2].completed = isValid
-      steps.value[2].valid = isValid
-    })
-
-    watch(() => [
-      formData.alimentacion,
-      formData.contactoEmergenciaNombre,
-      formData.contactoEmergenciaTelefono,
-      formData.contactoEmergenciaParentesco
-    ], () => {
-      const isValid = formData.alimentacion && formData.contactoEmergenciaNombre && 
-                     formData.contactoEmergenciaTelefono && formData.contactoEmergenciaParentesco &&
-                     telefonoRules(formData.contactoEmergenciaTelefono) === true
-      steps.value[3].completed = isValid
-      steps.value[3].valid = isValid
-    })
-
-    watch(() => [
-      formData.aceptaTerminos,
-      formData.tieneVehiculo,
-      formData.patenteVehiculo
-    ], () => {
-      const isValid = formData.aceptaTerminos && 
-                     (formData.tieneVehiculo ? formData.patenteVehiculo !== '' : true)
-      steps.value[4].completed = isValid
-      steps.value[4].valid = isValid
-    })
-
-    // Watcher para mantener la vista previa de la foto
-    watch(() => formData.fotoParticipante, (newFile) => {
-      if (newFile) {
-        // Crear URL para vista previa
-        if (fotoPreviewUrl.value) {
-          URL.revokeObjectURL(fotoPreviewUrl.value)
-        }
-        fotoPreviewUrl.value = URL.createObjectURL(newFile)
-      } else {
-        // Limpiar vista previa si no hay archivo
-        if (fotoPreviewUrl.value) {
-          URL.revokeObjectURL(fotoPreviewUrl.value)
-          fotoPreviewUrl.value = ''
-        }
-      }
     })
 
     // Methods
@@ -914,8 +1045,28 @@ export default {
       return cursosDisponibles.find(curso => curso.id === formData.cursoId) || {}
     }
 
-    const getLabel = (options, value) => {
-      const option = options.find(opt => opt.value === value)
+    const getTipoTelefonoLabel = (value) => {
+      const option = tiposTelefono.find(opt => opt.value === value)
+      return option ? option.label : ''
+    }
+
+    const getComunaLabel = (value) => {
+      const option = comunas.find(opt => opt.value === value)
+      return option ? option.label : ''
+    }
+
+    const getGrupoLabel = (value) => {
+      const option = grupos.find(opt => opt.value === value)
+      return option ? option.label : ''
+    }
+
+    const getRamaLabel = (value) => {
+      const option = ramas.find(opt => opt.value === value)
+      return option ? option.label : ''
+    }
+
+    const getRolLabel = (value) => {
+      const option = roles.find(opt => opt.value === value)
       return option ? option.label : ''
     }
 
@@ -932,62 +1083,9 @@ export default {
       }
     }
 
-    // Inicializar teléfono con formato
-    const initializeTelefono = () => {
-      if (!formData.telefono || formData.telefono === '+56 9 ') {
-        formData.telefono = '+56 9 '
-      }
-    }
-
-    const initializeTelefonoEmergencia = () => {
-      if (!formData.contactoEmergenciaTelefono || formData.contactoEmergenciaTelefono === '+56 9 ') {
-        formData.contactoEmergenciaTelefono = '+56 9 '
-      }
-    }
-
-    // Formatear teléfono chileno
-    const formatTelefono = () => {
-      let value = formData.telefono.replace(/\D/g, '')
-      
-      // Asegurar que siempre empiece con 569
-      if (!value.startsWith('569')) {
-        value = '569' + value.replace(/^569/, '')
-      }
-      
-      // Mantener solo los primeros 11 dígitos (569 + 8 dígitos)
-      value = value.substring(0, 11)
-      
-      if (value.length > 3) {
-        const parte1 = value.substring(3, 7) // primeros 4 dígitos después de 569
-        const parte2 = value.substring(7, 11) // últimos 4 dígitos
-        
-        formData.telefono = `+56 9 ${parte1}${parte2 ? ' ' + parte2 : ''}`
-      }
-    }
-
-    const formatTelefonoEmergencia = () => {
-      let value = formData.contactoEmergenciaTelefono.replace(/\D/g, '')
-      
-      // Asegurar que siempre empiece con 569
-      if (!value.startsWith('569')) {
-        value = '569' + value.replace(/^569/, '')
-      }
-      
-      // Mantener solo los primeros 11 dígitos (569 + 8 dígitos)
-      value = value.substring(0, 11)
-      
-      if (value.length > 3) {
-        const parte1 = value.substring(3, 7) // primeros 4 dígitos después de 569
-        const parte2 = value.substring(7, 11) // últimos 4 dígitos
-        
-        formData.contactoEmergenciaTelefono = `+56 9 ${parte1}${parte2 ? ' ' + parte2 : ''}`
-      }
-    }
-
     // Navegación corregida
     const nextStep = () => {
       if (currentStepValid.value) {
-        // Marcar el paso actual como completado
         steps.value[currentStep.value].completed = true
         
         if (currentStep.value < steps.value.length - 1) {
@@ -1008,28 +1106,22 @@ export default {
 
     const submitForm = async () => {
       if (!formValid.value) {
-        showAlert('error', 'Formulario incompleto', 'Por favor complete todos los campos requeridos y acepte los términos y condiciones.')
+        showAlert('error', 'Formulario incompleto', 'Por favor complete todos los campos requeridos.')
         return
       }
 
       submitting.value = true
 
       try {
-        // Simulación de envío a API Django
         await new Promise(resolve => setTimeout(resolve, 3000))
         
-        // Marcar todos los pasos como completados
         steps.value.forEach(step => {
           step.completed = true
           step.valid = true
         })
         
-        // Generar número de pre-inscripción
-        const timestamp = new Date().getTime().toString().slice(-6)
-        numeroInscripcion.value = `SC${timestamp}`
-        
         showSuccessModal.value = true
-        showAlert('exito', 'Pre-inscripción exitosa', `Su pre-inscripción #${numeroInscripcion.value} ha sido registrada correctamente.`)
+        showAlert('exito', 'Pre-inscripción exitosa', 'Su pre-inscripción ha sido registrada correctamente.')
         
       } catch (error) {
         showAlert('error', 'Error en la pre-inscripción', 'Ha ocurrido un error al procesar su solicitud. Por favor intente nuevamente.')
@@ -1040,25 +1132,22 @@ export default {
 
     const handleModalClose = () => {
       showSuccessModal.value = false
-      // Resetear formulario para nueva pre-inscripción
+      // Resetear formulario
       Object.keys(formData).forEach(key => {
         if (typeof formData[key] === 'boolean') {
           formData[key] = false
-        } else if (key === 'telefono' || key === 'contactoEmergenciaTelefono') {
-          formData[key] = '+56 9 '
         } else {
           formData[key] = ''
         }
       })
+      formData.tipoTelefono = 'movil'
       formData.fotoParticipante = null
       
-      // Limpiar vista previa de foto
       if (fotoPreviewUrl.value) {
         URL.revokeObjectURL(fotoPreviewUrl.value)
         fotoPreviewUrl.value = ''
       }
       
-      // Resetear estados de los pasos
       steps.value.forEach(step => {
         step.completed = false
         step.valid = false
@@ -1067,15 +1156,35 @@ export default {
       currentStep.value = 0
     }
 
-    const imprimirComprobante = () => {
-      showAlert('informacion', 'Imprimir comprobante', 'La funcionalidad de impresión se implementará en la siguiente versión.')
-    }
+    // Watchers para campos condicionales
+    watch(() => formData.nivel, (newVal) => {
+      // Mostrar número MMAA solo para niveles Medio (2) y Avanzado (3)
+      mostrarCampoMMAA.value = (newVal == 2 || newVal == 3)
+    })
+
+    watch(() => formData.rol, (newVal) => {
+      // Mostrar nivel de educación solo para el rol Formador (2)
+      mostrarEducacionFormador.value = (newVal == 2)
+    })
+
+    // Watcher para vista previa de foto
+    watch(() => formData.fotoParticipante, (newFile) => {
+      if (newFile) {
+        if (fotoPreviewUrl.value) {
+          URL.revokeObjectURL(fotoPreviewUrl.value)
+        }
+        fotoPreviewUrl.value = URL.createObjectURL(newFile)
+      } else {
+        if (fotoPreviewUrl.value) {
+          URL.revokeObjectURL(fotoPreviewUrl.value)
+          fotoPreviewUrl.value = ''
+        }
+      }
+    })
 
     onMounted(() => {
-      // Inicialización cuando el componente se monta
       console.log('Formulario de pre-inscripción Scouts Biobío montado')
       
-      // Mostrar alerta de bienvenida después de un breve delay
       setTimeout(() => {
         systemAlert.visible = true
       }, 500)
@@ -1088,35 +1197,39 @@ export default {
       systemAlert,
       submitting,
       showSuccessModal,
-      numeroInscripcion,
       fotoPreviewUrl,
-      cursosDisponibles,
+      mostrarCampoMMAA,
+      mostrarEducacionFormador,
+      estadosCiviles,
+      tiposTelefono,
       regiones,
+      provincias,
+      comunas,
+      zonas,
       distritos,
       grupos,
       ramas,
       roles,
       niveles,
       tiposAlimentacion,
-      telefonoRules,
+      cursosDisponibles,
       currentStepValid,
       formValid,
       allStepsCompleted,
       clearSystemAlert,
       selectCurso,
       getCursoSeleccionado,
-      getLabel,
+      getTipoTelefonoLabel,
+      getComunaLabel,
+      getGrupoLabel,
+      getRamaLabel,
+      getRolLabel,
       handleFileChanged,
       removePhoto,
-      initializeTelefono,
-      initializeTelefonoEmergencia,
-      formatTelefono,
-      formatTelefonoEmergencia,
       nextStep,
       previousStep,
       submitForm,
-      handleModalClose,
-      imprimirComprobante
+      handleModalClose
     }
   }
 }
@@ -1331,14 +1444,14 @@ export default {
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5rem;
   margin-bottom: 1.5rem;
 }
 
 .form-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5rem;
   margin-bottom: 1.5rem;
 }
@@ -1356,7 +1469,7 @@ export default {
 }
 
 .vehicle-info {
-  margin-left: 2rem;
+  margin-left: 1rem;
   padding: 1rem;
   background: #f8f9fa;
   border-radius: 8px;
@@ -1442,6 +1555,15 @@ export default {
   font-size: 0.9rem;
 }
 
+.sobre-cupo-badge {
+  background: #ffc107;
+  color: #856404;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
 .course-status {
   position: absolute;
   top: 1rem;
@@ -1474,6 +1596,14 @@ export default {
 .selected-course-info h4 {
   color: #2c5aa0;
   margin-bottom: 0.5rem;
+}
+
+.sobre-cupo-info {
+  color: #856404;
+  background: #fff3cd;
+  padding: 0.5rem;
+  border-radius: 4px;
+  margin-top: 0.5rem;
 }
 
 .no-course-selected {
@@ -1540,34 +1670,6 @@ export default {
   margin-bottom: 0;
 }
 
-.terms-container {
-  background: #f8f9fa;
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.terms-content {
-  margin-bottom: 1.5rem;
-}
-
-.terms-content p {
-  margin-bottom: 0.75rem;
-}
-
-.terms-content ul {
-  margin-left: 1.5rem;
-  color: #495057;
-}
-
-.terms-content li {
-  margin-bottom: 0.5rem;
-}
-
-.terms-checkbox {
-  font-weight: 600;
-}
-
 /* Mensaje de completado */
 .completion-message {
   margin-bottom: 2rem;
@@ -1620,7 +1722,7 @@ export default {
 
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 1rem;
 }
 
@@ -1749,12 +1851,6 @@ export default {
   border-bottom: none;
 }
 
-.inscription-number {
-  color: #2c5aa0;
-  font-weight: 700;
-  font-size: 1.2rem;
-}
-
 .modal-verification {
   display: flex;
   align-items: center;
@@ -1801,6 +1897,11 @@ export default {
 
 .action-button {
   min-width: 180px;
+}
+
+/* Campos de texto más grandes para alergias */
+.alergias-field textarea {
+  min-height: 100px;
 }
 
 /* Responsive */
