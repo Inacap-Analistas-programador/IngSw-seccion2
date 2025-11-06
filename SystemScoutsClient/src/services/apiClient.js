@@ -74,8 +74,15 @@ export async function request(path, options = {}) {
     }
   }
   if (!res.ok) {
+    // Importante: usar un clon para evitar "body stream already read"
+    // cuando json() falla y luego se intenta text() sobre el mismo Response
+    const errClone = res.clone()
     let detail
-    try { detail = await res.json() } catch { detail = await res.text() }
+    try {
+      detail = await errClone.json()
+    } catch {
+      try { detail = await errClone.text() } catch { detail = '' }
+    }
     throw new Error(`${res.status} ${res.statusText}: ${typeof detail === 'string' ? detail : JSON.stringify(detail)}`)
   }
   if (res.status === 204) return null

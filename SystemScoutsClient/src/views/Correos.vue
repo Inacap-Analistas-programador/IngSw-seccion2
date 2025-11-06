@@ -128,7 +128,7 @@
 						</div>
 					</div>
 					<!-- Toast -->
-					<NotificationToast v-if="showToast" :message="toastMessage" @close="showToast = false" />
+					<NotificationToast v-if="showToast" :message="toastMessage" :icon="toastIcon" @close="showToast = false" />
 				</div>
 		</div>
 	</template>
@@ -140,10 +140,12 @@ import BaseButton from '../components/Reutilizables/BaseButton.vue'
 import AppIcons from '@/components/icons/AppIcons.vue'
 import NotificationToast from '@/components/Reutilizables/NotificationToast.vue'
 import QRCode from 'qrcode'
-import { personas as personasService } from '@/services/personasService'
+import { personas as personasService, personaCursos as personaCursosService } from '@/services/personasService'
 import authViewsService from '@/services/auth_viewsService.js'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
+// Flag temporal: cuando es false, 'Estado correo' NO se conecta a la API (sin PEC_ENVIO_CORREO_QR)
+const USE_BACKEND_ESTADO_CORREO = false
 
 // Datos desde la API
 const rows = ref([])
@@ -169,8 +171,10 @@ const qrCanvas = ref(null)
 // Toast de notificaciones
 const showToast = ref(false)
 const toastMessage = ref('')
-function notify(msg) {
+const toastIcon = ref('')
+function notify(msg, icon = '') {
 	toastMessage.value = msg
+	toastIcon.value = icon
 	showToast.value = true
 	// autocerrar suave en 4s
 	setTimeout(() => { showToast.value = false }, 4000)
@@ -181,7 +185,30 @@ onMounted(async () => {
 	try {
 		loading.value = true
 		error.value = null
-		const personas = await personasService.list()
+
+		let personas
+		let cursosPersona = []
+		if (USE_BACKEND_ESTADO_CORREO) {
+			// Cargar personas y persona-curso en paralelo (tolerante a fallos del endpoint de cursos)
+			const [pRes, cRes] = await Promise.allSettled([
+				personasService.list(),
+				personaCursosService.list()
+			])
+			if (pRes.status !== 'fulfilled') {
+				throw pRes.reason || new Error('No se pudo cargar la lista de personas')
+			}
+			personas = pRes.value
+			if (cRes.status === 'fulfilled') {
+				cursosPersona = cRes.value
+			} else {
+				console.warn('No se pudieron cargar persona-curso:', cRes.reason)
+				// Aviso no bloqueante
+				notify('No se pudo cargar la relación persona-curso. Estado correo puede no reflejar backend.', 'alert-circle')
+			}
+		} else {
+			// Temporalmente: sólo cargamos personas (estado correo se maneja localmente)
+			personas = await personasService.list()
+		}
 
 		// Asegurarnos de que 'personas' es un array antes de usar .map.
 		// La API puede devolver la lista directa, o un objeto con { data: [...] } / { results: [...] }.
@@ -202,8 +229,25 @@ onMounted(async () => {
 			throw new Error('Respuesta inesperada de la API de personas. Keys recibidas: ' + (keys.length ? keys.join(', ') : 'ninguna'))
 		}
 
+		// Mapa PER_ID -> registro Persona_Curso (sólo si está habilitado el backend para estado correo)
+		let cursosMap = new Map()
+		if (USE_BACKEND_ESTADO_CORREO && Array.isArray(cursosPersona)) {
+			for (const c of cursosPersona) {
+				const perId = c.PER_ID || (c.PER_ID_id ?? c.per_id) || c.perId || null
+				if (!perId) continue
+				if (!cursosMap.has(perId)) {
+					cursosMap.set(perId, c)
+				} else {
+					const prev = cursosMap.get(perId)
+					if (!prev.PEC_ENVIO_CORREO_QR && c.PEC_ENVIO_CORREO_QR) cursosMap.set(perId, c)
+				}
+			}
+		}
+
 		rows.value = list.map(p => ({
 			id: p.id || p.PER_ID || null,
+			pecId: (USE_BACKEND_ESTADO_CORREO ? (() => { const cp = cursosMap.get(p.PER_ID || p.id); return cp ? (cp.PEC_ID || cp.id || null) : null })() : null),
+			pecEnvioCorreoQR: (USE_BACKEND_ESTADO_CORREO ? (() => { const cp = cursosMap.get(p.PER_ID || p.id); return cp ? (cp.PEC_ENVIO_CORREO_QR === true || cp.PEC_ENVIO_CORREO_QR === 1 || cp.PEC_ENVIO_CORREO_QR === '1') : false })() : false),
 			// Normalizar posibles nombres de campo desde el backend
 			nombre: p.PER_NOMBRES || p.nombre || p.nombre_completo || p.full_name || '',
 			apellidoPaterno: p.PER_APELPTA || p.PER_APELLIDO_PATERNO || p.apellido_paterno || p.apellidoPaterno || p.apellido1 || '',
@@ -217,7 +261,7 @@ onMounted(async () => {
 			estadoPagoRaw: p.PAP_ESTADO,
 			estadoPagoBool: (p.PAP_ESTADO === 1 || p.PAP_ESTADO === true || p.PAP_ESTADO === '1'),
 			estadoPago: (p.PAP_ESTADO !== undefined ? ((p.PAP_ESTADO === 1 || p.PAP_ESTADO === true || p.PAP_ESTADO === '1') ? 'Pagado' : 'Pendiente') : (p.estadoPago || 'Pendiente')),
-			estadoCorreo: 'Pendiente',
+			estadoCorreo: (USE_BACKEND_ESTADO_CORREO ? (() => { const s = cursosMap.get(p.PER_ID || p.id); return s && (s.PEC_ENVIO_CORREO_QR === true || s.PEC_ENVIO_CORREO_QR === 1 || s.PEC_ENVIO_CORREO_QR === '1') ? 'Enviado' : 'Pendiente' })() : 'Pendiente'),
 			diasPendiente: null,
 			// Normalizar campo 'vigente' que en el modelo es PER_VIGENTE
 			vigente: (p.vigente !== undefined ? p.vigente : (p.PER_VIGENTE !== undefined ? p.PER_VIGENTE : true)) !== false,
@@ -300,17 +344,17 @@ function exportarCorreos() {
 	const items = rows.value.filter(r => selIds.includes(String(r.id)))
 	const correos = items.map(i => i.email).filter(e => e).join(', ')
 	if (!correos) {
-		notify('⚠️ Selecciona al menos un destinatario con correo')
+		notify('Selecciona al menos un destinatario con correo', 'alert-circle')
 		return
 	}
 	navigator.clipboard?.writeText(correos)
-	notify('📋 Correos copiados al portapapeles')
+	notify('Correos copiados al portapapeles', 'clipboard')
 }
 
 async function marcarEnviado() {
 	const selIds = Object.keys(seleccion).filter(k => seleccion[k])
 	if (!selIds.length) {
-		notify('⚠️ Selecciona al menos un registro')
+		notify('Selecciona al menos un registro', 'alert-circle')
 		return
 	}
 	
@@ -339,8 +383,20 @@ async function marcarEnviado() {
 			await QRCode.toCanvas(qrCanvas.value, token, { width: 220 })
 		} catch (e) {
 			console.error('Error generando QR desde backend:', e)
-			notify('❌ No se pudo generar el QR: ' + (e?.message || e))
+			notify('No se pudo generar el QR: ' + (e?.message || e), 'x-circle')
 		}
+
+	// Persistir en backend PEC_ENVIO_CORREO_QR = true (si tenemos pecId) - sólo si está habilitado el backend
+	if (USE_BACKEND_ESTADO_CORREO) {
+		try {
+			const targets = rows.value.filter(r => selIds.includes(String(r.id)) && r.pecId)
+			await Promise.all(targets.map(t => personaCursosService.partialUpdate(t.pecId, { PEC_ENVIO_CORREO_QR: true })))
+		} catch (e) {
+			console.error('No se pudo actualizar PEC_ENVIO_CORREO_QR:', e)
+			// Solo informar, ya que es una mejora de consistencia
+			notify('No se pudo guardar el estado de correo en el servidor', 'alert-circle')
+		}
+	}
 }
 
 function cerrarQR() {
@@ -350,7 +406,7 @@ function cerrarQR() {
 async function enviarPorCorreo() {
 	const selIds = Object.keys(seleccion).filter(k => seleccion[k])
 	if (!selIds.length) {
-		notify('⚠️ Selecciona al menos un registro')
+		notify('Selecciona al menos un registro', 'alert-circle')
 		return
 	}
 
@@ -370,11 +426,22 @@ async function enviarPorCorreo() {
 				}
 			}
 
-			notify(`✅ Envío completado. Enviados: ${result.enviados}/${result.solicitados}`)
+			notify(`Envío completado. Enviados: ${result.enviados}/${result.solicitados}`, 'send')
 		} catch (e) {
 			console.error('Error enviando correos:', e)
-			notify('❌ No se pudieron enviar los correos: ' + (e?.message || e))
+			notify('No se pudieron enviar los correos: ' + (e?.message || e), 'x-circle')
 		}
+
+	// Persistir en backend PEC_ENVIO_CORREO_QR = true (si tenemos pecId) - sólo si está habilitado el backend
+	if (USE_BACKEND_ESTADO_CORREO) {
+		try {
+			const targets = rows.value.filter(r => selIds.includes(String(r.id)) && r.pecId)
+			await Promise.all(targets.map(t => personaCursosService.partialUpdate(t.pecId, { PEC_ENVIO_CORREO_QR: true })))
+		} catch (e) {
+			console.error('No se pudo actualizar PEC_ENVIO_CORREO_QR:', e)
+			notify('No se pudo guardar el estado de correo en el servidor', 'alert-circle')
+		}
+	}
 }
 </script>
 

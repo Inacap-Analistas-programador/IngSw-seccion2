@@ -1,14 +1,23 @@
 <template>
   <div class="notification-toast" role="status">
+    <AppIcons v-if="icon" :name="icon" :size="18" />
     <div class="message">{{ message }}</div>
-    <button class="close" @click="$emit('close')">✕</button>
+    <button class="close" @click="$emit('close')">
+      <AppIcons name="x" :size="16" />
+    </button>
   </div>
 </template>
 
 <script>
+import AppIcons from '@/components/icons/AppIcons.vue'
+
 export default {
   name: 'NotificationToast',
-  props: { message: { type: String, required: true } }
+  components: { AppIcons },
+  props: {
+    message: { type: String, required: true },
+    icon: { type: String, default: '' }
+  }
 }
 </script>
 
