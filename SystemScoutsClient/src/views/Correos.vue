@@ -14,7 +14,7 @@
 				</label>
 
 				<label>
-					Cargo
+					Rol
 					<select v-model="filters.cargo">
 						<option value="Todos">Todos</option>
 						<option value="Participante">Participante</option>
@@ -23,11 +23,13 @@
 				</label>
 
 				<label>
-					Estado de pago
-					<select v-model="filters.estadoPago">
+					Estado de la persona
+					<select v-model="filters.estadoPersona">
 						<option value="Todos">Todos</option>
-						<option value="Pagado">Pagado</option>
-						<option value="Pendiente">Pendiente</option>
+						<option value="Preinscrito">Preinscrito</option>
+						<option value="Inscrito">Inscrito</option>
+						<option value="Confirmado">Confirmado</option>
+						<option value="Rechazado">Rechazado</option>
 					</select>
 				</label>
 
@@ -40,6 +42,11 @@
 						<option value="No enviado">No enviado</option>
 					</select>
 				</label>
+
+				<!-- Botón Buscar: aplica los filtros manualmente (al final de los filtros) -->
+				<BaseButton variant="primary" @click="applyFilters" style="align-self: end; margin-left: 8px;">
+					<AppIcons name="search" :size="16" /> Buscar
+				</BaseButton>
 			</div>
 
 					<!-- Lista completa combinada -->
@@ -64,36 +71,42 @@
 										<th>Nombre</th>
 										<th>Email</th>
 										<th>Vigente</th>
-										<th>Curso</th>
-										<th>Cargo</th>
-										<th>Pago</th>
+										<th>Estado pago</th>
+										<th>Estado persona</th>
 										<th>Estado correo</th>
 									</tr>
 								</thead>
 								<tbody>
 									<tr v-if="loading">
-										<td colspan="8" style="text-align: center; padding: 20px;">Cargando personas...</td>
+										<td colspan="7" style="text-align: center; padding: 20px;">Cargando personas...</td>
 									</tr>
 									<tr v-else-if="error">
-										<td colspan="8" style="text-align: center; padding: 20px; color: var(--color-danger);">{{ error }}</td>
+										<td colspan="7" style="text-align: center; padding: 20px; color: var(--color-danger);">{{ error }}</td>
 									</tr>
 									<tr v-else-if="!rowsFiltered.length">
-										<td colspan="8" style="text-align: center; padding: 20px;">No hay personas que coincidan con los filtros</td>
+										<td colspan="7" style="text-align: center; padding: 20px;">No hay personas que coincidan con los filtros</td>
 									</tr>
 									<tr v-else v-for="row in rowsFiltered" :key="row.id">
 										<td><input type="checkbox" v-model="seleccion[row.id]" /></td>
-										<td class="cell-name">{{ row.nombre }}</td>
+										<td class="cell-name">{{ row.fullName }}</td>
 										<td class="cell-email">{{ row.email || '(sin email)' }}</td>
 										<td>
-											<span :class="['badge', row.vigente ? 'badge-success' : 'badge-pending']">
+											<span :class="['badge', vigenteClass(row)]">
 												{{ row.vigente ? 'Vigente' : 'No vigente' }}
 											</span>
 										</td>
-										<td>{{ row.curso }}</td>
-										<td>{{ row.cargo }}</td>
-										<td>{{ row.estadoPago }}</td>
 										<td>
-											<span :class="['badge', row.estadoCorreo === 'Enviado' ? 'badge-success' : (row.estadoCorreo === 'Pendiente' ? 'badge-warning' : 'badge-pending')]">
+											<span :class="['badge', estadoPagoClass(row)]">
+												{{ row.estadoPago }}
+											</span>
+										</td>
+										<td>
+											<span :class="['badge', estadoPersonaClass(row)]">
+												{{ row.estadoPersona }}
+											</span>
+										</td>
+										<td>
+											<span :class="['badge', estadoCorreoClass(row)]">
 												{{ row.estadoCorreo }}
 											</span>
 										</td>
@@ -114,15 +127,18 @@
 							</div>
 						</div>
 					</div>
+					<!-- Toast -->
+					<NotificationToast v-if="showToast" :message="toastMessage" @close="showToast = false" />
+				</div>
 		</div>
-	</div>
-</template>
+	</template>
 
 
 <script setup>
 import { reactive, computed, ref, onMounted, nextTick } from 'vue'
 import BaseButton from '../components/Reutilizables/BaseButton.vue'
 import AppIcons from '@/components/icons/AppIcons.vue'
+import NotificationToast from '@/components/Reutilizables/NotificationToast.vue'
 import QRCode from 'qrcode'
 import { personas as personasService } from '@/services/personasService'
 import authViewsService from '@/services/auth_viewsService.js'
@@ -134,10 +150,31 @@ const rows = ref([])
 const loading = ref(true)
 const error = ref(null)
 
-const filters = reactive({ curso: 'Todos', cargo: 'Todos', estadoPago: 'Todos', estadoCorreo: 'Todos' })
+// Filtros editables (UI)
+const filters = reactive({ curso: 'Todos', cargo: 'Todos', estadoPersona: 'Todos', estadoCorreo: 'Todos' })
+// Filtros aplicados (se actualizan al presionar Buscar)
+const appliedFilters = reactive({ curso: 'Todos', cargo: 'Todos', estadoPersona: 'Todos', estadoCorreo: 'Todos' })
+// Aplica los filtros al presionar el botón Buscar
+function applyFilters() {
+	appliedFilters.curso = filters.curso
+	appliedFilters.cargo = filters.cargo
+	appliedFilters.estadoPersona = filters.estadoPersona
+	appliedFilters.estadoCorreo = filters.estadoCorreo
+}
+
 const seleccion = reactive({})
 const mostrarQR = ref(false)
 const qrCanvas = ref(null)
+
+// Toast de notificaciones
+const showToast = ref(false)
+const toastMessage = ref('')
+function notify(msg) {
+	toastMessage.value = msg
+	showToast.value = true
+	// autocerrar suave en 4s
+	setTimeout(() => { showToast.value = false }, 4000)
+}
 
 // Cargar personas desde la API
 onMounted(async () => {
@@ -168,15 +205,28 @@ onMounted(async () => {
 		rows.value = list.map(p => ({
 			id: p.id || p.PER_ID || null,
 			// Normalizar posibles nombres de campo desde el backend
-			nombre: p.nombre || p.nombre_completo || p.full_name || p.PER_NOMBRES || '',
-			email: p.email || p.mail || p.correo || p.PER_MAIL || '',
+			nombre: p.PER_NOMBRES || p.nombre || p.nombre_completo || p.full_name || '',
+			apellidoPaterno: p.PER_APELPTA || p.PER_APELLIDO_PATERNO || p.apellido_paterno || p.apellidoPaterno || p.apellido1 || '',
+			apellidoMaterno: p.PER_APELMAT || p.PER_APELLIDO_MATERNO || p.apellido_materno || p.apellidoMaterno || p.apellido2 || '',
+			email: p.PER_MAIL || p.email || p.mail || p.correo || '',
 			curso: p.curso || 'Sin curso', // TODO: si viene desde persona-curso
 			cargo: p.cargo || 'Participante', // TODO: desde relaciones
-			estadoPago: 'Pendiente', // TODO: enlazar pagos
+			// Estado de la persona (normalizado)
+			estadoPersona: p.estadoPersona || p.estado || p.PER_ESTADO || 'Preinscrito',
+			// Estado de pago (PAP_ESTADO): normalizar a Pagado / Pendiente
+			estadoPagoRaw: p.PAP_ESTADO,
+			estadoPagoBool: (p.PAP_ESTADO === 1 || p.PAP_ESTADO === true || p.PAP_ESTADO === '1'),
+			estadoPago: (p.PAP_ESTADO !== undefined ? ((p.PAP_ESTADO === 1 || p.PAP_ESTADO === true || p.PAP_ESTADO === '1') ? 'Pagado' : 'Pendiente') : (p.estadoPago || 'Pendiente')),
 			estadoCorreo: 'Pendiente',
 			diasPendiente: null,
 			// Normalizar campo 'vigente' que en el modelo es PER_VIGENTE
-			vigente: (p.vigente !== undefined ? p.vigente : (p.PER_VIGENTE !== undefined ? p.PER_VIGENTE : true)) !== false
+			vigente: (p.vigente !== undefined ? p.vigente : (p.PER_VIGENTE !== undefined ? p.PER_VIGENTE : true)) !== false,
+			// nombre completo para mostrar en tabla (APELLIDO PATERNO + APELLIDO MATERNO + NOMBRES)
+			fullName: [
+				(p.PER_APELPTA || p.PER_APELLIDO_PATERNO || p.apellido_paterno || p.apellidoPaterno || ''),
+				(p.PER_APELMAT || p.PER_APELLIDO_MATERNO || p.apellido_materno || p.apellidoMaterno || ''),
+				(p.PER_NOMBRES || p.nombre || p.nombre_completo || p.full_name || '')
+			].filter(Boolean).join(' ').trim()
 		}))
 		} catch (e) {
 			// Si falla la petición a la API, mostrar el error y no usar mocks
@@ -195,11 +245,49 @@ const cursos = computed(() => {
 })
 
 function matchesFilter(row) {
-	if (filters.curso !== 'Todos' && row.curso !== filters.curso) return false
-	if (filters.cargo !== 'Todos' && row.cargo !== filters.cargo) return false
-	if (filters.estadoPago !== 'Todos' && row.estadoPago !== filters.estadoPago) return false
-	if (filters.estadoCorreo !== 'Todos' && row.estadoCorreo !== filters.estadoCorreo) return false
+	if (appliedFilters.curso !== 'Todos' && row.curso !== appliedFilters.curso) return false
+	if (appliedFilters.cargo !== 'Todos' && row.cargo !== appliedFilters.cargo) return false
+	if (appliedFilters.estadoPersona !== 'Todos' && row.estadoPersona !== appliedFilters.estadoPersona) return false
+	if (appliedFilters.estadoCorreo !== 'Todos' && row.estadoCorreo !== appliedFilters.estadoCorreo) return false
 	return true
+}
+
+// Clases de estilo para diferenciar visualmente los estados
+function vigenteClass(row) {
+	return row.vigente ? 'badge-success' : 'badge-danger'
+}
+
+function estadoPagoClass(row) {
+	// Pagado: verde; Pendiente: amarillo
+	return row.estadoPago === 'Pagado' ? 'badge-success' : 'badge-warning'
+}
+
+function estadoPersonaClass(row) {
+	switch (row.estadoPersona) {
+		case 'Confirmado':
+			return 'badge-success'
+		case 'Inscrito':
+			return 'badge-warning'
+		case 'Preinscrito':
+			return 'badge-warning'
+		case 'Rechazado':
+			return 'badge-danger'
+		default:
+			return 'badge-warning'
+	}
+}
+
+function estadoCorreoClass(row) {
+	switch (row.estadoCorreo) {
+		case 'Enviado':
+			return 'badge-success'
+		case 'Pendiente':
+			return 'badge-warning'
+		case 'No enviado':
+			return 'badge-danger'
+		default:
+			return 'badge-warning'
+	}
 }
 
 const rowsFiltered = computed(() => {
@@ -212,17 +300,17 @@ function exportarCorreos() {
 	const items = rows.value.filter(r => selIds.includes(String(r.id)))
 	const correos = items.map(i => i.email).filter(e => e).join(', ')
 	if (!correos) {
-		alert('Selecciona al menos un destinatario con correo')
+		notify('⚠️ Selecciona al menos un destinatario con correo')
 		return
 	}
 	navigator.clipboard?.writeText(correos)
-	alert('Correos copiados al portapapeles')
+	notify('📋 Correos copiados al portapapeles')
 }
 
 async function marcarEnviado() {
 	const selIds = Object.keys(seleccion).filter(k => seleccion[k])
 	if (!selIds.length) {
-		alert('Selecciona al menos un registro')
+		notify('⚠️ Selecciona al menos un registro')
 		return
 	}
 	
@@ -251,7 +339,7 @@ async function marcarEnviado() {
 			await QRCode.toCanvas(qrCanvas.value, token, { width: 220 })
 		} catch (e) {
 			console.error('Error generando QR desde backend:', e)
-			alert('No se pudo generar el QR: ' + e.message)
+			notify('❌ No se pudo generar el QR: ' + (e?.message || e))
 		}
 }
 
@@ -262,7 +350,7 @@ function cerrarQR() {
 async function enviarPorCorreo() {
 	const selIds = Object.keys(seleccion).filter(k => seleccion[k])
 	if (!selIds.length) {
-		alert('Selecciona al menos un registro')
+		notify('⚠️ Selecciona al menos un registro')
 		return
 	}
 
@@ -282,10 +370,10 @@ async function enviarPorCorreo() {
 				}
 			}
 
-			alert(`✅ Envío completado\n\nSolicitados: ${result.solicitados}\nProcesados (vigentes con email): ${result.procesados}\nEnviados: ${result.enviados}\n\nRevisa la consola del servidor para ver los correos.`)
+			notify(`✅ Envío completado. Enviados: ${result.enviados}/${result.solicitados}`)
 		} catch (e) {
 			console.error('Error enviando correos:', e)
-			alert('❌ No se pudieron enviar los correos: ' + e.message)
+			notify('❌ No se pudieron enviar los correos: ' + (e?.message || e))
 		}
 }
 </script>
@@ -420,28 +508,44 @@ async function enviarPorCorreo() {
 }
 .badge {
 	display: inline-block;
-	padding: 4px 16px;
-	border-radius: 14px;
+	padding: 4px 14px;
+	border-radius: 12px;
 	font-size: 1em;
 	font-weight: 600;
 	letter-spacing: 0.5px;
 	margin-right: 2px;
-	box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+	box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+	border: 1px solid transparent;
 }
 .badge-success {
 	background: var(--color-semaforo-green); /* Verde semáforo */
 	color: #fff;
-	border: 1px solid transparent;
 }
 .badge-warning {
 	background: var(--color-semaforo-yellow); /* Amarillo/naranja semáforo */
 	color: #fff;
-	border: 1px solid transparent;
 }
-.badge-pending {
+.badge-danger {
 	background: var(--color-semaforo-red); /* Rojo semáforo */
 	color: #fff;
-	border: 1px solid transparent;
+}
+.badge-secondary {
+	background: #e9ecef;
+	color: #334155;
+	border-color: #cbd5e1;
+}
+.badge-soft-success {
+	background: #d1f7d6; /* verde suave */
+	color: #1a7f37;
+	border-color: #95e0a2;
+}
+.badge-outline-warning {
+	background: transparent;
+	color: #b45309; /* ámbar oscuro */
+	border-color: var(--color-semaforo-yellow);
+}
+.badge-striped {
+	background-image: repeating-linear-gradient(-45deg, rgba(255,255,255,0.18) 0, rgba(255,255,255,0.18) 10px, transparent 10px, transparent 20px);
 }
 input[type="checkbox"] {
 	width: 18px;
@@ -514,4 +618,6 @@ input[type="checkbox"] {
 }
 .qr-actions { margin-top: 10px; display:flex; justify-content:center; }
 </style>
+
+ 
 
