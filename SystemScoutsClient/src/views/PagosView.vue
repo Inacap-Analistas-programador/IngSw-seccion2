@@ -1,1047 +1,764 @@
-<!-- src/views/PagosView.vue -->
 <template>
-  <div class="pago-view compact">
-    <!-- Navegación / Logo -->
-    <div class="navegacion-vistas">
-      <div class="logo-wrap" v-if="logoUrl">
-        <img :src="logoUrl" alt="Logo" class="header-logo" />
-      </div>
+  <div class="gestion-pagos">
+    <!-- Encabezado -->
+    <header class="header">
+      <h2>Gestión de Pagos</h2>
+      <h3>Registro Individual / Masivo y Consulta</h3>
+    </header>
 
-      <button @click="cambiarVista('registro')" :class="{ active: vistaActiva === 'registro' }">
-        <AppIcons name="clipboard" :size="20" />
-        <span>Registro de Pago</span>
-      </button>
-
-      <button @click="cambiarVista('historico')" :class="{ active: vistaActiva === 'historico' }">
-        <AppIcons name="chart-bar" :size="20" />
-        <span>Histórico</span>
-      </button>
+    <!-- Pestañas de navegación internas -->
+    <div class="tabs">
+      <button :class="{active: tab==='registro'}" @click="tab='registro'">🧾 Registro</button>
+      <button :class="{active: tab==='historico'}" @click="tab='historico'">📑 Histórico</button>
     </div>
 
-    <!-- ================== REGISTRO ================== -->
-    <div v-if="vistaActiva === 'registro'" class="vista-registrar">
-      <div class="card-registro">
-        <div class="card-header">
-          <h3><AppIcons name="clipboard" :size="24" /> Registro de Pago</h3>
-          <p>El método de pago permitido es únicamente <strong>Transferencia bancaria</strong>.</p>
+    <!-- ===================== REGISTRO ===================== -->
+    <div v-if="tab==='registro'" class="card">
+      <div class="subtabs">
+        <button :class="{active: subTab==='individual'}" @click="subTab='individual'">👤 Individual</button>
+        <button :class="{active: subTab==='masivo'}" @click="subTab='masivo'">👥 Masivo</button>
+      </div>
+
+      <!-- -------- Registro Individual -------- -->
+      <section v-if="subTab==='individual'" class="panel">
+        <div class="panel-title">
+          <h4>Registro Individual</h4>
+          <p>Solo se permite <strong>Transferencia bancaria</strong>.</p>
         </div>
 
-        <!-- Selector Individual / Masivo -->
-        <div class="tipo-registro-selector">
-          <button type="button" @click="tipoRegistro = 'individual'" :class="['tipo-btn', { active: tipoRegistro === 'individual' }]">
-            <AppIcons name="user" :size="20" />
-            <span>Individual</span>
-          </button>
-          <button type="button" @click="tipoRegistro = 'masivo'" :class="['tipo-btn', { active: tipoRegistro === 'masivo' }]">
-            <AppIcons name="users" :size="20" />
-            <span>Masivo</span>
-          </button>
-        </div>
-
-        <!-- --------- FORMULARIO INDIVIDUAL --------- -->
-        <form v-if="tipoRegistro === 'individual'" @submit.prevent="registrarPagoIndividual" class="form-registro-individual">
-          <!-- Buscar persona -->
-          <div class="search-section">
-            <div class="form-group search-group">
-              <label>Buscar Participante (Nombre o RUT) *</label>
-              <div class="search-input-wrapper">
-                <input
-                  v-model="busquedaPersona"
-                  type="text"
-                  placeholder="Ej: 12.345.678-9 o Juan Pérez"
-                  @input="buscarPersona"
-                  class="search-input"
-                />
-                <span class="search-icon"><AppIcons name="search" :size="18" /></span>
-              </div>
+        <div class="grid">
+          <div class="col full">
+            <label>Buscar Participante (Nombre / RUT / Email)</label>
+            <InputBase v-model="buscarPersonaQ" placeholder="Ej: 12.345.678-9 o Juan Pérez" @keydown.enter.prevent="buscarPersonas" />
+            <div class="acciones">
+              <BaseButton variant="primary" class="btn-search" @click="buscarPersonas">🔎 Buscar</BaseButton>
             </div>
 
-            <!-- Resultados -->
-            <div v-if="resultadosBusqueda.length > 0" class="resultados-busqueda">
-              <div
-                v-for="persona in resultadosBusqueda"
-                :key="persona.id"
-                @click="seleccionarPersona(persona)"
-                class="resultado-item"
-              >
-                <div class="resultado-info">
-                  <strong>{{ persona.nombre }}</strong>
-                  <span class="rut">{{ persona.rut }}</span>
+            <div v-if="buscandoPersonas" class="estado-carga">🔄 Buscando personas...</div>
+            <div v-if="personasEncontradas.length" class="resultados">
+              <div v-for="p in personasEncontradas" :key="p.id" class="resultado" @click="seleccionarPersona(p)">
+                <div class="resultado-left">
+                  <strong>{{ p.nombre }}</strong>
+                  <span class="muted">{{ p.rut }} · {{ p.email }}</span>
                 </div>
+                <BaseButton size="sm" variant="secondary">Elegir</BaseButton>
               </div>
             </div>
-            <div v-else-if="busquedaPersona && !buscando" class="no-resultados">
-              No se encontraron personas con ese criterio
-            </div>
+            <div v-else-if="buscarPersonaQ && !buscandoPersonas" class="no-result">Sin resultados</div>
           </div>
 
-          <!-- Datos persona (solo lectura) -->
-          <div class="form-grid">
-            <div class="form-group">
-              <label>Nombre Completo</label>
-              <input v-model="formIndividual.nombre" type="text" readonly class="readonly-input" />
-            </div>
-            <div class="form-group">
-              <label>RUT</label>
-              <input v-model="formIndividual.rut" type="text" readonly class="readonly-input" />
-            </div>
-            <div class="form-group">
-              <label>Email</label>
-              <input v-model="formIndividual.email" type="email" readonly class="readonly-input" />
-            </div>
-            <div class="form-group">
-              <label>Teléfono</label>
-              <input v-model="formIndividual.telefono" type="text" readonly class="readonly-input" />
-            </div>
-            <div class="form-group">
-              <label>Dirección</label>
-              <input v-model="formIndividual.direccion" type="text" readonly class="readonly-input" />
+          <div class="col">
+            <label>Nombre</label>
+            <InputBase v-model="formInd.nombre" readonly />
+          </div>
+          <div class="col">
+            <label>RUT</label>
+            <InputBase v-model="formInd.rut" readonly />
+          </div>
+          <div class="col">
+            <label>Email</label>
+            <InputBase v-model="formInd.email" readonly />
+          </div>
+          <div class="col">
+            <label>Curso/Capacitación *</label>
+            <BaseSelect v-model="formInd.curso" :options="cursoOptions" placeholder="Seleccione un curso" />
+          </div>
+          <div class="col">
+            <label>Valor Pagado *</label>
+            <div class="with-prefix">
+              <span class="prefix">$</span>
+              <input type="number" min="0" step="1" v-model.number="formInd.valor_pagado" />
             </div>
           </div>
-
-          <!-- Pago -->
-          <div class="form-divider"><h4>💵 Información del Pago</h4></div>
-          <div class="form-grid">
-            <div class="form-group">
-              <label>Curso / Capacitación *</label>
-              <select v-model="formIndividual.curso" required>
-                <option value="">Seleccione un curso</option>
-                <option v-for="curso in cursos" :key="curso.value" :value="curso.value">{{ curso.label }}</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Valor Pagado *</label>
-              <div class="input-with-prefix">
-                <span class="prefix">$</span>
-                <input v-model.number="formIndividual.valor_pagado" type="number" min="0" required placeholder="25000" />
-              </div>
-            </div>
-            <div class="form-group">
-              <label>Fecha de Pago *</label>
-              <input v-model="formIndividual.fecha_pago" type="date" required />
-            </div>
-            <div class="form-group">
-              <label>Método de Pago</label>
-              <div class="badge-metodo">Transferencia bancaria</div>
-              <input type="hidden" v-model="formIndividual.metodo_pago" />
-            </div>
-            <div class="form-group full-width">
-              <label>Observación</label>
-              <input v-model="formIndividual.observacion" type="text" maxlength="100" placeholder="Comentario u observación (opcional)" />
-            </div>
+          <div class="col">
+            <label>Fecha de Pago *</label>
+            <InputBase type="date" v-model="formInd.fecha_pago" />
           </div>
-
-          <div class="form-group full-width">
-            <label>Comprobante de Transferencia (opcional)</label>
-            <div class="file-upload-wrapper">
-              <input id="file-individual" type="file" @change="handleFileIndividual" accept=".pdf,.jpg,.jpeg,.png" />
-              <label for="file-individual" class="file-upload-label">
-                <AppIcons name="file" :size="18" />
-                <span>{{ formIndividual.file ? formIndividual.file.name : 'Seleccionar archivo' }}</span>
-              </label>
-            </div>
+          <div class="col">
+            <label>Método de Pago</label>
+            <div class="badge">Transferencia bancaria</div>
           </div>
-
-          <div class="form-actions">
-            <button type="submit" class="btn btn-primario" :disabled="!formIndividual.personaId">
-              <AppIcons name="check" :size="16" /> Registrar Pago
-            </button>
-            <button type="button" @click="limpiarFormularioIndividual" class="btn btn-secundario">
-              <AppIcons name="x" :size="16" /> Limpiar
-            </button>
+          <div class="col full">
+            <label>Observación</label>
+            <InputBase v-model="formInd.observacion" placeholder="Comentario (opcional)" />
           </div>
-        </form>
-
-        <!-- --------- FORMULARIO MASIVO --------- -->
-        <form v-if="tipoRegistro === 'masivo'" @submit.prevent="registrarPagoMasivo" class="form-registro-masivo">
-          <div class="form-grid">
-            <div class="form-group">
-              <label>Grupo Scout *</label>
-              <select v-model="formMasivo.grupo" required @change="filtrarParticipantesPorGrupo">
-                <option value="">Seleccione un grupo</option>
-                <option v-for="grupo in grupos" :key="grupo.value" :value="grupo.value">{{ grupo.label }}</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Curso / Capacitación *</label>
-              <select v-model="formMasivo.curso" required>
-                <option value="">Seleccione un curso</option>
-                <option v-for="curso in cursos" :key="curso.value" :value="curso.value">{{ curso.label }}</option>
-              </select>
-            </div>
+          <div class="col full">
+            <label>Comprobante (opcional)</label>
+            <input ref="fileIndRef" type="file" accept=".pdf,.jpg,.jpeg,.png" @change="onFileInd" />
           </div>
+        </div>
 
-          <button
-            type="button"
-            @click="cargarParticipantesParaMasivo"
-            class="btn btn-info"
-            :disabled="!formMasivo.grupo || !formMasivo.curso || cargandoUsuarios"
+        <div class="acciones center">
+          <BaseButton
+            variant="primary"
+            :disabled="!formInd.personaId || !formInd.curso || !formInd.valor_pagado || !formInd.fecha_pago"
+            @click="registrarPagoIndividual"
           >
-            <span v-if="cargandoUsuarios" class="spinner"></span>
-            <AppIcons v-else name="users" :size="16" />
-            {{ cargandoUsuarios ? 'Cargando...' : 'Cargar Participantes' }}
-          </button>
+            ✅ Registrar Pago
+          </BaseButton>
+          <BaseButton variant="secondary" @click="limpiarIndividual">🧹 Limpiar</BaseButton>
+        </div>
+      </section>
 
-          <div v-if="participantesCargados.length > 0" class="participantes-section">
-            <div class="participantes-header">
-              <h4>Participantes Disponibles ({{ participantesCargados.length }})</h4>
-              <div class="seleccion-acciones">
-                <button type="button" @click="seleccionarTodos" class="btn-link">Seleccionar todos</button>
-                <button type="button" @click="deseleccionarTodos" class="btn-link">Deseleccionar todos</button>
-              </div>
-            </div>
+      <!-- -------- Registro Masivo -------- -->
+      <section v-else class="panel">
+        <div class="panel-title">
+          <h4>Registro Masivo</h4>
+          <p>Adjunta comprobante grupal y selecciona participantes.</p>
+        </div>
 
-            <div class="participantes-lista">
-              <div v-for="user in participantesCargados" :key="user.id" class="participante-item">
-                <input
-                  type="checkbox"
-                  :id="'user-' + user.id"
-                  :value="user"
-                  v-model="participantesSeleccionados"
-                  class="checkbox-styled"
-                />
-                <label :for="'user-' + user.id" class="participante-label">
-                  <div class="participante-info">
-                    <strong>{{ user.nombre }}</strong>
-                    <span class="rut">{{ user.rut }}</span>
-                  </div>
-                  <span class="email">{{ user.email }}</span>
-                </label>
-              </div>
+        <div class="grid">
+          <div class="col">
+            <label>Grupo *</label>
+            <BaseSelect v-model="formMasivo.grupo" :options="grupoOptions" placeholder="Seleccione grupo" />
+          </div>
+          <div class="col">
+            <label>Curso/Capacitación *</label>
+            <BaseSelect v-model="formMasivo.curso" :options="cursoOptions" placeholder="Seleccione curso" />
+          </div>
+          <div class="col auto">
+            <label class="invisible">Cargar</label>
+            <BaseButton variant="info" :disabled="!formMasivo.grupo || !formMasivo.curso || cargandoParticipantes" @click="cargarParticipantes">
+              {{ cargandoParticipantes ? '⏳ Cargando...' : '👥 Cargar Participantes' }}
+            </BaseButton>
+          </div>
+        </div>
+
+        <div v-if="participantes.length" class="lista">
+          <div class="lista-header">
+            <h5>Participantes disponibles ({{ participantes.length }})</h5>
+            <div class="acciones">
+              <BaseButton size="sm" variant="secondary" @click="selectAll">Seleccionar todos</BaseButton>
+              <BaseButton size="sm" variant="secondary" @click="unselectAll">Deseleccionar</BaseButton>
             </div>
           </div>
 
-          <div class="form-divider" v-if="participantesSeleccionados.length > 0"><h4>💵 Pago Masivo</h4></div>
-
-          <div class="form-grid" v-if="participantesSeleccionados.length > 0">
-            <div class="form-group">
-              <label>Valor por Persona *</label>
-              <div class="input-with-prefix">
-                <span class="prefix">$</span>
-                <input v-model.number="formMasivo.valor_pagado" type="number" min="0" required placeholder="25000" />
+          <div class="lista-items">
+            <label v-for="u in participantes" :key="u.id" class="item">
+              <input type="checkbox" :value="u.id" v-model="seleccionados" />
+              <div class="info">
+                <strong>{{ u.nombre }}</strong>
+                <span class="muted">{{ u.rut }} · {{ u.email }}</span>
               </div>
-            </div>
-            <div class="form-group">
-              <label>Fecha de Pago *</label>
-              <input v-model="formMasivo.fecha_pago" type="date" required />
-            </div>
-            <div class="form-group">
-              <label>Método de Pago</label>
-              <div class="badge-metodo">Transferencia bancaria</div>
-              <input type="hidden" v-model="formMasivo.metodo_pago" />
-            </div>
-            <div class="form-group full-width">
-              <label>Observación (aplica a todos)</label>
-              <input v-model="formMasivo.observacion" type="text" maxlength="100" placeholder="Comentario u observación (opcional)" />
+            </label>
+          </div>
+        </div>
+
+        <div v-if="seleccionados.length" class="grid">
+          <div class="col">
+            <label>Valor por Persona *</label>
+            <div class="with-prefix">
+              <span class="prefix">$</span>
+              <input type="number" min="0" step="1" v-model.number="formMasivo.valor_pagado" />
             </div>
           </div>
-
-          <div class="form-group full-width" v-if="participantesSeleccionados.length > 0">
+          <div class="col">
+            <label>Fecha de Pago *</label>
+            <InputBase type="date" v-model="formMasivo.fecha_pago" />
+          </div>
+          <div class="col full">
+            <label>Observación (aplica a todos)</label>
+            <InputBase v-model="formMasivo.observacion" placeholder="Comentario (opcional)" />
+          </div>
+          <div class="col full">
             <label>Comprobante Grupal *</label>
-            <div class="file-upload-wrapper">
-              <input id="file-masivo" type="file" @change="handleFileMasivo" accept=".pdf,.jpg,.jpeg,.png" required />
-              <label for="file-masivo" class="file-upload-label">
-                <AppIcons name="file" :size="18" />
-                <span>{{ formMasivo.file ? formMasivo.file.name : 'Seleccionar archivo' }}</span>
-              </label>
-            </div>
+            <input ref="fileMasivoRef" type="file" accept=".pdf,.jpg,.jpeg,.png" @change="onFileMasivo" />
           </div>
+        </div>
 
-          <div class="resumen-masivo" v-if="participantesSeleccionados.length > 0 && formMasivo.valor_pagado">
-            <div class="resumen-item">
-              <span>Participantes seleccionados:</span>
-              <strong>{{ participantesSeleccionados.length }}</strong>
-            </div>
-            <div class="resumen-item">
-              <span>Valor por persona:</span>
-              <strong>${{ formMasivo.valor_pagado.toLocaleString('es-CL') }}</strong>
-            </div>
-            <div class="resumen-item total">
-              <span>Total a registrar:</span>
-              <strong>${{ (participantesSeleccionados.length * formMasivo.valor_pagado).toLocaleString('es-CL') }}</strong>
-            </div>
-          </div>
+        <div v-if="seleccionados.length && formMasivo.valor_pagado" class="resumen">
+          <div>Seleccionados: <strong>{{ seleccionados.length }}</strong></div>
+          <div>Valor por persona: <strong>${{ formMasivo.valor_pagado.toLocaleString('es-CL') }}</strong></div>
+          <div class="total">Total: <strong>${{ (seleccionados.length * formMasivo.valor_pagado).toLocaleString('es-CL') }}</strong></div>
+        </div>
 
-          <div class="form-actions" v-if="participantesSeleccionados.length > 0">
-            <button type="submit" class="btn btn-primario" :disabled="!formMasivo.file || !formMasivo.valor_pagado">
-              <AppIcons name="check" :size="16" />
-              Registrar Pago Masivo ({{ participantesSeleccionados.length }})
-            </button>
-            <button type="button" @click="limpiarFormularioMasivo" class="btn btn-secundario">
-              <AppIcons name="x" :size="16" />
-              Cancelar
-            </button>
-          </div>
-        </form>
+        <div class="acciones center" v-if="seleccionados.length">
+          <BaseButton
+            variant="primary"
+            :disabled="!formMasivo.valor_pagado || !formMasivo.fecha_pago || !formMasivo.file"
+            @click="registrarPagoMasivo"
+          >
+            ✅ Registrar Pago Masivo ({{ seleccionados.length }})
+          </BaseButton>
+          <BaseButton variant="secondary" @click="limpiarMasivo">🧹 Limpiar</BaseButton>
+        </div>
+      </section>
+    </div>
+
+    <!-- ===================== HISTÓRICO ===================== -->
+    <div v-else class="card">
+      <!-- Filtros -->
+      <div class="filtros">
+        <InputBase v-model="filtroQ" placeholder="Nombre / RUT / Email" @keydown.enter.prevent="cargarPagos" />
+        <BaseSelect v-model="filtroCurso" :options="[{value:'',label:'Todos los cursos'}, ...cursoOptions]" />
+        <BaseSelect v-model="filtroGrupo" :options="[{value:'',label:'Todos los grupos'}, ...grupoOptions]" />
+        <BaseButton class="btn-search" variant="primary" @click="cargarPagos">🔎 Buscar</BaseButton>
+        <BaseButton class="btn-export" variant="secondary" @click="exportarCSV">📊 Exportar</BaseButton>
+      </div>
+
+      <!-- Estado de carga y error -->
+      <div v-if="cargandoPagos" class="estado-carga">🔄 Cargando pagos...</div>
+      <div v-if="errorPagos" class="mensaje-error">
+        ❌ {{ errorPagos }}
+        <div><BaseButton variant="primary" @click="cargarPagos">Reintentar</BaseButton></div>
+      </div>
+
+      <!-- Tabla -->
+      <div class="table-wrapper" v-if="!cargandoPagos">
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>RUT</th>
+              <th>Curso</th>
+              <th>Monto</th>
+              <th>Fecha</th>
+              <th>Método</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="p in pagos" :key="p.id">
+              <td><strong>{{ p.nombre }}</strong></td>
+              <td>{{ p.rut }}</td>
+              <td>{{ cursoLabel(p.curso) }}</td>
+              <td>${{ (p.monto ?? p.valor_pagado)?.toLocaleString('es-CL') }}</td>
+              <td>{{ dateCL(p.fecha || p.fecha_pago) }}</td>
+              <td>{{ p.metodo || 'Transferencia' }}</td>
+              <td class="acciones-buttons">
+                <!-- 👁️ Ver -->
+                <BaseButton size="sm" variant="info" class="btn-with-icon" title="Ver detalle" @click="verDetalle(p)">
+                  <span class="icon">👁️</span><span class="label">Ver</span>
+                </BaseButton>
+                <!-- ✏️ Modificar -->
+                <BaseButton size="sm" variant="primary" class="btn-with-icon" title="Editar pago" @click="abrirEditar(p)">
+                  <span class="icon">✏️</span><span class="label">Editar</span>
+                </BaseButton>
+                <!-- 🔁 Transferir -->
+                <BaseButton size="sm" variant="secondary" class="btn-with-icon" title="Transferir pago" @click="abrirTransferir(p)">
+                  <span class="icon">🔁</span><span class="label">Transferir</span>
+                </BaseButton>
+                <!-- 🗑️ Anular -->
+                <BaseButton size="sm" variant="warning" class="btn-with-icon" title="Anular pago" @click="abrirAnular(p)">
+                  <span class="icon">🗑️</span><span class="label">Anular</span>
+                </BaseButton>
+                <!-- 🧾 Comprobante -->
+                <BaseButton
+                  v-if="p.comprobante || p.comprobante_url"
+                  size="sm"
+                  variant="secondary"
+                  class="btn-with-icon"
+                  title="Descargar comprobante"
+                  @click="descargarComprobante(p)"
+                >
+                  <span class="icon">🧾</span><span class="label">Comprobante</span>
+                </BaseButton>
+              </td>
+            </tr>
+            <tr v-if="!pagos.length">
+              <td colspan="7" class="placeholder">No hay pagos para mostrar</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
-    <!-- ================== HISTÓRICO ================== -->
-    <div v-if="vistaActiva === 'historico'" class="vista-buscar">
-      <div class="card-registro">
-        <div class="card-header">
-          <h3><AppIcons name="chart-bar" :size="24" /> Histórico de Pagos</h3>
-          <p>Consulta y administra todos los pagos</p>
-        </div>
+    <!-- Modales -->
+    <BaseModal v-model="modalEditar" class="pago-modal">
+      <template #default>
+        <div class="modal-edit">
+          <header class="modal-header">
+            <h3>Editar Pago</h3>
+            <div class="header-actions">
+              <BaseButton class="btn-save" type="button" variant="primary" @click="guardarEdicion" :disabled="guardando">
+                {{ guardando ? '⏳ Guardando...' : '💾 Guardar' }}
+              </BaseButton>
+            </div>
+          </header>
 
-        <div class="filtros-avanzados">
-          <div class="form-grid">
-            <div class="form-group">
-              <label>Nombre o RUT</label>
-              <input
-                type="text"
-                v-model="filtroPersona"
-                placeholder="Ej: María o 11.223.344-5"
-                class="search-input"
-                @keyup.enter="aplicarFiltros"
-              />
+          <div class="form-fields-grid">
+            <div class="row">
+              <label>Nombre</label>
+              <input v-model="pagoEdit.nombre" readonly />
+            </div>
+            <div class="row">
+              <label>RUT</label>
+              <input v-model="pagoEdit.rut" readonly />
+            </div>
+            <div class="row">
+              <label>Curso</label>
+              <BaseSelect v-model="pagoEdit.curso" :options="cursoOptions" />
+            </div>
+            <div class="row">
+              <label>Monto</label>
+              <input type="number" v-model.number="pagoEdit.monto" />
+            </div>
+            <div class="row">
+              <label>Fecha</label>
+              <input type="date" v-model="pagoEdit.fecha" />
+            </div>
+            <div class="row full-width">
+              <label>Observación</label>
+              <input v-model="pagoEdit.observacion" />
             </div>
           </div>
-
-          <div class="filtros-acciones">
-            <button @click="aplicarFiltros" class="btn btn-primario">
-              <AppIcons name="search" :size="16" />
-              Buscar
-            </button>
-            <button @click="limpiarFiltros" class="btn btn-secundario">
-              <AppIcons name="refresh" :size="16" />
-              Limpiar
-            </button>
-            <button @click="exportarExcel" class="btn btn-success">
-              <AppIcons name="download" :size="16" />
-              Exportar Excel
-            </button>
-          </div>
         </div>
-
-        <div class="tabla-pagos">
-          <table>
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>RUT</th>
-                <th>Curso</th>
-                <th>Monto</th>
-                <th>Fecha</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="cargandoPagos">
-                <td colspan="6" class="loading-cell">
-                  <span class="spinner"></span> Cargando pagos...
-                </td>
-              </tr>
-              <tr v-else-if="pagosFiltrados.length === 0">
-                <td colspan="6" class="no-results">No se encontraron pagos con los filtros aplicados</td>
-              </tr>
-              <tr v-else v-for="pago in paginatedPagos" :key="pago.id">
-                <td><strong>{{ pago.nombre }}</strong></td>
-                <td>{{ pago.rut }}</td>
-                <td>{{ pago.curso }}</td>
-                <td class="monto">${{ pago.monto.toLocaleString('es-CL') }}</td>
-                <td>{{ formatearFecha(pago.fecha) }}</td>
-                <td class="actions-cell">
-                  <button @click="verHistorial(pago.perId)" class="btn-icon btn-ver" title="Historial">
-                    <AppIcons name="history" :size="18" />
-                  </button>
-                  <button @click="abrirModal(pago)" class="btn-icon btn-editar" title="Editar">
-                    <AppIcons name="edit" :size="18" />
-                  </button>
-                  <button @click="abrirModalAnular(pago)" class="btn-icon btn-anular" title="Anular">
-                    <AppIcons name="trash" :size="18" />
-                  </button>
-                  <button @click="abrirModalTransferir(pago)" class="btn-icon" title="Transferir">
-                    <AppIcons name="repeat" :size="18" />
-                  </button>
-                  <button v-if="pago.comprobante" @click="descargarComprobante(pago)" class="btn-icon" title="Descargar comprobante">
-                    <AppIcons name="paperclip" :size="18" />
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="pagination" v-if="totalPages > 1">
-          <button @click="cambiarPagina(paginaActual - 1)" :disabled="paginaActual === 1" class="btn-pag">← Anterior</button>
-          <div class="pagination-info">
-            Página {{ paginaActual }} de {{ totalPages }}
-            <span class="separator">|</span>
-            Mostrando
-            {{ (paginaActual - 1) * itemsPorPagina + 1 }} -
-            {{ Math.min(paginaActual * itemsPorPagina, pagosFiltrados.length) }}
-            de {{ pagosFiltrados.length }}
-          </div>
-          <button @click="cambiarPagina(paginaActual + 1)" :disabled="paginaActual === totalPages" class="btn-pag">
-            Siguiente →
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- ================== MODALES ================== -->
-    <!-- Editar Pago -->
-    <BaseModal v-model="showModal" @close="cerrarModal">
-      <template #title>Editar Pago</template>
-
-      <div class="modal-editar-pago">
-        <div class="form-group"><label>Nombre</label><input v-model="pagoSeleccionado.nombre" type="text" readonly /></div>
-        <div class="form-group"><label>RUT</label><input v-model="pagoSeleccionado.rut" type="text" readonly /></div>
-        <div class="form-group"><label>Email</label><input v-model="pagoSeleccionado.email" type="email" /></div>
-        <div class="form-group"><label>Teléfono</label><input v-model="pagoSeleccionado.telefono" type="text" /></div>
-        <div class="form-group"><label>Dirección</label><input v-model="pagoSeleccionado.direccion" type="text" /></div>
-      </div>
-
-      <template #footer>
-        <button @click="guardarPago" class="btn btn-primario">Guardar</button>
-        <button @click="cerrarModal" class="btn btn-secundario">Cancelar</button>
       </template>
     </BaseModal>
 
-    <!-- Anular pago -->
-    <BaseModal v-model="showModalAnular" @close="cerrarModalAnular">
-      <template #title>Anular pago</template>
-
-      <div class="modal-confirmar">
-        <p>¿Anulación total o parcial del pago de <strong>{{ pagoSeleccionado?.nombre }}</strong>?</p>
-
-        <div class="form-group">
-          <label>Tipo de anulación</label>
-          <select v-model="anulacionTipo">
-            <option value="total">Total</option>
-            <option value="parcial">Parcial</option>
-          </select>
-        </div>
-
-        <div class="form-group" v-if="anulacionTipo==='parcial'">
-          <label>Monto a devolver</label>
-          <div class="input-with-prefix">
-            <span class="prefix">$</span>
-            <input type="number" v-model.number="anulacionMonto" min="0" :max="pagoSeleccionado?.monto || 0" />
+    <BaseModal v-model="modalAnular" title="Confirmar Anulación">
+      <template #default>
+        <div class="confirm-content">
+          <div class="confirm-icon">⚠️</div>
+          <p>¿Anular pago de <strong>{{ pagoAnular?.nombre }}</strong>?</p>
+          <div class="confirm-actions">
+            <BaseButton @click="modalAnular=false" variant="secondary" class="btn-modal-cancel">❌ Cancelar</BaseButton>
+            <BaseButton @click="confirmarAnulacion" variant="warning" class="btn-modal-anular">⚠️ Anular</BaseButton>
           </div>
-          <small>Máximo: ${{ (pagoSeleccionado?.monto||0).toLocaleString('es-CL') }}</small>
         </div>
-
-        <div class="form-group">
-          <label>Motivo / Observación</label>
-          <input v-model="anulacionObs" maxlength="100" placeholder="Ej: desistimiento, error, etc." />
-        </div>
-      </div>
-
-      <template #footer>
-        <button @click="confirmarAnulacionConDetalle" class="btn btn-danger">Confirmar</button>
-        <button @click="cerrarModalAnular" class="btn btn-secundario">Cancelar</button>
       </template>
     </BaseModal>
-
-    <!-- Transferir pago -->
-    <BaseModal v-model="showModalTransferir" @close="cerrarModalTransferir">
-      <template #title>Transferir pago a otra persona</template>
-
-      <div class="modal-editar-pago">
-        <div class="form-group">
-          <label>Buscar nuevo beneficiario (Nombre o RUT)</label>
-          <input v-model="busquedaTransfer" type="text" @input="buscarTransfer" placeholder="Ej: 12.345.678-9 o Juan..." />
-          <div v-if="resultadosTransfer.length" class="resultados-busqueda">
-            <div v-for="p in resultadosTransfer" :key="p.id" class="resultado-item" @click="seleccionarTransfer(p)">
-              <div class="resultado-info">
-                <strong>{{ p.nombre }}</strong> <span class="rut">{{ p.rut }}</span>
-              </div>
-            </div>
-          </div>
-          <div v-else-if="busquedaTransfer && !resultadosTransfer.length" class="no-resultados">Sin coincidencias</div>
-        </div>
-      </div>
-
-      <template #footer>
-        <button :disabled="!nuevoBeneficiario" @click="confirmarTransferencia" class="btn btn-primario">Confirmar</button>
-        <button @click="cerrarModalTransferir" class="btn btn-secundario">Cancelar</button>
-      </template>
-    </BaseModal>
-
-    <!-- Historial por persona -->
-    <BaseModal v-model="showHistorial" @close="showHistorial = false">
-      <template #title>Historial de {{ historialPersona?.nombre }}</template>
-
-      <div class="modal-editar-pago">
-        <div v-if="!historialEventos.length" class="no-resultados">Sin eventos</div>
-        <ul v-else class="historial-lista">
-          <li v-for="ev in historialEventos" :key="ev.id" class="historial-item">
-            <span class="historial-fecha">{{ formatearFecha(ev.fecha) }}</span>
-            <span class="historial-tipo">{{ ev.tipo }}</span>
-            <span class="historial-detalle">{{ ev.detalle }}</span>
-          </li>
-        </ul>
-      </div>
-
-      <template #footer>
-        <button @click="showHistorial = false" class="btn btn-secundario">Cerrar</button>
-      </template>
-    </BaseModal>
-
-    <!-- Toast -->
-    <NotificationToast
-      v-if="alerta.mensaje"
-      :message="alerta.mensaje"
-      :type="alerta.tipo"
-      @close="alerta.mensaje = ''"
-    />
   </div>
 </template>
 
-<script setup>
-/**
- * PagosView.vue
- * - Búsqueda por Nombre/RUT (registro e histórico)
- * - Fecha de pago por defecto = día de ingreso
- * - Método de pago fijo: Transferencia bancaria
- * - Observación opcional
- * - Masivo: permite no seleccionar a nadie (muestra alerta)
- * - Historial por persona (modal)
- * - Anulación total/parcial (pide monto y registra egreso simulado)
- * - Transferencia de pago a otro beneficiario (simulada)
- */
-import { ref, computed, onMounted } from 'vue'
+<script>
+import InputBase from '@/components/Reutilizables/InputBase.vue'
+import BaseSelect from '@/components/Reutilizables/BaseSelect.vue'
+import BaseButton from '@/components/Reutilizables/BaseButton.vue'
 import BaseModal from '@/components/Reutilizables/BaseModal.vue'
-import NotificationToast from '@/components/Reutilizables/NotificationToast.vue'
-import AppIcons from '@/components/icons/AppIcons.vue'
 
-const props = defineProps({ logoUrl: { type: String, default: '' } })
+import pagosService from '@/services/pagosService.js'
+import catalogosService from '@/services/catalogosService.js'
+import personasService from '@/services/personasService.js'
 
-// --------- Helpers UI ---------
-function todayISO () {
-  const now = new Date()
-  const y = now.getFullYear()
-  const m = String(now.getMonth() + 1).padStart(2, '0')
-  const d = String(now.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
+function hoyISO () {
+  const d = new Date();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${d.getFullYear()}-${m}-${day}`;
 }
-function formatearFecha (fecha) {
-  if (!fecha) return '-'
-  const d = new Date(fecha)
-  return d.toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })
-}
-function mostrarAlerta (mensaje, tipo = 'info') {
-  alerta.value = { mensaje, tipo }
-  setTimeout(() => (alerta.value = { mensaje: '', tipo: '' }), 3000)
+function dateCL (f) {
+  if (!f) return '-';
+  return new Date(f).toLocaleDateString('es-CL', { day:'2-digit', month:'short', year:'numeric' });
 }
 
-// --------- Estado principal ---------
-const vistaActiva = ref('registro')
-const tipoRegistro = ref('individual')
+export default {
+  name: 'Pagos',
+  components: { InputBase, BaseSelect, BaseButton, BaseModal },
+  data () {
+    return {
+      // pestañas
+      tab: 'registro',
+      subTab: 'individual',
 
-const personas = ref([])
-const cursos = ref([])
-const grupos = ref([])
-const pagos = ref([])
-const cargandoPagos = ref(false)
-const alerta = ref({ mensaje: '', tipo: '' })
+      // catálogos
+      cursoOptions: [],
+      grupoOptions: [],
 
-// Buscar/seleccionar persona (registro individual)
-const busquedaPersona = ref('')
-const resultadosBusqueda = ref([])
-const buscando = ref(false)
+      // ---- Individual
+      buscarPersonaQ: '',
+      buscandoPersonas: false,
+      personasEncontradas: [],
+      formInd: {
+        personaId: null,
+        nombre: '',
+        rut: '',
+        email: '',
+        curso: '',
+        valor_pagado: null,
+        fecha_pago: hoyISO(),
+        observacion: '',
+        file: null
+      },
 
-// Formularios
-const formIndividual = ref({
-  personaId: null,
-  nombre: '',
-  rut: '',
-  email: '',
-  telefono: '',
-  direccion: '',
-  curso: '',
-  valor_pagado: '',
-  fecha_pago: todayISO(),
-  metodo_pago: 'Transferencia',
-  observacion: '',
-  file: null
-})
-const formMasivo = ref({
-  grupo: '',
-  curso: '',
-  valor_pagado: '',
-  fecha_pago: todayISO(),
-  metodo_pago: 'Transferencia',
-  observacion: '',
-  file: null
-})
-const participantesCargados = ref([])
-const participantesSeleccionados = ref([])
-const cargandoUsuarios = ref(false)
+      // ---- Masivo
+      formMasivo: {
+        grupo: '',
+        curso: '',
+        valor_pagado: null,
+        fecha_pago: hoyISO(),
+        observacion: '',
+        file: null
+      },
+      participantes: [],
+      seleccionados: [],
+      cargandoParticipantes: false,
 
-// Filtros histórico
-const filtroPersona = ref('')
-const paginaActual = ref(1)
-const itemsPorPagina = ref(10)
+      // ---- Histórico
+      filtroQ: '',
+      filtroCurso: '',
+      filtroGrupo: '',
+      pagos: [],
+      cargandoPagos: false,
+      errorPagos: null,
 
-// Modales
-const showModal = ref(false)
-const showModalAnular = ref(false)
-const showModalTransferir = ref(false)
-const showHistorial = ref(false)
-const pagoSeleccionado = ref(null)
+      // ---- Modales
+      modalEditar: false,
+      pagoEdit: {},
+      guardando: false,
 
-// Historial persona
-const historialPersona = ref(null)
-const historialEventos = ref([])
+      modalAnular: false,
+      pagoAnular: null
+    };
+  },
+  methods: {
+    // ====== Cargar catálogos
+    async cargarCatalogos () {
+      try {
+        const [cursos, grupos] = await Promise.all([
+          catalogosService.cursos.list(),
+          catalogosService.grupos.list()
+        ]);
+        const mapList = (r, label='nombre', value='id') => {
+          const arr = Array.isArray(r) ? r : (r?.results || []);
+          return arr.map(x => ({ value: x[value] ?? x.id ?? x.value, label: x[label] ?? x.nombre ?? x.label }));
+        };
+        this.cursoOptions = mapList(cursos);
+        this.grupoOptions = mapList(grupos, 'nombre', 'id');
+      } catch {
+        this.cursoOptions = [];
+        this.grupoOptions = [];
+      }
+    },
 
-// Anulación
-const anulacionTipo = ref('total')
-const anulacionMonto = ref(0)
-const anulacionObs = ref('')
+    // ====== REGISTRO INDIVIDUAL
+    async buscarPersonas () {
+      const q = (this.buscarPersonaQ || '').trim();
+      if (!q) { this.personasEncontradas = []; return; }
+      try {
+        this.buscandoPersonas = true;
+        const r = await personasService.personas.search({ q });
+        const arr = Array.isArray(r) ? r : (r?.results || []);
+        this.personasEncontradas = arr.map(p => ({
+          id: p.id ?? p.PER_ID ?? p.id_persona,
+          nombre: p.nombre ?? `${p.PER_NOMBRES || ''} ${p.PER_APELPTA || ''}`.trim(),
+          rut: p.rut ?? (p.PER_RUN && p.PER_DV ? `${p.PER_RUN}-${p.PER_DV}` : ''),
+          email: p.email ?? p.PER_MAIL ?? ''
+        }));
+      } catch {
+        this.personasEncontradas = [];
+      } finally {
+        this.buscandoPersonas = false;
+      }
+    },
+    seleccionarPersona (p) {
+      this.formInd.personaId = p.id;
+      this.formInd.nombre = p.nombre;
+      this.formInd.rut = p.rut;
+      this.formInd.email = p.email;
+      this.personasEncontradas = [];
+      this.buscarPersonaQ = p.nombre;
+    },
+    onFileInd (e) { this.formInd.file = e.target.files?.[0] || null; },
+    limpiarIndividual () {
+      this.formInd = { personaId: null, nombre:'', rut:'', email:'', curso:'', valor_pagado:null, fecha_pago:hoyISO(), observacion:'', file:null };
+      this.buscarPersonaQ = '';
+      this.personasEncontradas = [];
+    },
+    async registrarPagoIndividual () {
+      try {
+        if (this.formInd.file) {
+          const fd = new FormData();
+          Object.entries(this.formInd).forEach(([k,v]) => {
+            if (v !== null && v !== undefined) fd.append(k, v);
+          });
+          await pagosService.pagos.createIndividualForm(fd);
+        } else {
+          await pagosService.pagos.createIndividual({
+            personaId: this.formInd.personaId,
+            curso: this.formInd.curso,
+            valor_pagado: this.formInd.valor_pagado,
+            fecha_pago: this.formInd.fecha_pago,
+            observacion: this.formInd.observacion
+          });
+        }
+        alert('✅ Pago individual registrado');
+        this.limpiarIndividual();
+      } catch (e) {
+        alert('❌ Error registrando pago: ' + (e?.message || 'ver consola'));
+      }
+    },
 
-// Transferencia
-const busquedaTransfer = ref('')
-const resultadosTransfer = ref([])
-const nuevoBeneficiario = ref(null)
+    // ====== REGISTRO MASIVO
+    onFileMasivo (e) { this.formMasivo.file = e.target.files?.[0] || null; },
+    async cargarParticipantes () {
+      try {
+        this.cargandoParticipantes = true;
+        const r = await personasService.personas.byGrupoCurso({
+          grupo: this.formMasivo.grupo, curso: this.formMasivo.curso
+        });
+        const arr = Array.isArray(r) ? r : (r?.results || []);
+        this.participantes = arr.map(p => ({
+          id: p.id ?? p.PER_ID ?? p.id_persona,
+          nombre: p.nombre ?? `${p.PER_NOMBRES || ''} ${p.PER_APELPTA || ''}`.trim(),
+          rut: p.rut ?? (p.PER_RUN && p.PER_DV ? `${p.PER_RUN}-${p.PER_DV}` : ''),
+          email: p.email ?? p.PER_MAIL ?? ''
+        }));
+        this.seleccionados = [];
+      } catch {
+        this.participantes = [];
+      } finally {
+        this.cargandoParticipantes = false;
+      }
+    },
+    selectAll () { this.seleccionados = this.participantes.map(u => u.id); },
+    unselectAll () { this.seleccionados = []; },
+    limpiarMasivo () {
+      this.formMasivo = { grupo:'', curso:'', valor_pagado:null, fecha_pago:hoyISO(), observacion:'', file:null };
+      this.participantes = [];
+      this.seleccionados = [];
+    },
+    async registrarPagoMasivo () {
+      try {
+        const payload = {
+          grupo: this.formMasivo.grupo,
+          curso: this.formMasivo.curso,
+          valor_pagado: this.formMasivo.valor_pagado,
+          fecha_pago: this.formMasivo.fecha_pago,
+          observacion: this.formMasivo.observacion,
+          participantes: this.seleccionados
+        };
 
-// --------- Demo data (reemplazar por backend) ---------
-const PERSONAS_FICTICIAS = [
-  { id: 1, nombre: 'Juan Pérez González', rut: '12.345.678-9', email: 'juan.perez@scouts.cl', telefono: '+56 9 8765 4321', direccion: 'Av. O\'Higgins 123, Concepción' },
-  { id: 2, nombre: 'María González Silva', rut: '98.765.432-1', email: 'maria.gonzalez@scouts.cl', telefono: '+56 9 1234 5678', direccion: 'Calle Libertad 456, Chillán' },
-  { id: 3, nombre: 'Pedro Silva Rojas', rut: '11.223.344-5', email: 'pedro.silva@scouts.cl', telefono: '+56 9 5555 6666', direccion: 'Pasaje Los Pinos 789, Los Ángeles' }
-]
-const CURSOS_FICTICIOS = [
-  { value: 1, label: 'Formación de Dirigentes Básico - FDB 2025' },
-  { value: 2, label: 'Curso de Especialidad en Montañismo - CEM 2025' },
-  { value: 3, label: 'Formación de Dirigentes Avanzado - FDA 2025' }
-]
-const GRUPOS_FICTICIOS = [
-  { value: 1, label: 'Grupo Scout Biobío' },
-  { value: 2, label: 'Grupo Scout Ñuble' }
-]
-const PAGOS_FICTICIOS = [
-  { id: 1, perId: 1, nombre: 'Juan Pérez González', rut: '12.345.678-9', curso: 'Formación de Dirigentes Básico', monto: 25000, fecha: '2025-10-20', comprobante: null, email: 'juan.perez@scouts.cl', telefono: '+56 9 8765 4321', direccion: 'Av. O\'Higgins 123' },
-  { id: 2, perId: 2, nombre: 'María González Silva', rut: '98.765.432-1', curso: 'Curso de Especialidad en Montañismo', monto: 30000, fecha: '2025-10-18', comprobante: 'comprobante123.pdf', email: 'maria.gonzalez@scouts.cl', telefono: '+56 9 1234 5678', direccion: 'Calle Libertad 456' },
-  { id: 3, perId: 3, nombre: 'Pedro Silva Rojas', rut: '11.223.344-5', curso: 'Formación de Dirigentes Avanzado', monto: 35000, fecha: '2025-10-15', comprobante: 'comprobante456.pdf', email: 'pedro.silva@scouts.cl', telefono: '+56 9 5555 6666', direccion: 'Pasaje Los Pinos 789' }
-]
+        if (this.formMasivo.file) {
+          const fd = new FormData();
+          Object.entries(payload).forEach(([k,v]) => {
+            if (k === 'participantes') v.forEach(id => fd.append('participantes[]', id));
+            else if (v !== null && v !== undefined) fd.append(k, v);
+          });
+          fd.append('file', this.formMasivo.file);
+          await pagosService.pagos.createMasivoForm(fd);
+        } else {
+          await pagosService.pagos.createMasivo(payload);
+        }
+        alert('✅ Pago masivo registrado');
+        this.limpiarMasivo();
+      } catch (e) {
+        alert('❌ Error registrando masivo: ' + (e?.message || 'ver consola'));
+      }
+    },
 
-// --------- Ciclo de vida ---------
-onMounted(() => {
-  personas.value = PERSONAS_FICTICIAS
-  cursos.value = CURSOS_FICTICIOS
-  grupos.value = GRUPOS_FICTICIOS
-  pagos.value = PAGOS_FICTICIOS
-})
+    // ====== HISTÓRICO
+    cursoLabel (id) {
+      const c = this.cursoOptions.find(x => String(x.value) === String(id));
+      return c ? c.label : id;
+    },
+    async cargarPagos () {
+      try {
+        this.cargandoPagos = true;
+        this.errorPagos = null;
+        const r = await pagosService.pagos.list({
+          q: (this.filtroQ || '').trim(),
+          curso: this.filtroCurso || undefined,
+          grupo: this.filtroGrupo || undefined
+        });
+        this.pagos = Array.isArray(r) ? r : (r?.results || []);
+      } catch {
+        this.pagos = [];
+        this.errorPagos = 'No fue posible cargar pagos. Verifica el backend.';
+      } finally {
+        this.cargandoPagos = false;
+      }
+    },
+    exportarCSV () {
+      const rows = this.pagos.map(p => ({
+        Nombre: p.nombre,
+        RUT: p.rut,
+        Curso: this.cursoLabel(p.curso),
+        Monto: p.monto ?? p.valor_pagado,
+        Fecha: dateCL(p.fecha || p.fecha_pago),
+        Metodo: p.metodo || 'Transferencia'
+      }));
+      const headers = rows.length ? Object.keys(rows[0]) : ['Nombre','RUT','Curso','Monto','Fecha','Metodo'];
+      const csv = [headers.join(',')]
+        .concat(rows.map(r => headers.map(h => `"${String(r[h] ?? '').replace(/"/g,'""')}"`).join(',')))
+        .join('\r\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'Pagos.csv'; document.body.appendChild(a); a.click();
+      document.body.removeChild(a); URL.revokeObjectURL(url);
+    },
 
-// --------- Navegación ---------
-const cambiarVista = (vista) => {
-  vistaActiva.value = vista
-  if (vista === 'historico') cargarPagos()
-  if (vista === 'registro') {
-    // asegurar fecha por defecto del día de ingreso
-    if (!formIndividual.value.fecha_pago) formIndividual.value.fecha_pago = todayISO()
-    if (!formMasivo.value.fecha_pago) formMasivo.value.fecha_pago = todayISO()
-  }
-}
+    // ====== Acciones con íconos
+    verDetalle (p) {
+      // reemplaza por tu modal de detalle si ya lo tienes
+      alert(`👁️ Pago de ${p.nombre}\nMonto: $${(p.monto ?? p.valor_pagado)?.toLocaleString('es-CL')}\nFecha: ${dateCL(p.fecha || p.fecha_pago)}`);
+    },
+    abrirTransferir (p) {
+      // placeholder para tu flujo de transferencia
+      alert(`🔁 Transferir pago de ${p.nombre} (id ${p.id})`);
+    },
 
-// --------- Búsqueda persona (registro individual) ---------
-const buscarPersona = () => {
-  if (!busquedaPersona.value || busquedaPersona.value.length < 2) {
-    resultadosBusqueda.value = []
-    return
-  }
-  const q = busquedaPersona.value.toLowerCase()
-  resultadosBusqueda.value = personas.value
-    .filter(p => p.nombre.toLowerCase().includes(q) || p.rut.toLowerCase().includes(q))
-    .slice(0, 5)
-}
-const seleccionarPersona = (persona) => {
-  formIndividual.value = {
-    ...formIndividual.value,
-    personaId: persona.id,
-    nombre: persona.nombre,
-    rut: persona.rut,
-    email: persona.email,
-    telefono: persona.telefono,
-    direccion: persona.direccion
-  }
-  resultadosBusqueda.value = []
-  busquedaPersona.value = persona.nombre
-}
-const limpiarFormularioIndividual = () => {
-  formIndividual.value = {
-    personaId: null,
-    nombre: '',
-    rut: '',
-    email: '',
-    telefono: '',
-    direccion: '',
-    curso: '',
-    valor_pagado: '',
-    fecha_pago: todayISO(),
-    metodo_pago: 'Transferencia',
-    observacion: '',
-    file: null
-  }
-  busquedaPersona.value = ''
-  resultadosBusqueda.value = []
-}
-
-// --------- Registro Individual ---------
-const handleFileIndividual = (e) => { formIndividual.value.file = e.target.files[0] }
-const registrarPagoIndividual = async () => {
-  try {
-    if (!formIndividual.value.personaId) {
-      mostrarAlerta('Debes buscar y seleccionar una persona.', 'error')
-      return
+    // ====== EDICIÓN / ANULACIÓN
+    abrirEditar (p) {
+      this.pagoEdit = {
+        id: p.id,
+        nombre: p.nombre,
+        rut: p.rut,
+        curso: p.curso,
+        monto: p.monto ?? p.valor_pagado,
+        fecha: (p.fecha || p.fecha_pago || '').slice(0,10),
+        observacion: p.observacion || ''
+      };
+      this.modalEditar = true;
+    },
+    async guardarEdicion () {
+      try {
+        this.guardando = true;
+        await pagosService.pagos.partialUpdate(this.pagoEdit.id, {
+          curso: this.pagoEdit.curso,
+          monto: this.pagoEdit.monto,
+          fecha: this.pagoEdit.fecha,
+          observacion: this.pagoEdit.observacion
+        });
+        this.modalEditar = false;
+        await this.cargarPagos();
+        alert('✅ Pago actualizado');
+      } catch (e) {
+        alert('❌ Error actualizando pago: ' + (e?.message || 'ver consola'));
+      } finally {
+        this.guardando = false;
+      }
+    },
+    abrirAnular (p) {
+      this.pagoAnular = p;
+      this.modalAnular = true;
+    },
+    async confirmarAnulacion () {
+      try {
+        await pagosService.pagos.anular(this.pagoAnular.id);
+        this.modalAnular = false;
+        await this.cargarPagos();
+        alert('✅ Pago anulado');
+      } catch (e) {
+        alert('❌ Error al anular: ' + (e?.message || 'ver consola'));
+      }
+    },
+    descargarComprobante (p) {
+      if (p.comprobante_url) {
+        window.open(p.comprobante_url, '_blank');
+      } else {
+        alert('No hay comprobante disponible.');
+      }
     }
-    if (!formIndividual.value.fecha_pago) formIndividual.value.fecha_pago = todayISO()
-    // TODO: enviar a backend
-    mostrarAlerta('Pago individual registrado correctamente', 'exito')
-    limpiarFormularioIndividual()
-  } catch (error) {
-    mostrarAlerta('Error al registrar pago: ' + error.message, 'error')
+  },
+  async mounted () {
+    await Promise.all([this.cargarCatalogos(), this.cargarPagos()]);
   }
-}
-
-// --------- Registro Masivo ---------
-const handleFileMasivo = (e) => { formMasivo.value.file = e.target.files[0] }
-const filtrarParticipantesPorGrupo = () => {
-  participantesCargados.value = []
-  participantesSeleccionados.value = []
-}
-const cargarParticipantesParaMasivo = async () => {
-  try {
-    cargandoUsuarios.value = true
-    // Demo: trae todos; en backend filtra por grupo real
-    participantesCargados.value = [...personas.value]
-    mostrarAlerta(`${participantesCargados.value.length} participantes cargados`, 'exito')
-  } catch (error) {
-    mostrarAlerta('Error al cargar participantes: ' + error.message, 'error')
-  } finally {
-    cargandoUsuarios.value = false
-  }
-}
-const seleccionarTodos = () => { participantesSeleccionados.value = [...participantesCargados.value] }
-const deseleccionarTodos = () => {
-  participantesSeleccionados.value = []
-  mostrarAlerta('No hay participantes seleccionados. Debes elegir al menos uno para registrar.', 'info')
-}
-const limpiarFormularioMasivo = () => {
-  formMasivo.value = {
-    grupo: '',
-    curso: '',
-    valor_pagado: '',
-    fecha_pago: todayISO(),
-    metodo_pago: 'Transferencia',
-    observacion: '',
-    file: null
-  }
-  participantesCargados.value = []
-  participantesSeleccionados.value = []
-}
-const registrarPagoMasivo = async () => {
-  try {
-    if (participantesSeleccionados.value.length === 0) {
-      mostrarAlerta('No puedes registrar un pago masivo sin participantes.', 'error')
-      return
-    }
-    if (!formMasivo.value.fecha_pago) formMasivo.value.fecha_pago = todayISO()
-    // TODO: enviar a backend
-    mostrarAlerta(`Pago masivo registrado para ${participantesSeleccionados.value.length} usuarios`, 'exito')
-    limpiarFormularioMasivo()
-  } catch (error) {
-    mostrarAlerta('Error al registrar pago masivo: ' + error.message, 'error')
-  }
-}
-
-// --------- Histórico ---------
-async function cargarPagos () {
-  try {
-    cargandoPagos.value = true
-    // TODO: pagos.value = await api
-    pagos.value = PAGOS_FICTICIOS
-  } finally {
-    cargandoPagos.value = false
-  }
-}
-const aplicarFiltros = () => { paginaActual.value = 1 }
-const limpiarFiltros = () => { filtroPersona.value = ''; paginaActual.value = 1 }
-const pagosFiltrados = computed(() => {
-  const q = filtroPersona.value.trim().toLowerCase()
-  return q
-    ? pagos.value.filter(p => p.nombre?.toLowerCase().includes(q) || p.rut?.toLowerCase().includes(q))
-    : [...pagos.value]
-})
-const totalPages = computed(() => Math.ceil(pagosFiltrados.value.length / itemsPorPagina.value))
-const paginatedPagos = computed(() => {
-  const start = (paginaActual.value - 1) * itemsPorPagina.value
-  return pagosFiltrados.value.slice(start, start + itemsPorPagina.value)
-})
-const cambiarPagina = (pagina) => {
-  if (pagina >= 1 && pagina <= totalPages.value) paginaActual.value = pagina
-}
-
-// --------- Editar ---------
-const abrirModal = (p) => { pagoSeleccionado.value = { ...p }; showModal.value = true }
-const cerrarModal = () => { showModal.value = false; pagoSeleccionado.value = null }
-const guardarPago = async () => {
-  try {
-    const idx = pagos.value.findIndex(p => p.id === pagoSeleccionado.value.id)
-    if (idx !== -1) pagos.value[idx] = { ...pagoSeleccionado.value }
-    // TODO: update backend
-    mostrarAlerta('Pago actualizado correctamente', 'exito')
-    cerrarModal()
-  } catch (e) {
-    mostrarAlerta('Error al guardar pago: ' + e.message, 'error')
-  }
-}
-
-// --------- Historial por persona ---------
-const verHistorial = async (perId) => {
-  try {
-    historialPersona.value = personas.value.find(p => p.id === perId)
-    // TODO: traer del backend
-    historialEventos.value = [
-      { id: 1, tipo: 'Pago', detalle: 'Curso FDB 2025 · $25.000', fecha: '2025-10-20' },
-      { id: 2, tipo: 'Transferencia', detalle: 'Pago transferido a María González', fecha: '2025-10-22' },
-      { id: 3, tipo: 'Devolución parcial', detalle: '$10.000', fecha: '2025-10-25' }
-    ]
-    showHistorial.value = true
-  } catch {
-    mostrarAlerta('No fue posible cargar el historial', 'error')
-  }
-}
-
-// --------- Anulación (egreso / parcial-total) ---------
-const abrirModalAnular = (p) => {
-  pagoSeleccionado.value = p
-  anulacionTipo.value = 'total'
-  anulacionMonto.value = 0
-  anulacionObs.value = ''
-  showModalAnular.value = true
-}
-const cerrarModalAnular = () => { showModalAnular.value = false; pagoSeleccionado.value = null }
-const confirmarAnulacionConDetalle = async () => {
-  try {
-    const total = pagoSeleccionado.value.monto
-    const monto = anulacionTipo.value === 'total' ? total : (anulacionMonto.value || 0)
-    if (monto <= 0 || monto > total) {
-      mostrarAlerta('Monto inválido para devolución', 'error')
-      return
-    }
-    // TODO: backend:
-    // 1) generar egreso (devolución)
-    // 2) crear registro de anulación por -monto (si parcial, solo el porcentaje)
-    mostrarAlerta(`Anulación ${anulacionTipo.value} registrada ($${monto.toLocaleString('es-CL')})`, 'exito')
-    cerrarModalAnular()
-  } catch (e) {
-    mostrarAlerta('Error al anular: ' + e.message, 'error')
-  }
-}
-
-// --------- Transferir pago (cambiar beneficiario) ---------
-const abrirModalTransferir = (pago) => { pagoSeleccionado.value = pago; showModalTransferir.value = true }
-const cerrarModalTransferir = () => { showModalTransferir.value = false; busquedaTransfer.value = ''; resultadosTransfer.value = []; nuevoBeneficiario.value = null }
-const buscarTransfer = () => {
-  const q = busquedaTransfer.value.trim().toLowerCase()
-  resultadosTransfer.value = q.length < 2
-    ? []
-    : personas.value.filter(p => p.nombre.toLowerCase().includes(q) || p.rut.toLowerCase().includes(q)).slice(0, 5)
-}
-const seleccionarTransfer = (p) => { nuevoBeneficiario.value = p; resultadosTransfer.value = []; busquedaTransfer.value = p.nombre }
-const confirmarTransferencia = async () => {
-  try {
-    if (!nuevoBeneficiario.value) { mostrarAlerta('Selecciona el nuevo beneficiario.', 'error'); return }
-    // TODO backend: cambiar beneficiario + registrar fecha de cambio
-    mostrarAlerta(`Pago transferido a ${nuevoBeneficiario.value.nombre}`, 'exito')
-    cerrarModalTransferir()
-  } catch (e) {
-    mostrarAlerta('Error al transferir: ' + e.message, 'error')
-  }
-}
-
-// --------- Utilidades tabla ---------
-const descargarComprobante = (pago) => {
-  console.log('Descargar comprobante:', pago.comprobante)
-  mostrarAlerta('Descarga de comprobante próximamente', 'info')
-}
-const exportarExcel = () => {
-  console.log('Exportar a Excel')
-  mostrarAlerta('Función de exportación próximamente', 'info')
-}
+};
 </script>
 
-<style scoped>
-.pago-view { max-width: 1400px; margin: 0 auto; padding: 24px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+<style>
+.gestion-pagos{
+  box-sizing:border-box;
+  margin:20px auto;
+  padding:16px 40px;
+  background:#fff;
+  color:#111;
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  font-family:Arial, sans-serif;
+  width: 1200px;
+  max-width: calc(100% - 48px);
+  border-radius:8px;
+  box-shadow:0 10px 30px rgba(16,24,40,0.08);
+}
 
-/* compacta inputs (achica espacios de texto) */
-.compact { max-width: 900px; }
-.compact .form-group input,
-.compact .form-group select,
-.compact .search-input,
-.compact .file-upload-label { padding: 8px 10px !important; font-size: 0.9rem !important; }
-.compact .navegacion-vistas button, .compact .btn { padding: 8px 12px; font-size: 0.9rem; }
-.compact .card-header { padding: 16px 20px; }
-.compact .tipo-registro-selector { padding: 12px 16px; }
-.compact .form-divider { margin: 20px 0 12px; padding-top: 12px; }
-.compact .tabla-pagos th, .compact .tabla-pagos td { padding: 10px 8px; }
+.header h2{
+  background:#214e9c;
+  color:#fff;
+  padding:14px 18px;
+  border-radius:6px;
+  margin:0 0 4px 0;
+  text-align:center;
+}
+.header h3{
+  margin:6px 0 0 0;
+  color:#444;
+  font-weight:500;
+  text-align:center;
+}
 
-/* Header / Tabs */
-.navegacion-vistas { display: flex; gap: 8px; border-bottom: 2px solid #e5e7eb; margin-bottom: 24px; background: white; border-radius: 8px 8px 0 0; overflow: hidden; align-items: center; }
-.logo-wrap { padding-left: 12px; display: flex; align-items: center; }
-.header-logo { height: 28px; width: auto; margin-right: 8px; }
-.navegacion-vistas button { flex: 1; padding: 16px 24px; border: none; background: transparent; cursor: pointer; font-size: 1rem; font-weight: 500; color: #6b7280; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.3s ease; border-bottom: 3px solid transparent; position: relative; }
-.navegacion-vistas button:hover:not(.active) { background: #f9fafb; color: var(--color-primary, #1e40af); }
-.navegacion-vistas button.active { color: var(--color-primary, #1e40af); border-bottom-color: var(--color-primary, #1e40af); background: #eff6ff; font-weight: 600; }
+.tabs, .subtabs{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.tabs button, .subtabs button{ padding:10px 14px; border-radius:8px; border:1px solid #e6e6e6; background:#fff; cursor:pointer; font-weight:700 }
+.tabs button.active, .subtabs button.active{ background:#214e9c; color:#fff; border-color:#214e9c }
 
-/* Card */
-.vista-registrar, .vista-buscar { display: flex; flex-direction: column; gap: 16px; }
-.card-registro { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; transition: box-shadow 0.3s ease; width: min(100%, 980px); margin-inline: auto; }
-.card-registro:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
-.card-header { background: linear-gradient(to right, #f9fafb, #ffffff); padding: 24px 32px; border-bottom: 2px solid #e5e7eb; }
-.card-header h3 { margin: 0 0 8px 0; font-size: 1.5rem; font-weight: 600; color: #111827; display: flex; align-items: center; gap: 8px; }
-.card-header p { margin: 0; color: #6b7280; font-size: 0.95rem; }
+.card{ background:#fff; border:1px solid #eef2f6; border-radius:8px; padding:16px; }
+.panel{ display:flex; flex-direction:column; gap:12px; }
+.panel-title{ text-align:center; }
+.panel-title h4{ margin:0; color:#1e3a8a; font-size:20px; }
+.panel-title p{ margin:4px 0 0 0; color:#475569; }
 
-/* Selector tipo de registro */
-.tipo-registro-selector { display: flex; gap: 12px; padding: 24px 32px; background: #f9fafb; border-bottom: 2px solid #e5e7eb; }
-.tipo-btn { flex: 1; padding: 16px 24px; border: 2px solid #e5e7eb; border-radius: 8px; background: white; cursor: pointer; font-size: 1rem; font-weight: 500; color: #6b7280; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease; }
-.tipo-btn:hover:not(.active) { background: #eff6ff; border-color: var(--color-primary, #1e40af); color: var(--color-primary, #1e40af); }
-.tipo-btn.active { background: var(--color-primary, #1e40af); border-color: var(--color-primary, #1e40af); color: white; font-weight: 600; box-shadow: 0 4px 6px rgba(30,64,175,0.2); }
+.grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.col{ display:flex; flex-direction:column; gap:6px; }
+.col.full{ grid-column:1 / -1; }
+.col.auto{ align-self:end; }
+label{ font-weight:700; color:#1e3a8a; }
+.invisible{ visibility:hidden }
 
-/* Formularios centrados y responsivos */
-.form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 16px 20px; max-width: 760px; margin-inline: auto; }
-.form-group { display: flex; flex-direction: column; gap: 6px; }
-.form-group.full-width { grid-column: 1 / -1; }
-.form-group label { font-weight: 600; color: #374151; font-size: 0.9rem; }
-.form-group input, .form-group select { padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem; transition: all 0.2s; background: white; color: #111827; }
-.form-group input:focus, .form-group select:focus { outline: none; border-color: var(--color-primary, #1e40af); box-shadow: 0 0 0 3px rgba(30,64,175,0.1); }
-.readonly-input { background: #f9fafb !important; cursor: not-allowed; color: #6b7280; }
+.with-prefix{ display:flex; align-items:center; border:1px solid #e6e6e6; border-radius:6px; overflow:hidden; }
+.with-prefix .prefix{ background:#f1f5f9; padding:10px 12px; font-weight:700; color:#334155; border-right:1px solid #e6e6e6; }
+.with-prefix input{ border:none; padding:10px 12px; flex:1; outline:none; }
 
-/* Input con prefijo $ */
-.input-with-prefix { display: flex; align-items: center; border: 2px solid #e5e7eb; border-radius: 8px; overflow: hidden; transition: all 0.2s ease; }
-.input-with-prefix:focus-within { border-color: var(--color-primary, #1e40af); box-shadow: 0 0 0 3px rgba(30,64,175,0.1); }
-.input-with-prefix .prefix { background: #f3f4f6; padding: 12px 16px; font-weight: 600; color: #6b7280; border-right: 2px solid #e5e7eb; }
-.input-with-prefix input { flex: 1; border: none; padding: 12px 16px; font-size: 1rem; }
-.input-with-prefix input:focus { outline: none; box-shadow: none; }
+.badge{ background:#e0e7ff; color:#3730a3; font-weight:700; padding:8px 10px; border-radius:8px; text-align:center; }
 
-/* Búsqueda */
-.search-section { margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #e5e7eb; }
-.search-group { position: relative; max-width: 760px; margin-inline: auto; }
-.search-input-wrapper { position: relative; }
-.search-input { width: 100%; padding: 12px 44px 12px 12px !important; border: 2px solid #e5e7eb !important; border-radius: 12px !important; }
-.search-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 1.1rem; pointer-events: none; }
-.search-icon svg { margin-right: 0; }
-.resultados-busqueda { margin-top: 8px; border: 2px solid #e5e7eb; border-radius: 8px; background: white; max-height: 260px; overflow-y: auto; max-width: 760px; margin-inline: auto; }
-.resultado-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #f3f4f6; transition: all 0.2s ease; display: flex; justify-content: space-between; align-items: center; }
-.resultado-item:last-child { border-bottom: none; }
-.resultado-item:hover { background: #eff6ff; }
-.resultado-info { display: flex; flex-direction: column; gap: 2px; }
-.resultado-info strong { color: #111827; font-size: 0.95rem; }
-.resultado-info .rut { color: #6b7280; font-size: 0.85rem; }
-.no-resultados { padding: 14px; text-align: center; color: #9ca3af; font-style: italic; max-width: 760px; margin-inline: auto; }
+.resultados{ border:1px solid #e6e6e6; border-radius:8px; margin-top:6px; }
+.resultado{ display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid #f1f1f1; cursor:pointer; }
+.resultado:last-child{ border-bottom:none; }
+.resultado:hover{ background:#f8fafc; }
+.resultado .muted{ color:#64748b; font-size:12px; display:block; }
 
-/* Divider */
-.form-divider { margin: 24px 0 14px; padding-top: 12px; border-top: 2px solid #e5e7eb; max-width: 760px; margin-inline: auto; }
-.form-divider h4 { margin: 0; font-size: 1.1rem; font-weight: 600; color: #111827; display: flex; align-items: center; gap: 8px; }
+.lista{ margin-top:8px; border:1px solid #e6e6e6; border-radius:8px; }
+.lista-header{ display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid #f1f1f1; }
+.lista-items{ max-height:280px; overflow:auto; display:flex; flex-direction:column; }
+.item{ display:flex; gap:10px; align-items:center; padding:10px 12px; border-bottom:1px solid #f6f6f6; }
+.item:last-child{ border-bottom:none; }
+.item .info .muted{ color:#64748b; font-size:12px; display:block; }
 
-/* File upload */
-.file-upload-wrapper input[type="file"] { display: none; }
-.file-upload-label { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 2px dashed #d1d5db; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; background: #f9fafb; color: #6b7280; font-weight: 500; max-width: 760px; margin-inline: auto; }
-.file-upload-label:hover { border-color: var(--color-primary, #1e40af); background: #eff6ff; color: var(--color-primary, #1e40af); }
+.resumen{ margin-top:12px; padding:12px; background:linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%); border:1px solid #93c5fd; border-radius:8px; display:flex; gap:16px; justify-content:center; font-weight:700; color:#1e40af; }
+.resumen .total{ text-transform:uppercase; }
 
-/* Participantes masivo */
-.participantes-section { margin-top: 16px; padding: 14px; background: #f9fafb; border-radius: 8px; border: 2px solid #e5e7eb; max-width: 860px; margin-inline: auto; }
-.participantes-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid #e5e7eb; }
-.participantes-header h4 { margin: 0; font-size: 1rem; font-weight: 600; color: #111827; }
-.seleccion-acciones { display: flex; gap: 8px; }
-.btn-link { background: none; border: none; color: var(--color-primary, #1e40af); cursor: pointer; font-size: 0.9rem; text-decoration: underline; padding: 2px 4px; }
-.btn-link:hover { color: #1e3a8a; }
-.participantes-lista { max-height: 260px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
-.participante-item { display: flex; align-items: center; gap: 10px; padding: 10px; background: white; border-radius: 6px; border: 1px solid #e5e7eb; transition: all 0.2s ease; }
-.participante-item:hover { border-color: var(--color-primary, #1e40af); background: #eff6ff; }
-.checkbox-styled { width: 18px; height: 18px; cursor: pointer; }
-.participante-label { flex: 1; cursor: pointer; display: flex; justify-content: space-between; align-items: center; margin: 0; }
-.participante-info { display: flex; flex-direction: column; gap: 2px; }
-.participante-info strong { color: #111827; font-size: 0.9rem; }
-.participante-info .rut { color: #6b7280; font-size: 0.8rem; }
-.participante-label .email { color: #6b7280; font-size: 0.8rem; }
+.filtros{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:8px; }
+.estado-carga{ text-align:center; padding:12px; color:#555; font-style:italic; }
+.mensaje-error{ background:#fde8e8; color:#9b1c1c; padding:10px; border:1px solid #f8b4b4; border-radius:6px; text-align:center; }
 
-/* Resumen masivo */
-.resumen-masivo { margin-top: 16px; padding: 14px; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 8px; border: 2px solid #93c5fd; max-width: 760px; margin-inline: auto; }
-.resumen-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; color: #1e40af; }
-.resumen-item span { font-size: 0.95rem; }
-.resumen-item strong { font-size: 1rem; font-weight: 600; }
-.resumen-item.total { margin-top: 10px; padding-top: 10px; border-top: 2px solid #93c5fd; font-size: 1.05rem; }
-.resumen-item.total strong { font-size: 1.2rem; color: #1e3a8a; }
+.table-wrapper{ overflow:auto; border:1px solid #eef2f6; border-radius:8px; }
+table{ width:100%; border-collapse:collapse; background:#fff; }
+th,td{ padding:14px 12px; border-bottom:1px solid #f1f1f1; text-align:left; }
+th{ background:#f7f7f7; position:sticky; top:0; z-index:1; }
+.placeholder{ text-align:center; color:#666; padding:40px 12px; }
 
-/* Botones */
-.form-actions { display: flex; gap: 10px; margin-top: 16px; justify-content: center; }
-.btn { padding: 12px 24px; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-.btn-primario { background: var(--color-primary, #1e40af); color: white; }
-.btn-primario:hover:not(:disabled) { background: #1e3a8a; box-shadow: 0 4px 6px rgba(0,0,0,0.15); transform: translateY(-1px); }
-.btn-secundario { background: #f3f4f6; color: #374151; }
-.btn-secundario:hover { background: #e5e7eb; }
-.btn-info { background: #0ea5e9; color: white; width: 100%; justify-content: center; margin-bottom: 12px; }
-.btn-info:hover:not(:disabled) { background: #0284c7; }
-.btn-success { background: #10b981; color: white; }
-.btn-success:hover { background: #059669; }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.acciones{ display:flex; gap:8px; }
+.acciones.center{ justify-content:center; }
+.acciones-buttons{ display:flex; gap:6px; align-items:center; justify-content:center; flex-wrap:wrap; }
 
-/* Tabla */
-.filtros-avanzados { margin-bottom: 16px; }
-.filtros-acciones { display: flex; gap: 10px; margin-top: 12px; justify-content: center; }
-.tabla-pagos { overflow-x: auto; margin-top: 12px; border-radius: 8px; border: 1px solid #e5e7eb; }
-.tabla-pagos table { width: 100%; border-collapse: collapse; background: white; table-layout: auto; min-width: 920px; }
-.tabla-pagos thead { background: linear-gradient(to right, #1e40af, #1e3a8a); color: white; }
-.tabla-pagos th { padding: 16px; text-align: left; font-weight: 600; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px; }
-.tabla-pagos td { padding: 16px; border-bottom: 1px solid #f3f4f6; }
-.tabla-pagos th, .tabla-pagos td { vertical-align: middle; overflow: hidden; text-overflow: ellipsis; }
-.tabla-pagos th:nth-child(4), .tabla-pagos td:nth-child(4) { text-align: right; }
-.tabla-pagos th:nth-child(5), .tabla-pagos td:nth-child(5) { white-space: nowrap; }
-.tabla-pagos th:nth-child(6), .tabla-pagos td:nth-child(6) { width: 220px; white-space: nowrap; text-align: left; }
-.tabla-pagos tbody tr { transition: all 0.2s ease; }
-.tabla-pagos tbody tr:hover { background: #f9fafb; }
-.tabla-pagos .monto { font-weight: 600; color: #059669; }
+/* Botones con ícono y texto */
+.btn-with-icon{ display:inline-flex; align-items:center; gap:6px; font-weight:700; }
+.btn-with-icon .icon{ line-height:1; }
+.btn-with-icon .label{ line-height:1; }
 
-.actions-cell { display: flex; gap: 8px; align-items: center; justify-content: flex-start; }
-.btn-icon { border: none; font-size: 0; cursor: pointer; padding: 8px 12px; border-radius: 6px; transition: all 0.2s ease; color: white; font-weight: 500; }
-.btn-icon.btn-ver { background: #2563eb; }
-.btn-icon.btn-ver:hover { background: #1d4ed8; transform: scale(1.05); }
-.btn-icon.btn-editar { background: #f59e0b; }
-.btn-icon.btn-editar:hover { background: #d97706; transform: scale(1.05); }
-.btn-icon.btn-anular { background: #dc2626; }
-.btn-icon.btn-anular:hover { background: #b91c1c; transform: scale(1.05); }
-.btn-icon:not(.btn-ver):not(.btn-editar):not(.btn-anular) { background: #6b7280; }
-.btn-icon:not(.btn-ver):not(.btn-editar):not(.btn-anular):hover { background: #4b5563; transform: scale(1.05); }
-.actions-cell svg { margin-right: 0 !important; filter: brightness(0) invert(1); }
+/* Variantes ya usadas */
+.btn-search{ background:linear-gradient(180deg,#2b6cb0,#154c8c); color:#fff; }
+.btn-export{ background:linear-gradient(180deg,#16a34a,#15803d); color:#fff; }
+.btn-save{ background:linear-gradient(180deg,#2563eb,#1e40af); color:#fff; }
 
-.loading-cell, .no-results { text-align: center; padding: 24px; color: #9ca3af; font-size: 0.95rem; }
+.pago-modal :deep(.modal-overlay){ position:fixed !important; inset:0 !important; display:flex !important; align-items:center !important; justify-content:center !important; z-index:9999 !important; }
+.modal-edit{ width:700px; max-width:calc(100vw - 40px); max-height:calc(100vh - 96px); overflow:auto; padding:24px 32px; }
+.modal-header{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
+.modal-header h3{ margin:0; color:#214e9c }
+.form-fields-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px 24px; }
+.row{ display:flex; flex-direction:column; gap:6px; }
+.row.full-width{ grid-column:1 / -1; }
+.row input, .row select{ padding:10px 12px; border:1px solid #e6e6e6; border-radius:6px; }
 
-/* Paginación */
-.pagination { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding: 12px 16px; background: #f9f9fb; border-radius: 8px; border: 1px solid #e5e7eb; }
-.pagination-info { color: #6b7280; font-size: 0.9rem; }
-.pagination-info .separator { margin: 0 8px; color: #d1d5db; }
-.btn-pag { padding: 8px 12px; background: white; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer; font-weight: 500; color: #374151; transition: all 0.2s ease; }
-.btn-pag:hover:not(:disabled) { background: var(--color-primary, #1e40af); color: white; border-color: var(--color-primary, #1e40af); }
-.btn-pag:disabled { opacity: 0.4; cursor: not-allowed; }
+.confirm-content{ display:flex; flex-direction:column; align-items:center; text-align:center; padding:24px; }
+.confirm-icon{ font-size:60px; margin-bottom:12px; }
+.btn-modal-cancel{ background:linear-gradient(180deg,#6b7280,#4b5563) !important; color:#fff !important; }
+.btn-modal-anular{ background:linear-gradient(180deg,#ef4444,#dc2626) !important; color:#fff !important; }
 
-/* Modales */
-.modal-editar-pago, .modal-confirmar { padding: 24px; max-width: 520px; margin: 0 auto; }
-.modal-editar-pago h3, .modal-confirmar h3 { margin: 0 0 16px; font-size: 1.3rem; font-weight: 600; color: #111827; }
-.modal-confirmar p { margin-bottom: 16px; color: #6b7280; font-size: 0.95rem; line-height: 1.6; }
-.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
-.btn-danger { background: #dc2626; color: white; }
-.btn-danger:hover { background: #b91c1c; }
-
-/* Historial modal */
-.historial-lista { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
-.historial-item { display: grid; grid-template-columns: 110px 140px 1fr; gap: 8px; align-items: center; padding: 10px; border: 1px solid #e5e7eb; border-radius: 8px; }
-.historial-fecha { color: #374151; font-weight: 600; }
-.historial-tipo { background: #eff6ff; color: #1e40af; padding: 4px 10px; border-radius: 999px; font-size: 0.85rem; text-align: center; }
-
-/* Responsive */
-@media (max-width: 768px) {
-  .pago-view { padding: 16px; }
-  .form-grid { grid-template-columns: 1fr; }
-  .navegacion-vistas button { font-size: 0.9rem; padding: 12px 16px; }
-  .tabla-pagos { font-size: 0.85rem; }
-  .tabla-pagos th, .tabla-pagos td { padding: 12px 8px; }
-  .pagination { flex-direction: column; gap: 10px; }
-  .historial-item { grid-template-columns: 100px 1fr; }
-  .historial-tipo { justify-self: start; }
+@media (max-width: 860px){
+  .grid{ grid-template-columns:1fr; }
+  /* En móviles, escondemos texto y dejamos solo iconos para ahorrar espacio */
+  .btn-with-icon .label{ display:none; }
 }
 </style>
