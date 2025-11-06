@@ -6,7 +6,7 @@
       <h3>Registro Individual / Masivo y Consulta</h3>
     </header>
 
-    <!-- Pestañas de navegación internas -->
+    <!-- Pestañas -->
     <div class="tabs">
       <button :class="{active: tab==='registro'}" @click="tab='registro'">🧾 Registro</button>
       <button :class="{active: tab==='historico'}" @click="tab='historico'">📑 Histórico</button>
@@ -166,7 +166,7 @@
           </div>
         </div>
 
-        <div v-if="seleccionados.length && formMasivo.valor_pagado" class="resumen">
+        <div class="resumen" v-if="seleccionados.length && formMasivo.valor_pagado">
           <div>Seleccionados: <strong>{{ seleccionados.length }}</strong></div>
           <div>Valor por persona: <strong>${{ formMasivo.valor_pagado.toLocaleString('es-CL') }}</strong></div>
           <div class="total">Total: <strong>${{ (seleccionados.length * formMasivo.valor_pagado).toLocaleString('es-CL') }}</strong></div>
@@ -193,7 +193,19 @@
         <BaseSelect v-model="filtroCurso" :options="[{value:'',label:'Todos los cursos'}, ...cursoOptions]" />
         <BaseSelect v-model="filtroGrupo" :options="[{value:'',label:'Todos los grupos'}, ...grupoOptions]" />
         <BaseButton class="btn-search" variant="primary" @click="cargarPagos">🔎 Buscar</BaseButton>
-        <BaseButton class="btn-export" variant="secondary" @click="exportarCSV">📊 Exportar</BaseButton>
+      </div>
+
+      <!-- BARRA DE ACCIONES estilo 'Gestión de Comunicaciones' -->
+      <div class="toolbar">
+        <button class="btn btn-outline" @click="exportarCSV">
+          <span class="btn-icon">⬇️</span> Exportar Correos
+        </button>
+        <button class="btn btn-primary" :disabled="!seleccionadosHistorico.length" @click="marcarEnviado">
+          <span class="btn-icon">✓</span> Marcar Enviado
+        </button>
+        <button class="btn btn-blue" :disabled="!seleccionadosHistorico.length" @click="enviarPorCorreo">
+          <span class="btn-icon">✈️</span> Enviar por correo
+        </button>
       </div>
 
       <!-- Estado de carga y error -->
@@ -208,6 +220,11 @@
         <table>
           <thead>
             <tr>
+              <th style="width:36px;">
+                <input type="checkbox"
+                       :checked="allChecked"
+                       @change="toggleSelectAllHistorico($event.target.checked)" />
+              </th>
               <th>Nombre</th>
               <th>RUT</th>
               <th>Curso</th>
@@ -219,6 +236,11 @@
           </thead>
           <tbody>
             <tr v-for="p in pagos" :key="p.id">
+              <td>
+                <input type="checkbox"
+                       :value="p.id"
+                       v-model="seleccionadosHistorico" />
+              </td>
               <td><strong>{{ p.nombre }}</strong></td>
               <td>{{ p.rut }}</td>
               <td>{{ cursoLabel(p.curso) }}</td>
@@ -256,7 +278,7 @@
               </td>
             </tr>
             <tr v-if="!pagos.length">
-              <td colspan="7" class="placeholder">No hay pagos para mostrar</td>
+              <td colspan="8" class="placeholder">No hay pagos para mostrar</td>
             </tr>
           </tbody>
         </table>
@@ -328,8 +350,7 @@ import BaseButton from '@/components/Reutilizables/BaseButton.vue'
 import BaseModal from '@/components/Reutilizables/BaseModal.vue'
 
 import pagosService from '@/services/pagosService.js'
-import catalogosService from '@/services/catalogosService.js'
-import personasService from '@/services/personasService.js'
+import personasService from '@/services/personasService.js' // existe en tu repo
 
 function hoyISO () {
   const d = new Date();
@@ -391,6 +412,7 @@ export default {
       pagos: [],
       cargandoPagos: false,
       errorPagos: null,
+      seleccionadosHistorico: [],
 
       // ---- Modales
       modalEditar: false,
@@ -401,22 +423,46 @@ export default {
       pagoAnular: null
     };
   },
+  computed: {
+    allChecked () {
+      return this.pagos.length > 0 &&
+             this.seleccionadosHistorico.length === this.pagos.length
+    }
+  },
   methods: {
-    // ====== Cargar catálogos
+    // ====== Cargar catálogos (sin catalogosService)
     async cargarCatalogos () {
+      // Intento opcional: cursosService.js si existe
       try {
-        const [cursos, grupos] = await Promise.all([
-          catalogosService.cursos.list(),
-          catalogosService.grupos.list()
-        ]);
-        const mapList = (r, label='nombre', value='id') => {
-          const arr = Array.isArray(r) ? r : (r?.results || []);
-          return arr.map(x => ({ value: x[value] ?? x.id ?? x.value, label: x[label] ?? x.nombre ?? x.label }));
-        };
-        this.cursoOptions = mapList(cursos);
-        this.grupoOptions = mapList(grupos, 'nombre', 'id');
-      } catch {
+        const mod = await import('@/services/cursosService.js');
+        const svc = mod.default || mod;
+        const resp = (svc.cursos?.list ? await svc.cursos.list()
+                    : svc.list ? await svc.list()
+                    : []);
+        const arr = Array.isArray(resp) ? resp : (resp?.results || []);
+        this.cursoOptions = arr.map(x => ({
+          value: x.id ?? x.value ?? x.CUR_ID ?? x.cur_id ?? String(x.nombre || x.label || 'curso'),
+          label: x.nombre ?? x.label ?? x.CUR_NOMBRE ?? `Curso ${x.id ?? ''}`.trim()
+        }));
+      } catch (e) {
+        // si no existe el servicio, dejamos vacío (no rompe)
         this.cursoOptions = [];
+      }
+
+      // Opcional: grupos desde algún servicio si existiera
+      try {
+        const modG = await import('@/services/usuariosService.js'); // existe en repo
+        const svcG = modG.default || modG;
+        // probamos distintos nombres típicos
+        const respG = svcG.grupos?.list
+          ? await svcG.grupos.list()
+          : (svcG.listGrupos ? await svcG.listGrupos() : []);
+        const arrG = Array.isArray(respG) ? respG : (respG?.results || []);
+        this.grupoOptions = arrG.map(g => ({
+          value: g.id ?? g.value ?? g.GRU_ID ?? String(g.nombre || g.label || 'grupo'),
+          label: g.nombre ?? g.label ?? g.GRU_NOMBRE ?? `Grupo ${g.id ?? ''}`.trim()
+        }));
+      } catch (e) {
         this.grupoOptions = [];
       }
     },
@@ -427,7 +473,10 @@ export default {
       if (!q) { this.personasEncontradas = []; return; }
       try {
         this.buscandoPersonas = true;
-        const r = await personasService.personas.search({ q });
+        // ajusta al método real de tu personasService
+        const r = (personasService.personas?.search)
+          ? await personasService.personas.search({ q })
+          : (personasService.search ? await personasService.search({ q }) : []);
         const arr = Array.isArray(r) ? r : (r?.results || []);
         this.personasEncontradas = arr.map(p => ({
           id: p.id ?? p.PER_ID ?? p.id_persona,
@@ -435,7 +484,7 @@ export default {
           rut: p.rut ?? (p.PER_RUN && p.PER_DV ? `${p.PER_RUN}-${p.PER_DV}` : ''),
           email: p.email ?? p.PER_MAIL ?? ''
         }));
-      } catch {
+      } catch (e) {
         this.personasEncontradas = [];
       } finally {
         this.buscandoPersonas = false;
@@ -462,15 +511,33 @@ export default {
           Object.entries(this.formInd).forEach(([k,v]) => {
             if (v !== null && v !== undefined) fd.append(k, v);
           });
-          await pagosService.pagos.createIndividualForm(fd);
+          // intenta método con form-data
+          if (pagosService.pagos?.createIndividualForm) {
+            await pagosService.pagos.createIndividualForm(fd);
+          } else if (pagosService.createIndividualForm) {
+            await pagosService.createIndividualForm(fd);
+          } else if (pagosService.pagos?.create) {
+            await pagosService.pagos.create(fd);
+          } else {
+            throw new Error('Endpoint no disponible para FormData');
+          }
         } else {
-          await pagosService.pagos.createIndividual({
+          const payload = {
             personaId: this.formInd.personaId,
             curso: this.formInd.curso,
             valor_pagado: this.formInd.valor_pagado,
             fecha_pago: this.formInd.fecha_pago,
             observacion: this.formInd.observacion
-          });
+          };
+          if (pagosService.pagos?.createIndividual) {
+            await pagosService.pagos.createIndividual(payload);
+          } else if (pagosService.createIndividual) {
+            await pagosService.createIndividual(payload);
+          } else if (pagosService.pagos?.create) {
+            await pagosService.pagos.create(payload);
+          } else {
+            throw new Error('Endpoint no disponible para createIndividual');
+          }
         }
         alert('✅ Pago individual registrado');
         this.limpiarIndividual();
@@ -484,9 +551,16 @@ export default {
     async cargarParticipantes () {
       try {
         this.cargandoParticipantes = true;
-        const r = await personasService.personas.byGrupoCurso({
-          grupo: this.formMasivo.grupo, curso: this.formMasivo.curso
-        });
+        let r = [];
+        if (personasService.personas?.byGrupoCurso) {
+          r = await personasService.personas.byGrupoCurso({
+            grupo: this.formMasivo.grupo, curso: this.formMasivo.curso
+          });
+        } else if (personasService.byGrupoCurso) {
+          r = await personasService.byGrupoCurso({
+            grupo: this.formMasivo.grupo, curso: this.formMasivo.curso
+          });
+        }
         const arr = Array.isArray(r) ? r : (r?.results || []);
         this.participantes = arr.map(p => ({
           id: p.id ?? p.PER_ID ?? p.id_persona,
@@ -495,7 +569,7 @@ export default {
           email: p.email ?? p.PER_MAIL ?? ''
         }));
         this.seleccionados = [];
-      } catch {
+      } catch (e) {
         this.participantes = [];
       } finally {
         this.cargandoParticipantes = false;
@@ -526,9 +600,22 @@ export default {
             else if (v !== null && v !== undefined) fd.append(k, v);
           });
           fd.append('file', this.formMasivo.file);
-          await pagosService.pagos.createMasivoForm(fd);
+
+          if (pagosService.pagos?.createMasivoForm) {
+            await pagosService.pagos.createMasivoForm(fd);
+          } else if (pagosService.createMasivoForm) {
+            await pagosService.createMasivoForm(fd);
+          } else {
+            throw new Error('Endpoint no disponible para Masivo FormData');
+          }
         } else {
-          await pagosService.pagos.createMasivo(payload);
+          if (pagosService.pagos?.createMasivo) {
+            await pagosService.pagos.createMasivo(payload);
+          } else if (pagosService.createMasivo) {
+            await pagosService.createMasivo(payload);
+          } else {
+            throw new Error('Endpoint no disponible para createMasivo');
+          }
         }
         alert('✅ Pago masivo registrado');
         this.limpiarMasivo();
@@ -546,13 +633,16 @@ export default {
       try {
         this.cargandoPagos = true;
         this.errorPagos = null;
-        const r = await pagosService.pagos.list({
+        let r = [];
+        const params = {
           q: (this.filtroQ || '').trim(),
           curso: this.filtroCurso || undefined,
           grupo: this.filtroGrupo || undefined
-        });
+        };
+        if (pagosService.pagos?.list) r = await pagosService.pagos.list(params);
+        else if (pagosService.list) r = await pagosService.list(params);
         this.pagos = Array.isArray(r) ? r : (r?.results || []);
-      } catch {
+      } catch (e) {
         this.pagos = [];
         this.errorPagos = 'No fue posible cargar pagos. Verifica el backend.';
       } finally {
@@ -578,13 +668,32 @@ export default {
       document.body.removeChild(a); URL.revokeObjectURL(url);
     },
 
-    // ====== Acciones con íconos
+    // ====== Selección del histórico + acciones toolbar
+    toggleSelectAllHistorico (checked) {
+      if (checked) {
+        this.seleccionadosHistorico = this.pagos.map(p => p.id)
+      } else {
+        this.seleccionadosHistorico = []
+      }
+    },
+    async marcarEnviado () {
+      if (!this.seleccionadosHistorico.length) return
+      // Conecta aquí a tu endpoint real cuando lo tengas:
+      // await pagosService.pagos.marcarEnviado({ ids: this.seleccionadosHistorico })
+      alert(`✓ Marcados como enviados: ${this.seleccionadosHistorico.join(', ')}`)
+    },
+    async enviarPorCorreo () {
+      if (!this.seleccionadosHistorico.length) return
+      // Conecta aquí a tu endpoint real cuando lo tengas:
+      // await pagosService.pagos.enviarCorreos({ ids: this.seleccionadosHistorico })
+      alert(`✉️ Enviando correos a IDs: ${this.seleccionadosHistorico.join(', ')}`)
+    },
+
+    // ====== Acciones por fila
     verDetalle (p) {
-      // reemplaza por tu modal de detalle si ya lo tienes
       alert(`👁️ Pago de ${p.nombre}\nMonto: $${(p.monto ?? p.valor_pagado)?.toLocaleString('es-CL')}\nFecha: ${dateCL(p.fecha || p.fecha_pago)}`);
     },
     abrirTransferir (p) {
-      // placeholder para tu flujo de transferencia
       alert(`🔁 Transferir pago de ${p.nombre} (id ${p.id})`);
     },
 
@@ -604,12 +713,21 @@ export default {
     async guardarEdicion () {
       try {
         this.guardando = true;
-        await pagosService.pagos.partialUpdate(this.pagoEdit.id, {
+        const body = {
           curso: this.pagoEdit.curso,
           monto: this.pagoEdit.monto,
           fecha: this.pagoEdit.fecha,
           observacion: this.pagoEdit.observacion
-        });
+        };
+        if (pagosService.pagos?.partialUpdate) {
+          await pagosService.pagos.partialUpdate(this.pagoEdit.id, body);
+        } else if (pagosService.partialUpdate) {
+          await pagosService.partialUpdate(this.pagoEdit.id, body);
+        } else if (pagosService.pagos?.update) {
+          await pagosService.pagos.update(this.pagoEdit.id, body);
+        } else {
+          throw new Error('Endpoint no disponible para actualizar');
+        }
         this.modalEditar = false;
         await this.cargarPagos();
         alert('✅ Pago actualizado');
@@ -625,7 +743,13 @@ export default {
     },
     async confirmarAnulacion () {
       try {
-        await pagosService.pagos.anular(this.pagoAnular.id);
+        if (pagosService.pagos?.anular) {
+          await pagosService.pagos.anular(this.pagoAnular.id);
+        } else if (pagosService.anular) {
+          await pagosService.anular(this.pagoAnular.id);
+        } else {
+          throw new Error('Endpoint no disponible para anular');
+        }
         this.modalAnular = false;
         await this.cargarPagos();
         alert('✅ Pago anulado');
@@ -737,9 +861,44 @@ th{ background:#f7f7f7; position:sticky; top:0; z-index:1; }
 .btn-with-icon .icon{ line-height:1; }
 .btn-with-icon .label{ line-height:1; }
 
-/* Variantes ya usadas */
+/* Barra superior estilo comunicación */
+.toolbar{
+  display:flex;
+  gap:12px;
+  margin:8px 0 14px;
+}
+.btn{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  font-weight:700;
+  padding:10px 14px;
+  border-radius:8px;
+  border:1px solid transparent;
+  cursor:pointer;
+  transition:filter .15s ease, transform .02s ease;
+}
+.btn:active{ transform: translateY(1px); }
+.btn:disabled{ opacity:.55; cursor:not-allowed; }
+.btn-outline{
+  background:#f3f4f6;
+  border-color:#d1d5db;
+  color:#1f2937;
+}
+.btn-outline:hover{ filter:brightness(0.98); }
+.btn-primary{
+  background:#1e40af;
+  color:#fff;
+}
+.btn-primary:hover{ filter:brightness(1.05); }
+.btn-blue{
+  background:#1d4ed8;
+  color:#fff;
+}
+.btn-blue:hover{ filter:brightness(1.05); }
+.btn-icon{ font-size:14px; line-height:1; }
+
 .btn-search{ background:linear-gradient(180deg,#2b6cb0,#154c8c); color:#fff; }
-.btn-export{ background:linear-gradient(180deg,#16a34a,#15803d); color:#fff; }
 .btn-save{ background:linear-gradient(180deg,#2563eb,#1e40af); color:#fff; }
 
 .pago-modal :deep(.modal-overlay){ position:fixed !important; inset:0 !important; display:flex !important; align-items:center !important; justify-content:center !important; z-index:9999 !important; }
@@ -758,7 +917,7 @@ th{ background:#f7f7f7; position:sticky; top:0; z-index:1; }
 
 @media (max-width: 860px){
   .grid{ grid-template-columns:1fr; }
-  /* En móviles, escondemos texto y dejamos solo iconos para ahorrar espacio */
-  .btn-with-icon .label{ display:none; }
+  .btn-with-icon .label{ display:none; } /* en móviles, solo iconos */
 }
 </style>
+
