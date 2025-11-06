@@ -19,32 +19,94 @@
       <option value="primerosAuxilios">Curso de Primeros Auxilios en Campamento</option>
       <option value="gestionAmbiental">Curso de Gestión Ambiental Scout</option>
     </select>
-  </section>
 
+    <transition name="desplegar">
+              <div v-if="cursoSeleccionado" class="campo">
+                <label for="seccionCurso">Selecciona la Sección del Curso: <span style="color: red;">*</span></label>
+                <select
+                  id="seccionCurso"
+                  v-model="seccionCurso"
+                  required
+                  @change="handleSeccionChange"
+                >
+                  <option value="">Seleccione una sección</option>
+                  <option value="mañana">Mañana</option>
+                  <option value="tarde">Tarde</option>
+                  <option value="vespertino">Vespertino</option>
+                </select>
+              </div>
+    </transition>
+
+  </section>
+<!--:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
   <transition name="fade">
-    <div v-if="cursoSeleccionado" class="resto-formulario">
+    <div v-if="cursoSeleccionado && seccionCurso" class="resto-formulario">
       <section>
               <h2>Datos Personales</h2>
   <!-- :::::::::::::::::: INPUTS BÁSICOS ::::::::::::::::::::::::: -->
         <InputBase v-model="nombre" label="Nombres:" type="text" placeholder="PRIMER Y SEGUNDO NOMBRE" />
         <InputBase v-model="apellidoMaterno" label="Apellido Materno:" type="text" placeholder="APELLIDO MATERNO" />
         <InputBase v-model="apellidoPaterno" label="Apellido Paterno:" type="text" placeholder="APELLIDO PATERNO" />
-        <InputBase v-model="rut" label="RUT:" type="text" placeholder="XXXXXXXX-X" rules="rut" />
-        <InputBase v-model="fechaNacimiento" label="Fecha de Nacimiento:" type="date" />
-        <InputBase v-model="email" label="Correo Electrónico:" type="email" placeholder="Ingrese EMAIL" />
+        <label for="rut">RUT (sin puntos ni guion):</label>
+        <input id="rut" type="text" v-model="rut" maxlength="9" placeholder="Ej: 123456789" @input="rut = rut.replace(/[^0-9]/g, '')"
+              :class="{ invalido: rut.length > 0 && rut.length < 7 }" required
+          />
 
-  <!--::::::::::::::::::: NUMERO DE CELULAR CON +569:::::::::::::::::::::::::-->
+        <InputBase v-model="fechaNacimiento" label="Fecha de Nacimiento:" type="date" />
+        <InputBase v-model="email" label="Correo Electrónico:" type="email" placeholder="INGRESE EMAIL" />
+
+  <!--::::::::::::::::::: NÚMEROS DE CONTACTO :::::::::::::::::::::::::-->
+              <!-- TELÉFONO FIJO -->
+              <label for="telefonoFijo">Teléfono Fijo:</label>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <input
+                  id="telefonoFijo"
+                  v-model="telefonoFijo"
+                  type="tel"
+                  placeholder="412345678"
+                  maxlength="9"
+                />
+              </div>
+
+              <!-- NÚMERO DE CELULAR -->
               <label for="numeroCelular">Número de Celular:</label>
-      <div style="display: flex; align-items: center; gap: 6px;">
-        <span style="background-color: #f2f2f2; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px;">+56</span>
-        <input
-          id="numeroCelular"
-          v-model="numeroCelular"
-          type="tel"
-          placeholder="976432101"
-          maxlength="9"
-        />
-      </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="background-color: #f2f2f2; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px;">+56</span>
+                <input
+                  id="numeroCelular"
+                  v-model="numeroCelular"
+                  type="tel"
+                  placeholder="976432101"
+                  maxlength="9"
+                  required
+                />
+              </div>
+
+              <!-- CELULAR CON WHATSAPP -->
+              <label for="celularWhatsapp">Número de Celular con WhatsApp:</label>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="background-color: #f2f2f2; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px;">+56</span>
+                <input
+                  id="celularWhatsapp"
+                  v-model="celularWhatsapp"
+                  type="tel"
+                  placeholder="976432101"
+                  maxlength="9"
+                />
+              </div>
+
+              <!-- WHATSAPP ADICIONAL -->
+              <label for="whatsappAdicional">WhatsApp adicional (si tiene):</label>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="background-color: #f2f2f2; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px;">+56</span>
+                <input
+                  id="whatsappAdicional"
+                  v-model="whatsappAdicional"
+                  type="tel"
+                  placeholder="976432101"
+                  maxlength="9"
+                />
+              </div>
 
 <!-- :::::::::::::::::: SELECTOR DE REGIONES ::::::::::::::::::::::::: -->
 <label for="Provincia">Provincia:</label>
@@ -85,7 +147,7 @@
 
 
   <!-- :::::::::::::::::: INPUT DIRECCION ::::::::::::::::::::::::: -->
-      <InputBase v-model="direccion" label="Dirección:" type="text" placeholder="Ingrese Dirección" />
+  <InputBase v-model="direccion" label="Dirección:" type="text" placeholder="INGRESE DIRECCIÓN" />
 
   <!-- :::::::::::::::::: SELECTOR DE ESTADO CIVIL ::::::::::::::::::::::::: -->
       <label for="estadoCivil">Estado Civil:</label>
@@ -104,7 +166,7 @@
         id="apodoCredencial"
         v-model="apodoCredencial"
         type="text"
-        placeholder="Ingrese su apodo o nombre para credencial"
+        placeholder="INGRESE SU APODO O NOMBRE PARA CREDENCIAL"
         maxlength="50"
         @input="profesion = profesion.toUpperCase()"
       />
@@ -149,23 +211,77 @@
 
 <!-- Contenedor de cámara -->
 <div v-if="mostrarCamara" class="camara-container">
+  
   <video ref="video" autoplay></video>
   <button type="button" class="btn-foto" @click="capturarFoto">Capturar</button>
   <canvas ref="canvas" style="display: none;"></canvas>
 </div>
 
+<!-- ::::::::::::::::::: FORMADOR ::::::::::::::::::: -->
+<section class="bloque-formador">
+  <label class="titulo-bloque">¿Eres Formador?</label>
+  <select id="formador" v-model="esFormador" class="selector-formador">
+    <option value="">Seleccione una opción</option>
+    <option value="si">Sí</option>
+    <option value="no">No</option>
+  </select>
+
+  <!-- ::::::::::::::::::: CAMPOS ADICIONALES ::::::::::::::::::: -->
+  <transition name="desplegar">
+    <div v-if="esFormador === 'si'" class="campos-formador">
+      <!-- ::::::::::::::::::: TEXT AREA ::::::::::::::::::: -->
+      <div class="campo">
+        <label for="historialFormador">Historial de Formador:</label>
+        <textarea
+          id="historialFormador"
+          v-model="historialFormador"
+          placeholder="Describe tu experiencia o historial como formador"
+          rows="5"
+          maxlength="500"
+        ></textarea>
+      </div>
+
+      <!-- ::::::::::::::::::: HABILIDADES ::::::::::::::::::: -->
+      <div class="habilidades">
+        <div class="campo">
+          <label class="titulo-bloque">Habilidad 1</label>
+          <select v-model="habilidad1" class="selector-habilidad">
+            <option value="">Seleccione una opción</option>
+            <option value="si">Sí</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+
+        <div class="campo">
+          <label class="titulo-bloque">Habilidad 2</label>
+          <select v-model="habilidad2" class="selector-habilidad">
+            <option value="">Seleccione una opción</option>
+            <option value="si">Sí</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+
+        <div class="campo">
+          <label class="titulo-bloque">Verificado</label>
+          <select v-model="verificado" class="selector-habilidad">
+            <option value="">Seleccione una opción</option>
+            <option value="si">Sí</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </transition>
 </section>
 
 
+</section>
 
-
-
-
-  <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
-  <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
-  <!--:::::::::::::::::::::::::          INFORMACION ASOCIACION       ::::::::::::::::::::::::::::::::-->
-  <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
-  <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+<!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+<!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+<!--:::::::::::::::::::::::::          INFORMACION ASOCIACION       ::::::::::::::::::::::::::::::::-->
+<!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+<!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
   <section>
     <div class="datosScout"></div> <!-- TITULO iNFORMACVION ACOCIACION-->
           <h2>Informacion Asociacion</h2>
@@ -191,7 +307,7 @@
                       <textarea
                         id="rolOtro"
                         v-model="rolOtro"
-                        placeholder="Ingrese su rol aquí..."
+                        placeholder="INGRESE SU ROL AQUÍ..."
                         rows="3"
                         maxlength="100"
                         :disabled="rolSeleccionado !== 'otro'"
@@ -199,10 +315,10 @@
                       </div>
                     </Transition>
 
-  <!-- :::::::::::::::::: SELECTOR DE GRUPO ::::::::::::::::::::::::: -->
-        <label for="grupo">Grupo al que pertenece:</label>
-        <select id="grupo" v-model="grupoSeleccionado">
-          <option disabled value="">Seleccione su grupo</option>
+  <!-- :::::::::::::::::: SELECTOR DE ZONA ::::::::::::::::::::::::: -->
+        <label for="grupo">Zona al que pertenece:</label>
+        <select id="grupo" v-model="zonaSeleccionada" @change="handleZonaChange">
+          <option disabled value="">Seleccione su zona</option>
           <option value="Alcatipay">Alcatipay</option>
           <option value="Alfa Cruz">Alfa Cruz</option>
           <option value="Alpha y Omega">Alpha y Omega</option>
@@ -255,35 +371,21 @@
           <option value="Wetripantu">Wetripantu</option>
           <option value="otro">Otro</option>
         </select>
-  <!--:::::::::::::: TEXTAREA QUE SE HABILITA SOLO AL ELEGIR "OTRO"::::::::::::::::::::: -->
+
+    <!--:::::::::::::: TEXTAREA QUE SE HABILITA SOLO AL ELEGIR "OTRO"::::::::::::::::::::: -->
                           <Transition name="desplegar">
-                            <div v-if="grupoSeleccionado === 'otro'" class="campo">
-                            <label for="grupoOtro">Ingrese el nombre del grupo:</label>
+                            <div v-if="zonaSeleccionada === 'otro'" class="campo">
+                            <label for="otraZona">Ingrese el nombre de la zona:</label>
                             <textarea
-                              id="grupoOtro"
-                              v-model="grupoOtro"
-                              placeholder="Escriba el nombre de su grupo..."
+                              id="otraZona"
+                              v-model="otraZona"
+                              placeholder="ESCRIBA EL NOMBRE DE LA ZONA..."
                               rows="3"
                               maxlength="100"
-                              :disabled="grupoSeleccionado !== 'otro'"
                             ></textarea>
                             </div>
                           </Transition>
-
-      <!-- :::::::::::::::::: SELECTOR DE RAMA / SECCIÓN ::::::::::::::::::::::::: -->
-      <label for="rama">Rama o sección a la que pertenece:</label>
-      <select id="rama" v-model="ramaSeleccionada">
-        <option disabled value="">Seleccione su rama</option>
-        <option value="Lobatos">Lobatos</option>
-        <option value="Golondrinas">Golondrinas</option>
-        <option value="Guias">Guías</option>
-        <option value="Scouts">Scouts</option>
-        <option value="Pioneros">Pioneros</option>
-        <option value="Caminantes">Caminantes</option>
-      </select>
-
-
-  <!--::::::::::::::::::::::SELECTOR DISTRITO:::::::::::::::::::::::::::::::::::::::::::::::-->
+    <!--::::::::::::::::::::::SELECTOR DISTRITO:::::::::::::::::::::::::::::::::::::::::::::::-->
       <label for="distrito">Distrito al que pertenece:</label>
       <select id="distrito" v-model="distritoSeleccionado">
         <option disabled value="">Seleccione su distrito</option>
@@ -309,13 +411,31 @@
                       <textarea
                         id="distritoOtro"
                         v-model="distritoOtro"
-                        placeholder="Escriba el nombre de su Distrito..."
+                        placeholder="ESCRIBA EL NOMBRE DE SU DISTRITO..."
                         rows="3"
                         maxlength="100"
                         :disabled="distritoSeleccionado !== 'Otro'"
                       ></textarea>
                       </div>
                     </Transition>
+
+
+
+      <!-- :::::::::::::::::: GRUPO AL QUE PERTENECE ::::::::::::::::::::::::: -->
+      <label for="rama">Grupo al que pertenece:</label>
+      <select id="rama" v-model="grupoPertenece">
+        <option disabled value="">Seleccione su grupo</option>
+        <option value="Lobatos">Lobatos</option>
+        <option value="Golondrinas">Golondrinas</option>
+        <option value="Guias">Guías</option>
+        <option value="Scouts">Scouts</option>
+        <option value="Pioneros">Pioneros</option>
+        <option value="Caminantes">Caminantes</option>
+      </select>
+    
+
+
+
   
 <!--::::::::::::::::::::::SELECTOR NIVEL:::::::::::::::::::::::::::::::::::::::::::::::-->
     <label for="nivel">¿Qué nivel tienes?</label>
@@ -372,7 +492,7 @@
       <div class="saludLogistica"></div> <!-- Salud y Logistica-->
           <h2>Salud y Logistica</h2>
   <!--::::::::::::::::::: INPUT DE ALERGIAS/ENFERMEDADES ::::::::::::::::::::::::: -->
-      <label for="salud">¿Tiene alergias o alguna enfermedad a considerar?</label>
+      <label for="salud">¿Tiene alergias,enfermedad o limitacion considerar?</label>
       <select id="salud" v-model="tieneAlergiaEnfermedad">
         <option disabled value="">Seleccione una opción</option>
         <option value="Si">Sí</option>
@@ -382,14 +502,14 @@
   <!--:::::::::::::::: TEXT AREA BLOQUEADO POR DEFECTO, SE HABILITA AL SELECCIONAR "si" :::::::::::::::::::::::::::::::::-->
                         <transition name="desplegar">
                           <div v-if="tieneAlergiaEnfermedad === 'Si'" class="campo">
-                          <label for="detalleSalud">Detalle de alergias o enfermedades:</label>
+                          <label for="detalleSalud">Detalle alergias,enfermedad o limitacion:</label>
                             <textarea
                                 id="detalleSalud"
                                 v-model="detalleAlergiaEnfermedad"
-                                placeholder="Ingrese la alergia o enfermedad"
+                                placeholder="INGRESE LA ALERGIAS,ENFERMEDAD O LIMITACION"
                                 rows="4"
-                                maxlength="200"
-                              :disabled="tieneAlergiaEnfermedad !== 'si'"
+                                maxlength="255"
+                              :disabled="tieneAlergiaEnfermedad !== 'Si'"
                             ></textarea>
                           </div>
                         </transition>
@@ -425,7 +545,7 @@
         placeholder="Ej: ALAN DAVE"
       />
 
-      <label for="numeroEmergencia">Número de contacto de emergencia:</label>
+      <label for="numeroEmergencia">Número de celular de emergencia:</label>
       <div style="display: flex; align-items: center; gap: 6px;">
         <span style="background-color: #f2f2f2; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px;">+56</span>
         <input
@@ -434,16 +554,31 @@
           type="tel"
           placeholder="974643210"
           maxlength="9"
+          required
         />
       </div>
 
-<!--:::::::::::::::::::::: ALOJAMIENTO :::::::::::::::::::::::::::::::::::::::::::::::::::-->
-<label for="necesitaAlojamiento">¿Necesita Alojamiento?</label>
-<select id="necesitaAlojamiento" v-model="necesitaAlojamiento" required>
-  <option disabled value="">Seleccione una opción</option>
-  <option value="si">Sí</option>
-  <option value="no">No</option>
-</select>
+      <label for="tieneNumeroFijo">¿Desea agregar un teléfono fijo de emergencia?</label>
+      <select id="tieneNumeroFijo" v-model="tieneNumeroFijo">
+        <option disabled value="">Seleccione una opción</option>
+        <option value="si">Sí</option>
+        <option value="no">No</option>
+      </select>
+
+      <transition name="desplegar">
+        <div v-if="tieneNumeroFijo === 'si'" class="campo">
+          <label for="numeroFijoEmergencia">Número fijo de emergencia:</label>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <input
+              id="numeroFijoEmergencia"
+              v-model="numeroFijoEmergencia"
+              type="tel"
+              placeholder="412345678"
+              maxlength="9"
+            />
+          </div>
+        </div>
+      </transition>
 
 <!--:::::::::::::::::::::: VEHÍCULO PROPIO :::::::::::::::::::::::::::::::::::::::::::::::::::-->
 <label for="vehiculoPropio">¿Viene en vehículo propio?</label>
@@ -452,8 +587,6 @@
   <option value="si">Sí</option>
   <option value="no">No</option>
 </select>
-
-
 
 <!--:::::::::::::::::::::: CAMPOS SOLO SI SELECCIONA "SI" :::::::::::::::::::::::::::::::::::::::::::::::::::-->
               <transition name="desplegar">
@@ -485,6 +618,19 @@
                   />
                 </div>
               </transition>
+
+  <!--:::::::::::::::::::::: ALOJAMIENTO :::::::::::::::::::::::::::::::::::::::::::::::::::-->
+  <div class="campo campo-checkbox">
+  <label>
+    ¿Necesita alojamiento?
+    <input
+      type="checkbox"
+      v-model="necesitaAlojamiento"
+      true-value="si"
+      false-value="no"
+    /> 
+  </label>
+  </div>
   </section>
 
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
@@ -499,7 +645,7 @@
         <label for="consideraciones">Otros:</label>
         <textarea            id="consideraciones"
           v-model="consideraciones"
-          placeholder="Ingrese cualquier comentario o consideración"
+          placeholder="INGRESE CUALQUIER COMENTARIO O CONSIDERACIÓN"
           rows="4"
           maxlength="200"
         ></textarea>
@@ -510,7 +656,7 @@
         id="profesion"
         v-model="profesion"
         type="text"
-        placeholder="Ingrese su profesión"
+        placeholder="INGRESE SU PROFESIÓN"
         maxlength="50"
         @input="profesion = profesion.toUpperCase()"
       />
@@ -540,35 +686,51 @@
                   </div>
                 </transition>
 
-  <!--::::::::::::::::::::::BENEFICIARIO:::::::::::::::::::::::::::::::::::::::::::::::-->
-    <label for="beneficiario">¿Eres o fuiste beneficiario?</label>
-    <select id="beneficiario" v-model="esBeneficiario" required>
-      <option disabled value="">Seleccione una opción</option>
-      <option value="Si">Sí</option>
-      <option value="No">No</option>
-    </select>
 
-                      <!-- Input para el tiempo si selecciona "Sí" -->
-                    <transition name="desplegar">
-                      <div v-if="esBeneficiario === 'Si'" class="campo">
-                      <label for="tiempoBeneficiario">¿Por cuánto tiempo?</label>
-                      <input
-                        id="tiempoBeneficiario"
-                        v-model="tiempoBeneficiario"
-                        type="text"
-                        placeholder="Ingrese el tiempo"
-                        :disabled="esBeneficiario !== 'si'"
-                      />
-                      </div>
-                    </transition>
-  
-  <!--::::::::::::::::::::::MIEMBRO ACTIVO:::::::::::::::::::::::::::::::::::::::::::::::-->
-      <label for="miembroActivo">¿Es un miembro activo?</label>
-      <select id="miembroActivo" v-model="esMiembroActivo" required>
-        <option disabled value="">Seleccione una opción</option>
-        <option value="si">Sí</option>
-        <option value="no">No</option>
+
+
+<!-- ::::::::::::::::: BENEFICIARIO ::::::::::::::::: -->
+<label for="beneficiario">¿Eres o fuiste beneficiario?</label>
+<select id="beneficiario" v-model="esBeneficiario" required>
+  <option disabled value="">Seleccione una opción</option>
+  <option value="si">Sí</option>
+  <option value="no">No</option>
+</select>
+
+<!-- ::::::::::::::::: CAMPO DESPLEGABLE ::::::::::::::::: -->
+<transition name="desplegar">
+  <div v-if="esBeneficiario === 'si'" class="campo">
+    <label for="tiempoBeneficiario">¿Cuánto tiempo?</label>
+    <div style="display: flex; gap: 10px; align-items: center;">
+      
+      <!-- AÑOS -->
+      <select
+        id="añosTiempoBeneficiario"
+        v-model="añosTiempoBeneficiario"
+        style="padding: 8px; border-radius: 6px; border: 1px solid #ccc;"
+      >
+        <option disabled value="">Años</option>
+        <option v-for="n in 20" :key="n" :value="n">
+          {{ n }} año{{ n > 1 ? 's' : '' }}
+        </option>
       </select>
+
+      <!-- MESES -->
+      <select
+        id="mesesTiempoBeneficiario"
+        v-model="mesesTiempoBeneficiario"
+        style="padding: 8px; border-radius: 6px; border: 1px solid #ccc;"
+      >
+        <option disabled value="">Meses</option>
+        <option v-for="m in 11" :key="m" :value="m">
+          {{ m }} mes{{ m > 1 ? 'es' : '' }}
+        </option>
+      </select>
+    </div>
+  </div>
+</transition>
+
+
 
   </section>
     </div>
@@ -610,22 +772,42 @@ function scrollArriba(){
 
 
 
-// :::::::::::::::::: MANEJO DE SELECCIÓN DE CURSO :::::::::::::::::::::::::
+// :::::::::::::::::: MANEJO DE SELECCIÓN DE CURSO Y SECCIÓN :::::::::::::::::::::::::
 const handleCursoChange = () => {
   if (!cursoSeleccionado.value) {
     // Cuando se selecciona "Seleccione un curso", limpiamos el formulario
     limpiarFormulario();
+    seccionCurso.value = ""; // Reset sección when course changes
+  }
+};
+
+const handleSeccionChange = () => {
+  if (!seccionCurso.value) {
+    // Si se deselecciona la sección, limpiamos el formulario
+    limpiarFormulario();
+  }
+};
+
+// Handler para el cambio de zona
+const handleZonaChange = () => {
+  if (zonaSeleccionada.value !== 'otro') {
+    otraZona.value = ''; // Limpiamos el valor cuando no es "otro"
   }
 };
 
 // :::::::::::::::::: VARIABLES PARA CAPTURAR VALORES :::::::::::::::::::::::::
-
+const zonaSeleccionada = ref("");
+const otraZona = ref("");
+const grupoPertenece = ref("");
 const nombre = ref("");
 const apellidoPaterno = ref("");
 const apellidoMaterno = ref("");
 const rut = ref("");
 const fechaNacimiento = ref("");
+const telefonoFijo = ref("");
 const numeroCelular = ref("");
+const celularWhatsapp = ref("");
+const whatsappAdicional = ref("");
 const email = ref("");
 const estadoCivil = ref("");
 const direccion = ref("");
@@ -654,6 +836,8 @@ const ramaMedioSeleccionada = ref("");
 const ramaAvanzadoSeleccionada = ref("");
 const nombreEmergencia = ref("");
 const numeroEmergencia = ref("");
+const tieneNumeroFijo = ref("");
+const numeroFijoEmergencia = ref("");
 const haTrabajadoConNinos = ref("");
 const añosTrabajoNinos = ref("");
 const mesesTrabajoNinos = ref("");
@@ -666,12 +850,22 @@ const patentePropia = ref("");
 const marcaPropia = ref("");
 const modeloPropio = ref("");
 const cursoSeleccionado = ref("");
+const seccionCurso = ref("");
+const añosTiempoBeneficiario = ref("");
+const mesesTiempoBeneficiario = ref("");
 
-
-// REGION / CIUDAD / COMUNA
 const regionSeleccionada = ref("");
 const ciudadSeleccionada = ref("");
 const comunaSeleccionada = ref("");
+
+// Variables para el formador
+const esFormador = ref("");
+const historialFormador = ref("");
+const habilidad1 = ref("");
+const habilidad2 = ref("");
+const verificado = ref("");
+
+
 
 //:::::::::::::::::::::::::::::FUNCION LIMPIAR FORMULARIO (BOTON):::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -682,7 +876,10 @@ function limpiarFormulario() {
   necesitaAlojamiento.value = "";
   rut.value = "";
   fechaNacimiento.value = "";
+  telefonoFijo.value = "";
   numeroCelular.value = "";
+  celularWhatsapp.value = "";
+  whatsappAdicional.value = "";
   email.value = "";
   estadoCivil.value = "";
   direccion.value = "";
@@ -710,6 +907,8 @@ function limpiarFormulario() {
   ramaAvanzadoSeleccionada.value = "";
   nombreEmergencia.value = "";
   numeroEmergencia.value = "";
+  tieneNumeroFijo.value = "";
+  numeroFijoEmergencia.value = "";
   haTrabajadoConNinos.value = "";
   esBeneficiario.value = "";
   tiempoBeneficiario.value = "";
@@ -723,6 +922,8 @@ function limpiarFormulario() {
   regionSeleccionada.value = "";
   ciudadSeleccionada.value = "";
   comunaSeleccionada.value = "";
+  añosTiempoBeneficiario.value = "";
+  mesesTiempoBeneficiario.value = "";
 
   
   // Limpia también los demás campos que tengas
@@ -796,7 +997,7 @@ function cerrarCamara() {
   camaraActiva.value = false
 }
 
-// ✅ Nueva función: eliminar la foto actual
+//::::::::::::::::::Nueva función: eliminar la foto actual:::::::::::::::::::::::::
 function eliminarFoto() {
   fotoUrl.value = null
   fotoFinal.value = null
@@ -930,6 +1131,123 @@ const comunasDisponibles = computed(() => {
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
 
 <style scoped>
+/* ::::::::::::::::::: FORMADOR ::::::::::::::::::: */
+.bloque-formador {
+  margin-top: 25px;
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  text-align: center;
+}
+
+.titulo-bloque {
+  display: block;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.selector-formador,
+.selector-habilidad {
+  width: 90%;
+  max-width: 300px;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  color: #333;
+  background-color: white;
+  margin-bottom: 15px;
+  transition: all 0.3s ease;
+}
+
+.selector-formador:focus,
+.selector-habilidad:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.campos-formador {
+  margin-top: 20px;
+}
+
+.habilidades {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+textarea {
+  width: 90%;
+  max-width: 500px;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  resize: none;
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+textarea:focus {
+  border-color: #3b82f6;
+}
+
+/* Transición suave al aparecer */
+.desplegar-enter-active,
+.desplegar-leave-active {
+  transition: all 0.4s ease;
+}
+.desplegar-enter-from,
+.desplegar-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+
+/* :::::::::::::::::::: CHECKBOX MODERNO Y CENTRADO :::::::::::::::::::: */
+.campo-checkbox {
+  display: flex;
+  justify-content: center;      /* Centra horizontalmente */
+  padding: 15px 10px;              /* Espaciado vertical */
+}
+
+.campo-checkbox label {
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+  color: #333;
+  background-color: #f9f9f9;    /* Fondo suave */
+  padding: 10px 20px;           /* Padding interno */
+  border-radius: 8px;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.1); /* Suaviza el bloque */
+  transition: all 0.3s ease;
+}
+
+.campo-checkbox label:hover {
+  background-color: #f0f8ff;    /* Azul muy claro al pasar el mouse */
+  transform: translateY(-2px);
+}
+
+.campo-checkbox input[type="checkbox"] {
+  accent-color: #2196f3;        /* Azul moderno */
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.campo-checkbox input[type="checkbox"]:hover {
+  transform: scale(1.1);
+}
+
+
+.invalido {
+  border: 2px solid #e74c3c; /* rojo para indicar error */
+}
+
 /* Estilos para la transición del formulario */
 .fade-enter-active,
 .fade-leave-active {
@@ -977,28 +1295,38 @@ const comunasDisponibles = computed(() => {
     box-shadow: 0 6px 14px rgba(30, 136, 229, 0.5);
   }
 
+/*:::::::::::::BOTON DE FOTO STYLES::::::::::::::::*/
+/* :::::::::::::::::::: PREVISUALIZACIÓN DE FOTO :::::::::::::::::::: */
+.preview {
+  display: flex;
+  justify-content: center;
+  margin-top: 15px;
+}
 
 .preview img {
-  width: 180px;       /* Ancho fijo */
-  height: 180px;      /* Alto fijo */
-  object-fit: cover;  /* Recorta y centra la imagen sin deformarla */
+  width: 180px;        /* Tamaño fijo para mantener proporción uniforme */
+  height: 180px;
+  object-fit: cover;   /* Recorta y centra sin deformar */
   border-radius: 10px;
   box-shadow: 0 0 6px rgba(0, 0, 0, 0.2);
-  margin-top: 10px;
 }
 
+/* :::::::::::::::::::: BOTONES DE FOTO :::::::::::::::::::: */
 .botones-foto {
   display: flex;
-  gap: 10px; /* separa los botones */
-  margin-top: 10px;
+  justify-content: center; /* Centra los botones horizontalmente */
+  gap: 10px;
+  margin-top: 15px;
 }
 
-.btn-capturar, .btn-eliminar {
+.btn-capturar,
+.btn-eliminar {
   padding: 10px 15px;
   border: none;
   border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 .btn-capturar {
@@ -1006,9 +1334,17 @@ const comunasDisponibles = computed(() => {
   color: white;
 }
 
+.btn-capturar:hover {
+  background-color: #0056b3;
+}
+
 .btn-eliminar {
   background-color: #dc3545;
   color: white;
+}
+
+.btn-eliminar:hover {
+  background-color: #b02a37;
 }
 
 button:disabled {
@@ -1016,6 +1352,7 @@ button:disabled {
   cursor: not-allowed;
 }
 
+/* :::::::::::::::::::: BOTÓN DE CAPTURA :::::::::::::::::::: */
 .btn-foto {
   background: linear-gradient(135deg, #2196f3, #1e88e5);
   color: white;
@@ -1045,12 +1382,42 @@ button:disabled {
   content: "📸 ";
 }
 
+/* :::::::::::::::::::: CONTENEDOR DE CÁMARA :::::::::::::::::::: */
+.camara-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;         /* Centra horizontalmente */
+  justify-content: center;     /* Centra verticalmente */
+  margin-top: 20px;
+  gap: 10px;
+  background: #f9f9f9;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;            /* Mantiene proporción del formulario */
+  box-sizing: border-box;
+}
+
+/* :::::::::::::::::::: VIDEO DE CÁMARA :::::::::::::::::::: */
+.camara-container video {
+  width: 100%;
+  height: 280px;
+  max-width: 350px;
+  border-radius: 10px;
+  border: 2px solid #2196f3;
+  object-fit: cover;           /* Evita deformación */
+  background-color: #000;      /* Fondo oscuro mientras carga */
+}
+
+
 .formulario { 
     display: flex; 
     flex-direction: column; 
-    justify-content: center; /* Centra verticalmente */ 
+    justify-content: flex-start; /* Cambiado a flex-start para alinear al inicio */ 
     align-items: center; /* Centra horizontalmente */ 
-    min-height: 100vh; /* Ocupa todo el alto de la ventana */ 
+    min-height: 100vh; /* Ocupa todo el alto de la ventana */
+    padding-top: 30px; /* Ajusta este valor para mover el formulario más arriba o abajo */
     background: linear-gradient(135deg, #2c5cdd, #2563eb, #3b82f6);
 } 
 
@@ -1159,11 +1526,9 @@ input:focus, select:focus, textarea:focus {
 } 
 /* :::::::::::::::::::: EFECTO DESPLEGABLE :::::::::::::::::::: */ 
 .desplegar-enter-active, .desplegar-leave-active { 
-    transition: all 0.4s ease; 
-    overflow: hidden; 
+  transition: all 0.5s ease;
 } 
 .desplegar-enter-from, .desplegar-leave-to { 
-    max-height: 0; 
     opacity: 0; 
     transform: translateY(-10px); 
 } 
