@@ -1,12 +1,6 @@
 <template>
   <div class="dashboard-scout">
-    <!-- Navbar Superior -->
-    <NavBar />
-
-    <!-- Sidebar -->
-    <SideBar />
-
-    <!-- Contenido Principal -->
+    <!-- Contenido Principal SIN SideBar -->
     <main class="main-content">
       <!-- Tarjetas de Estadísticas -->
       <div class="stats-grid">
@@ -47,9 +41,9 @@
         @close="removerAlerta(alerta.id)"
       />
 
-      <!-- Gráfico de Montos Pagados por Curso (simulado con DataCardList) -->
+      <!-- Gráfico de Montos Pagados por Curso -->
       <section class="chart-section">
-        <h3>Montos Pagados por Curso</h3>
+        <h3>Montos Recaudados por Curso</h3>
         <DataCardList :cards="montosCursos" />
       </section>
 
@@ -118,9 +112,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
-// Componentes que realmente tienes
-import NavBar from '@/components/Reutilizables/NavBar.vue'
-import SideBar from '@/components/Reutilizables/SideBar.vue'
+// Componentes
 import BaseAlert from '@/components/Reutilizables/BaseAlert.vue'
 import BaseButton from '@/components/Reutilizables/BaseButton.vue'
 import BaseSelect from '@/components/Reutilizables/BaseSelect.vue'
@@ -133,8 +125,6 @@ export default {
   name: 'DashboardScout',
   
   components: {
-    NavBar,
-    SideBar,
     BaseAlert,
     BaseButton,
     BaseSelect,
@@ -151,167 +141,245 @@ export default {
     const activeTab = ref('coordinadores')
     const alertas = ref([])
 
-    // Datos de ejemplo (reemplazar con datos reales de tu API)
+    // Datos basados en la estructura de la base de datos Scouts Biobío
     const personas = ref([
-      { id: 1, nombre: 'Juan Pérez', rut: '12.345.678-9', email: 'juan@email.com', telefono: '+56912345678', grupo: 'Grupo 1', rama: 'Scout', fechaRegistro: '2024-01-15' },
-      { id: 2, nombre: 'María González', rut: '23.456.789-0', email: 'maria@email.com', telefono: '+56923456789', grupo: 'Grupo 2', rama: 'Guía', fechaRegistro: '2024-01-14' },
-      { id: 3, nombre: 'Carlos López', rut: '34.567.890-1', email: 'carlos@email.com', telefono: '+56934567890', grupo: 'Grupo 1', rama: 'Scout', fechaRegistro: '2024-01-13' }
-    ])
-
-    const cursos = ref([
       { 
-        id: 1, 
-        titulo: 'Curso de Liderazgo', 
-        fecha: '2024-02-01', 
-        participantes: '15/20', 
-        estado: 'activo',
-        inscripciones: 15,
-        acreditaciones: 12,
-        pendientesPago: 3,
-        montoPagado: 750000
+        PER_ID: 1, 
+        PER_RUN: 12345678, 
+        PER_DV: '9', 
+        PER_APELPAT: 'Pérez', 
+        PER_APELMAT: 'González', 
+        PER_NOMBRES: 'Juan Antonio', 
+        PER_EMAIL: 'juan@email.com', 
+        PER_FECHA_NAC: '1990-05-15',
+        PER_FONO: '+56912345678',
+        PER_VIGENTE: true
       },
       { 
-        id: 2, 
-        titulo: 'Primeros Auxilios', 
-        fecha: '2024-02-15', 
-        participantes: '18/25', 
-        estado: 'activo',
-        inscripciones: 18,
-        acreditaciones: 15,
-        pendientesPago: 3,
-        montoPagado: 900000
-      },
-      { 
-        id: 3, 
-        titulo: 'Educación Ambiental Scout', 
-        fecha: '2024-03-01', 
-        participantes: '10/15', 
-        estado: 'activo',
-        inscripciones: 10,
-        acreditaciones: 8,
-        pendientesPago: 2,
-        montoPagado: 500000
+        PER_ID: 2, 
+        PER_RUN: 23456789, 
+        PER_DV: '0', 
+        PER_APELPAT: 'González', 
+        PER_APELMAT: 'López', 
+        PER_NOMBRES: 'María Isabel', 
+        PER_EMAIL: 'maria@email.com', 
+        PER_FECHA_NAC: '1985-08-20',
+        PER_FONO: '+56923456789',
+        PER_VIGENTE: true
       }
     ])
 
-    const responsables = ref([
-      // Coordinadores
-      { id: 1, tipo: 'coordinador', nombre: 'Ana Silva', curso: 'Curso de Liderazgo', estado: 'activo', contacto: 'ana@email.com' },
-      { id: 2, tipo: 'coordinador', nombre: 'Roberto Díaz', curso: 'Primeros Auxilios', estado: 'activo', contacto: 'roberto@email.com' },
-      { id: 3, tipo: 'coordinador', nombre: 'Lucía Mendoza', curso: 'Educación Ambiental Scout', estado: 'inactivo', contacto: 'lucia@email.com' },
-      
-      // Formadores
-      { id: 4, tipo: 'formador', nombre: 'Pedro Rojas', curso: 'Curso de Liderazgo', estado: 'activo', contacto: 'pedro@email.com' },
-      { id: 5, tipo: 'formador', nombre: 'Carmen Fuentes', curso: 'Primeros Auxilios', estado: 'activo', contacto: 'carmen@email.com' },
-      { id: 6, tipo: 'formador', nombre: 'Javier Soto', curso: 'Educación Ambiental Scout', estado: 'activo', contacto: 'javier@email.com' },
-      
-      // Directores
-      { id: 7, tipo: 'director', nombre: 'Marcela Vega', curso: 'Curso de Liderazgo', estado: 'activo', contacto: 'marcela@email.com' },
-      { id: 8, tipo: 'director', nombre: 'Fernando Castro', curso: 'Primeros Auxilios', estado: 'inactivo', contacto: 'fernando@email.com' },
-      { id: 9, tipo: 'director', nombre: 'Isabel Torres', curso: 'Educación Ambiental Scout', estado: 'activo', contacto: 'isabel@email.com' },
-      
-      // Responsables de alimentación
-      { id: 10, tipo: 'alimentacion', nombre: 'Patricia López', curso: 'Curso de Liderazgo', estado: 'activo', contacto: 'patricia@email.com' },
-      { id: 11, tipo: 'alimentacion', nombre: 'Ricardo Mora', curso: 'Primeros Auxilios', estado: 'activo', contacto: 'ricardo@email.com' },
-      { id: 12, tipo: 'alimentacion', nombre: 'Sandra Reyes', curso: 'Educación Ambiental Scout', estado: 'inactivo', contacto: 'sandra@email.com' }
+    // Datos de cursos según estructura CURSO de la BD
+    const cursos = ref([
+      { 
+        CUR_ID: 1,
+        CUR_CODIGO: 'LID-2024',
+        CUR_DESCRIPCION: 'Curso de Liderazgo Scout Avanzado',
+        CUR_FECHA_HORA: '2024-02-01 09:00:00',
+        CUR_LUGAR: 'Sede Regional Biobío',
+        CUR_ESTADO: 1, // 1 = Activo, 2 = Finalizado, 3 = Cancelado
+        CUR_CUOTA_CON_ALMUERZO: 75000,
+        CUR_CUOTA_SIN_ALMUERZO: 50000,
+        CUR_MODALIDAD: 1, // 1 = Presencial, 2 = Virtual
+        CUR_TIPO_CURSO: 1 // Según TCU_ID en TIPO_CURSO
+      },
+      { 
+        CUR_ID: 2,
+        CUR_CODIGO: 'PA-2024',
+        CUR_DESCRIPCION: 'Primeros Auxilios para Dirigentes',
+        CUR_FECHA_HORA: '2024-02-15 08:30:00',
+        CUR_LUGAR: 'Hospital Regional',
+        CUR_ESTADO: 1,
+        CUR_CUOTA_CON_ALMUERZO: 60000,
+        CUR_CUOTA_SIN_ALMUERZO: 40000,
+        CUR_MODALIDAD: 1,
+        CUR_TIPO_CURSO: 2
+      },
+      { 
+        CUR_ID: 3,
+        CUR_CODIGO: 'AMB-2024',
+        CUR_DESCRIPCION: 'Educación Ambiental Scout',
+        CUR_FECHA_HORA: '2024-03-01 10:00:00',
+        CUR_LUGAR: 'Reserva Natural',
+        CUR_ESTADO: 2, // Finalizado
+        CUR_CUOTA_CON_ALMUERZO: 45000,
+        CUR_CUOTA_SIN_ALMUERZO: 30000,
+        CUR_MODALIDAD: 1,
+        CUR_TIPO_CURSO: 3
+      }
     ])
 
-    // Computed properties
-    const totalPersonas = computed(() => personas.value.length)
-    const cursosActivos = computed(() => cursos.value.filter(c => c.estado === 'activo').length)
-    const pagosPendientes = computed(() => {
-      return cursos.value.reduce((total, curso) => total + curso.pendientesPago, 0)
-    })
-    const inscripcionesRecientes = computed(() => 12) // Ejemplo estático
+    // Datos de PERSONA_CURSO (inscripciones)
+    const personasCurso = ref([
+      { PEC_ID: 1, PER_ID: 1, CUR_ID: 1, PEC_ACREDITADO: true, PEC_REGISTRO: true },
+      { PEC_ID: 2, PER_ID: 2, CUR_ID: 1, PEC_ACREDITADO: false, PEC_REGISTRO: true },
+      { PEC_ID: 3, PER_ID: 1, CUR_ID: 2, PEC_ACREDITADO: true, PEC_REGISTRO: true },
+      { PEC_ID: 4, PER_ID: 2, CUR_ID: 3, PEC_ACREDITADO: true, PEC_REGISTRO: true }
+    ])
+
+    // Datos de PAGO_PERSONA según estructura de BD
+    const pagosPersona = ref([
+      { PAP_ID: 1, PER_ID: 1, CUR_ID: 1, PAP_VALOR: 75000, PAP_ESTADO: 1 }, // 1 = Pagado
+      { PAP_ID: 2, PER_ID: 2, CUR_ID: 1, PAP_VALOR: 75000, PAP_ESTADO: 2 }, // 2 = Pendiente
+      { PAP_ID: 3, PER_ID: 1, CUR_ID: 2, PAP_VALOR: 60000, PAP_ESTADO: 1 },
+      { PAP_ID: 4, PER_ID: 2, CUR_ID: 3, PAP_VALOR: 45000, PAP_ESTADO: 1 }
+    ])
+
+    // Datos de responsables según estructura CURSO_COORDINADOR, CURSO_FORMADOR
+    const cursoCoordinadores = ref([
+      { CUC_ID: 1, CUR_ID: 1, PER_ID: 1, CAR_ID: 1, CUC_CARGO: 'Coordinador General' }
+    ])
+
+    const cursoFormadores = ref([
+      { CUO_ID: 1, CUR_ID: 1, PER_ID: 2, ROL_ID: 1, CUO_DIRECTOR: false }
+    ])
+
+    const cursoDirectores = ref([
+      { CUO_ID: 2, CUR_ID: 1, PER_ID: 1, ROL_ID: 2, CUO_DIRECTOR: true }
+    ])
+
+    const cursoAlimentacion = ref([
+      { CUA_ID: 1, CUR_ID: 1, ALI_ID: 1, CUA_DESCRIPCION: 'Almuerzo tipo scout' }
+    ])
+
+    // Computed properties basadas en la estructura real de la BD
+    const totalPersonas = computed(() => personas.value.filter(p => p.PER_VIGENTE).length)
+    
+    const cursosActivos = computed(() => 
+      cursos.value.filter(c => c.CUR_ESTADO === 1).length
+    )
+    
+    const pagosPendientes = computed(() => 
+      pagosPersona.value.filter(p => p.PAP_ESTADO === 2).length
+    )
+    
+    const inscripcionesRecientes = computed(() => 
+      personasCurso.value.filter(pc => {
+        // Simular inscripciones de los últimos 7 días
+        const inscripcionDate = new Date('2024-01-20') // Fecha de ejemplo
+        const sevenDaysAgo = new Date()
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+        return inscripcionDate >= sevenDaysAgo
+      }).length
+    )
 
     const cursosVigentes = computed(() => {
-      return cursos.value.filter(c => c.estado === 'activo').map(c => ({
-        id: c.id,
-        titulo: c.titulo,
-        fecha: c.fecha,
-        participantes: c.participantes,
-        inscripciones: c.inscripciones,
-        acreditaciones: c.acreditaciones,
-        pendientesPago: c.pendientesPago,
-        montoPagado: `$${c.montoPagado.toLocaleString('es-CL')}`
-      }))
+      return cursos.value.map(curso => {
+        const inscripciones = personasCurso.value.filter(pc => pc.CUR_ID === curso.CUR_ID).length
+        const acreditados = personasCurso.value.filter(pc => 
+          pc.CUR_ID === curso.CUR_ID && pc.PEC_ACREDITADO
+        ).length
+        const pagosCurso = pagosPersona.value.filter(p => p.CUR_ID === curso.CUR_ID)
+        const montoRecaudado = pagosCurso
+          .filter(p => p.PAP_ESTADO === 1)
+          .reduce((sum, pago) => sum + pago.PAP_VALOR, 0)
+        const pendientesPago = pagosCurso.filter(p => p.PAP_ESTADO === 2).length
+
+        return {
+          CUR_ID: curso.CUR_ID,
+          CUR_CODIGO: curso.CUR_CODIGO,
+          CUR_DESCRIPCION: curso.CUR_DESCRIPCION,
+          CUR_FECHA_HORA: curso.CUR_FECHA_HORA.split(' ')[0], // Solo fecha
+          CUR_LUGAR: curso.CUR_LUGAR,
+          CUR_ESTADO: getEstadoDisplay(curso.CUR_ESTADO),
+          inscripciones: inscripciones,
+          acreditaciones: acreditados,
+          pendientesPago: pendientesPago,
+          montoRecaudado: `$${montoRecaudado.toLocaleString('es-CL')}`
+        }
+      })
     })
 
     // Simulación de gráfico usando DataCardList
     const montosCursos = computed(() => {
-      return cursos.value.map(c => ({
-        title: c.titulo,
-        value: `$${c.montoPagado.toLocaleString('es-CL')}`,
-        description: `${c.inscripciones} inscripciones`
-      }))
+      return cursos.value.map(curso => {
+        const pagosCurso = pagosPersona.value.filter(p => p.CUR_ID === curso.CUR_ID && p.PAP_ESTADO === 1)
+        const montoRecaudado = pagosCurso.reduce((sum, pago) => sum + pago.PAP_VALOR, 0)
+        const inscripciones = personasCurso.value.filter(pc => pc.CUR_ID === curso.CUR_ID).length
+
+        return {
+          title: curso.CUR_DESCRIPCION,
+          value: `$${montoRecaudado.toLocaleString('es-CL')}`,
+          description: `${inscripciones} inscripciones`
+        }
+      })
     })
 
     const coordinadores = computed(() => {
-      return responsables.value
-        .filter(r => r.tipo === 'coordinador')
-        .map(r => ({
-          id: r.id,
-          nombre: r.nombre,
-          curso: r.curso,
-          estado: r.estado,
-          contacto: r.contacto,
-          estadoDisplay: r.estado === 'activo' ? '● Activo' : '● Inactivo'
-        }))
+      return cursoCoordinadores.value.map(coord => {
+        const persona = personas.value.find(p => p.PER_ID === coord.PER_ID)
+        const curso = cursos.value.find(c => c.CUR_ID === coord.CUR_ID)
+        return {
+          CUC_ID: coord.CUC_ID,
+          nombre: persona ? `${persona.PER_NOMBRES} ${persona.PER_APELPAT}` : 'N/A',
+          curso: curso ? curso.CUR_DESCRIPCION : 'N/A',
+          contacto: persona ? persona.PER_EMAIL : 'N/A',
+          cargo: coord.CUC_CARGO,
+          estadoDisplay: '● Activo'
+        }
+      })
     })
 
     const formadores = computed(() => {
-      return responsables.value
-        .filter(r => r.tipo === 'formador')
-        .map(r => ({
-          id: r.id,
-          nombre: r.nombre,
-          curso: r.curso,
-          estado: r.estado,
-          contacto: r.contacto,
-          estadoDisplay: r.estado === 'activo' ? '● Activo' : '● Inactivo'
-        }))
+      return cursoFormadores.value.map(form => {
+        const persona = personas.value.find(p => p.PER_ID === form.PER_ID)
+        const curso = cursos.value.find(c => c.CUR_ID === form.CUR_ID)
+        return {
+          CUO_ID: form.CUO_ID,
+          nombre: persona ? `${persona.PER_NOMBRES} ${persona.PER_APELPAT}` : 'N/A',
+          curso: curso ? curso.CUR_DESCRIPCION : 'N/A',
+          contacto: persona ? persona.PER_EMAIL : 'N/A',
+          tipo: form.CUO_DIRECTOR ? 'Director' : 'Formador',
+          estadoDisplay: '● Activo'
+        }
+      })
     })
 
     const directores = computed(() => {
-      return responsables.value
-        .filter(r => r.tipo === 'director')
-        .map(r => ({
-          id: r.id,
-          nombre: r.nombre,
-          curso: r.curso,
-          estado: r.estado,
-          contacto: r.contacto,
-          estadoDisplay: r.estado === 'activo' ? '● Activo' : '● Inactivo'
-        }))
+      return cursoDirectores.value.filter(dir => dir.CUO_DIRECTOR).map(dir => {
+        const persona = personas.value.find(p => p.PER_ID === dir.PER_ID)
+        const curso = cursos.value.find(c => c.CUR_ID === dir.CUR_ID)
+        return {
+          CUO_ID: dir.CUO_ID,
+          nombre: persona ? `${persona.PER_NOMBRES} ${persona.PER_APELPAT}` : 'N/A',
+          curso: curso ? curso.CUR_DESCRIPCION : 'N/A',
+          contacto: persona ? persona.PER_EMAIL : 'N/A',
+          estadoDisplay: '● Activo'
+        }
+      })
     })
 
     const responsablesAlimentacion = computed(() => {
-      return responsables.value
-        .filter(r => r.tipo === 'alimentacion')
-        .map(r => ({
-          id: r.id,
-          nombre: r.nombre,
-          curso: r.curso,
-          estado: r.estado,
-          contacto: r.contacto,
-          estadoDisplay: r.estado === 'activo' ? '● Activo' : '● Inactivo'
-        }))
+      return cursoAlimentacion.value.map(alim => {
+        const curso = cursos.value.find(c => c.CUR_ID === alim.CUR_ID)
+        return {
+          CUA_ID: alim.CUA_ID,
+          nombre: 'Responsable de Alimentación', // En BD real sería una persona
+          curso: curso ? curso.CUR_DESCRIPCION : 'N/A',
+          contacto: 'alimentacion@scoutsbiobio.cl',
+          descripcion: alim.CUA_DESCRIPCION,
+          estadoDisplay: '● Activo'
+        }
+      })
     })
 
     // Configuración de columnas para las tablas
     const columnasCursos = [
-      { key: 'titulo', label: 'Curso', sortable: true },
-      { key: 'fecha', label: 'Fecha', sortable: true },
-      { key: 'participantes', label: 'Participantes', sortable: true },
+      { key: 'CUR_CODIGO', label: 'Código', sortable: true },
+      { key: 'CUR_DESCRIPCION', label: 'Descripción', sortable: true },
+      { key: 'CUR_FECHA_HORA', label: 'Fecha', sortable: true },
+      { key: 'CUR_LUGAR', label: 'Lugar', sortable: true },
+      { key: 'CUR_ESTADO', label: 'Estado', sortable: true },
       { key: 'inscripciones', label: 'Inscripciones', sortable: true },
-      { key: 'acreditaciones', label: 'Acreditaciones', sortable: true },
-      { key: 'pendientesPago', label: 'Pendientes de Pago', sortable: true },
-      { key: 'montoPagado', label: 'Monto Pagado', sortable: true }
+      { key: 'acreditaciones', label: 'Acreditados', sortable: true },
+      { key: 'pendientesPago', label: 'Pendientes Pago', sortable: true },
+      { key: 'montoRecaudado', label: 'Monto Recaudado', sortable: true }
     ]
 
     const columnasCoordinadores = [
       { key: 'nombre', label: 'Coordinador', sortable: true },
       { key: 'curso', label: 'Curso', sortable: true },
+      { key: 'cargo', label: 'Cargo', sortable: true },
       { key: 'contacto', label: 'Contacto', sortable: true },
       { key: 'estadoDisplay', label: 'Estado', sortable: true }
     ]
@@ -319,6 +387,7 @@ export default {
     const columnasFormadores = [
       { key: 'nombre', label: 'Formador', sortable: true },
       { key: 'curso', label: 'Curso', sortable: true },
+      { key: 'tipo', label: 'Tipo', sortable: true },
       { key: 'contacto', label: 'Contacto', sortable: true },
       { key: 'estadoDisplay', label: 'Estado', sortable: true }
     ]
@@ -333,6 +402,7 @@ export default {
     const columnasAlimentacion = [
       { key: 'nombre', label: 'Responsable', sortable: true },
       { key: 'curso', label: 'Curso', sortable: true },
+      { key: 'descripcion', label: 'Descripción', sortable: true },
       { key: 'contacto', label: 'Contacto', sortable: true },
       { key: 'estadoDisplay', label: 'Estado', sortable: true }
     ]
@@ -345,18 +415,40 @@ export default {
       { id: 'alimentacion', label: 'Alimentación' }
     ])
 
+    // Métodos auxiliares
+    const getEstadoDisplay = (estado) => {
+      const estados = {
+        1: '● Activo',
+        2: '● Finalizado',
+        3: '● Cancelado'
+      }
+      return estados[estado] || '● Desconocido'
+    }
+
     // Métodos
     const verCurso = (curso) => {
-      router.push(`/cursos/detalle/${curso.id}`)
+      router.push(`/cursos/detalle/${curso.CUR_ID}`)
     }
 
     const removerAlerta = (id) => {
       alertas.value = alertas.value.filter(alerta => alerta.id !== id)
     }
 
-    // Simular carga de datos
+    // Simular carga de datos desde API
     onMounted(async () => {
-      // Aquí cargarías los datos reales desde tus servicios
+      // En producción, aquí se cargarían los datos reales desde los servicios
+      // que se conectan a la base de datos MySQL
+      try {
+        // Ejemplo de llamadas a API:
+        // const responsePersonas = await apiService.getPersonas()
+        // const responseCursos = await apiService.getCursos()
+        // const responsePagos = await apiService.getPagos()
+        // personas.value = responsePersonas.data
+        // cursos.value = responseCursos.data
+        // pagosPersona.value = responsePagos.data
+      } catch (error) {
+        console.error('Error cargando datos del dashboard:', error)
+      }
     })
 
     return {
@@ -401,9 +493,10 @@ export default {
 }
 
 .main-content {
-  margin-left: 250px; /* Ancho del sidebar */
+  margin-left: 0;
   padding: 20px;
-  min-height: calc(100vh - 64px); /* Altura menos navbar */
+  min-height: 100vh;
+  width: 100%;
 }
 
 .stats-grid {
@@ -466,10 +559,25 @@ export default {
   padding: 15px;
 }
 
+/* Estilos para estados */
+.status-active {
+  color: #28a745;
+  font-weight: 600;
+}
+
+.status-finished {
+  color: #6c757d;
+  font-weight: 600;
+}
+
+.status-cancelled {
+  color: #dc3545;
+  font-weight: 600;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .main-content {
-    margin-left: 0;
     padding: 15px;
   }
   
