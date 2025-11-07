@@ -1545,19 +1545,12 @@ export default {
 
 /* Selector de Mantenedores */
 .mantenedor-selector {
-<<<<<<< HEAD
-  background: #1e3d73;
-  color: white;
-  padding: 15px 30px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-=======
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   color: white;
   padding: 15px 30px;
   box-shadow: 0 2px 10px rgba(0,0,0,0.2);
   flex-shrink: 0;
->>>>>>> 0fa4848af80b082dc89bbe9376feebb88735d69d
 }
 
 .selector-header {
@@ -1580,35 +1573,21 @@ export default {
 .mantenedor-dropdown {
   width: 100%;
   padding: 12px 45px 12px 16px;
-<<<<<<< HEAD
-  border: 2px solid #2c5aa0;
-  border-radius: 8px;
-  background: white;
-=======
   border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.9);
->>>>>>> 0fa4848af80b082dc89bbe9376feebb88735d69d
   color: #333;
   font-size: 1rem;
   appearance: none;
   cursor: pointer;
-<<<<<<< HEAD
-  transition: border-color 0.3s ease;
-=======
   transition: all 0.3s ease;
->>>>>>> 0fa4848af80b082dc89bbe9376feebb88735d69d
 }
 
 .mantenedor-dropdown:focus {
   outline: none;
   border-color: #ff6b35;
-<<<<<<< HEAD
-  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
-=======
   box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.3);
   background: white;
->>>>>>> 0fa4848af80b082dc89bbe9376feebb88735d69d
 }
 
 .dropdown-icon {
@@ -1620,19 +1599,12 @@ export default {
   pointer-events: none;
 }
 
-<<<<<<< HEAD
-/* Main Content Styles */
-.main-content {
-  padding: 0;
-  min-height: 100vh;
-=======
 /* Main Content Styles - Ocupa todo el espacio restante */
 .main-content {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-height: 0; /* Importante para que flex funcione correctamente */
->>>>>>> 0fa4848af80b082dc89bbe9376feebb88735d69d
 }
 
 .header {
@@ -2039,10 +2011,6 @@ export default {
 
 /* Responsive */
 @media (max-width: 768px) {
-<<<<<<< HEAD
-  .mantenedor-selector {
-    padding: 15px 20px;
-=======
   .mantenedores-scouts {
     min-height: 100vh;
     height: auto;
@@ -2058,7 +2026,6 @@ export default {
   
   .mantenedor-section {
     padding: 20px;
->>>>>>> 0fa4848af80b082dc89bbe9376feebb88735d69d
   }
   
   .mantenedor-header {
