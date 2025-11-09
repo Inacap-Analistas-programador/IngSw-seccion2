@@ -1,17 +1,11 @@
 <template>
-  <div class="usuarios-roles">
-    <!-- Encabezado de la sección -->
-    <header class="page-header">
-      <h2>Gestión de Usuarios</h2>
-      <BaseButton 
-        class="btn-crear-usuario"
-        variant="primary" 
-        size="lg"
-        @click="abrirModalCrear"
-      >
-        + Crear Usuario
-      </BaseButton>
-    </header>
+  <ModernMainScrollbar>
+    <div class="usuarios-roles">
+      <!-- Encabezado de la sección -->
+      <header class="page-header">
+        <h2>Gestión de Usuarios</h2>
+        <p class="page-description">Administra, crea y organiza los usuarios del sistema.</p>
+      </header>
 
     <!-- Barra de búsqueda y filtros -->
     <div class="filtros">
@@ -19,21 +13,18 @@
         v-model="searchQuery" 
         placeholder="Buscar por nombre o usuario..." 
         class="filtro-item"
-        @input="filtrarUsuarios"
       />
       <BaseSelect 
         v-model="filtroRol" 
         :options="rolesOptions" 
-        placeholder="Todos los perfiles"
+        placeholder="Todos los roles"
         class="filtro-item"
-        @change="filtrarUsuarios"
       />
       <BaseSelect 
         v-model="filtroEstado" 
         :options="estadoOptions" 
         placeholder="Todos los estados"
         class="filtro-item"
-        @change="filtrarUsuarios"
       />
       <BaseButton 
         variant="primary" 
@@ -51,84 +42,99 @@
       <p>Cargando usuarios...</p>
     </div>
 
-    <!-- Card estilo Correos -->
-    <section class="correos-card usuarios-card">
-      <div class="correos-card-header">
-        <span class="correos-card-title blue-bar">Lista de Usuarios</span>
-        <div class="correos-card-actions">
-          <BaseButton variant="primary" @click="cambiarEstadoMasivo(false)" :disabled="selectedCount === 0" title="Desactivar todos los seleccionados">
-            <AppIcons name="alert" :size="16" /> Desactivar
+    <!-- Tabla de usuarios -->
+    <div v-else class="table-container">
+      <div class="table-header-bar">
+        <h3 class="table-title">Lista de Usuarios</h3>
+        <div class="table-actions">
+          <BaseButton 
+            variant="primary" 
+            @click="editarSeleccionado"
+            :disabled="selectedIds.length !== 1"
+          >
+            Editar
           </BaseButton>
-          <BaseButton variant="primary" @click="cambiarEstadoMasivo(true)" :disabled="selectedCount === 0" title="Activar todos los seleccionados">
-            <AppIcons name="check" :size="16" /> Activar
+          <BaseButton 
+            variant="primary" 
+            @click="toggleEstadoSeleccionados"
+            :disabled="selectedIds.length === 0"
+          >
+            {{ botonEstadoLabel }}
           </BaseButton>
-          <BaseButton variant="primary" @click="accionEditarSelected" :disabled="!canEditOne" title="Editar usuario seleccionado">
-            <AppIcons name="edit" :size="16" /> Editar
-          </BaseButton>
-          <BaseButton variant="primary" @click="abrirModalCrear" title="Crear nuevo usuario">
-            <AppIcons name="add" :size="16" /> Nuevo
+          <BaseButton 
+            variant="primary" 
+            @click="abrirModalCrear"
+          >
+            Nuevo Usuario
           </BaseButton>
         </div>
       </div>
-      <div class="usuarios-seleccion-resumen">
-        <span>Seleccionados: <strong>{{ selectedCount }}</strong></span>
-        <template v-if="canEditOne && selectedUsuario">
-          <span> | Usuario: <strong>{{ selectedUsuario.username }}</strong></span>
-          <span class="badge-mini" :class="selectedUsuario.activo ? 'mini-ok' : 'mini-off'">{{ selectedUsuario.activo ? 'Activo' : 'Inactivo' }}</span>
-        </template>
+      
+      <div class="table-wrapper">
+        <table class="usuarios-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Usuario</th>
+              <th>Contraseña</th>
+              <th>Perfil</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr 
+              v-for="usuario in usuariosFiltrados" 
+              :key="usuario.id"
+              :class="{ 
+                'usuario-inactivo': !usuario.activo,
+                'row-selected': isSelected(usuario.id)
+              }"
+              @click="toggleRowSelection(usuario)"
+            >
+              <td data-label="Foto" class="foto-cell">
+                <div class="user-avatar">
+                  <img 
+                    v-if="usuario.foto" 
+                    :src="usuario.foto" 
+                    :alt="usuario.username"
+                    class="avatar-image"
+                  />
+                  <div v-else class="avatar-placeholder">
+                    <AppIcons name="user" :size="24" />
+                  </div>
+                </div>
+              </td>
+              <td data-label="Usuario">{{ usuario.username }}</td>
+              <td data-label="Contraseña">••••••••</td>
+              <td data-label="Perfil">
+                <span class="rol-badge" :class="rolClass(usuario)">
+                  {{ getRolLabel(usuario.perfil_id) || usuario.rol }}
+                </span>
+              </td>
+              <td data-label="Estado">
+                <span 
+                  :class="['estado-badge', usuario.activo ? 'estado-activo' : 'estado-inactivo']"
+                >
+                  {{ usuario.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+            </tr>
+            <tr v-if="usuariosFiltrados.length === 0" class="empty-row">
+              <td colspan="5">
+                <div class="empty-state">
+                  <p>No se encontraron usuarios</p>
+                  <BaseButton variant="primary" @click="limpiarFiltros">
+                    Mostrar todos
+                  </BaseButton>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
+    </div>
 
-  <!-- Tabla de usuarios -->
-  <div v-if="!cargando" class="table-wrapper usuarios-table-wrapper">
-      <table class="usuarios-table">
-        <thead>
-          <tr>
-            <th>Usuario</th>
-            <th>PERFIL</th>
-            <th>Estado</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr 
-            v-for="usuario in usuariosFiltrados" 
-            :key="usuario.id"
-            :class="{ 'usuario-inactivo': !usuario.activo, 'row-selected': isSelected(usuario.id) }"
-            @click="toggleRowSelection(usuario)"
-          >
-            <td data-label="Usuario">
-              <div class="user-cell">
-                <img
-                  class="avatar"
-                  :src="usuario.foto || avatarDataUrl(usuario.nombre || usuario.username)"
-                  :alt="`Foto de ${usuario.username}`"
-                />
-                <span class="username">{{ usuario.username }}</span>
-              </div>
-            </td>
-            <td data-label="Perfil" :class="{ 'col-perfil': true }">
-              <span class="rol-badge" :class="rolClass(usuario)">
-                {{ getRolLabel(usuario.perfil_id) || usuario.rol }}
-              </span>
-            </td>
-            <td data-label="Estado">
-              <span :class="['estado-badge', usuario.activo ? 'estado-activo' : 'estado-inactivo']">
-                {{ usuario.activo ? 'Activo' : 'Inactivo' }}
-              </span>
-            </td>
-          </tr>
-          <tr v-if="usuariosFiltrados.length === 0" class="empty-row">
-            <td colspan="3">
-              <div class="empty-state">
-                <p>No se encontraron usuarios</p>
-                <BaseButton variant="primary" @click="limpiarFiltros">Mostrar todos</BaseButton>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-  </div>
-  </section>
-
+    <!-- Modal para crear/editar usuario -->
     <BaseModal v-model="modalVisible" @close="cerrarModal">
       <template #default>
         <div class="modal-usuario">
@@ -137,158 +143,124 @@
           </header>
 
           <form @submit.prevent="guardarUsuario" class="usuario-form">
-            <div class="form-group">
-              <label for="username">Nombre de Usuario <span class="required">*</span></label>
-              <InputBase 
-                id="username"
-                v-model="usuarioForm.username" 
-                placeholder="Ej: jperez"
-                required
-              />
-              <small class="form-hint">Este nombre se mostrará en la tabla</small>
-            </div>
-
-            <div class="form-group">
-              <label for="rol">Perfil <span class="required">*</span></label>
-              <BaseSelect 
-                id="rol"
-                v-model="usuarioForm.rol" 
-                :options="rolesOptions"
-                placeholder="Seleccionar perfil"
-                required
-                :disabled="procesando"
-                @change="cargarPermisosDelRol"
-              />
-            </div>
-
-            <!-- Foto de Usuario (solo se muestra siempre, pero requerida por pedido para edición) -->
-            <div class="form-group">
-              <label for="foto">Foto de Usuario</label>
-              <input id="foto" class="file-input" type="file" accept="image/*" @change="onFotoChange" :disabled="procesando" />
-              <div v-if="usuarioForm.foto" class="avatar-preview-wrapper">
-                <img :src="usuarioForm.foto" alt="Preview Foto" class="avatar-preview" />
+            <!-- Sección de Foto y Datos Básicos en una sola fila -->
+            <div class="form-section">
+              <div class="section-title">
+                <AppIcons name="user" :size="20" />
+                <span>Información Personal</span>
               </div>
-              <small class="form-hint">Opcional. Si no se selecciona, se mostrarán iniciales.</small>
-            </div>
-
-            <!-- Permisos personalizados por aplicación -->
-            <!-- Permisos ocultos en modo edición segun requerimiento -->
-            <div class="form-group" v-if="(!modoEdicion && usuarioForm.rol) && aplicaciones.length > 0">
-              <label>Permisos del Usuario</label>
-              <p class="form-hint">Configure los permisos específicos para este usuario en cada módulo del sistema</p>
               
-              <div class="permisos-container">
-                <div 
-                  v-for="aplicacion in aplicaciones" 
-                  :key="aplicacion.APL_ID || aplicacion.id"
-                  class="aplicacion-section"
-                >
-                  <div class="aplicacion-header">
-                    <AppIcons name="book" :size="20" class="aplicacion-icon" />
-                    <h4 class="aplicacion-nombre">{{ aplicacion.APL_DESCRIPCION || aplicacion.nombre }}</h4>
-                  </div>
-                  
-                  <div class="permisos-list" v-if="usuarioForm.permisos[aplicacion.APL_ID || aplicacion.id]">
-                    <PermisosToggle
-                      v-model="usuarioForm.permisos[aplicacion.APL_ID || aplicacion.id].consultar"
-                      label="Ver / Consultar"
-                      description="Permite visualizar la información y listados del módulo"
-                      icon-name="view"
-                      :disabled="procesando"
-                    />
-                    <PermisosToggle
-                      v-model="usuarioForm.permisos[aplicacion.APL_ID || aplicacion.id].ingresar"
-                      label="Crear / Ingresar"
-                      description="Permite agregar nuevos registros al sistema"
-                      icon-name="add"
-                      :disabled="procesando"
-                    />
-                    <PermisosToggle
-                      v-model="usuarioForm.permisos[aplicacion.APL_ID || aplicacion.id].modificar"
-                      label="Modificar / Editar"
-                      description="Permite editar y actualizar registros existentes"
-                      icon-name="modify"
-                      :disabled="procesando"
-                    />
-                    <PermisosToggle
-                      v-model="usuarioForm.permisos[aplicacion.APL_ID || aplicacion.id].eliminar"
-                      label="Eliminar / Borrar"
-                      description="Permite eliminar registros del sistema"
-                      icon-name="delete"
-                      :disabled="procesando"
+              <div class="form-row form-row-triple">
+                <!-- Foto de perfil -->
+                <div class="form-group photo-group-inline">
+                  <label>Foto</label>
+                  <div class="photo-upload-inline" @click="triggerFotoSeleccion">
+                    <div class="photo-preview-inline" :class="{ 'has-foto': usuarioForm.fotoPreview }">
+                      <img 
+                        v-if="usuarioForm.fotoPreview" 
+                        :src="usuarioForm.fotoPreview" 
+                        alt="Vista previa"
+                        class="preview-image-inline"
+                      />
+                      <div v-else class="preview-placeholder-inline">
+                        <AppIcons name="user" :size="32" />
+                      </div>
+                      <div class="photo-overlay">
+                        <AppIcons name="upload" :size="20" />
+                        <span>{{ usuarioForm.fotoPreview ? 'Cambiar' : 'Subir' }}</span>
+                      </div>
+                      <button 
+                        v-if="usuarioForm.fotoPreview" 
+                        type="button" 
+                        class="remove-foto-btn" 
+                        @click.stop="eliminarFoto"
+                        :disabled="procesando"
+                        aria-label="Eliminar foto"
+                      >
+                        <AppIcons name="delete" :size="14" />
+                      </button>
+                    </div>
+                    <input 
+                      ref="fileInput"
+                      type="file" 
+                      accept="image/*"
+                      @change="handleFileChange"
+                      style="display: none"
                     />
                   </div>
+                  <small class="form-hint-compact">Click en la foto para {{ usuarioForm.fotoPreview ? 'cambiar' : 'subir' }}</small>
+                </div>
+
+                <!-- Nombre de usuario -->
+                <div class="form-group flex-1">
+                  <label for="username">Nombre de Usuario <span class="required">*</span></label>
+                  <InputBase 
+                    id="username"
+                    v-model="usuarioForm.username" 
+                    placeholder="Ej: jperez"
+                    required
+                    :disabled="procesando"
+                  />
+                </div>
+
+                <!-- Rol -->
+                <div class="form-group flex-1">
+                  <label for="rol">Perfil <span class="required">*</span></label>
+                  <BaseSelect 
+                    id="rol"
+                    v-model="usuarioForm.rol" 
+                    :options="rolesOptions"
+                    placeholder="Seleccionar rol"
+                    required
+                    :disabled="procesando"
+                  />
                 </div>
               </div>
             </div>
 
-            <!-- Gestión de contraseña -->
-            <!-- Modo crear: pedir contraseña -->
-            <div class="form-group" v-if="!modoEdicion">
-              <label for="password">Contraseña <span class="required">*</span></label>
-              <InputBase
-                id="password"
-                v-model="usuarioForm.password"
-                type="password"
-                placeholder="Ingrese contraseña (mínimo 6 caracteres)"
-                :required="!modoEdicion"
-                :disabled="procesando"
-              />
-              <small class="form-hint">La contraseña debe tener al menos 6 caracteres</small>
-            </div>
+            <!-- Sección de Seguridad -->
+            <div class="form-section">
+              <div class="section-title">
+                <AppIcons name="lock" :size="20" />
+                <span>Seguridad</span>
+              </div>
+              
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label for="password">Contraseña <span class="required">{{ modoEdicion ? '' : '*' }}</span></label>
+                  <InputBase 
+                    id="password"
+                    v-model="usuarioForm.password" 
+                    type="password"
+                    :placeholder="modoEdicion ? 'Dejar vacío para no cambiar' : 'Mínimo 6 caracteres'"
+                    :required="!modoEdicion"
+                    :disabled="procesando"
+                  />
+                </div>
 
-            <div class="form-group" v-if="!modoEdicion">
-              <label for="confirmPassword">Confirmar Contraseña <span class="required">*</span></label>
-              <InputBase
-                id="confirmPassword"
-                v-model="usuarioForm.confirmPassword"
-                type="password"
-                placeholder="Confirme contraseña"
-                :required="!modoEdicion"
-                :disabled="procesando"
-              />
-              <small class="form-hint" v-if="usuarioForm.password && usuarioForm.confirmPassword && usuarioForm.password !== usuarioForm.confirmPassword" style="color: #e74c3c;">
+                <div class="form-group flex-1">
+                  <label for="confirmPassword">Confirmar Contraseña <span class="required" v-if="usuarioForm.password">*</span></label>
+                  <InputBase 
+                    id="confirmPassword"
+                    v-model="usuarioForm.confirmPassword" 
+                    type="password"
+                    placeholder="Repetir contraseña"
+                    :required="!!usuarioForm.password"
+                    :disabled="procesando || !usuarioForm.password"
+                  />
+                </div>
+              </div>
+              
+              <div v-if="usuarioForm.password && usuarioForm.confirmPassword && usuarioForm.password !== usuarioForm.confirmPassword" class="error-message">
+                <AppIcons name="alert" :size="16" />
                 Las contraseñas no coinciden
-              </small>
-            </div>
-
-            <!-- Modo edición: mostrar contraseña enmascarada y opción para cambiar -->
-            <div class="form-group" v-if="modoEdicion">
-              <label>Contraseña</label>
-              <div v-if="!changePassword" class="password-masked-row">
-                <span class="password-masked" title="Contraseña protegida">••••••••</span>
-                <BaseButton size="sm" variant="primary" type="button" @click="activarCambioPassword" :disabled="procesando">Cambiar</BaseButton>
-              </div>
-              <div v-else class="password-change-fields">
-                <InputBase
-                  id="newPassword"
-                  v-model="usuarioForm.password"
-                  type="password"
-                  placeholder="Nueva contraseña"
-                  :disabled="procesando"
-                />
-                <InputBase
-                  id="newPassword2"
-                  v-model="usuarioForm.confirmPassword"
-                  type="password"
-                  placeholder="Confirmar nueva contraseña"
-                  :disabled="procesando"
-                />
-                <div class="password-actions-inline">
-                  <BaseButton size="sm" variant="primary" type="button" @click="confirmarNuevoPassword" :disabled="procesando || !passwordTemporalValido">Aplicar</BaseButton>
-                  <BaseButton size="sm" variant="primary" type="button" @click="cancelarCambioPassword" :disabled="procesando">Cancelar</BaseButton>
-                </div>
-                <small class="form-hint" v-if="usuarioForm.password && usuarioForm.password.length < 6" style="color:#e74c3c;">Mínimo 6 caracteres</small>
-                <small class="form-hint" v-if="usuarioForm.password && usuarioForm.confirmPassword && usuarioForm.password !== usuarioForm.confirmPassword" style="color:#e74c3c;">Las contraseñas no coinciden</small>
               </div>
             </div>
-
-            
 
             <div class="form-actions">
               <BaseButton 
                 type="button" 
-                variant="primary" 
+                variant="secondary"
                 @click="cerrarModal"
                 :disabled="procesando"
               >
@@ -299,7 +271,8 @@
                 variant="primary"
                 :disabled="procesando || !formularioValido"
               >
-                {{ procesando ? 'Guardando...' : (modoEdicion ? 'Actualizar' : 'Crear Usuario') }}
+                <AppIcons v-if="!procesando" :name="modoEdicion ? 'save' : 'add'" :size="18" />
+                {{ procesando ? 'Guardando...' : (modoEdicion ? 'Guardar Cambios' : 'Crear Usuario') }}
               </BaseButton>
             </div>
           </form>
@@ -315,14 +288,14 @@
           <p>{{ mensajeConfirmacion }}</p>
           <div class="form-actions">
             <BaseButton 
-              variant="primary" 
+              variant="secondary" 
               @click="cancelarAccion"
               :disabled="procesando"
             >
               Cancelar
             </BaseButton>
             <BaseButton 
-              variant="primary" 
+              variant="danger" 
               @click="ejecutarAccion"
               :disabled="procesando"
             >
@@ -341,10 +314,11 @@
       @close="cerrarNotificacion"
     />
   </div>
+  </ModernMainScrollbar>
 </template>
 
 <script>
-// Modo UI-only: eliminadas dependencias a la API. Los datos se cargan en memoria (mock).
+// Conectado a la API - usa servicios reales
 import { useRouter } from 'vue-router'
 import BaseButton from '../components/Reutilizables/BaseButton.vue'
 import BaseModal from '../components/Reutilizables/BaseModal.vue'
@@ -354,6 +328,8 @@ import InputBase from '../components/Reutilizables/InputBase.vue'
 import NotificationToast from '../components/Reutilizables/NotificationToast.vue'
 import AppIcons from '../components/icons/AppIcons.vue'
 import PermisosToggle from '../components/Reutilizables/PermisosToggle.vue'
+import ModernMainScrollbar from '../components/Reutilizables/ModernMainScrollbar.vue'
+import { usuarios as usuariosService, perfiles as perfilesService } from '@/services/usuariosService'
 
 export default {
   name: 'UsuariosRoles',
@@ -365,7 +341,8 @@ export default {
     InputBase,
     NotificationToast,
     AppIcons,
-    PermisosToggle
+    PermisosToggle,
+    ModernMainScrollbar
   },
   setup() {
     const router = useRouter()
@@ -373,9 +350,9 @@ export default {
   },
   data() {
     return {
-    usuarios: [],
-    usuariosFiltrados: [],
-    selectedIds: [],
+      usuarios: [],
+      usuariosFiltrados: [],
+      selectedIds: [], // IDs de usuarios seleccionados
       aplicaciones: [], // Módulos del sistema con permisos
       searchQuery: '',
       filtroRol: '',
@@ -388,14 +365,15 @@ export default {
       // Modal
       modalVisible: false,
       modoEdicion: false,
-      changePassword: false,
       usuarioForm: {
+        id: null,
         username: '',
         rol: '',
         password: '',
         confirmPassword: '',
         activo: true,
-        permisos: {}
+        foto: null,
+        fotoPreview: null
       },
       
       // Confirmación
@@ -422,37 +400,42 @@ export default {
   },
   computed: {
     formularioValido() {
-      if (!this.usuarioForm.username || !this.usuarioForm.rol) return false
-
-      // Validación en modo creación (password obligatorio)
-      if (!this.modoEdicion) {
-        if (!this.usuarioForm.password || !this.usuarioForm.confirmPassword) return false
-        if (this.usuarioForm.password !== this.usuarioForm.confirmPassword) return false
-        if (this.usuarioForm.password.length < 6) return false
+      if (!this.usuarioForm.username || !this.usuarioForm.rol) {
+        return false
       }
-
-      // En modo edición solo validar si se decidió cambiar la contraseña
-      if (this.modoEdicion && this.changePassword) {
-        if (!this.usuarioForm.password || !this.usuarioForm.confirmPassword) return false
-        if (this.usuarioForm.password !== this.usuarioForm.confirmPassword) return false
-        if (this.usuarioForm.password.length < 6) return false
+      
+      // En modo edición, la contraseña es opcional
+      if (this.modoEdicion) {
+        // Si hay contraseña, validarla
+        if (this.usuarioForm.password) {
+          if (!this.usuarioForm.confirmPassword) return false
+          if (this.usuarioForm.password !== this.usuarioForm.confirmPassword) return false
+          if (this.usuarioForm.password.length < 6) return false
+        }
+        return true
       }
+      
+      // En modo creación, la contraseña es obligatoria
+      if (!this.usuarioForm.password || !this.usuarioForm.confirmPassword) {
+        return false
+      }
+      if (this.usuarioForm.password !== this.usuarioForm.confirmPassword) {
+        return false
+      }
+      if (this.usuarioForm.password.length < 6) {
+        return false
+      }
+      
       return true
-    }
-    ,
-    selectedCount() {
-      return this.selectedIds.length
     },
-    canEditOne() {
-      return this.selectedIds.length === 1
-    },
-    selectedUsuario() {
-      if (this.selectedIds.length !== 1) return null
-      const id = this.selectedIds[0]
-      return this.usuariosFiltrados.find(u => u.id === id) || this.usuarios.find(u => u.id === id) || null
-    },
-    allSelected() {
-      return this.usuariosFiltrados.length > 0 && this.selectedIds.length === this.usuariosFiltrados.length
+    botonEstadoLabel() {
+      if (this.selectedIds.length === 0) return 'Desactivar'
+      const seleccionados = this.usuarios.filter(u => this.selectedIds.includes(u.id))
+      const todosActivos = seleccionados.every(u => u.activo)
+      const todosInactivos = seleccionados.every(u => !u.activo)
+      if (todosActivos) return 'Desactivar'
+      if (todosInactivos) return 'Activar'
+      return 'Cambiar Estado'
     }
   },
   async mounted() {
@@ -460,21 +443,6 @@ export default {
     await this.cargarDatos()
   },
   methods: {
-    getIniciales(texto) {
-      if (!texto) return 'U'
-      const partes = String(texto).trim().split(/\s+/)
-      const ini = (partes[0]?.[0] || '') + (partes[1]?.[0] || '')
-      return ini.toUpperCase() || (String(texto)[0] || 'U').toUpperCase()
-    },
-
-    avatarDataUrl(texto) {
-      const initials = this.getIniciales(texto)
-      const bg = '#E6F0FF'
-      const fg = '#1E40AF'
-      const svg = `<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><defs><clipPath id="r"><rect rx="32" ry="32" width="64" height="64"/></clipPath></defs><g clip-path="url(#r)"><rect width="64" height="64" fill="${bg}"/><text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="24" fill="${fg}">${initials}</text></g></svg>`
-      return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg)
-    },
-
     getRolLabel(perfilId) {
       if (perfilId === null || perfilId === undefined || perfilId === '') return ''
       const opt = this.rolesOptions.find(r => String(r.value) === String(perfilId))
@@ -487,47 +455,56 @@ export default {
     },
 
     async cargarDatos() {
-      // Cargar datos mock en memoria para modo solo-pantallas
       this.cargando = true
       try {
-        // Aplicaciones (módulos)
-        this.aplicaciones = [
-          { APL_ID: 1, APL_DESCRIPCION: 'Gestión Personas' },
-          { APL_ID: 2, APL_DESCRIPCION: 'Cursos' },
-          { APL_ID: 3, APL_DESCRIPCION: 'Pagos' }
-        ]
+        // Cargar perfiles (roles) desde la API
+        const perfilesResponse = await perfilesService.list()
+        const perfilesList = Array.isArray(perfilesResponse) ? perfilesResponse : (perfilesResponse.results || perfilesResponse.data || [])
+        
+        const roles = perfilesList.map(p => ({
+          value: p.PEL_ID || p.id,
+          label: p.PEL_DESCRIPCION || p.descripcion || p.nombre || `Perfil ${p.PEL_ID || p.id}`
+        }))
 
-        // Roles disponibles (value = id de perfil, label = texto)
-        const roles = [
-          { value: 6, label: 'Administrador' },
-          { value: 7, label: 'Coordinador' },
-          { value: 8, label: 'Dirigente' },
-          { value: 9, label: 'Apoderado' }
-        ]
+        this.rolesOptions = [{ value: '', label: 'Todos los roles' }, ...roles]
 
-  this.rolesOptions = [ { value: '', label: 'Todos los perfiles' }, ...roles ]
+        // Cargar usuarios desde la API
+        const usuariosResponse = await usuariosService.list()
+        const usuariosList = Array.isArray(usuariosResponse) ? usuariosResponse : (usuariosResponse.results || usuariosResponse.data || [])
+        
+        this.usuarios = usuariosList.map(u => ({
+          id: u.USU_ID || u.id,
+          nombre: u.USU_USERNAME || u.nombre || u.username || '',
+          username: u.USU_USERNAME || u.username || '',
+          perfil_id: u.PEL_ID || u.perfil_id || u.perfil || null,
+          rol: this.getRolLabelById(u.PEL_ID || u.perfil_id || u.perfil, roles),
+          activo: u.USU_VIGENTE !== undefined ? u.USU_VIGENTE : (u.vigente !== undefined ? u.vigente : true),
+          foto: u.USU_RUTA_FOTO || u.foto || null,
+          password_hash: u.USU_PASSWORD || u.password || null
+        }))
 
-        // Usuarios mock — campos usados en la vista
-        this.usuarios = [
-          { id: 1, nombre: 'Ariel Ichi', username: 'Arielichi', rol: 'Administrador', perfil_id: 6, activo: true },
-          { id: 2, nombre: 'Rosa Muñoz', username: 'munozrosa', rol: 'Coordinador', perfil_id: 7, activo: true },
-          { id: 3, nombre: 'Carlos Muñoz', username: 'munozcarlos', rol: 'Administrador', perfil_id: 6, activo: true },
-          { id: 4, nombre: 'Luis Pérez', username: 'luis42', rol: 'Coordinador', perfil_id: 7, activo: false },
-          { id: 5, nombre: 'Pedro González', username: 'pedrogonzalez', rol: 'Administrador', perfil_id: 6, activo: true }
-        ]
-
-        // Inicializar permisos por usuario (vacíos)
+        // Inicializar permisos por usuario (vacíos por ahora)
         this.usuarios.forEach(u => {
-          this.userPerms[u.id] = null // nulo = sin personalizados, se usan permisos por rol
+          this.userPerms[u.id] = null
         })
 
         this.usuariosFiltrados = [...this.usuarios]
       } catch (error) {
-        console.error('Error al cargar datos mock:', error)
-        this.mostrarNotificacion('Error al inicializar la vista', 'error')
+        console.error('Error al cargar datos desde la API:', error)
+        this.mostrarNotificacion('Error al cargar los datos: ' + (error.message || 'Error desconocido'), 'error')
+        // En caso de error, inicializar vacío en lugar de usar mocks
+        this.usuarios = []
+        this.usuariosFiltrados = []
+        this.rolesOptions = [{ value: '', label: 'Todos los roles' }]
       } finally {
         this.cargando = false
       }
+    },
+    
+    getRolLabelById(perfilId, rolesList) {
+      if (!perfilId) return ''
+      const rol = rolesList.find(r => r.value === perfilId)
+      return rol ? rol.label : ''
     },
     
     filtrarUsuarios() {
@@ -565,56 +542,55 @@ export default {
     },
     
     getFormularioVacio() {
-      // Inicializar permisos vacíos para cada aplicación
-      const permisosVacios = {}
-      if (this.aplicaciones && this.aplicaciones.length > 0) {
-        this.aplicaciones.forEach(app => {
-          const appId = app.APL_ID || app.id
-          console.log(`Creando contenedor de permisos para app ID: ${appId} (${app.APL_DESCRIPCION})`)
-          permisosVacios[appId] = {
-            consultar: false,
-            ingresar: false,
-            modificar: false,
-            eliminar: false
-          }
-        })
-      }
-      console.log('Contenedores de permisos creados:', Object.keys(permisosVacios))
-      
       return {
+        id: null,
         username: '',
         rol: '',
         password: '',
         confirmPassword: '',
         activo: true,
-        foto: '',
-        permisos: permisosVacios
+        foto: null,
+        fotoPreview: null
       }
     },
     
-    async cargarPermisosDelRol() {
-      if (!this.usuarioForm.rol) return
+    handleFileChange(event) {
+      const file = event.target.files[0]
+      if (!file) return
 
-      // Determinar si el rol corresponde a Administrador
-      const roleOption = this.rolesOptions.find(r => String(r.value) === String(this.usuarioForm.rol))
-      const roleLabel = roleOption ? roleOption.label : null
-      const esAdmin = roleLabel === 'Administrador' || String(this.usuarioForm.rol) === '6'
+      // Validar tamaño (2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        this.mostrarNotificacion('La imagen no debe superar los 2MB', 'warning')
+        return
+      }
 
-      const nuevosPermisos = {}
-      this.aplicaciones.forEach(app => {
-        const appId = app.APL_ID || app.id
-        if (esAdmin) {
-          nuevosPermisos[appId] = { consultar: true, ingresar: true, modificar: true, eliminar: true }
-        } else if (roleLabel === 'Coordinador') {
-          nuevosPermisos[appId] = { consultar: true, ingresar: true, modificar: true, eliminar: false }
-        } else {
-          // Valores por defecto para otros roles
-          nuevosPermisos[appId] = { consultar: true, ingresar: false, modificar: false, eliminar: false }
-        }
-      })
+      // Validar tipo
+      if (!file.type.startsWith('image/')) {
+        this.mostrarNotificacion('Solo se permiten archivos de imagen', 'warning')
+        return
+      }
 
-      this.usuarioForm.permisos = nuevosPermisos
-      await this.$nextTick()
+      // Crear vista previa
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        this.usuarioForm.fotoPreview = e.target.result
+        this.usuarioForm.foto = file
+      }
+      reader.readAsDataURL(file)
+    },
+
+    eliminarFoto() {
+      this.usuarioForm.foto = null
+      this.usuarioForm.fotoPreview = null
+      if (this.$refs.fileInput) {
+        this.$refs.fileInput.value = ''
+      }
+    },
+
+    triggerFotoSeleccion() {
+      if (this.procesando) return;
+      const input = this.$refs.fileInput;
+      if (input) input.click();
     },
     
     abrirModalCrear() {
@@ -625,59 +601,22 @@ export default {
     
     async abrirModalEditar(usuario) {
       this.modoEdicion = true
-      this.changePassword = false
-      console.log('Usuario a editar:', usuario)
-      console.log('Perfil ID del usuario:', usuario.perfil_id)
-
-      // Inicializar permisos vacíos
-      const permisosForm = {}
-      this.aplicaciones.forEach(app => {
-        permisosForm[app.APL_ID || app.id] = {
-          consultar: false,
-          ingresar: false,
-          modificar: false,
-          eliminar: false
-        }
-      })
-
       this.usuarioForm = {
         id: usuario.id,
         username: usuario.username,
-        rol: usuario.perfil_id || usuario.rol,
-        activo: usuario.activo,
+        rol: usuario.perfil_id,
         password: '',
         confirmPassword: '',
-        foto: usuario.foto || '',
-        permisos: permisosForm
+        activo: usuario.activo,
+        foto: null,
+        fotoPreview: usuario.foto || null
       }
-
-      // Cargar permisos personalizados del usuario desde memoria (userPerms)
-      const permisosUsuario = this.userPerms[usuario.id]
-      if (permisosUsuario) {
-        // Mapear permisos personalizados al formulario
-        Object.entries(permisosUsuario).forEach(([aplId, p]) => {
-          if (this.usuarioForm.permisos[aplId]) {
-            this.usuarioForm.permisos[aplId] = {
-              consultar: !!p.consultar,
-              ingresar: !!p.ingresar,
-              modificar: !!p.modificar,
-              eliminar: !!p.eliminar
-            }
-          }
-        })
-        console.log('Permisos personalizados cargados (memoria):', this.usuarioForm.permisos)
-      } else {
-        // Si no hay personalizados, cargar los del rol
-        await this.cargarPermisosDelRol()
-      }
-
       this.modalVisible = true
     },
     
     cerrarModal() {
       this.modalVisible = false
       this.usuarioForm = this.getFormularioVacio()
-      this.changePassword = false
     },
     
     async guardarUsuario() {
@@ -688,61 +627,63 @@ export default {
       
       this.procesando = true
       try {
-        const datosUsuario = {
-          username: this.usuarioForm.username,
-          perfil_id: this.usuarioForm.rol,
-          activo: this.usuarioForm.activo
-        }
+        const roleOpt = this.rolesOptions.find(r => String(r.value) === String(this.usuarioForm.rol))
         
-        if (!this.modoEdicion) {
-          datosUsuario.password = this.usuarioForm.password
-        } else if (this.changePassword) {
-          datosUsuario.password = this.usuarioForm.password
+        // Preparar datos para la API
+        const usuarioData = {
+          USU_USERNAME: this.usuarioForm.username,
+          PEL_ID: this.usuarioForm.rol,
+          USU_VIGENTE: this.usuarioForm.activo,
+          USU_RUTA_FOTO: this.usuarioForm.fotoPreview || ''
         }
-        
-        let usuarioId
-        // Operación en memoria (UI-only)
+
+        // Solo incluir password si hay uno nuevo
+        if (this.usuarioForm.password) {
+          usuarioData.USU_PASSWORD = this.usuarioForm.password
+        }
+
         if (this.modoEdicion) {
+          // Actualizar usuario existente
+          console.log('Editando usuario ID:', this.usuarioForm.id, 'con datos:', usuarioData)
+          const usuarioActualizado = await usuariosService.partialUpdate(this.usuarioForm.id, usuarioData)
+          
+          // Actualizar en el array local
           const idx = this.usuarios.findIndex(u => u.id === this.usuarioForm.id)
           if (idx !== -1) {
-            const roleOpt = this.rolesOptions.find(r => String(r.value) === String(this.usuarioForm.rol))
-            this.usuarios[idx].username = this.usuarioForm.username
-            this.usuarios[idx].nombre = this.usuarioForm.username
-            this.usuarios[idx].perfil_id = this.usuarioForm.rol
-            this.usuarios[idx].rol = roleOpt ? roleOpt.label : this.usuarios[idx].rol
-            this.usuarios[idx].activo = this.usuarioForm.activo
-            this.usuarios[idx].foto = this.usuarioForm.foto
-            usuarioId = this.usuarioForm.id
-            this.mostrarNotificacion('Usuario actualizado exitosamente', 'success')
-          } else {
-            throw new Error('Usuario no encontrado para actualizar')
+            this.usuarios[idx] = {
+              id: usuarioActualizado.USU_ID || usuarioActualizado.id || this.usuarioForm.id,
+              nombre: usuarioActualizado.USU_USERNAME || this.usuarioForm.username,
+              username: usuarioActualizado.USU_USERNAME || this.usuarioForm.username,
+              perfil_id: usuarioActualizado.PEL_ID || this.usuarioForm.rol,
+              rol: roleOpt ? roleOpt.label : '',
+              activo: usuarioActualizado.USU_VIGENTE !== undefined ? usuarioActualizado.USU_VIGENTE : this.usuarioForm.activo,
+              foto: usuarioActualizado.USU_RUTA_FOTO || this.usuarioForm.fotoPreview
+            }
           }
+          
+          this.mostrarNotificacion('Usuario actualizado exitosamente', 'success')
         } else {
-          const newId = this.usuarios.length > 0 ? Math.max(...this.usuarios.map(u => u.id)) + 1 : 1
-          const roleOpt = this.rolesOptions.find(r => String(r.value) === String(this.usuarioForm.rol))
-          const nuevoUsuario = {
-            id: newId,
-            nombre: this.usuarioForm.username,
-            username: this.usuarioForm.username,
-            perfil_id: this.usuarioForm.rol,
+          // Crear nuevo usuario
+          const nuevoUsuario = await usuariosService.create(usuarioData)
+          
+          // Agregar al array local
+          this.usuarios.push({
+            id: nuevoUsuario.USU_ID || nuevoUsuario.id,
+            nombre: nuevoUsuario.USU_USERNAME || this.usuarioForm.username,
+            username: nuevoUsuario.USU_USERNAME || this.usuarioForm.username,
+            perfil_id: nuevoUsuario.PEL_ID || this.usuarioForm.rol,
             rol: roleOpt ? roleOpt.label : '',
-            activo: this.usuarioForm.activo,
-            foto: this.usuarioForm.foto || ''
-          }
-          this.usuarios.push(nuevoUsuario)
-          usuarioId = newId
+            activo: nuevoUsuario.USU_VIGENTE !== undefined ? nuevoUsuario.USU_VIGENTE : true,
+            foto: nuevoUsuario.USU_RUTA_FOTO || this.usuarioForm.fotoPreview
+          })
+          
           this.mostrarNotificacion('Usuario creado exitosamente', 'success')
         }
         
-        // Guardar permisos personalizados en memoria
-        if (this.usuarioForm.permisos) {
-          this.userPerms[usuarioId] = JSON.parse(JSON.stringify(this.usuarioForm.permisos))
-        }
-        
+        this.usuariosFiltrados = [...this.usuarios]
         this.cerrarModal()
-        await this.cargarDatos()
       } catch (error) {
-        console.error('Error al guardar usuario (memoria):', error)
+        console.error('Error al guardar usuario:', error)
         this.mostrarNotificacion(
           error.message || 'Error al guardar el usuario',
           'error'
@@ -762,19 +703,22 @@ export default {
     async cambiarEstado(usuario, nuevoEstado) {
       this.procesando = true
       try {
+        // Actualizar en el backend
+        await usuariosService.partialUpdate(usuario.id, {
+          USU_VIGENTE: nuevoEstado
+        })
+        
         // Actualizar en memoria
         const idx = this.usuarios.findIndex(u => u.id === usuario.id)
         if (idx !== -1) {
           this.usuarios[idx].activo = nuevoEstado
           this.mostrarNotificacion(`Usuario ${nuevoEstado ? 'activado' : 'desactivado'} exitosamente`, 'success')
           this.usuariosFiltrados = [...this.usuarios]
-        } else {
-          throw new Error('Usuario no encontrado')
         }
         this.modalConfirmacionVisible = false
       } catch (error) {
         console.error('Error al cambiar estado:', error)
-        this.mostrarNotificacion('Error al cambiar el estado del usuario', 'error')
+        this.mostrarNotificacion('Error al cambiar el estado del usuario: ' + (error.message || ''), 'error')
       } finally {
         this.procesando = false
       }
@@ -790,6 +734,10 @@ export default {
     async eliminarUsuario(usuario) {
       this.procesando = true
       try {
+        // Eliminar en el backend
+        await usuariosService.remove(usuario.id)
+        
+        // Eliminar en memoria
         const idx = this.usuarios.findIndex(u => u.id === usuario.id)
         if (idx !== -1) {
           this.usuarios.splice(idx, 1)
@@ -797,12 +745,10 @@ export default {
           this.usuariosFiltrados = [...this.usuarios]
           this.mostrarNotificacion('Usuario eliminado exitosamente', 'success')
           this.modalConfirmacionVisible = false
-        } else {
-          throw new Error('Usuario no encontrado')
         }
       } catch (error) {
         console.error('Error al eliminar usuario:', error)
-        this.mostrarNotificacion('Error al eliminar el usuario', 'error')
+        this.mostrarNotificacion('Error al eliminar el usuario: ' + (error.message || ''), 'error')
       } finally {
         this.procesando = false
       }
@@ -834,67 +780,137 @@ export default {
     cerrarNotificacion() {
       this.notificacion.visible = false
     },
+
+    // Métodos de selección
     isSelected(id) {
       return this.selectedIds.includes(id)
     },
+
     toggleRowSelection(usuario) {
       const id = usuario.id
       const idx = this.selectedIds.indexOf(id)
-      if (idx === -1) this.selectedIds.push(id)
-      else this.selectedIds.splice(idx, 1)
-    },
-    toggleSelectAll(e) {
-      const checked = e.target.checked
-      if (checked) this.selectedIds = this.usuariosFiltrados.map(u => u.id)
-      else this.selectedIds = []
-    },
-    accionEditarSelected() {
-      if (this.canEditOne && this.selectedUsuario) {
-        this.abrirModalEditar(this.selectedUsuario)
+      if (idx === -1) {
+        this.selectedIds.push(id)
+      } else {
+        this.selectedIds.splice(idx, 1)
       }
     },
-    cambiarEstadoMasivo(nuevoEstado) {
+
+    clearSelection() {
+      this.selectedIds = []
+    },
+
+    editarSeleccionado() {
+      if (this.selectedIds.length !== 1) return
+      const usuario = this.usuarios.find(u => u.id === this.selectedIds[0])
+      if (usuario) {
+        this.abrirModalEditar(usuario)
+      }
+    },
+
+    toggleEstadoSeleccionados() {
       if (this.selectedIds.length === 0) return
+      const usuariosSeleccionados = this.usuarios.filter(u => this.selectedIds.includes(u.id))
+      const todosActivos = usuariosSeleccionados.every(u => u.activo)
+      const todosInactivos = usuariosSeleccionados.every(u => !u.activo)
+
+      if (todosActivos) {
+        // Preparar desactivación masiva
+        this.tituloConfirmacion = 'Desactivar Usuarios'
+        this.mensajeConfirmacion = `¿Está seguro que desea desactivar ${usuariosSeleccionados.length} usuario(s)?`
+        this.accionConfirmacion = () => this.ejecutarCambioEstadoMasivo(false)
+      } else if (todosInactivos) {
+        // Preparar activación masiva
+        this.tituloConfirmacion = 'Activar Usuarios'
+        this.mensajeConfirmacion = `¿Está seguro que desea activar ${usuariosSeleccionados.length} usuario(s)?`
+        this.accionConfirmacion = () => this.ejecutarCambioEstadoMasivo(true)
+      } else {
+        // Mixtos: alternar cada uno (activos->inactivo, inactivos->activo)
+        this.tituloConfirmacion = 'Cambiar Estado de Usuarios'
+        this.mensajeConfirmacion = `¿Desea alternar el estado de ${usuariosSeleccionados.length} usuario(s)? (Activos se desactivarán y viceversa)`
+        this.accionConfirmacion = () => this.ejecutarAlternanciaEstadoMasivo()
+      }
+      this.modalConfirmacionVisible = true
+    },
+
+    async ejecutarCambioEstadoMasivo(nuevoEstado) {
       this.procesando = true
       try {
-        let cambios = 0
-        this.usuarios.forEach(u => {
-          if (this.selectedIds.includes(u.id)) {
-            u.activo = nuevoEstado
-            cambios += 1
+        let modificados = 0
+        // Actualizar en el backend
+        const promesas = this.selectedIds.map(async (id) => {
+          try {
+            await usuariosService.partialUpdate(id, { USU_VIGENTE: nuevoEstado })
+            return id
+          } catch (err) {
+            console.error(`Error al actualizar usuario ${id}:`, err)
+            return null
           }
         })
+        
+        const resultados = await Promise.all(promesas)
+        
+        // Actualizar en memoria solo los que se actualizaron exitosamente
+        this.usuarios.forEach(u => {
+          if (resultados.includes(u.id)) {
+            if (u.activo !== nuevoEstado) {
+              u.activo = nuevoEstado
+              modificados++
+            }
+          }
+        })
+        
         this.usuariosFiltrados = [...this.usuarios]
-        this.mostrarNotificacion(`${cambios} usuario(s) ${nuevoEstado ? 'activado(s)' : 'desactivado(s)'}`, 'success')
+        this.mostrarNotificacion(`${modificados} usuario(s) ${nuevoEstado ? 'activado(s)' : 'desactivado(s)'} exitosamente`, 'success')
+        this.clearSelection()
+        this.modalConfirmacionVisible = false
+      } catch (error) {
+        console.error('Error al cambiar estado masivo:', error)
+        this.mostrarNotificacion('Error al cambiar estado masivo: ' + (error.message || ''), 'error')
       } finally {
         this.procesando = false
       }
     },
-    activarCambioPassword() {
-      this.changePassword = true
-      this.usuarioForm.password = ''
-      this.usuarioForm.confirmPassword = ''
-    },
-    cancelarCambioPassword() {
-      this.changePassword = false
-      this.usuarioForm.password = ''
-      this.usuarioForm.confirmPassword = ''
-    },
-    confirmarNuevoPassword() {
-      if (this.formularioValido) {
-        this.mostrarNotificacion('Nueva contraseña lista para guardar', 'success')
-      } else {
-        this.mostrarNotificacion('Revise la nueva contraseña', 'warning')
+
+    async ejecutarAlternanciaEstadoMasivo() {
+      this.procesando = true
+      try {
+        let modificados = 0
+        // Actualizar en el backend
+        const promesas = this.usuarios
+          .filter(u => this.selectedIds.includes(u.id))
+          .map(async (u) => {
+            try {
+              const nuevoEstado = !u.activo
+              await usuariosService.partialUpdate(u.id, { USU_VIGENTE: nuevoEstado })
+              return { id: u.id, nuevoEstado }
+            } catch (err) {
+              console.error(`Error al actualizar usuario ${u.id}:`, err)
+              return null
+            }
+          })
+        
+        const resultados = await Promise.all(promesas)
+        
+        // Actualizar en memoria solo los que se actualizaron exitosamente
+        this.usuarios.forEach(u => {
+          const resultado = resultados.find(r => r && r.id === u.id)
+          if (resultado) {
+            u.activo = resultado.nuevoEstado
+            modificados++
+          }
+        })
+        
+        this.usuariosFiltrados = [...this.usuarios]
+        this.mostrarNotificacion(`${modificados} usuario(s) con estado alternado exitosamente`, 'success')
+        this.clearSelection()
+        this.modalConfirmacionVisible = false
+      } catch (error) {
+        console.error('Error al alternar estado masivo:', error)
+        this.mostrarNotificacion('Error al alternar estado masivo: ' + (error.message || ''), 'error')
+      } finally {
+        this.procesando = false
       }
-    },
-    onFotoChange(e) {
-      const file = e.target.files && e.target.files[0]
-      if (!file) return
-      const reader = new FileReader()
-      reader.onload = (evt) => {
-        this.usuarioForm.foto = evt.target.result
-      }
-      reader.readAsDataURL(file)
     }
   }
 }
@@ -902,36 +918,40 @@ export default {
 
 <style scoped>
 .usuarios-roles {
-  padding: 2rem;
+  padding: 1rem;
   max-width: 1400px;
   margin: 0 auto;
 }
 
 /* Header */
 .page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
   border-bottom: 2px solid #e0e0e0;
 }
 
 .page-header h2 {
-  font-size: 2rem;
+  font-size: 1.75rem;
   color: #2c3e50;
-  margin: 0;
+  margin: 0 0 0.25rem 0;
   font-weight: 600;
+}
+
+.page-description {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #7f8c8d;
+  font-weight: 400;
 }
 
 /* Filtros */
 .filtros {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr auto;
-  gap: 1rem;
+  gap: 0.75rem;
   align-items: center;
-  margin-bottom: 1.5rem;
-  padding: 1.5rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
   background: #f8f9fa;
   border-radius: 8px;
 }
@@ -952,15 +972,15 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 4rem 2rem;
-  gap: 1rem;
+  padding: 2rem 1rem;
+  gap: 0.75rem;
 }
 
 .spinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #3498db;
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #3498db;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -971,9 +991,55 @@ export default {
 }
 
 /* Tabla */
+.table-container {
+  margin-bottom: 1rem;
+}
+
+.table-header-bar {
+  background: white;
+  padding: 0.85rem 1rem;
+  border-radius: 8px 8px 0 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.table-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1e3a8a;
+  position: relative;
+  padding-left: 12px;
+}
+
+.table-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 4px;
+  background: #1e3a8a;
+  border-radius: 2px;
+}
+
+.table-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.table-actions :deep(button) {
+  min-width: 110px;
+  font-weight: 600;
+  padding: 0.5rem 0.85rem;
+}
+
 .table-wrapper {
   background: white;
-  border-radius: 8px;
+  border-radius: 0 0 8px 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden;
 }
@@ -981,66 +1047,40 @@ export default {
 .usuarios-table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed; /* Asegura que el header abarque todo el ancho y no se descuadre */
 }
 
 .usuarios-table thead {
-  background: #34495e;
+  background: #3d4f5f;
   color: white;
 }
 
 .usuarios-table th {
-  padding: 1rem;
+  padding: 0.75rem 0.85rem;
   text-align: left;
   font-weight: 600;
   text-transform: uppercase;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   letter-spacing: 0.5px;
 }
-
-.col-check { width: 36px; text-align: center; }
-.col-check input { cursor: pointer; }
 
 .usuarios-table tbody tr {
   border-bottom: 1px solid #e0e0e0;
   transition: background-color 0.2s;
   cursor: pointer;
-  position: relative; /* Para estabilizar pseudo-elemento y evitar cualquier "salto" visual */
-}
-
-/* Reservar siempre el espacio visual de la barra azul para que al seleccionar no parezca que se mueve */
-.usuarios-table tbody tr::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 5px; /* Igual que la barra de selección */
-  background: transparent; /* Invisible cuando no está seleccionado */
-  pointer-events: none;
+  user-select: none;
 }
 
 .usuarios-table tbody tr:hover {
   background-color: #f8f9fa;
 }
 
-/* Selección más notoria */
 .usuarios-table tbody tr.row-selected {
-  /* Más azul y sin cambios de layout */
-  background: linear-gradient(90deg, #c7d2fe 0%, #e3edff 70%);
-  position: relative;
-  box-shadow: inset 0 0 0 1px #bfdbfe;
+  background-color: #e3f2fd;
+  border-left: 4px solid #2196f3;
 }
+
 .usuarios-table tbody tr.row-selected:hover {
-  /* Mantener el mismo fondo al hacer hover para que no "se mueva" visualmente */
-  background: linear-gradient(90deg, #c7d2fe 0%, #e3edff 70%);
-}
-.usuarios-table tbody tr.row-selected::before {
-  background: #1d4ed8; /* Solo cambiamos el color; ya existe el pseudo-elemento en todas las filas */
-}
-.usuarios-table tbody tr.row-selected .username {
-  /* Mantener el mismo grosor para evitar reflow, solo cambiar color */
-  color: #1d4ed8;
+  background-color: #bbdefb;
 }
 
 .usuarios-table tbody tr.usuario-inactivo {
@@ -1048,41 +1088,60 @@ export default {
 }
 
 .usuarios-table td {
-  padding: 1rem;
+  padding: 0.75rem 0.85rem;
   vertical-align: middle;
 }
 
-/* Usuario + Avatar */
-.user-cell {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.75rem;
-  min-width: 0; /* para que el ellipsis funcione dentro de celdas de ancho fijo */
+/* User Avatar in Table */
+.foto-cell {
+  width: 70px;
+  padding: 0.6rem !important;
 }
 
-.user-cell .avatar {
-  width: 36px;
-  height: 36px;
+.user-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-image {
+  width: 45px;
+  height: 45px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #e6eef8;
-  background: #eef2f7;
+  border: 2px solid #3498db;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.user-cell .username {
-  font-weight: 600;
-  color: #1f2937;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.avatar-image:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.avatar-placeholder {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.avatar-placeholder:hover {
+  transform: scale(1.1);
 }
 
 /* Badges */
 .rol-badge {
   display: inline-block;
-  padding: 0.25rem 0.75rem;
+  padding: 0.3rem 0.75rem;
   border-radius: 20px;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 600;
   text-transform: capitalize;
 }
@@ -1114,9 +1173,9 @@ export default {
 
 .estado-badge {
   display: inline-block;
-  padding: 0.25rem 0.75rem;
+  padding: 0.3rem 0.75rem;
   border-radius: 20px;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 600;
 }
 
@@ -1130,99 +1189,9 @@ export default {
   color: white;
 }
 
-/* Acciones */
-.acciones-buttons {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-/* Toolbar superior */
-
-/* Card estilo Correos reutilizado */
-.correos-card {
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 18px rgba(40,92,168,0.13);
-  margin: 0 auto 28px auto;
-  padding: 22px 22px 16px 22px;
-  max-width: 1400px;
-  width: 100%;
-  box-sizing: border-box;
-  border: 1.5px solid #dbe4f3;
-}
-.correos-card-header {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-  gap: 10px;
-}
-.correos-card-title {
-  font-size: 1.18rem;
-  font-weight: 700;
-  color: #1d4ed8;
-  position: relative;
-  padding-left: 14px;
-}
-.blue-bar::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 100%;
-  width: 6px;
-  background: #1d4ed8;
-  border-radius: 4px;
-}
-.correos-card-actions {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 12px;
-  justify-content: flex-end;
-}
-.correos-card-actions :deep(button),
-.correos-card-actions button {
-  min-width: 150px;
-  padding: 10px 16px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(40,92,168,0.08);
-  border: none;
-  transition: all 0.25s ease;
-}
-.correos-card-actions button:hover {
-  filter: brightness(0.95);
-  box-shadow: 0 4px 16px rgba(40,92,168,0.13);
-}
-.usuarios-seleccion-resumen {
-  font-size: 0.85rem;
-  color: #475569;
-  margin-bottom: 8px;
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-.badge-mini {
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 0.65rem;
-  font-weight: 600;
-  background: #e5e7eb;
-  color: #374151;
-}
-.badge-mini.mini-ok { background:#d1fae5; color:#065f46; }
-.badge-mini.mini-off { background:#e5e7eb; color:#555; }
-.usuarios-table-wrapper { margin-top: 4px; }
-
-/* Eliminado duplicado de estilos de selección que sobreescribía el gradiente */
-
 /* Empty state */
 .empty-row td {
-  padding: 3rem 1rem;
+  padding: 2rem 1rem;
 }
 
 .empty-state {
@@ -1231,112 +1200,263 @@ export default {
 }
 
 .empty-state p {
-  margin-bottom: 1rem;
-  font-size: 1.1rem;
+  margin-bottom: 0.85rem;
+  font-size: 1rem;
 }
 
 /* Modal */
 .modal-usuario {
-  padding: 1.5rem 1.75rem; /* compactar */
-  max-width: 720px; /* más angosto */
-  width: 90vw;
+  padding: 0;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-header {
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
+  margin-bottom: 0;
+  padding: 1.15rem 1.25rem 0.85rem 1.25rem;
   border-bottom: 2px solid #e0e0e0;
+  padding-right: 3rem;
+  flex-shrink: 0;
 }
 
 .modal-header h3 {
   margin: 0;
-  font-size: 1.25rem; /* título más pequeño */
-  font-weight: 600;
+  font-size: 1.35rem;
   color: #2c3e50;
+  font-weight: 700;
 }
 
 .usuario-form {
   display: flex;
   flex-direction: column;
-  gap: 1.1rem; /* más compacto */
+  gap: 0.75rem;
+  padding: 1rem;
+  flex: 1;
+  overflow: visible;
+}
+
+/* Form Sections */
+.form-section {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 0.75rem;
+  border: 1px solid #e0e0e0;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #2c3e50;
+  margin-bottom: 0.6rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 2px solid #3498db;
+}
+
+.form-row {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-end;
+}
+
+.form-row-triple {
+  display: grid;
+  grid-template-columns: 140px 1fr 1fr; /* foto fija + 2 columnas iguales */
+  gap: 1rem;
+  align-items: flex-end;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem; /* menor separación */
+  gap: 0.4rem;
+}
+
+.form-group.flex-1 {
+  flex: 1;
+}
+
+.form-group.photo-group-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
 }
 
 .form-group label {
   font-weight: 600;
   color: #2c3e50;
-  font-size: 1rem;
+  font-size: 0.85rem;
 }
 
 .form-group .required {
   color: #e74c3c;
 }
 
-.form-hint {
-  font-size: 0.78rem; /* más pequeño */
-  color: #64748b;
-  margin-top: 0.1rem;
-  margin-bottom: 0.5rem;
+.form-hint-compact {
+  font-size: 0.7rem;
+  color: #7f8c8d;
+  margin-top: 0.2rem;
 }
 
-/* Password change area */
-.password-masked-row {
+/* Photo Upload Inline */
+.photo-upload-inline {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: white;
+  border-radius: 8px;
+  border: 2px dashed #cbd5e0;
+  cursor: pointer;
+  transition: border-color .2s ease, background-color .2s ease;
+  width: 100%;
+}
+
+.photo-preview-inline {
+  flex-shrink: 0;
+  position: relative;
+}
+
+.preview-image-inline {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #3498db;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: filter .2s ease;
+}
+
+.preview-placeholder-inline {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  transition: filter .2s ease;
 }
 
-.password-masked {
-  display: inline-block;
-  letter-spacing: 2px;
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
+/* Forzar mismos anchos/altos de controles en columnas flex-1 */
+/* Unificar alto/estilo de InputBase (input) y BaseSelect (select) */
+.form-group.flex-1 :deep(.base-field),
+.form-group.flex-1 :deep(.base-select__element) {
+  height: 42px;
+  line-height: 42px;
+  padding: 0 12px;
+  font-size: 14px;
+  border-width: 1px;
   border-radius: 6px;
-  padding: 6px 10px; /* más bajo */
-  color: #475569;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  box-sizing: border-box;
+  width: 100%;
 }
 
-.password-actions-inline {
+/* Ajuste específico del select: más espacio para el ícono de despliegue */
+.form-group.flex-1 :deep(.base-select__element) {
+  padding-right: 2rem;
+}
+
+.photo-upload-inline:hover .preview-image-inline,
+.photo-upload-inline:hover .preview-placeholder-inline {
+  filter: brightness(0.85); 
+}
+
+.photo-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
   display: flex;
-  gap: 0.75rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  opacity: 0;
+  border-radius: 50%;
+  transition: opacity .25s ease;
+  pointer-events: none;
+}
+
+.photo-preview-inline:hover .photo-overlay {
+  opacity: 1;
+}
+
+.remove-foto-btn {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  background: #dc3545;
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+  transition: background-color .2s ease, transform .2s ease;
+}
+
+.remove-foto-btn:hover {
+  background: #b02a37;
+  transform: scale(1.05);
+}
+
+.remove-foto-btn:active {
+  transform: scale(0.92);
+}
+
+.photo-actions-inline {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: center;
+}
+
+.photo-actions-inline :deep(button) {
+  min-width: auto;
+  padding: 0.4rem 0.6rem;
+}
+
+/* Error Message */
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: #fee;
+  border: 1px solid #fcc;
+  border-radius: 6px;
+  color: #c33;
+  font-size: 0.85rem;
   margin-top: 0.5rem;
 }
 
-/* Avatar preview in modal */
-.avatar-preview-wrapper {
+.form-actions {
+  display: flex;
+  gap: 0.85rem;
+  justify-content: flex-end;
   margin-top: 0.4rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  background: #f8fafc;
-  padding: 6px 10px;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-}
-.avatar-preview {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid #dbe4f3;
-  background: #eef2f7;
+  padding-top: 0.5rem;
+  border-top: 1px solid #e0e0e0;
 }
 
-/* Estilo para input de archivo para cuadrar con inputs */
-input[type="file"].file-input {
-  display: block;
-  width: 100%;
-  padding: 8px 12px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  color: #1f2937;
+.form-actions :deep(button) {
+  min-width: 130px;
 }
 
 /* Permisos Container - Estilo Discord */
@@ -1390,13 +1510,58 @@ input[type="file"].file-input {
   align-items: center;
 }
 
-.form-actions {
+/* Photo upload - Legacy styles for backward compatibility */
+.photo-upload-container {
   display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 2px dashed #cbd5e0;
+}
+
+.photo-preview {
+  flex-shrink: 0;
+}
+
+.preview-image {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #3498db;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.preview-placeholder {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #95a5a6;
+  gap: 0.5rem;
+}
+
+.preview-placeholder span {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.photo-actions {
+  display: flex;
+  flex-direction: column;
   gap: 0.75rem;
-  justify-content: flex-end;
-  margin-top: 0.75rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid #e2e8f0;
+  flex: 1;
+}
+
+.photo-actions :deep(button) {
+  width: 100%;
+  justify-content: center;
 }
 
 /* Modal confirmación */
@@ -1432,6 +1597,21 @@ input[type="file"].file-input {
   .filtros {
     grid-template-columns: 1fr;
     gap: 0.75rem;
+  }
+
+  .table-header-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .table-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .table-actions :deep(button) {
+    width: 100%;
   }
 
   .table-wrapper {
@@ -1470,13 +1650,49 @@ input[type="file"].file-input {
     content: attr(data-label);
     font-weight: 600;
     display: inline-block;
-    width: 100px;
+    width: 120px;
     color: #34495e;
   }
 
-  .acciones-buttons {
-    justify-content: flex-start;
-    margin-top: 0.5rem;
+  .foto-cell::before {
+    display: none;
+  }
+
+  .foto-cell {
+    text-align: center;
+    padding: 0.75rem 0 !important;
+  }
+
+  /* Modal responsive */
+  .modal-usuario {
+    padding: 1rem;
+    width: 95vw;
+    max-height: 85vh;
+  }
+
+  .modal-header h3 {
+    font-size: 1.25rem;
+  }
+
+  .form-row {
+    flex-direction: column;
+  }
+
+  .form-group.photo-group {
+    min-width: 100%;
+  }
+
+  .photo-upload-compact {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .form-actions :deep(button) {
+    width: 100%;
   }
 }
 </style>

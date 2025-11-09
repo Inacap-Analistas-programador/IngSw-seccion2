@@ -9,9 +9,9 @@ const makeCrud = base => ({
   remove: (id) => request(`${base}${id}/`, { method: 'DELETE' }),
 })
 
-export const usuarios = makeCrud('usuarios')
-export const perfiles = makeCrud('perfiles')
-export const aplicaciones = makeCrud('aplicaciones')
-export const perfilAplicaciones = makeCrud('perfil-aplicaciones')
+export const usuarios = makeCrud('usuarios/usuarios')
+export const perfiles = makeCrud('usuarios/perfiles')
+export const aplicaciones = makeCrud('usuarios/aplicaciones')
+export const perfilAplicaciones = makeCrud('usuarios/perfil-aplicaciones')
 
 export default { usuarios, perfiles, aplicaciones, perfilAplicaciones }

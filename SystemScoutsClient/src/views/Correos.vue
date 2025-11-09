@@ -4,8 +4,8 @@
 		<div class="correos-container">
 			<div class="correos-header">
 				<div class="page-header">
-					<h3>Envío de Correo</h3>
-					<p>Administra, crea y organiza los envíos de correo de formación.</p>
+					<h2>Envío de Correo</h2>
+					<p class="page-description">Administra, crea y organiza los envíos de correo de formación.</p>
 				</div>
 			</div>
 
@@ -480,17 +480,28 @@ async function enviarPorCorreo() {
 	padding: 0 22px;
 	box-sizing: border-box;
 }
-.page-header { margin-bottom: 12px; }
-.page-header h3 {
-	font-size: 24px;
+.page-header { 
+	margin-bottom: 2rem;
+	padding-bottom: 1rem;
+	border-bottom: 2px solid #e0e0e0;
+}
+.page-header h2 {
+	font-size: 2rem;
 	font-weight: 600;
-	color: #111827;
-	margin: 0 0 4px 0;
+	color: #2c3e50;
+	margin: 0 0 0.5rem 0;
 }
 .page-header p {
-	font-size: 14px;
-	color: #6b7280;
 	margin: 0;
+	font-size: 0.95rem;
+	color: #7f8c8d;
+	font-weight: 400;
+}
+.page-description {
+	margin: 0;
+	font-size: 0.95rem;
+	color: #7f8c8d;
+	font-weight: 400;
 }
 /* eliminados estilos antiguos de título tipo banner y subtítulo azul */
 .correos-card {
