@@ -93,7 +93,7 @@ async function Acreditacion(textoDelQR) {
 
       // 3. Decidir si está acreditado (según tu nueva regla)
       // ASUMO que si 'datosRespuesta' trae algo, está acreditado.
-      if (datosRespuesta) { 
+      if (datosRespuesta && datosRespuesta.acreditado === true) { 
         // Éxito: Acreditado
         resultadoClase.value = 'verde'
         resultadoTexto.value = '✅ ACREDITADO' // <-- Texto simple

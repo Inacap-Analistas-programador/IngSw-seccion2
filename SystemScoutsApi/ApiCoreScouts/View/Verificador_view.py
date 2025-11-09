@@ -51,8 +51,8 @@ def verificar_acreditacion_qr(request):
         # Verifica la Acreditación
         if inscripcion:
             # Revisa si está acreditado
-            if inscripcion.PEC_ACREDITACION == True: 
-                # Si está inscrito yacreditado devuelve "Acreditado"
+            if inscripcion.PEC_ACREDITACION:
+                # Si está inscrito y acreditado devuelve "Acreditado"
                 return Response({
                     "acreditado": True,
                     "nombre": persona.PER_NOMBRES,
