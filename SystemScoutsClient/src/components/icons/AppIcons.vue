@@ -91,6 +91,11 @@
     <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
   </svg>
 
+  <svg v-else-if="name === 'ban'" :width="size" :height="size" viewBox="0 0 24 24" fill="none" stroke="currentColor" :stroke-width="strokeWidth">
+    <circle cx="12" cy="12" r="10"/>
+    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+  </svg>
+
   <svg v-else-if="name === 'qrcode'" :width="size" :height="size" viewBox="0 0 24 24" fill="none" stroke="currentColor" :stroke-width="strokeWidth">
     <rect x="3" y="3" width="7" height="7"/>
     <rect x="14" y="3" width="7" height="7"/>

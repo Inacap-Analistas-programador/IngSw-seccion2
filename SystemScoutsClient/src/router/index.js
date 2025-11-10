@@ -10,7 +10,8 @@ const PagosView = () => import('@/views/PagosView.vue')
 const Correos = () => import('@/views/Correos.vue')
 const ManualAcreditation = () => import('@/views/ManualAcreditation.vue')
 const VerificadorQR = () => import('@/views/VerificadorQR.vue')
-const UsuariosRoles = () => import('@/views/UsuariosRoles.vue')
+const UsuariosRoles = () => import('@/views/Usuarios.vue')
+const Roles = () => import('@/views/Roles.vue')
 const CursosCapacitaciones = () => import('@/views/CRUDcursos.vue')
 const Login = () => import('@/views/Login.vue')
 const FormularioPreInscripcion = () => import('@/views/Formulario.vue')
@@ -23,6 +24,7 @@ const router = createRouter({
     { path: '/dashboard', name: 'dashboard', component: Dashboard, meta: { requiresAuth: true } },
   { path: '/dashboard-2', name: 'dashboard2', component: Dashboard2, meta: { requiresAuth: true } },
     { path: '/usuarios', name: 'usuarios', component: UsuariosRoles, meta: { requiresAuth: true } },
+    { path: '/roles', name: 'roles', component: Roles, meta: { requiresAuth: true } },
   // Mantenedores admite pestaña vía parámetro opcional
   { path: '/mantenedores/:tab?', name: 'mantenedores', component: Mantenedores, props: true, meta: { requiresAuth: true } },
     { path: '/gestionpersonas', name: 'gestionpersonas', component: Gestionpersonas, meta: { requiresAuth: true } },

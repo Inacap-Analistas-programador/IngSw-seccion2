@@ -67,8 +67,8 @@ const closeModal = () => {
   display: flex;
   flex-direction: column;
   width: 98%;
-  max-width: 1100px;
-  max-height: 95vh;
+  max-width: 1200px;
+  max-height: 92vh;
   overflow: hidden; /* Evita que el contenido se desborde */
   animation: modal-in .2s ease-out both;
   position: relative;

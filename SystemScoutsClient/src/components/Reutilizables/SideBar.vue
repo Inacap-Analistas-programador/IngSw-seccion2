@@ -10,7 +10,16 @@
       
       <!-- Con sesión: mostrar menú completo (por defecto admin) -->
       <div v-else>
-        <router-link to="/usuarios" class="nav-item">Usuarios y Roles</router-link>
+        <!-- Apartado desplegable: Usuarios y Roles -->
+        <div class="nav-item nav-collapsible" @click="toggleUsuarios">
+          <span>Usuarios y Roles</span>
+          <span class="caret" :class="{ open: showUsuarios }">▾</span>
+        </div>
+        <div v-show="showUsuarios" class="submenu">
+          <router-link to="/usuarios" class="submenu-item">Usuarios</router-link>
+          <router-link to="/roles" class="submenu-item">Roles</router-link>
+        </div>
+
         <router-link to="/cursos-capacitaciones" class="nav-item">Cursos y Capacitaciones</router-link>
         <router-link to="/inscripciones" class="nav-item">Inscripciones</router-link>
         <router-link to="/gestionpersonas" class="nav-item">Gestión de Personas</router-link>
@@ -65,6 +74,7 @@ function onStorage(e) {
 }
 
 // Desplegable de Mantenedores
+const showUsuarios = ref(false)
 const showMantenedores = ref(false)
 const showPantallas2 = ref(false)
 const mantenedoresTabs = [
@@ -87,6 +97,10 @@ const mantenedoresTabs = [
   { id: 'tipos-archivo', label: 'Tipos de Archivo' }
 ]
 
+function toggleUsuarios() {
+  showUsuarios.value = !showUsuarios.value
+}
+
 function toggleMantenedores() {
   showMantenedores.value = !showMantenedores.value
 }
@@ -99,8 +113,9 @@ onMounted(async () => {
   // No consultamos el backend de auth en modo UI-only; usar usuario por defecto
   
   const route = useRoute()
-  // Abrir automáticamente si se navega a /mantenedores
+  // Abrir automáticamente si se navega a /mantenedores o /usuarios
   if (route && route.path) {
+    showUsuarios.value = route.path.startsWith('/usuarios') || route.path.startsWith('/roles')
     showMantenedores.value = route.path.startsWith('/mantenedores')
     showPantallas2.value = route.path.startsWith('/dashboard-2') || route.path.startsWith('/inscripciones-2')
   }
@@ -108,6 +123,7 @@ onMounted(async () => {
   // Watch para actualizar estado al cambiar de ruta
   watch(() => route && route.path, async (p) => {
     if (p) {
+      showUsuarios.value = p.startsWith('/usuarios') || p.startsWith('/roles')
       showMantenedores.value = p.startsWith('/mantenedores')
       showPantallas2.value = p.startsWith('/dashboard-2') || p.startsWith('/inscripciones-2')
     }
@@ -138,6 +154,14 @@ onBeforeUnmount(() => {
   overflow-y: auto;
   font-weight: 400; /* Regular */
   box-sizing: border-box;
+  /* Ocultar scrollbar */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE y Edge */
+}
+
+/* Ocultar scrollbar en Chrome, Safari y Opera */
+.sidebar::-webkit-scrollbar {
+  display: none;
 }
 
 /* Nota: ancho aumentado para ocupar el espacio a la derecha y eliminar la franja blanca */

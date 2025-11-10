@@ -2,11 +2,9 @@
 	<ModernMainScrollbar>
 	<div class="correos-bg">
 		<div class="correos-container">
-			<div class="correos-header">
-				<div class="page-header">
-					<h2>Envío de Correo</h2>
-					<p class="page-description">Administra, crea y organiza los envíos de correo de formación.</p>
-				</div>
+			<div class="page-header">
+				<h3>Envío de Correos</h3>
+				<p class="page-description">Administra, crea y organiza los envíos de correo de formación.</p>
 			</div>
 
 			<!-- Barra de filtros global -->
@@ -470,32 +468,22 @@ async function enviarPorCorreo() {
 	width: 100%;
 	max-width: 1400px;
 	margin: 0 auto;
-	/* Agrega gutter horizontal para que no choque con el borde de la sidebar */
-	padding: 16px 16px 32px 16px;
-}
-.correos-header {
-	width: 100%;
-	max-width: 1300px;
-	margin: 0 auto 20px auto;
-	padding: 0 22px;
-	box-sizing: border-box;
+	padding: 1.5rem;
 }
 .page-header { 
 	margin-bottom: 2rem;
 	padding-bottom: 1rem;
 	border-bottom: 2px solid #e0e0e0;
 }
-.page-header h2 {
-	font-size: 2rem;
-	font-weight: 600;
-	color: #2c3e50;
-	margin: 0 0 0.5rem 0;
+.page-header h3 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #111827;
 }
+
 .page-header p {
-	margin: 0;
-	font-size: 0.95rem;
-	color: #7f8c8d;
-	font-weight: 400;
+  font-size: 14px;
+  color: #6b7280;
 }
 .page-description {
 	margin: 0;
