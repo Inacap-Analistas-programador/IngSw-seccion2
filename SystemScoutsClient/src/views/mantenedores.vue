@@ -1,34 +1,51 @@
 <template>
   <div class="mantenedores-scouts">
-    <!-- Selector de Mantenedores en lugar de Sidebar -->
-    <div class="mantenedor-selector">
-      <div class="selector-header">
-        <h2>⚙️ Mantenedores</h2>
-      </div>
+    <!-- Selector de Mantenedores Fijo -->
+    <div class="mantenedor-selector-fixed">
       <div class="selector-container">
-        <select v-model="activeTab" class="mantenedor-dropdown">
-          <option 
-            v-for="tab in tabs" 
-            :key="tab.id"
-            :value="tab.id"
+        <div class="selector-header">
+          <h2>⚙️ Mantenedores</h2>
+        </div>
+        <div class="selector-dropdown" ref="dropdownContainer">
+          <!-- Botón que reemplaza al select nativo -->
+          <button 
+            class="mantenedor-dropdown-toggle"
+            :class="{ 'active': isDropdownOpen }"
+            @click="toggleDropdown"
           >
-            {{ tab.icon }} {{ tab.label }}
-          </option>
-        </select>
-        <div class="dropdown-icon">▼</div>
+            <span class="selected-option">
+              {{ getSelectedTabInfo().icon }} {{ getSelectedTabInfo().label }}
+            </span>
+            <div class="dropdown-icon" :class="{ 'rotate': isDropdownOpen }">▼</div>
+          </button>
+          
+          <!-- Menú desplegable personalizado -->
+          <div v-if="isDropdownOpen" class="dropdown-menu">
+            <div 
+              v-for="tab in tabs" 
+              :key="tab.id"
+              class="dropdown-item"
+              :class="{ 'active': activeTab === tab.id }"
+              @click="selectTab(tab.id)"
+            >
+              <span class="dropdown-item-icon">{{ tab.icon }}</span>
+              <span class="dropdown-item-text">{{ tab.label }}</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
     <!-- Main Content -->
-    <div class="main-content">
+    <div class="main-content-expanded">
       <!-- Header -->
-      <div class="header">
+      <div class="header-expanded">
         <h1>Módulo de Mantenedores</h1>
         <p>Gestión de Datos Maestros del Sistema Scout</p>
       </div>
       
       <!-- Zonas -->
-      <div v-if="activeTab === 'zonas'" class="mantenedor-section">
+      <div v-if="activeTab === 'zonas'" class="mantenedor-section-expanded">
         <div class="mantenedor-header">
           <h2>🗺️ Gestión de Zonas</h2>
           <button class="btn-primary" @click="abrirModalCrear('zona')">
@@ -53,8 +70,8 @@
           <button class="btn-primary">🔍 Buscar</button>
         </div>
         
-        <div class="table-container">
-          <table class="data-table">
+        <div class="table-container-expanded">
+          <table class="data-table-expanded">
             <thead>
               <tr>
                 <th>Descripción</th>
@@ -84,7 +101,7 @@
       </div>
       
       <!-- Distritos -->
-      <div v-if="activeTab === 'distritos'" class="mantenedor-section">
+      <div v-if="activeTab === 'distritos'" class="mantenedor-section-expanded">
         <div class="mantenedor-header">
           <h2>📍 Gestión de Distritos</h2>
           <button class="btn-primary" @click="abrirModalCrear('distrito')">
@@ -115,8 +132,8 @@
           <button class="btn-primary">🔍 Buscar</button>
         </div>
         
-        <div class="table-container">
-          <table class="data-table">
+        <div class="table-container-expanded">
+          <table class="data-table-expanded">
             <thead>
               <tr>
                 <th>Descripción</th>
@@ -146,7 +163,7 @@
       </div>
       
       <!-- Grupos Scout -->
-      <div v-if="activeTab === 'grupos'" class="mantenedor-section">
+      <div v-if="activeTab === 'grupos'" class="mantenedor-section-expanded">
         <div class="mantenedor-header">
           <h2>👥 Gestión de Grupos Scout</h2>
           <button class="btn-primary" @click="abrirModalCrear('grupo')">
@@ -177,8 +194,8 @@
           <button class="btn-primary">🔍 Buscar</button>
         </div>
         
-        <div class="table-container">
-          <table class="data-table">
+        <div class="table-container-expanded">
+          <table class="data-table-expanded">
             <thead>
               <tr>
                 <th>Descripción</th>
@@ -208,7 +225,7 @@
       </div>
       
       <!-- Ramas -->
-      <div v-if="activeTab === 'ramas'" class="mantenedor-section">
+      <div v-if="activeTab === 'ramas'" class="mantenedor-section-expanded">
         <div class="mantenedor-header">
           <h2>🏕️ Gestión de Ramas</h2>
           <button class="btn-primary" @click="abrirModalCrear('rama')">
@@ -223,8 +240,8 @@
           </div>
         </div>
         
-        <div class="table-container">
-          <table class="data-table">
+        <div class="table-container-expanded">
+          <table class="data-table-expanded">
             <thead>
               <tr>
                 <th>Descripción</th>
@@ -252,7 +269,7 @@
       </div>
       
       <!-- Tipos de Curso -->
-      <div v-if="activeTab === 'tipos-curso'" class="mantenedor-section">
+      <div v-if="activeTab === 'tipos-curso'" class="mantenedor-section-expanded">
         <div class="mantenedor-header">
           <h2>📚 Gestión de Tipos de Curso</h2>
           <button class="btn-primary" @click="abrirModalCrear('tipoCurso')">
@@ -267,8 +284,8 @@
           </div>
         </div>
         
-        <div class="table-container">
-          <table class="data-table">
+        <div class="table-container-expanded">
+          <table class="data-table-expanded">
             <thead>
               <tr>
                 <th>Descripción</th>
@@ -300,7 +317,7 @@
       </div>
       
       <!-- Cargos -->
-      <div v-if="activeTab === 'cargos'" class="mantenedor-section">
+      <div v-if="activeTab === 'cargos'" class="mantenedor-section-expanded">
         <div class="mantenedor-header">
           <h2>👔 Gestión de Cargos</h2>
           <button class="btn-primary" @click="abrirModalCrear('cargo')">
@@ -315,8 +332,8 @@
           </div>
         </div>
         
-        <div class="table-container">
-          <table class="data-table">
+        <div class="table-container-expanded">
+          <table class="data-table-expanded">
             <thead>
               <tr>
                 <th>Descripción</th>
@@ -344,7 +361,7 @@
       </div>
       
       <!-- Alimentación -->
-      <div v-if="activeTab === 'alimentacion'" class="mantenedor-section">
+      <div v-if="activeTab === 'alimentacion'" class="mantenedor-section-expanded">
         <div class="mantenedor-header">
           <h2>🍽️ Gestión de Alimentación</h2>
           <button class="btn-primary" @click="abrirModalCrear('alimentacion')">
@@ -359,8 +376,8 @@
           </div>
         </div>
         
-        <div class="table-container">
-          <table class="data-table">
+        <div class="table-container-expanded">
+          <table class="data-table-expanded">
             <thead>
               <tr>
                 <th>Descripción</th>
@@ -390,7 +407,7 @@
       </div>
 
       <!-- Comunas -->
-      <div v-if="activeTab === 'comunas'" class="mantenedor-section">
+      <div v-if="activeTab === 'comunas'" class="mantenedor-section-expanded">
         <div class="mantenedor-header">
           <h2>🏘️ Gestión de Comunas</h2>
           <button class="btn-primary" @click="abrirModalCrear('comuna')">
@@ -415,8 +432,8 @@
           <button class="btn-primary">🔍 Buscar</button>
         </div>
         
-        <div class="table-container">
-          <table class="data-table">
+        <div class="table-container-expanded">
+          <table class="data-table-expanded">
             <thead>
               <tr>
                 <th>Descripción</th>
@@ -446,7 +463,7 @@
       </div>
 
       <!-- Provincias -->
-      <div v-if="activeTab === 'provincias'" class="mantenedor-section">
+      <div v-if="activeTab === 'provincias'" class="mantenedor-section-expanded">
         <div class="mantenedor-header">
           <h2>🏞️ Gestión de Provincias</h2>
           <button class="btn-primary" @click="abrirModalCrear('provincia')">
@@ -461,8 +478,8 @@
           </div>
         </div>
         
-        <div class="table-container">
-          <table class="data-table">
+        <div class="table-container-expanded">
+          <table class="data-table-expanded">
             <thead>
               <tr>
                 <th>Descripción</th>
@@ -492,7 +509,7 @@
       </div>
 
       <!-- Regiones -->
-      <div v-if="activeTab === 'regiones'" class="mantenedor-section">
+      <div v-if="activeTab === 'regiones'" class="mantenedor-section-expanded">
         <div class="mantenedor-header">
           <h2>🗾 Gestión de Regiones</h2>
           <button class="btn-primary" @click="abrirModalCrear('region')">
@@ -507,8 +524,8 @@
           </div>
         </div>
         
-        <div class="table-container">
-          <table class="data-table">
+        <div class="table-container-expanded">
+          <table class="data-table-expanded">
             <thead>
               <tr>
                 <th>Descripción</th>
@@ -536,7 +553,7 @@
       </div>
 
       <!-- Niveles -->
-      <div v-if="activeTab === 'niveles'" class="mantenedor-section">
+      <div v-if="activeTab === 'niveles'" class="mantenedor-section-expanded">
         <div class="mantenedor-header">
           <h2>📊 Gestión de Niveles</h2>
           <button class="btn-primary" @click="abrirModalCrear('nivel')">
@@ -551,8 +568,8 @@
           </div>
         </div>
         
-        <div class="table-container">
-          <table class="data-table">
+        <div class="table-container-expanded">
+          <table class="data-table-expanded">
             <thead>
               <tr>
                 <th>Descripción</th>
@@ -580,7 +597,7 @@
       </div>
 
       <!-- Estados Civiles -->
-      <div v-if="activeTab === 'estados-civiles'" class="mantenedor-section">
+      <div v-if="activeTab === 'estados-civiles'" class="mantenedor-section-expanded">
         <div class="mantenedor-header">
           <h2>💑 Gestión de Estados Civiles</h2>
           <button class="btn-primary" @click="abrirModalCrear('estadoCivil')">
@@ -595,8 +612,8 @@
           </div>
         </div>
         
-        <div class="table-container">
-          <table class="data-table">
+        <div class="table-container-expanded">
+          <table class="data-table-expanded">
             <thead>
               <tr>
                 <th>Descripción</th>
@@ -624,7 +641,7 @@
       </div>
 
       <!-- Roles -->
-      <div v-if="activeTab === 'roles'" class="mantenedor-section">
+      <div v-if="activeTab === 'roles'" class="mantenedor-section-expanded">
         <div class="mantenedor-header">
           <h2>👤 Gestión de Roles</h2>
           <button class="btn-primary" @click="abrirModalCrear('rol')">
@@ -639,8 +656,8 @@
           </div>
         </div>
         
-        <div class="table-container">
-          <table class="data-table">
+        <div class="table-container-expanded">
+          <table class="data-table-expanded">
             <thead>
               <tr>
                 <th>Descripción</th>
@@ -668,7 +685,7 @@
       </div>
 
       <!-- Conceptos Contables -->
-      <div v-if="activeTab === 'conceptos-contables'" class="mantenedor-section">
+      <div v-if="activeTab === 'conceptos-contables'" class="mantenedor-section-expanded">
         <div class="mantenedor-header">
           <h2>💰 Gestión de Conceptos Contables</h2>
           <button class="btn-primary" @click="abrirModalCrear('conceptoContable')">
@@ -683,8 +700,8 @@
           </div>
         </div>
         
-        <div class="table-container">
-          <table class="data-table">
+        <div class="table-container-expanded">
+          <table class="data-table-expanded">
             <thead>
               <tr>
                 <th>Descripción</th>
@@ -714,7 +731,7 @@
       </div>
 
       <!-- Tipos de Archivo -->
-      <div v-if="activeTab === 'tipos-archivo'" class="mantenedor-section">
+      <div v-if="activeTab === 'tipos-archivo'" class="mantenedor-section-expanded">
         <div class="mantenedor-header">
           <h2>📁 Gestión de Tipos de Archivo</h2>
           <button class="btn-primary" @click="abrirModalCrear('tipoArchivo')">
@@ -729,8 +746,8 @@
           </div>
         </div>
         
-        <div class="table-container">
-          <table class="data-table">
+        <div class="table-container-expanded">
+          <table class="data-table-expanded">
             <thead>
               <tr>
                 <th>Descripción</th>
@@ -1023,7 +1040,7 @@
 </template>
 
 <script>
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, reactive, onMounted, onUnmounted } from 'vue'
 
 export default {
   name: 'MantenedoresScouts',
@@ -1034,6 +1051,8 @@ export default {
     const editando = ref(false)
     const tipoElemento = ref('')
     const elementoSeleccionado = ref(null)
+    const isDropdownOpen = ref(false)
+    const dropdownContainer = ref(null)
     
     // Estados de búsqueda
     const searchZonas = ref('')
@@ -1299,6 +1318,36 @@ export default {
       }
     }
 
+    // Métodos para el dropdown personalizado
+    const getSelectedTabInfo = () => {
+      const tab = tabs.find(t => t.id === activeTab.value)
+      return tab || tabs[0]
+    }
+
+    const toggleDropdown = () => {
+      isDropdownOpen.value = !isDropdownOpen.value
+    }
+
+    const selectTab = (tabId) => {
+      activeTab.value = tabId
+      isDropdownOpen.value = false // Cerrar dropdown después de seleccionar
+    }
+
+    // Cerrar dropdown al hacer clic fuera
+    const handleClickOutside = (event) => {
+      if (dropdownContainer.value && !dropdownContainer.value.contains(event.target)) {
+        isDropdownOpen.value = false
+      }
+    }
+
+    onMounted(() => {
+      document.addEventListener('click', handleClickOutside)
+    })
+
+    onUnmounted(() => {
+      document.removeEventListener('click', handleClickOutside)
+    })
+
     // Métodos principales
     const abrirModalCrear = (tipo) => {
       modalActivo.value = `crear-${tipo}`
@@ -1484,6 +1533,8 @@ export default {
       editando,
       tipoElemento,
       elementoSeleccionado,
+      isDropdownOpen,
+      dropdownContainer,
       searchZonas,
       searchDistritos,
       searchGrupos,
@@ -1520,6 +1571,9 @@ export default {
       getTipoNombre,
       getRelacionNombre,
       getRelacionValor,
+      getSelectedTabInfo,
+      toggleDropdown,
+      selectTab,
       abrirModalCrear,
       verElemento,
       editarElemento,
@@ -1538,23 +1592,38 @@ export default {
 <style scoped>
 .mantenedores-scouts {
   min-height: 100vh;
-  background: linear-gradient(135deg, #2c5aa0 0%, #1e3d73 100%);
+  background: #f5f5f5;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
 }
 
-/* Selector de Mantenedores */
-.mantenedor-selector {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
+/* Selector de Mantenedores Fijo - CORREGIDO */
+.mantenedor-selector-fixed {
+  background: #1e3d73;
   color: white;
-  padding: 15px 30px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-  flex-shrink: 0;
+  padding: 0;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  width: 100%;
+}
+
+.selector-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 20px;
+  max-width: 100%;
+  margin: 0 auto;
 }
 
 .selector-header {
-  margin-bottom: 15px;
+  flex-shrink: 0;
 }
 
 .selector-header h2 {
@@ -1563,79 +1632,156 @@ export default {
   display: flex;
   align-items: center;
   gap: 10px;
+  white-space: nowrap;
 }
 
-.selector-container {
+/* Nuevos estilos para el dropdown personalizado - MEJORADO */
+.selector-dropdown {
   position: relative;
   max-width: 400px;
+  width: 100%;
+  margin-left: 20px;
 }
 
-.mantenedor-dropdown {
+.mantenedor-dropdown-toggle {
   width: 100%;
   padding: 12px 45px 12px 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid #2c5aa0;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.9);
+  background: white;
   color: #333;
   font-size: 1rem;
-  appearance: none;
   cursor: pointer;
   transition: all 0.3s ease;
-}
-
-.mantenedor-dropdown:focus {
-  outline: none;
-  border-color: #ff6b35;
-  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.3);
-  background: white;
-}
-
-.dropdown-icon {
-  position: absolute;
-  right: 15px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #2c5aa0;
-  pointer-events: none;
-}
-
-/* Main Content Styles - Ocupa todo el espacio restante */
-.main-content {
-  flex: 1;
   display: flex;
-  flex-direction: column;
-  min-height: 0; /* Importante para que flex funcione correctamente */
-}
-
-.header {
-  background: rgba(255, 255, 255, 0.95);
-  color: #2c5aa0;
-  padding: 25px 30px;
-  box-shadow: 0 2px 15px rgba(0,0,0,0.1);
-  flex-shrink: 0;
-}
-
-.header h1 {
-  font-size: 1.8rem;
-  margin-bottom: 8px;
-  font-weight: 700;
-}
-
-.header p {
-  margin: 0;
-  color: #666;
-  font-size: 1.1rem;
+  align-items: center;
+  justify-content: space-between;
   font-weight: 500;
 }
 
-/* Contenedor principal del contenido que se desplaza */
-.mantenedor-section {
-  flex: 1;
-  padding: 30px;
+.mantenedor-dropdown-toggle:hover {
+  border-color: #ff6b35;
+  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.2);
+}
+
+.mantenedor-dropdown-toggle.active {
+  border-color: #ff6b35;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+.selected-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #333;
+  font-weight: 500;
+}
+
+.dropdown-icon {
+  color: #2c5aa0;
+  transition: transform 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.dropdown-icon.rotate {
+  transform: rotate(180deg);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
   background: white;
-  margin: 0;
+  border: 2px solid #2c5aa0;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  max-height: 400px;
   overflow-y: auto;
+  z-index: 1001;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.dropdown-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:hover {
+  background: #f8f9fa;
+}
+
+.dropdown-item.active {
+  background: #e3f2fd;
+  color: #2c5aa0;
+  font-weight: 600;
+}
+
+.dropdown-item-icon {
+  font-size: 1.1rem;
+  width: 24px;
+  text-align: center;
+}
+
+.dropdown-item-text {
+  color: #333;
+  font-weight: 500;
+  flex: 1;
+}
+
+.dropdown-item.active .dropdown-item-text {
+  color: #2c5aa0;
+  font-weight: 600;
+}
+
+.dropdown-item:hover .dropdown-item-text {
+  color: #1e3d73;
+}
+
+/* Main Content Expandido */
+.main-content-expanded {
+  flex: 1;
+  padding: 0;
+  min-height: calc(100vh - 80px);
+  width: 100%;
+  margin: 0;
+}
+
+.header-expanded {
+  background: linear-gradient(135deg, #2c5aa0 0%, #1e3d73 100%);
+  color: white;
+  padding: 30px 20px;
+  margin: 0;
+  width: 100%;
+}
+
+.header-expanded h1 {
+  font-size: 1.8rem;
+  margin-bottom: 8px;
+  margin-top: 0;
+}
+
+.header-expanded p {
+  margin: 0;
+  opacity: 0.9;
+  font-size: 1.1rem;
+}
+
+.mantenedor-section-expanded {
+  padding: 30px 20px;
   animation: fadeIn 0.5s ease;
+  width: 100%;
+  margin: 0;
+  box-sizing: border-box;
 }
 
 .mantenedor-header {
@@ -1645,6 +1791,8 @@ export default {
   margin-bottom: 25px;
   padding-bottom: 15px;
   border-bottom: 3px solid #2c5aa0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .mantenedor-header h2 {
@@ -1668,7 +1816,7 @@ export default {
   align-items: center;
   gap: 8px;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(44, 90, 160, 0.2);
+  white-space: nowrap;
 }
 
 .btn-primary:hover {
@@ -1687,6 +1835,8 @@ export default {
   display: flex;
   align-items: flex-start;
   gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .alert-icon {
@@ -1700,6 +1850,8 @@ export default {
   margin-bottom: 25px;
   flex-wrap: wrap;
   align-items: flex-end;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .search-input {
@@ -1710,6 +1862,7 @@ export default {
   border-radius: 8px;
   font-size: 1rem;
   transition: border-color 0.3s ease;
+  box-sizing: border-box;
 }
 
 .search-input:focus {
@@ -1725,27 +1878,29 @@ export default {
   font-size: 1rem;
   background: white;
   min-width: 200px;
+  box-sizing: border-box;
 }
 
-/* Asegurar que el contenido de la tabla sea responsive */
-.table-container {
+.table-container-expanded {
   background: white;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
   overflow: hidden;
-  min-height: 200px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.data-table {
+.data-table-expanded {
   width: 100%;
   border-collapse: collapse;
+  box-sizing: border-box;
 }
 
-.data-table thead {
+.data-table-expanded thead {
   background: #f8f9fa;
 }
 
-.data-table th {
+.data-table-expanded th {
   padding: 16px 12px;
   text-align: left;
   font-weight: 600;
@@ -1753,12 +1908,12 @@ export default {
   border-bottom: 2px solid #e1e5e9;
 }
 
-.data-table td {
+.data-table-expanded td {
   padding: 14px 12px;
   border-bottom: 1px solid #e1e5e9;
 }
 
-.data-table tr:hover {
+.data-table-expanded tr:hover {
   background: #f8f9fa;
 }
 
@@ -1791,6 +1946,7 @@ export default {
   cursor: pointer;
   font-size: 0.85rem;
   transition: all 0.3s ease;
+  white-space: nowrap;
 }
 
 .btn-view {
@@ -1824,7 +1980,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 2000;
   padding: 20px;
 }
 
@@ -1999,33 +2155,21 @@ export default {
 
 /* Animations */
 @keyframes fadeIn {
-  from { 
-    opacity: 0; 
-    transform: translateY(10px); 
-  }
-  to { 
-    opacity: 1; 
-    transform: translateY(0); 
-  }
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-  .mantenedores-scouts {
-    min-height: 100vh;
-    height: auto;
-  }
-  
-  .mantenedor-selector {
+  .selector-container {
+    flex-direction: column;
+    gap: 15px;
     padding: 15px 20px;
   }
   
-  .header {
-    padding: 20px;
-  }
-  
-  .mantenedor-section {
-    padding: 20px;
+  .selector-dropdown {
+    margin-left: 0;
+    max-width: 100%;
   }
   
   .mantenedor-header {
@@ -2046,49 +2190,35 @@ export default {
     flex-direction: column;
   }
   
-  .table-container {
+  .table-container-expanded {
     overflow-x: auto;
+  }
+  
+  .data-table-expanded {
+    min-width: 600px;
+  }
+  
+  .dropdown-menu {
+    max-height: 300px;
   }
 }
 
 /* Scrollbar */
-.mantenedor-section::-webkit-scrollbar {
+::-webkit-scrollbar {
   width: 8px;
 }
 
-.mantenedor-section::-webkit-scrollbar-track {
+::-webkit-scrollbar-track {
   background: #f1f1f1;
   border-radius: 4px;
 }
 
-.mantenedor-section::-webkit-scrollbar-thumb {
+::-webkit-scrollbar-thumb {
   background: #c1c1c1;
   border-radius: 4px;
 }
 
-.mantenedor-section::-webkit-scrollbar-thumb:hover {
+::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
-}
-
-/* Mejorar la visualización de las tablas en pantallas pequeñas */
-@media (max-width: 600px) {
-  .data-table {
-    font-size: 0.9rem;
-  }
-  
-  .data-table th,
-  .data-table td {
-    padding: 10px 8px;
-  }
-  
-  .actions {
-    flex-direction: column;
-    gap: 5px;
-  }
-  
-  .btn-action {
-    padding: 4px 8px;
-    font-size: 0.8rem;
-  }
 }
 </style>
