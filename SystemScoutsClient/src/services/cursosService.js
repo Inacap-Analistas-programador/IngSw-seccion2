@@ -1,7 +1,11 @@
 import { request } from './apiClient'
 
 const makeCrud = base => ({
-  list: (params) => request(`${base}/${params ? `?${new URLSearchParams(params)}` : ''}`),
+  list: async (params) => {
+    const response = await request(`${base}/${params ? `?${new URLSearchParams(params)}` : ''}`)
+    // DRF devuelve {count, next, previous, results} - extraer solo results
+    return response.results ? response.results : response
+  },
   get: (id) => request(`${base}/${id}/`),
   create: (data) => request(`${base}/`, { method: 'POST', body: JSON.stringify(data) }),
   update: (id, data) => request(`${base}/${id}/`, { method: 'PUT', body: JSON.stringify(data) }),
