@@ -1,7 +1,6 @@
 <template>
   <div class="dashboard-container">
-    <h1 class="dashboard-title">Dashboard Financiero de Cursos Scout</h1>
-
+    
     <!-- ==================== GRÁFICO DE RECAUDACIÓN ==================== -->
     <div class="chart-container">
       <canvas ref="chartCanvas"></canvas>
