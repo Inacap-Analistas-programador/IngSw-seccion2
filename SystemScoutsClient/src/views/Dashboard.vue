@@ -2,7 +2,7 @@
   <div class="dashboard-container">
     <h2 class="titulo">Dashboard de Cursos Scouts</h2>
 
-    <!-- === Gráfico Principal === -->
+    <!-- === Gráfico Manual === -->
     <div class="grafico-container">
       <canvas id="graficoGeneral"></canvas>
     </div>
@@ -53,14 +53,11 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import Chart from 'chart.js/auto'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
 const cursos = ref([])
 const popupVisible = ref(false)
 const cursoSeleccionado = ref({})
-
-let chartInstance = null
 
 async function cargarDatos() {
   try {
@@ -68,7 +65,7 @@ async function cargarDatos() {
     if (!response.ok) throw new Error(`Error HTTP ${response.status}`)
     const data = await response.json()
     cursos.value = data
-    actualizarGrafico()
+    dibujarGrafico()
   } catch (err) {
     console.error("Error al cargar cursos:", err)
   }
@@ -91,51 +88,69 @@ function cerrarPopup() {
   popupVisible.value = false
 }
 
-function actualizarGrafico() {
+function dibujarGrafico() {
+  const canvas = document.getElementById('graficoGeneral')
+  if (!canvas) return
+  const ctx = canvas.getContext('2d')
+
+  const width = canvas.width = canvas.clientWidth
+  const height = canvas.height = 400
+  ctx.clearRect(0, 0, width, height)
+
   if (!cursos.value.length) return
 
-  const nombres = cursos.value.map(c => c.nombre)
-  const estimado = cursos.value.map(c => c.monto_estimado)
-  const recaudado = cursos.value.map(c => c.monto_recaudado)
+  const padding = 50
+  const barWidth = 40
+  const spacing = 60
+  const maxValor = Math.max(...cursos.value.map(c => c.monto_estimado)) * 1.2
 
-  const ctx = document.getElementById('graficoGeneral').getContext('2d')
+  // Ejes
+  ctx.beginPath()
+  ctx.moveTo(padding, 20)
+  ctx.lineTo(padding, height - padding)
+  ctx.lineTo(width - 20, height - padding)
+  ctx.strokeStyle = "#333"
+  ctx.lineWidth = 2
+  ctx.stroke()
 
-  if (chartInstance) chartInstance.destroy()
+  // Etiquetas del eje Y
+  const pasos = 5
+  for (let i = 0; i <= pasos; i++) {
+    const valor = Math.round((maxValor / pasos) * i)
+    const y = height - padding - (valor / maxValor) * (height - padding - 40)
+    ctx.fillStyle = "#444"
+    ctx.fillText(`$${valor}`, 5, y + 5)
+    ctx.beginPath()
+    ctx.moveTo(padding - 5, y)
+    ctx.lineTo(padding, y)
+    ctx.stroke()
+  }
 
-  chartInstance = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: nombres,
-      datasets: [
-        {
-          label: 'Monto Estimado',
-          data: estimado,
-          backgroundColor: 'rgba(54, 162, 235, 0.6)',
-        },
-        {
-          label: 'Monto Recaudado',
-          data: recaudado,
-          backgroundColor: 'rgba(75, 192, 75, 0.8)',
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { position: 'top' } },
-      scales: {
-        x: { title: { display: true, text: 'Cursos' } },
-        y: {
-          title: { display: true, text: 'Monto ($)' },
-          beginAtZero: true,
-        },
-      },
-    },
+  // Dibujar barras
+  cursos.value.forEach((curso, i) => {
+    const x = padding + i * spacing + 30
+    const yBase = height - padding
+    const hEstimado = (curso.monto_estimado / maxValor) * (height - padding - 40)
+    const hRecaudado = (curso.monto_recaudado / maxValor) * (height - padding - 40)
+
+    // Azul = estimado
+    ctx.fillStyle = "rgba(54,162,235,0.6)"
+    ctx.fillRect(x, yBase - hEstimado, barWidth, hEstimado)
+
+    // Verde = recaudado (sobrepuesto)
+    ctx.fillStyle = "rgba(75,192,75,0.9)"
+    ctx.fillRect(x, yBase - hRecaudado, barWidth, hRecaudado)
+
+    // Nombre del curso
+    ctx.fillStyle = "#000"
+    ctx.font = "12px Arial"
+    ctx.textAlign = "center"
+    ctx.fillText(curso.nombre, x + barWidth / 2, yBase + 15)
   })
 }
 
 onMounted(cargarDatos)
-watch(cursos, actualizarGrafico)
+watch(cursos, dibujarGrafico)
 </script>
 
 <style scoped>
@@ -153,12 +168,13 @@ watch(cursos, actualizarGrafico)
 
 .grafico-container {
   width: 100%;
-  height: 400px;
+  height: 420px;
   background: white;
   border-radius: 10px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
   padding: 15px;
   margin-bottom: 30px;
+  overflow-x: auto;
 }
 
 .lista-cursos {
