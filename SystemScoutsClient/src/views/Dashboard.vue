@@ -1,241 +1,271 @@
 <template>
   <div class="dashboard-container">
-    <h2 class="titulo">Dashboard de Cursos Scouts</h2>
+    <h1 class="titulo">Dashboard de Cursos</h1>
 
-    <!-- === Gráfico Manual === -->
+    <!-- === Gráfico Principal === -->
     <div class="grafico-container">
-      <canvas id="graficoGeneral"></canvas>
+      <canvas ref="graficoCanvas" width="800" height="400"></canvas>
     </div>
 
-    <!-- === Lista de Cursos === -->
-    <div class="lista-cursos">
-      <h3>Cursos Registrados</h3>
-      <table>
+    <!-- === Tabla de Cursos === -->
+    <div class="tabla-container">
+      <table class="tabla-cursos">
         <thead>
           <tr>
-            <th>Nombre del Curso</th>
-            <th>Encargado</th>
-            <th>Recaudado</th>
-            <th>Estimado</th>
+            <th>Curso</th>
+            <th>Monto Estimado</th>
+            <th>Monto Recaudado</th>
+            <th>Responsable</th>
+            <th>Estado</th>
           </tr>
         </thead>
         <tbody>
           <tr
             v-for="curso in cursos"
             :key="curso.id"
-            :class="evaluarCurso(curso)"
-            @click="abrirPopup(curso)"
+            :class="{
+              'curso-ok': curso.porcentaje >= 49 && curso.responsable,
+              'curso-error': curso.porcentaje < 49 || !curso.responsable,
+            }"
+            @click="mostrarDetalles(curso)"
           >
-            <td>{{ curso.nombre || 'Sin nombre' }}</td>
-            <td>{{ curso.encargado || 'No asignado' }}</td>
-            <td>${{ curso.monto_recaudado }}</td>
-            <td>${{ curso.monto_estimado }}</td>
+            <td>{{ curso.nombre }}</td>
+            <td>{{ formatearMonto(curso.montoEstimado) }}</td>
+            <td>{{ formatearMonto(curso.montoRecaudado) }}</td>
+            <td>{{ curso.responsable || 'No asignado' }}</td>
+            <td>
+              <span>{{ curso.porcentaje.toFixed(1) }}%</span>
+            </td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <!-- === Popup Detalle del Curso === -->
-    <div v-if="popupVisible" class="popup-overlay" @click.self="cerrarPopup">
-      <div class="popup-contenido">
-        <h3>Detalles del Curso</h3>
-        <p><strong>Nombre:</strong> {{ cursoSeleccionado.nombre }}</p>
-        <p><strong>Encargado:</strong> {{ cursoSeleccionado.encargado || 'No asignado' }}</p>
-        <p><strong>Monto Estimado:</strong> ${{ cursoSeleccionado.monto_estimado }}</p>
-        <p><strong>Monto Recaudado:</strong> ${{ cursoSeleccionado.monto_recaudado }}</p>
+    <!-- === Popup Detalle Curso === -->
+    <div v-if="cursoSeleccionado" class="modal-overlay" @click.self="cerrarPopup">
+      <div class="modal-content">
+        <h2>{{ cursoSeleccionado.nombre }}</h2>
         <p><strong>Lugar:</strong> {{ cursoSeleccionado.lugar || 'No especificado' }}</p>
-        <p><strong>Estado:</strong> {{ cursoSeleccionado.estado || 'Activo' }}</p>
-        <button class="cerrar" @click="cerrarPopup">Cerrar</button>
+        <p><strong>Responsable:</strong> {{ cursoSeleccionado.responsable || 'No asignado' }}</p>
+        <p><strong>Monto Estimado:</strong> {{ formatearMonto(cursoSeleccionado.montoEstimado) }}</p>
+        <p><strong>Monto Recaudado:</strong> {{ formatearMonto(cursoSeleccionado.montoRecaudado) }}</p>
+        <p><strong>Porcentaje:</strong> {{ cursoSeleccionado.porcentaje.toFixed(1) }}%</p>
+        <button class="boton-cerrar" @click="cerrarPopup">Cerrar</button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
+import cursosService from '@/services/cursosService'
+import personasService from '@/services/personasService'
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
 const cursos = ref([])
-const popupVisible = ref(false)
-const cursoSeleccionado = ref({})
+const cursoSeleccionado = ref(null)
+const graficoCanvas = ref(null)
+
+function formatearMonto(monto) {
+  return `$${monto.toLocaleString('es-CL')}`
+}
 
 async function cargarDatos() {
   try {
-    const response = await fetch(`${API_BASE}/api/cursos/`)
-    if (!response.ok) throw new Error(`Error HTTP ${response.status}`)
-    const data = await response.json()
-    cursos.value = data
+    const listaCursos = await cursosService.cursos.list()
+
+    const datosCompletos = await Promise.all(
+      listaCursos.map(async (curso) => {
+        const cuotas = await cursosService.cuotas.list({ curso: curso.id })
+        const montoEstimado = cuotas.reduce((s, c) => s + (c.monto_total || 0), 0)
+        const montoRecaudado = cuotas.reduce((s, c) => s + (c.monto_pagado || 0), 0)
+        const porcentaje = montoEstimado > 0 ? (montoRecaudado / montoEstimado) * 100 : 0
+
+        // Buscar responsable (si existe)
+        const coordinadores = await cursosService.coordinadores.list({ curso: curso.id })
+        const responsable = coordinadores[0]?.nombre || null
+
+        return {
+          id: curso.id,
+          nombre: curso.nombre || 'Curso sin nombre',
+          lugar: curso.lugar || '',
+          montoEstimado,
+          montoRecaudado,
+          porcentaje,
+          responsable,
+        }
+      })
+    )
+
+    cursos.value = datosCompletos
+    await nextTick()
     dibujarGrafico()
-  } catch (err) {
-    console.error("Error al cargar cursos:", err)
+  } catch (error) {
+    console.error('Error al cargar datos:', error)
   }
 }
 
-function evaluarCurso(curso) {
-  const progreso = curso.monto_estimado > 0
-    ? (curso.monto_recaudado / curso.monto_estimado) * 100
-    : 0
-  const cumple = progreso >= 49 && curso.encargado
-  return cumple ? 'curso-ok' : 'curso-alerta'
-}
-
-function abrirPopup(curso) {
-  cursoSeleccionado.value = curso
-  popupVisible.value = true
-}
-
-function cerrarPopup() {
-  popupVisible.value = false
-}
-
 function dibujarGrafico() {
-  const canvas = document.getElementById('graficoGeneral')
-  if (!canvas) return
-  const ctx = canvas.getContext('2d')
+  const ctx = graficoCanvas.value.getContext('2d')
+  ctx.clearRect(0, 0, graficoCanvas.value.width, graficoCanvas.value.height)
 
-  const width = canvas.width = canvas.clientWidth
-  const height = canvas.height = 400
-  ctx.clearRect(0, 0, width, height)
-
-  if (!cursos.value.length) return
-
-  const padding = 50
-  const barWidth = 40
-  const spacing = 60
-  const maxValor = Math.max(...cursos.value.map(c => c.monto_estimado)) * 1.2
+  const padding = 70
+  const ancho = graficoCanvas.value.width - padding * 2
+  const alto = graficoCanvas.value.height - padding * 2
+  const n = cursos.value.length
+  const maxValor = Math.max(...cursos.value.map((c) => c.montoEstimado), 1000)
+  const anchoBarra = ancho / (n * 2)
 
   // Ejes
   ctx.beginPath()
-  ctx.moveTo(padding, 20)
-  ctx.lineTo(padding, height - padding)
-  ctx.lineTo(width - 20, height - padding)
-  ctx.strokeStyle = "#333"
-  ctx.lineWidth = 2
+  ctx.moveTo(padding, padding)
+  ctx.lineTo(padding, alto + padding)
+  ctx.lineTo(ancho + padding, alto + padding)
+  ctx.strokeStyle = '#333'
   ctx.stroke()
 
-  // Etiquetas del eje Y
+  // Eje Y (valores)
+  ctx.font = '12px Arial'
+  ctx.fillStyle = '#000'
   const pasos = 5
   for (let i = 0; i <= pasos; i++) {
+    const y = alto + padding - (i * alto) / pasos
     const valor = Math.round((maxValor / pasos) * i)
-    const y = height - padding - (valor / maxValor) * (height - padding - 40)
-    ctx.fillStyle = "#444"
-    ctx.fillText(`$${valor}`, 5, y + 5)
+    ctx.fillText(`$${valor.toLocaleString('es-CL')}`, 10, y + 4)
     ctx.beginPath()
     ctx.moveTo(padding - 5, y)
     ctx.lineTo(padding, y)
     ctx.stroke()
   }
 
-  // Dibujar barras
+  // Barras
   cursos.value.forEach((curso, i) => {
-    const x = padding + i * spacing + 30
-    const yBase = height - padding
-    const hEstimado = (curso.monto_estimado / maxValor) * (height - padding - 40)
-    const hRecaudado = (curso.monto_recaudado / maxValor) * (height - padding - 40)
+    const x = padding + i * anchoBarra * 2 + anchoBarra / 2
+    const alturaEstimado = (curso.montoEstimado / maxValor) * alto
+    const alturaRecaudado = (curso.montoRecaudado / maxValor) * alto
 
-    // Azul = estimado
-    ctx.fillStyle = "rgba(54,162,235,0.6)"
-    ctx.fillRect(x, yBase - hEstimado, barWidth, hEstimado)
+    // Azul (estimado)
+    ctx.fillStyle = 'rgba(0, 102, 255, 0.5)'
+    ctx.fillRect(x, alto + padding - alturaEstimado, anchoBarra, alturaEstimado)
 
-    // Verde = recaudado (sobrepuesto)
-    ctx.fillStyle = "rgba(75,192,75,0.9)"
-    ctx.fillRect(x, yBase - hRecaudado, barWidth, hRecaudado)
+    // Verde (recaudado)
+    ctx.fillStyle = 'rgba(0, 204, 102, 0.8)'
+    ctx.fillRect(x, alto + padding - alturaRecaudado, anchoBarra, alturaRecaudado)
 
-    // Nombre del curso
-    ctx.fillStyle = "#000"
-    ctx.font = "12px Arial"
-    ctx.textAlign = "center"
-    ctx.fillText(curso.nombre, x + barWidth / 2, yBase + 15)
+    // Nombres cursos
+    ctx.fillStyle = '#000'
+    ctx.font = '11px Arial'
+    ctx.textAlign = 'center'
+    ctx.fillText(curso.nombre, x + anchoBarra / 2, alto + padding + 15)
   })
 }
 
-onMounted(cargarDatos)
-watch(cursos, dibujarGrafico)
+function mostrarDetalles(curso) {
+  cursoSeleccionado.value = curso
+}
+
+function cerrarPopup() {
+  cursoSeleccionado.value = null
+}
+
+onMounted(() => {
+  cargarDatos()
+})
 </script>
 
 <style scoped>
 .dashboard-container {
   padding: 20px;
-  font-family: Arial, sans-serif;
   background-color: #f4f6f8;
-  min-height: 100vh;
+  font-family: 'Segoe UI', sans-serif;
 }
 
 .titulo {
   text-align: center;
   margin-bottom: 20px;
+  color: #333;
 }
 
 .grafico-container {
-  width: 100%;
-  height: 420px;
-  background: white;
+  background-color: #fff;
   border-radius: 10px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-  padding: 15px;
+  padding: 20px;
   margin-bottom: 30px;
-  overflow-x: auto;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: center;
 }
 
-.lista-cursos {
-  background: white;
-  padding: 15px;
+.tabla-container {
+  background-color: #fff;
   border-radius: 10px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  padding: 15px;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
 }
 
-.lista-cursos table {
+.tabla-cursos {
   width: 100%;
   border-collapse: collapse;
 }
 
-.lista-cursos th, .lista-cursos td {
-  text-align: left;
+.tabla-cursos th,
+.tabla-cursos td {
+  border: 1px solid #ddd;
   padding: 10px;
-  border-bottom: 1px solid #ddd;
+  text-align: center;
 }
 
-.lista-cursos tr:hover {
-  cursor: pointer;
-  opacity: 0.9;
+.tabla-cursos th {
+  background-color: #f0f0f0;
 }
 
 .curso-ok {
-  background-color: #e8f5e9; /* verde claro */
+  background-color: #d5f5e3;
 }
 
-.curso-alerta {
-  background-color: #fdecea; /* rojo claro */
+.curso-error {
+  background-color: #f8d7da;
 }
 
-.popup-overlay {
+.curso-ok:hover,
+.curso-error:hover {
+  background-color: #eafaf1;
+  cursor: pointer;
+}
+
+/* Popup modal */
+.modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 999;
 }
 
-.popup-contenido {
-  background: white;
-  border-radius: 10px;
+.modal-content {
+  background: #fff;
   padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
   width: 400px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  text-align: center;
 }
 
-.cerrar {
+.boton-cerrar {
   background-color: #007bff;
   color: white;
   border: none;
-  padding: 8px 14px;
+  padding: 8px 15px;
+  margin-top: 15px;
   border-radius: 6px;
-  margin-top: 10px;
   cursor: pointer;
+}
+
+.boton-cerrar:hover {
+  background-color: #0056b3;
 }
 </style>
