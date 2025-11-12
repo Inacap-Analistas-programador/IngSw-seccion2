@@ -1,7 +1,6 @@
 <!-- DataCard.vue -->
 <script setup>
-import { defineProps, defineEmits } from "vue";
-
+// Se eliminan imports de macros innecesarios.
 const props = defineProps({
   label: { type: String, required: true },
   modelValue: { type: Boolean, default: false },

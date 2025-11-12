@@ -12,9 +12,9 @@
           <button class="close-btn" @click="closeModal" aria-label="Cerrar ventana">×</button>
         </div>
         
-        <ModernMainScrollBar class="modal-body-content">
+        <div class="modal-body-content">
           <slot></slot> <!-- Contenido principal -->
-        </ModernMainScrollBar>
+        </div>
         
         <div class="modal-footer" v-if="$slots.footer">
           <slot name="footer"></slot>
@@ -24,9 +24,9 @@
       <!-- Antiguo: Si no se usan los slots, para retrocompatibilidad -->
       <template v-else>
         <button class="close-btn" @click="closeModal" aria-label="Cerrar ventana">×</button>
-        <ModernMainScrollBar class="modal-body-scroll">
+        <div class="modal-body-scroll">
           <slot></slot> <!-- Renderiza todo junto como antes -->
-        </ModernMainScrollBar>
+        </div>
       </template>
 
     </div>
@@ -34,8 +34,7 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from 'vue';
-import ModernMainScrollBar from './ModernMainScrollbar.vue';
+// Ya no se importan defineProps/defineEmits (macro implícito con <script setup>) para evitar warnings.
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false }
@@ -90,13 +89,13 @@ const closeModal = () => {
 
 .modal-body-content {
   padding: 0;
-  overflow: hidden;
+  overflow-y: auto; /* Permite desplazamiento vertical del contenido largo */
   flex: 1;
   min-height: 0;
 }
 
 .modal-body-scroll {
-  overflow: hidden;
+  overflow-y: auto; /* Retrocompatibilidad con versión antigua */
   flex: 1;
   min-height: 0;
 }
