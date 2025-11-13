@@ -10,7 +10,8 @@ from ApiCoreScouts.Routers.Pagos_router import router as pago_router
 from ApiCoreScouts.Routers.Mantenedores_router import router as mantenedor_router
 from ApiCoreScouts.Routers.Personas_router import router as personas_router
 
-from rest_framework_simplejwt.views import ( TokenObtainPairView, TokenRefreshView )
+from rest_framework_simplejwt.views import TokenRefreshView
+from ApiCoreScouts.View.Usuario_view import MyTokenObtainPairView
 
 from ApiCoreScouts.View.Verificador_view import verificar_acreditacion_qr
 
@@ -23,6 +24,6 @@ urlpatterns = [
     path('api/pagos/', include(pago_router.urls)),
     path('api/verificar-qr/', verificar_acreditacion_qr, name='verificar_qr'),
     #Authentication
-    path('login/', TokenObtainPairView.as_view(), name='auth_login'), 
+    path('login/', MyTokenObtainPairView.as_view(), name='auth_login'), 
     path('refresh/', TokenRefreshView.as_view(), name='auth_perfil'),
 ]
