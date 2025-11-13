@@ -69,7 +69,7 @@ function onInput(e) {
 </template>
 
 <style scoped>
-.base-input { display: block; width: 100%; margin-bottom: 12px; }
+.base-input { display: block; width: 100%; margin-bottom: 0; }
 
 /* etiqueta obligatoriamente en bloque -> garantiza que quede arriba */
 .base-label { display: block; font-weight: 700; margin-bottom: 6px; color: var(--color-text); font-size: 14px; }
@@ -81,10 +81,10 @@ function onInput(e) {
     box-sizing: border-box;
     border: 1px solid var(--color-border);
     background: var(--color-surface);
-    padding: 8px 10px;
+    padding: 7px 9px; /* Ajustar altura para alineación con selects */
     font-size: 13px;
     color: var(--color-text);
-    border-radius: 2px;
+    border-radius: 4px;
 }
 
 .input-wrapper { position: relative; }

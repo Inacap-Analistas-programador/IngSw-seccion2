@@ -100,8 +100,8 @@ export default {
 
 .base-button:hover { 
   background: var(--btn-bg-hover); 
-  box-shadow: var(--btn-shadow-hover);
-  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0,0,0,.15); /* sombra más sutil */
+  transform: translateY(-2px); /* ligero lift menor que el anterior efecto que parecía agrandar 0.5cm */
 }
 .base-button:active { transform: translateY(0); }
 .base-button:focus { outline: none; box-shadow: 0 0 0 3px var(--btn-ring); }

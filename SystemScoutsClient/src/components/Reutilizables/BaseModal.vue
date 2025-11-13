@@ -1,6 +1,7 @@
 <template>
   <div v-if="modelValue" class="modal-overlay" @click.self="closeModal" role="dialog" aria-modal="true">
     <div class="modal-content" role="document">
+<<<<<<< HEAD
       <!-- Optional header slot -->
       <div class="modal-header" v-if="$slots.title">
         <h3 class="modal-title"><slot name="title"></slot></h3>
@@ -8,6 +9,35 @@
 
       <!-- Close button always available (absolute positioned) -->
       <button class="close-btn" @click="closeModal" aria-label="Cerrar ventana">×</button>
+=======
+      <!-- Renderizado condicional: Nuevo con slots o Antiguo -->
+      
+      <!-- Nuevo: Si se usan los slots de title o footer -->
+      <template v-if="$slots.title || $slots.footer">
+        <div class="modal-header" v-if="$slots.title">
+          <h3 class="modal-title">
+            <slot name="title"></slot>
+          </h3>
+          <button class="close-btn" @click="closeModal" aria-label="Cerrar ventana">×</button>
+        </div>
+        
+        <div class="modal-body-content">
+          <slot></slot> <!-- Contenido principal -->
+        </div>
+        
+        <div class="modal-footer" v-if="$slots.footer">
+          <slot name="footer"></slot>
+        </div>
+      </template>
+
+      <!-- Antiguo: Si no se usan los slots, para retrocompatibilidad -->
+      <template v-else>
+        <button class="close-btn" @click="closeModal" aria-label="Cerrar ventana">×</button>
+        <div class="modal-body-scroll">
+          <slot></slot> <!-- Renderiza todo junto como antes -->
+        </div>
+      </template>
+>>>>>>> 2e2aa520f7206086d0733507a523198c21c1a96a
 
       <!-- Use ModernMainScrollBar for modal bodies so scrollbars match the rest of the app -->
       <ModernMainScrollBar class="modal-body-content">
@@ -23,8 +53,7 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from 'vue';
-import ModernMainScrollBar from './ModernMainScrollbar.vue';
+// Ya no se importan defineProps/defineEmits (macro implícito con <script setup>) para evitar warnings.
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false }
@@ -79,13 +108,13 @@ const closeModal = () => {
 
 .modal-body-content {
   padding: 0;
-  overflow: hidden;
+  overflow-y: auto; /* Permite desplazamiento vertical del contenido largo */
   flex: 1;
   min-height: 0;
 }
 
 .modal-body-scroll {
-  overflow: hidden;
+  overflow-y: auto; /* Retrocompatibilidad con versión antigua */
   flex: 1;
   min-height: 0;
 }

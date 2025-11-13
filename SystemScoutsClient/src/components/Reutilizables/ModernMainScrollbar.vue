@@ -68,6 +68,10 @@ onBeforeUnmount(removeClass)
   background: transparent;
 }
 
-/* Wrapper no interfiere con el layout */
-.modern-scrollbar-wrapper { display: contents; }
+/* Wrapper ocupa el espacio y permite que clases externas (como modal-body-content) controlen overflow */
+.modern-scrollbar-wrapper { display: block; width: 100%; height: 100%; }
+/* Si el modal aplica esta clase directamente queremos scroll */
+.modern-scrollbar-wrapper.modern-scrollbar, .modal-body-content.modern-scrollbar, .modal-body-scroll.modern-scrollbar {
+  overflow-y: auto;
+}
 </style>

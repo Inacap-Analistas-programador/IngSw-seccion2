@@ -152,7 +152,7 @@ export default {
 
 <style scoped>
 .base-select {
-  margin-bottom: 1rem;
+  margin-bottom: 0; /* Para alineación uniforme en grilla de filtros */
   text-align: left;
 }
 
@@ -170,14 +170,15 @@ export default {
 
 .base-select__element {
   width: 100%;
-  padding: 0.75rem;
-  border: 2px solid var(--color-border);
-  border-radius: 6px;
+  padding: 0.55rem 0.65rem; /* Altura más cercana al InputBase */
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
   background-color: var(--color-surface);
   color: var(--color-text);
-  font-size: 1rem;
-  transition: all 0.3s ease;
+  font-size: 0.85rem;
+  transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
   outline: none;
+  line-height: 1.2;
 }
 
 .base-select__element:focus {
