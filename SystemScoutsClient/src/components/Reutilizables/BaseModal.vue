@@ -2,49 +2,17 @@
   <div v-if="modelValue" class="modal-overlay" @click.self="closeModal" role="dialog" aria-modal="true">
     <div class="modal-content" role="document">
 <<<<<<< HEAD
-      <!-- Optional header slot -->
+      <!-- Header opcional -->
       <div class="modal-header" v-if="$slots.title">
         <h3 class="modal-title"><slot name="title"></slot></h3>
       </div>
-
-      <!-- Close button always available (absolute positioned) -->
+      <!-- Botón cerrar siempre visible -->
       <button class="close-btn" @click="closeModal" aria-label="Cerrar ventana">×</button>
-=======
-      <!-- Renderizado condicional: Nuevo con slots o Antiguo -->
-      
-      <!-- Nuevo: Si se usan los slots de title o footer -->
-      <template v-if="$slots.title || $slots.footer">
-        <div class="modal-header" v-if="$slots.title">
-          <h3 class="modal-title">
-            <slot name="title"></slot>
-          </h3>
-          <button class="close-btn" @click="closeModal" aria-label="Cerrar ventana">×</button>
-        </div>
-        
-        <div class="modal-body-content">
-          <slot></slot> <!-- Contenido principal -->
-        </div>
-        
-        <div class="modal-footer" v-if="$slots.footer">
-          <slot name="footer"></slot>
-        </div>
-      </template>
-
-      <!-- Antiguo: Si no se usan los slots, para retrocompatibilidad -->
-      <template v-else>
-        <button class="close-btn" @click="closeModal" aria-label="Cerrar ventana">×</button>
-        <div class="modal-body-scroll">
-          <slot></slot> <!-- Renderiza todo junto como antes -->
-        </div>
-      </template>
->>>>>>> 2e2aa520f7206086d0733507a523198c21c1a96a
-
-      <!-- Use ModernMainScrollBar for modal bodies so scrollbars match the rest of the app -->
+      <!-- Cuerpo con ModernMainScrollBar -->
       <ModernMainScrollBar class="modal-body-content">
         <slot></slot>
       </ModernMainScrollBar>
-
-      <!-- Optional footer slot -->
+      <!-- Footer opcional -->
       <div class="modal-footer" v-if="$slots.footer">
         <slot name="footer"></slot>
       </div>
@@ -128,10 +96,10 @@ const closeModal = () => {
   border-top: 1px solid #e5e7eb;
 }
 
-.close-btn {
+ .close-btn {
   position: absolute;
   top: 1rem;
-  right: 2.5rem; /* empujar la X hacia la izquierda por defecto */
+  right: 3.5rem; /* más separación del borde y scrollbar */
   width: 40px;
   height: 40px;
   border-radius: 50%;
