@@ -1,17 +1,16 @@
 <template>
   <div v-if="modelValue" class="modal-overlay" @click.self="closeModal" role="dialog" aria-modal="true">
     <div class="modal-content" role="document">
-<<<<<<< HEAD
       <!-- Header opcional -->
       <div class="modal-header" v-if="$slots.title">
         <h3 class="modal-title"><slot name="title"></slot></h3>
       </div>
       <!-- Botón cerrar siempre visible -->
       <button class="close-btn" @click="closeModal" aria-label="Cerrar ventana">×</button>
-      <!-- Cuerpo con ModernMainScrollBar -->
-      <ModernMainScrollBar class="modal-body-content">
+      <!-- Cuerpo con scrollbar personalizado -->
+      <ModernMainScrollbar class="modal-body-content">
         <slot></slot>
-      </ModernMainScrollBar>
+      </ModernMainScrollbar>
       <!-- Footer opcional -->
       <div class="modal-footer" v-if="$slots.footer">
         <slot name="footer"></slot>
@@ -22,6 +21,9 @@
 
 <script setup>
 // Ya no se importan defineProps/defineEmits (macro implícito con <script setup>) para evitar warnings.
+import ModernMainScrollbar from './ModernMainScrollbar.vue'
+// Alias para variantes con mayúsculas diferentes en algunos archivos
+const ModernMainScrollBar = ModernMainScrollbar
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false }
