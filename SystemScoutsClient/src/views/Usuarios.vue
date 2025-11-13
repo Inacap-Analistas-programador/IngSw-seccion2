@@ -1,6 +1,6 @@
 <template>
-  <ModernMainScrollbar>
-    <div class="usuarios-roles">
+  <div class="usuarios-roles">
+    <ModernMainScrollbar>
       <!-- Encabezado de la sección -->
       <header class="page-header">
         <h3>Gestión de Usuarios</h3>
@@ -135,160 +135,163 @@
         </table>
       </div>
     </div>
+    </ModernMainScrollbar>
 
     <!-- Modal para crear/editar usuario -->
     <BaseModal v-model="modalVisible" @close="cerrarModal">
       <template #default>
         <div class="modal-usuario">
-          <header class="modal-header">
-            <h3>{{ modoEdicion ? 'Editar Usuario' : 'Crear Nuevo Usuario' }}</h3>
-          </header>
+              <header class="modal-header">
+                <h3>{{ modoEdicion ? 'Editar Usuario' : 'Crear Nuevo Usuario' }}</h3>
+              </header>
 
-          <form @submit.prevent="guardarUsuario" class="usuario-form">
-            <!-- Sección de Foto y Datos Básicos en una sola fila -->
-            <div class="form-section datos-basicos">
-              <div class="section-title">
-                <AppIcons name="user" :size="20" />
-                <span>Información Personal</span>
-              </div>
-              
-              <div class="form-row form-row-triple">
-                <!-- Foto de perfil -->
-                <div class="form-group photo-group-inline">
-                  <label>Foto de perfil</label>
-                  <div class="photo-upload-inline" @click="triggerFotoSeleccion">
-                    <div class="photo-preview-inline">
-                      <img 
-                        v-if="usuarioForm.fotoPreview" 
-                        :src="usuarioForm.fotoPreview" 
-                        alt="Vista previa"
-                        class="preview-image-inline"
-                      />
-                      <div v-else class="preview-placeholder-inline">
-                        <AppIcons name="camera" :size="28" />
-                      </div>
-                      <button 
-                        v-if="usuarioForm.fotoPreview" 
-                        type="button" 
-                        class="remove-foto-btn" 
-                        @click.stop="eliminarFoto"
-                        :disabled="procesando"
-                        aria-label="Eliminar foto"
-                        title="Eliminar foto"
-                      >
-                        ×
-                      </button>
+              <div class="modal-body-wrapper">
+                <form @submit.prevent="guardarUsuario" class="usuario-form">
+                  <!-- Sección de Foto y Datos Básicos en una sola fila -->
+                  <div class="form-section datos-basicos">
+                    <div class="section-title">
+                      <AppIcons name="user" :size="20" />
+                      <span>Información Personal</span>
                     </div>
-                    <span class="photo-hint">{{ usuarioForm.fotoPreview ? 'Click para cambiar' : 'Click para subir' }}</span>
-                    <input 
-                      ref="fileInput"
-                      type="file" 
-                      accept="image/*"
-                      @change="handleFileChange"
-                      style="display: none"
-                    />
+                  
+                    <div class="form-row form-row-triple">
+                      <!-- Foto de perfil -->
+                      <div class="form-group photo-group-inline">
+                        <label>Foto de perfil</label>
+                        <div class="photo-upload-inline" @click="triggerFotoSeleccion">
+                          <div class="photo-preview-inline">
+                            <img 
+                              v-if="usuarioForm.fotoPreview" 
+                              :src="usuarioForm.fotoPreview" 
+                              alt="Vista previa"
+                              class="preview-image-inline"
+                            />
+                            <div v-else class="preview-placeholder-inline">
+                              <AppIcons name="camera" :size="28" />
+                            </div>
+                            <button 
+                              v-if="usuarioForm.fotoPreview" 
+                              type="button" 
+                              class="remove-foto-btn" 
+                              @click.stop="eliminarFoto"
+                              :disabled="procesando"
+                              aria-label="Eliminar foto"
+                              title="Eliminar foto"
+                            >
+                              ×
+                            </button>
+                          </div>
+                          <span class="photo-hint">{{ usuarioForm.fotoPreview ? 'Click para cambiar' : 'Click para subir' }}</span>
+                          <input 
+                            ref="fileInput"
+                            type="file" 
+                            accept="image/*"
+                            @change="handleFileChange"
+                            style="display: none"
+                          />
+                        </div>
+                        <small class="form-hint-compact">Click en la foto para {{ usuarioForm.fotoPreview ? 'cambiar' : 'subir' }}</small>
+                      </div>
+
+                      <!-- Nombre de usuario -->
+                      <div class="form-group flex-1">
+                        <label for="username">Nombre de Usuario <span class="required">*</span></label>
+                        <InputBase 
+                          id="username"
+                          v-model="usuarioForm.username" 
+                          placeholder="Ej: jperez"
+                          required
+                          :disabled="procesando"
+                        />
+                      </div>
+
+                      <!-- Rol -->
+                      <div class="form-group flex-1">
+                        <label for="rol">Perfil <span class="required">*</span></label>
+                        <BaseSelect 
+                          id="rol"
+                          v-model="usuarioForm.rol" 
+                          :options="rolesOptions"
+                          placeholder="Seleccionar rol"
+                          required
+                          :disabled="procesando"
+                        />
+                      </div>
+                    </div>
+
+                    <!-- Estado con toggle switch -->
+                    <div class="form-row" style="margin-top: 1rem;">
+                      <div class="form-group" style="flex-direction: row; align-items: center; gap: 1rem;">
+                        <label style="margin-bottom: 0; font-weight: 600; color: #2c3e50;">Estado del Usuario:</label>
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                          <BaseSwitch v-model="usuarioForm.activo" />
+                          <span :class="['estado-badge', usuarioForm.activo ? 'badge-activo' : 'estado-inactivo']">
+                            {{ usuarioForm.activo ? 'Activo' : 'Inactivo' }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <small class="form-hint-compact">Click en la foto para {{ usuarioForm.fotoPreview ? 'cambiar' : 'subir' }}</small>
-                </div>
 
-                <!-- Nombre de usuario -->
-                <div class="form-group flex-1">
-                  <label for="username">Nombre de Usuario <span class="required">*</span></label>
-                  <InputBase 
-                    id="username"
-                    v-model="usuarioForm.username" 
-                    placeholder="Ej: jperez"
-                    required
-                    :disabled="procesando"
-                  />
-                </div>
+                  <!-- Sección de Seguridad -->
+                  <div class="form-section">
+                    <div class="section-title">
+                      <AppIcons name="lock" :size="20" />
+                      <span>Seguridad</span>
+                    </div>
 
-                <!-- Rol -->
-                <div class="form-group flex-1">
-                  <label for="rol">Perfil <span class="required">*</span></label>
-                  <BaseSelect 
-                    id="rol"
-                    v-model="usuarioForm.rol" 
-                    :options="rolesOptions"
-                    placeholder="Seleccionar rol"
-                    required
-                    :disabled="procesando"
-                  />
-                </div>
-              </div>
+                    <div class="form-row">
+                      <div class="form-group flex-1">
+                        <label for="password">Contraseña <span class="required">{{ modoEdicion ? '' : '*' }}</span></label>
+                        <InputBase 
+                          id="password"
+                          v-model="usuarioForm.password" 
+                          type="password"
+                          :placeholder="modoEdicion ? 'Dejar vacío para no cambiar' : 'Mínimo 6 caracteres'"
+                          :required="!modoEdicion"
+                          :disabled="procesando"
+                        />
+                      </div>
 
-              <!-- Estado con toggle switch -->
-              <div class="form-row" style="margin-top: 1rem;">
-                <div class="form-group" style="flex-direction: row; align-items: center; gap: 1rem;">
-                  <label style="margin-bottom: 0; font-weight: 600; color: #2c3e50;">Estado del Usuario:</label>
-                  <div style="display: flex; align-items: center; gap: 0.75rem;">
-                    <BaseSwitch v-model="usuarioForm.activo" />
-                    <span :class="['estado-badge', usuarioForm.activo ? 'badge-activo' : 'estado-inactivo']">
-                      {{ usuarioForm.activo ? 'Activo' : 'Inactivo' }}
-                    </span>
+                      <div class="form-group flex-1">
+                        <label for="confirmPassword">Confirmar Contraseña <span class="required" v-if="usuarioForm.password">*</span></label>
+                        <InputBase 
+                          id="confirmPassword"
+                          v-model="usuarioForm.confirmPassword" 
+                          type="password"
+                          placeholder="Repetir contraseña"
+                          :required="!!usuarioForm.password"
+                          :disabled="procesando || !usuarioForm.password"
+                        />
+                      </div>
+                    </div>
+
+                    <div v-if="usuarioForm.password && usuarioForm.confirmPassword && usuarioForm.password !== usuarioForm.confirmPassword" class="error-message">
+                      <AppIcons name="alert" :size="16" />
+                      Las contraseñas no coinciden
+                    </div>
                   </div>
-                </div>
-              </div>
-            </div>
 
-            <!-- Sección de Seguridad -->
-            <div class="form-section">
-              <div class="section-title">
-                <AppIcons name="lock" :size="20" />
-                <span>Seguridad</span>
+                  <div class="form-actions">
+                    <BaseButton 
+                      type="button" 
+                      variant="secondary"
+                      @click="cerrarModal"
+                      :disabled="procesando"
+                    >
+                      Cancelar
+                    </BaseButton>
+                    <BaseButton 
+                      type="submit" 
+                      variant="primary"
+                      :disabled="procesando || !formularioValido"
+                    >
+                      <AppIcons v-if="!procesando" :name="modoEdicion ? 'save' : 'add'" :size="18" />
+                      {{ procesando ? 'Guardando...' : (modoEdicion ? 'Guardar Cambios' : 'Crear Usuario') }}
+                    </BaseButton>
+                  </div>
+                </form>
               </div>
-              
-              <div class="form-row">
-                <div class="form-group flex-1">
-                  <label for="password">Contraseña <span class="required">{{ modoEdicion ? '' : '*' }}</span></label>
-                  <InputBase 
-                    id="password"
-                    v-model="usuarioForm.password" 
-                    type="password"
-                    :placeholder="modoEdicion ? 'Dejar vacío para no cambiar' : 'Mínimo 6 caracteres'"
-                    :required="!modoEdicion"
-                    :disabled="procesando"
-                  />
-                </div>
-
-                <div class="form-group flex-1">
-                  <label for="confirmPassword">Confirmar Contraseña <span class="required" v-if="usuarioForm.password">*</span></label>
-                  <InputBase 
-                    id="confirmPassword"
-                    v-model="usuarioForm.confirmPassword" 
-                    type="password"
-                    placeholder="Repetir contraseña"
-                    :required="!!usuarioForm.password"
-                    :disabled="procesando || !usuarioForm.password"
-                  />
-                </div>
-              </div>
-              
-              <div v-if="usuarioForm.password && usuarioForm.confirmPassword && usuarioForm.password !== usuarioForm.confirmPassword" class="error-message">
-                <AppIcons name="alert" :size="16" />
-                Las contraseñas no coinciden
-              </div>
-            </div>
-
-            <div class="form-actions">
-              <BaseButton 
-                type="button" 
-                variant="secondary"
-                @click="cerrarModal"
-                :disabled="procesando"
-              >
-                Cancelar
-              </BaseButton>
-              <BaseButton 
-                type="submit" 
-                variant="primary"
-                :disabled="procesando || !formularioValido"
-              >
-                <AppIcons v-if="!procesando" :name="modoEdicion ? 'save' : 'add'" :size="18" />
-                {{ procesando ? 'Guardando...' : (modoEdicion ? 'Guardar Cambios' : 'Crear Usuario') }}
-              </BaseButton>
-            </div>
-          </form>
         </div>
       </template>
     </BaseModal>
@@ -327,7 +330,6 @@
       @close="cerrarNotificacion"
     />
   </div>
-  </ModernMainScrollbar>
 </template>
 
 <script>
@@ -1250,22 +1252,97 @@ export default {
   height: 100%;
   display: flex;
   flex-direction: column;
+  /* Allow modal content to scroll when it grows taller than the viewport */
+  max-height: 92vh;
+  overflow-y: auto;
+  /* keep rounded corners consistent with header */
+  border-radius: 16px;
 }
 
 .modal-header {
   margin-bottom: 0;
   padding: 1.5rem 2rem 1rem 2rem;
-  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  background: #ffffff;
+  /* clip header so curved corners are clean */
   border-radius: 16px 16px 0 0;
+  /* mantener espacio estándar a la derecha (alineado con BaseModal) */
   padding-right: 3rem;
   flex-shrink: 0;
+  position: sticky; /* keep header visible while scrolling */
+  top: 0;
+  z-index: 30;
+  /* subtle shadow to separate header from body */
+  box-shadow: 0 8px 24px rgba(16,24,40,0.06);
+  border-bottom: 1px solid rgba(15,23,42,0.04);
 }
 
 .modal-header h3 {
   margin: 0;
   font-size: 1.5rem;
-  color: #ffffff;
+  color: #0f172a;
   font-weight: 700;
+}
+
+/* If the modal close button or other controls sit on top of the header edge,
+   ensure they don't create a visible misaligned corner. This targets
+   potential close-button wrappers from BaseModal but keeps rules low-impact. */
+:deep(.base-modal__close) {
+  /* keep the close button inside the header area and visually consistent */
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+  /* ensure it sits above the header shadow */
+  z-index: 40;
+}
+
+/* Target actual close button class used by BaseModal */
+:deep(.close-btn) {
+  background: #ffffff;
+  color: #0f172a;
+  border-radius: 50%;
+  box-shadow: 0 6px 18px rgba(16,24,40,0.12);
+  z-index: 60; /* above header */
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+:deep(.close-btn:hover) {
+  background: #e74c3c;
+  color: #fff;
+  transform: rotate(90deg) scale(1.05);
+}
+
+/* Nota: la posición del botón cerrar la controla `BaseModal.vue`. Evitamos duplicar reglas aquí */
+
+/* Slimmer modal scrollbar (WebKit) + cross-browser hint */
+.modal-usuario,
+.modal-body-wrapper,
+:deep(.modal-body-scroll),
+:deep(.modal-body-content) {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: rgba(15,23,42,0.18) transparent; /* Firefox */
+}
+
+.modal-usuario::-webkit-scrollbar,
+.modal-body-wrapper::-webkit-scrollbar,
+:deep(.modal-body-scroll)::-webkit-scrollbar,
+:deep(.modal-body-content)::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-usuario::-webkit-scrollbar-track,
+.modal-body-wrapper::-webkit-scrollbar-track,
+:deep(.modal-body-scroll)::-webkit-scrollbar-track,
+:deep(.modal-body-content)::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-usuario::-webkit-scrollbar-thumb,
+.modal-body-wrapper::-webkit-scrollbar-thumb,
+:deep(.modal-body-scroll)::-webkit-scrollbar-thumb,
+:deep(.modal-body-content)::-webkit-scrollbar-thumb {
+  background: rgba(15,23,42,0.12);
+  border-radius: 999px;
+  border: 1px solid transparent; /* give it a little breathing space */
 }
 
 .usuario-form {

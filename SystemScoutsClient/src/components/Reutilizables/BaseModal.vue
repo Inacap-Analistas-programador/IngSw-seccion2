@@ -1,34 +1,23 @@
 <template>
   <div v-if="modelValue" class="modal-overlay" @click.self="closeModal" role="dialog" aria-modal="true">
     <div class="modal-content" role="document">
-      <!-- Renderizado condicional: Nuevo con slots o Antiguo -->
-      
-      <!-- Nuevo: Si se usan los slots de title o footer -->
-      <template v-if="$slots.title || $slots.footer">
-        <div class="modal-header" v-if="$slots.title">
-          <h3 class="modal-title">
-            <slot name="title"></slot>
-          </h3>
-          <button class="close-btn" @click="closeModal" aria-label="Cerrar ventana">×</button>
-        </div>
-        
-        <ModernMainScrollBar class="modal-body-content">
-          <slot></slot> <!-- Contenido principal -->
-        </ModernMainScrollBar>
-        
-        <div class="modal-footer" v-if="$slots.footer">
-          <slot name="footer"></slot>
-        </div>
-      </template>
+      <!-- Optional header slot -->
+      <div class="modal-header" v-if="$slots.title">
+        <h3 class="modal-title"><slot name="title"></slot></h3>
+      </div>
 
-      <!-- Antiguo: Si no se usan los slots, para retrocompatibilidad -->
-      <template v-else>
-        <button class="close-btn" @click="closeModal" aria-label="Cerrar ventana">×</button>
-        <ModernMainScrollBar class="modal-body-scroll">
-          <slot></slot> <!-- Renderiza todo junto como antes -->
-        </ModernMainScrollBar>
-      </template>
+      <!-- Close button always available (absolute positioned) -->
+      <button class="close-btn" @click="closeModal" aria-label="Cerrar ventana">×</button>
 
+      <!-- Use ModernMainScrollBar for modal bodies so scrollbars match the rest of the app -->
+      <ModernMainScrollBar class="modal-body-content">
+        <slot></slot>
+      </ModernMainScrollBar>
+
+      <!-- Optional footer slot -->
+      <div class="modal-footer" v-if="$slots.footer">
+        <slot name="footer"></slot>
+      </div>
     </div>
   </div>
 </template>
@@ -113,9 +102,9 @@ const closeModal = () => {
 .close-btn {
   position: absolute;
   top: 1rem;
-  right: 1rem;
-  width: 36px;
-  height: 36px;
+  right: 2.5rem; /* empujar la X hacia la izquierda por defecto */
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   border: none;
   background: #f8f9fa;
