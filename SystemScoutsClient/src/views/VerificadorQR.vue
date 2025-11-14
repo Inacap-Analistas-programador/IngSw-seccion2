@@ -24,7 +24,7 @@ const {
 
 
 <style scoped>
-/* Contenedor principal (basado en .roles-view) */
+/* Contenedor principal */
 .verificador-container {
   max-width: 700px; 
   margin: 0 auto;
@@ -33,26 +33,26 @@ const {
   box-sizing: border-box;
 }
 
-/* Título (basado en .page-header de Roles.vue y Usuarios.vue) */
+/* Título */
 h2 {
-  font-size: 24px; /* */
-  font-weight: 600; /* */
-  color: #111827; /* */
+  font-size: 24px; 
+  font-weight: 600; 
+  color: #111827; 
   margin: 0;
-  margin-bottom: 2rem; /* */
-  padding-bottom: 1rem; /* */
-  border-bottom: 2px solid #e0e0e0; /* */
+  margin-bottom: 2rem; 
+  padding-bottom: 1rem; 
+  border-bottom: 2px solid #e0e0e0; 
   text-align: left; 
 }
 
-/* Caja del Lector (basado en .table-wrapper y .form-section) */
+/* Caja del Lector */
 #lector {
-  background: #fff; /* */
-  border-radius: 8px; /* */
-  box-shadow: 0 2px 8px rgba(0,0,0,.08); /* */
+  background: #fff; 
+  border-radius: 8px; 
+  box-shadow: 0 2px 8px rgba(0,0,0,.08); 
   overflow: hidden; 
   padding: 1rem;
-  border: 1px solid #e0e0e0; /* */
+  border: 1px solid #e0e0e0; 
   
   display: flex;
   flex-direction: column;
@@ -80,28 +80,28 @@ h2 {
   border: 1px solid transparent;
 }
 
-/* Estilo .rojo (basado en el rojo de error de Usuarios.vue) */
+/* Estilo Resultado Negativo */
 .rojo {
-  background-color: #e74c3c; /* */
+  background-color: #e74c3c; 
   border-color: #c0392b;
 }
 
-/* Estilo .verde (basado en .badge-activo de Roles.vue) */
+/* Estilo Resultado Positivo */
 .verde {
-  background-color: #27ae60; /* */
+  background-color: #27ae60;
   border-color: #229954;
 }
 
-/* Texto de ID Escaneado (basado en .page-description) */
+/* Texto de ID Escaneado */
 #texto_escaneado {
   margin-top: 1rem;
-  font-size: 14px; /* */
+  font-size: 14px; 
   text-align: center;
-  color: #6b7280; /* */
+  color: #6b7280; 
   font-style: normal; 
 }
 
-/* --- Estilos :deep() para la librería --- */
+/* Estilos :deep() para la librería */
 
 /* Video y Canvas */
 #lector :deep(video),
@@ -123,8 +123,20 @@ h2 {
   width: 100%;
 }
 
-/* Estilo para el SELECTOR DE CÁMARA (Estilo Secundario/Blanco) */
+/* Estilo para el selector de cámara */
 #lector :deep(select) {
+  /* Oculta la apariencia nativa del navegador */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  
+  /* Agrega un fondo con flecha personalizada */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center; /* Posición de la flecha */
+  background-size: 1.25em; /* Tamaño de la flecha */
+  padding-right: 2.5rem !important; /* Espacio extra para que el texto no se ponga debajo de la flecha */
+
   width: 98%; 
   max-width: 400px;
   padding: 0.75rem 1rem; 
@@ -147,7 +159,7 @@ h2 {
   border-color: #adb5bd;
 }
 
-/* Estilo para los BOTONES (Estilo Primario/Azul) */
+/* Estilo para los botones */
 #lector :deep(button) {
   width: 98%; 
   max-width: 400px;
@@ -161,22 +173,18 @@ h2 {
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  
-  /* --- ESTILOS DEL BOTÓN AZUL PRIMARIO --- */
-  /* (Color tomado de los botones de tus otras pantallas) */
   background-color: #2563eb; 
   color: white; 
   border: 1px solid #2563eb; 
 }
 
 #lector :deep(button:hover) {
-  /* (Color hover tomado de tus otras pantallas) */
   background-color: #1d4ed8; 
   border-color: #1d4ed8;
-  transform: translateY(-1px); /* */
+  transform: translateY(-1px); 
 }
 
-/* Media Query (Tu código original estaba bien) */
+/* Media Query */
 @media (max-width: 480px) {
   .verification-result {
     font-size: 1.1em;
@@ -190,6 +198,9 @@ h2 {
   #lector :deep(select) {
      font-size: 0.85em;
      padding: 8px;
+     /* Ajuste para la flecha en móvil */
+     padding-right: 2rem !important;
+     background-position: right 0.5rem center;
   }
 }
 </style>
