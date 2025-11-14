@@ -20,7 +20,8 @@ const FormularioPreInscripcion2 = () => import('@/views/Formulario 2.vue')
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    { path: '/', name: 'login', component: Login },
+    { path: '/', name: 'formularioPreInscripcion', component: FormularioPreInscripcion },
+    { path: '/login', name: 'login', component: Login },
     { path: '/dashboard', name: 'dashboard', component: Dashboard, meta: { requiresAuth: true } },
   { path: '/dashboard-2', name: 'dashboard2', component: Dashboard2, meta: { requiresAuth: true } },
     { path: '/usuarios', name: 'usuarios', component: UsuariosRoles, meta: { requiresAuth: true } },

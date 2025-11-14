@@ -70,6 +70,7 @@
             <AppIcons name="plus" :size="16" />
             Nuevo Usuario
           </BaseButton>
+          
         </div>
       </div>
       
@@ -526,6 +527,34 @@ export default {
         this.usuarios = []
         this.usuariosFiltrados = []
         this.rolesOptions = [{ value: '', label: 'Todos los roles' }]
+      } finally {
+        this.cargando = false
+      }
+    },
+
+    // Eliminar de la lista en memoria aquellos usuarios que no existen en el backend
+    async sincronizarConBackend() {
+      // Evitar solapamiento
+      if (this.cargando) return
+      this.cargando = true
+      try {
+        const usuariosResponse = await usuariosService.list()
+        const usuariosList = Array.isArray(usuariosResponse) ? usuariosResponse : (usuariosResponse.results || usuariosResponse.data || [])
+        const backendIds = usuariosList.map(u => u.USU_ID || u.id).filter(Boolean)
+
+        // Filtrar: conservar solo usuarios que tengan id y que estén en backendIds
+        const antes = this.usuarios.length
+        this.usuarios = this.usuarios.filter(u => backendIds.includes(u.id))
+        this.usuariosFiltrados = [...this.usuarios]
+        const despues = this.usuarios.length
+        if (antes !== despues) {
+          this.mostrarNotificacion(`Se eliminaron ${antes - despues} usuarios no registrados en el backend`, 'info')
+        } else {
+          this.mostrarNotificacion('Lista sincronizada: no había usuarios locales huérfanos', 'success')
+        }
+      } catch (error) {
+        console.error('Error sincronizando usuarios con backend:', error)
+        this.mostrarNotificacion('Error al sincronizar con el backend: ' + (error.message || ''), 'error')
       } finally {
         this.cargando = false
       }
