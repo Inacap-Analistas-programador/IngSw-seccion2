@@ -6,7 +6,7 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/IngSw-seccion2/',   // 👈 OBLIGATORIO PARA GITHUB PAGES
+  base: '/IngSw-seccion2/',
   plugins: [
     vue(),
     vueDevTools(),
