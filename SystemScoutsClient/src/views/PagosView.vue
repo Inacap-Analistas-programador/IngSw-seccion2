@@ -564,8 +564,6 @@ import BaseSelect from '@/components/Reutilizables/BaseSelect.vue'
 import BaseButton from '@/components/Reutilizables/BaseButton.vue'
 import BaseModal from '@/components/Reutilizables/BaseModal.vue'
 
-import pagosService from '@/services/pagosService.js'
-import personasService from '@/services/personasService.js'
 
 function hoyISO () {
   const d = new Date()

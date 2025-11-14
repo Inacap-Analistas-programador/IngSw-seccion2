@@ -417,8 +417,16 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { request } from '@/services/apiClient.js'
-import { cursos as cursosApi, fechas as fechasApi, secciones as seccionesApi, formadores as formadoresApi, alimentaciones as alimentacionesApi } from '@/services/cursosService.js'
-import mantenedores from '@/services/mantenedoresService'
+import cursosService from '@/services/cursosService.js'
+import personasService from '@/services/personasService.js'
+import mantenedores from '@/services/mantenedoresService.js'
+
+// Local aliases matching legacy names used across this component
+const cursosApi = cursosService.cursos
+const seccionesApi = cursosService.secciones
+const fechasApi = cursosService.fechas
+const formadoresApi = cursosService.formadores
+const alimentacionesApi = cursosService.alimentaciones
 
 import InputBase from '@/components/Reutilizables/InputBase.vue'
 import BaseButton from '@/components/Reutilizables/BaseButton.vue'
@@ -518,62 +526,115 @@ const opcionesTipoFecha = [
   { value: 3, text: 'Híbrido' },
 ]
 
-// --- Cargar datos desde API ---
-async function cargarDatos() {
-  // Guard: prevenir múltiples cargas simultáneas (Vue 3 Strict Mode ejecuta setup 2x)
+// --- Utilities: cache, debounce, safe API wrapper and abort support ---
+const _cache = new Map()
+function cacheKey(path, params) { return `${path}|${JSON.stringify(params || {})}` }
+
+function debounce(fn, wait = 250) {
+  let t
+  return (...args) => {
+    clearTimeout(t)
+    t = setTimeout(() => fn(...args), wait)
+  }
+}
+
+// Safe list wrapper: intenta usar un objeto API global si existe (e.g., cursosApi),
+// si no, hace fallback a `request(path)` (con querystring si params)
+async function safeList(apiName, path, params) {
+  try {
+    const globalObj = typeof globalThis !== 'undefined' ? globalThis[`${apiName}`] : undefined
+    if (globalObj && typeof globalObj.list === 'function') {
+      return await globalObj.list(params)
+    }
+  } catch (e) { /* ignore */ }
+
+  // Build querystring for simple GETs
+  const qs = params && Object.keys(params).length ? `?${new URLSearchParams(params).toString()}` : ''
+  return await request(`${path}${qs}`)
+}
+
+// Abort support for fetch: guardamos el controller y cancelamos la carga anterior
+const lastController = { ctrl: null }
+
+async function cargarDatos({ page = 1, page_size = 100, search = '' } = {}) {
   if (isLoadingData.value) return
   isLoadingData.value = true
   isLoading.value = true
 
-  // Evitar llamadas si no hay token -> previene spam 401 y deja la UI estable
-  const token = localStorage.getItem('accessToken') || localStorage.getItem('token')
-  if (!token) {
-    console.warn('Sin token: inicia sesión para cargar datos de cursos.')
-    cursosList.value = []
-    cursosFiltrados.value = []
-    isLoading.value = false
-    isLoadingData.value = false
-    return
-  }
-  
+  // No bloquear por token aquí: permitimos que el cliente HTTP maneje 401/refresh
+
+  // cancelar carga previa si existe
   try {
-    const [cursosData, personasApi, tiposApi, ramasApi, seccionesData, fechasData, comunasApi, cargosApi, rolesApi, alimentacionCat] = await Promise.all([
-      cursosApi.list(),
-      request('personas/personas'),
-      request('mantenedores/tipo-cursos'),
-      request('mantenedores/rama'),
-      seccionesApi.list().catch(() => []),
-      fechasApi.list().catch(() => []),
-      request('mantenedores/comuna').catch(() => []),
-      request('mantenedores/cargo').catch(() => []),
-      request('mantenedores/rol').catch(() => []),
-      mantenedores.list('alimentacion').catch(() => []),
-    ])
-    // Enlazar fechas a cada curso para mostrar rango en la tabla
+    if (lastController.ctrl) lastController.ctrl.abort()
+  } catch { /* noop */ }
+  lastController.ctrl = new AbortController()
+  const signal = lastController.ctrl.signal
+
+  try {
+    // Pedir cursos desde el servicio específico y catálogos relacionados
+    const cursosCacheKey = cacheKey('cursos/cursos', { page, page_size, search })
+    let cursosDataPromise
+    if (_cache.has(cursosCacheKey)) {
+      cursosDataPromise = _cache.get(cursosCacheKey)
+    } else {
+      cursosDataPromise = cursosApi.list({ page, page_size, search })
+      _cache.set(cursosCacheKey, cursosDataPromise)
+    }
+
+    const cursosData = await cursosDataPromise
+
+    // Catálogos y recursos asociados (usar servicios concretos)
+    const fetchPromises = [
+      personasService.personas.list(),
+      mantenedores.tipoCursos.list(),
+      mantenedores.rama.list(),
+      seccionesApi.list(),
+      fechasApi.list(),
+      mantenedores.comuna.list(),
+      mantenedores.cargo.list(),
+      mantenedores.rol.list(),
+      mantenedores.alimentacion.list(),
+    ]
+
+    const [personasApi, tiposApi, ramasApi, seccionesData, fechasData, comunasApi, cargosApi, rolesApi, alimentacionCat] = await Promise.all(fetchPromises)
+
+    // Normalizar cursos (puede venir paginado)
+    const cursosArray = Array.isArray(cursosData) ? cursosData : (cursosData?.results || [])
+
+    // Enlazar fechas a cada curso para mostrar rango en la tabla si tenemos fechas
     const fechasByCurso = (fechasData || []).reduce((acc, f) => {
       const id = f.CUR_ID
       if (!acc[id]) acc[id] = []
       acc[id].push(f)
       return acc
     }, {})
-    cursosList.value = (cursosData || []).map(c => ({
+
+    cursosList.value = cursosArray.map(c => ({
       ...c,
       fechas: fechasByCurso[c.CUR_ID] ? fechasByCurso[c.CUR_ID].sort((a,b) => new Date(a.CUF_FECHA_INICIO) - new Date(b.CUF_FECHA_INICIO)) : []
     }))
-    personasList.value = personasApi || []
-    tiposCursoList.value = tiposApi || []
-    ramaslist.value = ramasApi || []
-    fechasCursoList.value = fechasData || [] // Guardar en caché
-    seccionesList.value = seccionesData || []
-    comunasList.value = comunasApi || []
-    cargosList.value = cargosApi || []
-    rolesList.value = rolesApi || []
-    alimentacionCatalogo.value = Array.isArray(alimentacionCat?.results) ? alimentacionCat.results : (alimentacionCat || [])
+
+    // Asignar catálogos (normalizar resultados si vienen paginados)
+    personasList.value = Array.isArray(personasApi) ? personasApi : (personasApi?.results || [])
+    tiposCursoList.value = Array.isArray(tiposApi) ? tiposApi : (tiposApi?.results || [])
+    ramaslist.value = Array.isArray(ramasApi) ? ramasApi : (ramasApi?.results || [])
+    fechasCursoList.value = Array.isArray(fechasData) ? fechasData : (fechasData?.results || [])
+    seccionesList.value = Array.isArray(seccionesData) ? seccionesData : (seccionesData?.results || [])
+    comunasList.value = Array.isArray(comunasApi) ? comunasApi : (comunasApi?.results || [])
+    cargosList.value = Array.isArray(cargosApi) ? cargosApi : (cargosApi?.results || [])
+    rolesList.value = Array.isArray(rolesApi) ? rolesApi : (rolesApi?.results || [])
+    alimentacionCatalogo.value = Array.isArray(alimentacionCat) ? alimentacionCat : (alimentacionCat?.results || [])
+
+    // Filtrado cliente como fallback; cuando uses búsqueda remota, pasar `search` hará que el servidor filtre
     aplicarFiltros()
   } catch (e) {
-    console.error('Error cargando datos desde API:', e)
-    cursosList.value = []
-    cursosFiltrados.value = []
+    if (e.name === 'AbortError') {
+      console.info('Carga de datos abortada')
+    } else {
+      console.error('Error cargando datos desde API:', e)
+      cursosList.value = []
+      cursosFiltrados.value = []
+    }
   } finally {
     isLoading.value = false
     isLoadingData.value = false
@@ -593,6 +654,17 @@ onMounted(() => {
       }
     }, 800)
   }
+})
+
+// Debounced server search: cuando el usuario escribe, evitamos múltiples llamadas
+const _debouncedLoad = debounce((q) => cargarDatos({ page: 1, page_size: 100, search: (q || '').trim() }), 450)
+watch(() => filtros.value.searchQuery, (v) => {
+  // Si se borra la búsqueda, recargar sin filtro de servidor
+  if (!v) {
+    cargarDatos({ page: 1, page_size: 100, search: '' })
+    return
+  }
+  _debouncedLoad(v)
 })
 
 // Listener de almacenamiento (multi-tab / login en otra pestaña)

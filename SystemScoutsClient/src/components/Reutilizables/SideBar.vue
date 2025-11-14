@@ -11,8 +11,8 @@
       <!-- Con sesión: mostrar menú completo (por defecto admin) -->
       <div v-else>
         <!-- Apartado desplegable: Usuarios y Roles -->
-        <div class="nav-item nav-collapsible" @click="toggleUsuarios">
-          <span>Usuarios y Roles</span>
+        <div class="nav-item nav-collapsible" @click="toggleUsuarios" :class="{ 'router-link-exact-active': showUsuarios }">
+          <span class="nav-collapsible-title">Usuarios y Roles</span>
           <span class="caret" :class="{ open: showUsuarios }">▾</span>
         </div>
         <div v-show="showUsuarios" class="submenu">
@@ -30,8 +30,8 @@
         <router-link to="/verificador-qr" class="nav-item">Verificador QR</router-link>
 
   <!-- Apartado desplegable: Pantallas 2 -->
-        <div class="nav-item nav-collapsible" @click="togglePantallas2">
-          <span>Pantallas 2</span>
+        <div class="nav-item nav-collapsible" @click="togglePantallas2" :class="{ 'router-link-exact-active': showPantallas2 }">
+          <span class="nav-collapsible-title">Pantallas 2</span>
           <span class="caret" :class="{ open: showPantallas2 }">▾</span>
         </div>
         <div v-show="showPantallas2" class="submenu">
@@ -217,6 +217,14 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   cursor: pointer;
   padding: 12px 18px;
+}
+/* Asegurar que el título del colapsable tenga el mismo peso que los nav-item */
+.nav-collapsible-title {
+  font-weight: 600;
+  color: inherit;
+}
+.nav-collapsible.router-link-exact-active .nav-collapsible-title {
+  font-weight: 700;
 }
 .caret { transition: transform 0.2s ease; }
 .caret.open { transform: rotate(180deg); }

@@ -119,6 +119,7 @@
                   {{ usuario.activo ? 'Activo' : 'Inactivo' }}
                 </span>
               </td>
+              
             </tr>
             <tr v-if="usuariosFiltrados.length === 0" class="empty-row">
               <td colspan="5">
@@ -296,7 +297,7 @@
       </template>
     </BaseModal>
 
-    <!-- Modal de confirmación para eliminar -->
+    <!-- Modal de confirmación -->
     <BaseModal v-model="modalConfirmacionVisible" @close="cancelarAccion">
       <template #default>
         <div class="modal-confirmacion">
@@ -413,6 +414,9 @@ export default {
         { value: 'activo', label: 'Activos' },
         { value: 'inactivo', label: 'Inactivos' }
       ]
+      ,
+      // Foto por defecto cuando no se sube ninguna
+      defaultFoto: 'https://via.placeholder.com/96.png?text=Avatar'
     }
   },
   computed: {
@@ -660,7 +664,8 @@ export default {
           USU_USERNAME: this.usuarioForm.username,
           PEL_ID: this.usuarioForm.rol,
           USU_VIGENTE: this.usuarioForm.activo,
-          USU_RUTA_FOTO: this.usuarioForm.fotoPreview || ''
+          // Si no hay foto, enviar una URL por defecto (el backend requiere que no sea vacío)
+          USU_RUTA_FOTO: this.usuarioForm.fotoPreview || this.defaultFoto
         }
 
         // Solo incluir password si hay uno nuevo
@@ -683,7 +688,7 @@ export default {
               perfil_id: usuarioActualizado.PEL_ID || this.usuarioForm.rol,
               rol: roleOpt ? roleOpt.label : '',
               activo: usuarioActualizado.USU_VIGENTE !== undefined ? usuarioActualizado.USU_VIGENTE : this.usuarioForm.activo,
-              foto: usuarioActualizado.USU_RUTA_FOTO || this.usuarioForm.fotoPreview
+              foto: usuarioActualizado.USU_RUTA_FOTO || this.usuarioForm.fotoPreview || this.defaultFoto
             }
           }
           
@@ -700,7 +705,7 @@ export default {
             perfil_id: nuevoUsuario.PEL_ID || this.usuarioForm.rol,
             rol: roleOpt ? roleOpt.label : '',
             activo: nuevoUsuario.USU_VIGENTE !== undefined ? nuevoUsuario.USU_VIGENTE : true,
-            foto: nuevoUsuario.USU_RUTA_FOTO || this.usuarioForm.fotoPreview
+            foto: nuevoUsuario.USU_RUTA_FOTO || this.usuarioForm.fotoPreview || this.defaultFoto
           })
           
           this.mostrarNotificacion('Usuario creado exitosamente', 'success')
@@ -750,35 +755,7 @@ export default {
       }
     },
     
-    confirmarEliminar(usuario) {
-      this.tituloConfirmacion = 'Eliminar Usuario'
-      this.mensajeConfirmacion = `¿Está seguro que desea eliminar al usuario "${usuario.nombre}"? Esta acción no se puede deshacer.`
-      this.accionConfirmacion = () => this.eliminarUsuario(usuario)
-      this.modalConfirmacionVisible = true
-    },
-    
-    async eliminarUsuario(usuario) {
-      this.procesando = true
-      try {
-        // Eliminar en el backend
-        await usuariosService.remove(usuario.id)
-        
-        // Eliminar en memoria
-        const idx = this.usuarios.findIndex(u => u.id === usuario.id)
-        if (idx !== -1) {
-          this.usuarios.splice(idx, 1)
-          delete this.userPerms[usuario.id]
-          this.usuariosFiltrados = [...this.usuarios]
-          this.mostrarNotificacion('Usuario eliminado exitosamente', 'success')
-          this.modalConfirmacionVisible = false
-        }
-      } catch (error) {
-        console.error('Error al eliminar usuario:', error)
-        this.mostrarNotificacion('Error al eliminar el usuario: ' + (error.message || ''), 'error')
-      } finally {
-        this.procesando = false
-      }
-    },
+    // Nota: la eliminación de usuarios se ha deshabilitado. Solo está permitido desactivar/activar usuarios.
     
     ejecutarAccion() {
       if (this.accionConfirmacion) {
@@ -837,6 +814,15 @@ export default {
     toggleEstadoSeleccionados() {
       if (this.selectedIds.length === 0) return
       const usuariosSeleccionados = this.usuarios.filter(u => this.selectedIds.includes(u.id))
+
+      // Si solo hay un usuario seleccionado, usar la confirmación individual para un mensaje más claro
+      if (usuariosSeleccionados.length === 1) {
+        const usuario = usuariosSeleccionados[0]
+        const nuevoEstado = !usuario.activo
+        this.confirmarCambioEstado(usuario, nuevoEstado)
+        return
+      }
+
       const todosActivos = usuariosSeleccionados.every(u => u.activo)
       const todosInactivos = usuariosSeleccionados.every(u => !u.activo)
 
@@ -1121,6 +1107,8 @@ export default {
   padding: 0.75rem 0.85rem;
   vertical-align: middle;
 }
+
+/* row-actions removed: use header buttons for actions */
 
 /* User Avatar in Table */
 .foto-cell {
@@ -1424,14 +1412,15 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem;
+  gap: 0.4rem;
+  padding: 0.5rem;
   background: white;
-  border-radius: 12px;
-  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  border: 1px solid #e6e9ee;
   cursor: pointer;
-  transition: all 0.3s ease;
-  width: 100%;
+  transition: all 0.18s ease;
+  width: 112px; /* fixed compact box */
+  min-width: 112px;
   position: relative;
 }
 
@@ -1444,18 +1433,18 @@ export default {
 .photo-preview-inline {
   flex-shrink: 0;
   position: relative;
-  width: 85px;
-  height: 85px;
+  width: 96px;
+  height: 96px;
 }
 
 .preview-image-inline {
-  width: 85px;
-  height: 85px;
-  border-radius: 50%;
+  width: 96px;
+  height: 96px;
+  border-radius: 8px;
   object-fit: cover;
-  border: 3px solid #3498db;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
+  border: 2px solid #2b82d6;
+  box-shadow: 0 6px 18px rgba(43,130,214,0.12);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 
 .photo-upload-inline:hover .preview-image-inline {
@@ -1464,9 +1453,9 @@ export default {
 }
 
 .preview-placeholder-inline {
-  width: 85px;
-  height: 85px;
-  border-radius: 50%;
+  width: 96px;
+  height: 96px;
+  border-radius: 8px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   display: flex;
   align-items: center;
@@ -1482,12 +1471,75 @@ export default {
 }
 
 .photo-hint {
-  font-size: 0.75rem;
-  color: #7f8c8d;
+  font-size: 0.72rem;
+  color: #6b7280;
   font-weight: 500;
   text-align: center;
   margin-top: 0.25rem;
 }
+
+/* Reduce overall vertical rhythm for a tighter look */
+.usuario-form { gap: 1.25rem; padding: 1.25rem; }
+
+/* Align rows vertically center so avatar and inputs line up */
+.form-row, .form-row-triple { align-items: center; }
+
+/* Slightly more compact section spacing */
+.form-section { padding: 1rem; }
+
+/* Make labels slightly smaller and consistent */
+.form-group label { font-size: 0.86rem; margin-bottom: 0.3rem; }
+
+/* Ensure the avatar column doesn't push layout on small screens */
+.form-row-triple { grid-template-columns: 112px 1fr 1fr; gap: 1.5rem; }
+
+/* Hide helper text next to the avatar to keep the photo area clean */
+.photo-upload-inline .photo-hint,
+.photo-upload-inline .form-hint-compact {
+  display: none;
+}
+
+/* Add a little breathing room to the left of the content when avatar is present */
+.photo-upload-inline { margin-right: 0.75rem; }
+
+/* Inputs/selects full width and consistent */
+.form-group.flex-1 :deep(.base-field),
+.form-group.flex-1 :deep(.base-select__element) {
+  height: 44px; padding: 8px 12px; border-radius: 8px;
+}
+
+/* Make form inputs look more squared, uniform and aligned */
+.usuario-form :deep(.base-field) {
+  border-radius: 8px;
+  padding: 10px 12px;
+  min-height: 44px;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+}
+
+.usuario-form :deep(.base-label) {
+  font-weight: 700;
+  color: #1f2937;
+}
+
+/* Ensure select components match input sizing */
+.usuario-form :deep(.base-select),
+.usuario-form :deep(select) {
+  min-height: 44px;
+  border-radius: 8px;
+}
+
+/* Make the photo box and adjacent fields align neatly */
+.form-row-triple {
+  grid-template-columns: 100px 1fr 1fr; /* slightly smaller photo column for cleaner alignment */
+}
+
+/* Tighter, more square labels/inputs spacing */
+.form-group { gap: 0.5rem; }
+
+.form-section { padding: 1.25rem; }
+
+.section-title { padding-bottom: 0.4rem; }
 
 .photo-upload-inline:hover .photo-hint {
   color: #3498db;

@@ -58,8 +58,6 @@
 
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
-import cursosService from '@/services/cursosService'
-import personasService from '@/services/personasService'
 
 const cursos = ref([])
 const cursoSeleccionado = ref(null)

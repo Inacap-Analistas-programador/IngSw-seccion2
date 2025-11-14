@@ -7,7 +7,7 @@ const makeCrud = base => ({
   update: (id, data) => request(`${base}${id}/`, { method: 'PUT', body: JSON.stringify(data) }),
   partialUpdate: (id, data) => {
     console.log('[usuariosService] PATCH URL base:', base, 'ID:', id, 'payload:', data)
-    return request(`${base}${id}/`, { method: 'PATCH', body: JSON.stringify(data) })
+    return request(`${base}/${id}/`, { method: 'PATCH', body: JSON.stringify(data) })
   },
   remove: (id) => request(`${base}${id}/`, { method: 'DELETE' }),
 })
