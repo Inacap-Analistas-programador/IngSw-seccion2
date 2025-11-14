@@ -584,17 +584,35 @@ async function cargarDatos({ page = 1, page_size = 100, search = '' } = {}) {
     const cursosData = await cursosDataPromise
 
     // Catálogos y recursos asociados (usar servicios concretos)
-    const fetchPromises = [
-      personasService.personas.list(),
-      mantenedores.tipoCursos.list(),
-      mantenedores.rama.list(),
-      seccionesApi.list(),
-      fechasApi.list(),
-      mantenedores.comuna.list(),
-      mantenedores.cargo.list(),
-      mantenedores.rol.list(),
-      mantenedores.alimentacion.list(),
-    ]
+    // Solo solicitar catálogos que aún no estén cargados en memoria.
+    const fetchPromises = []
+
+    const personasPromise = (Array.isArray(personasList.value) && personasList.value.length) ? Promise.resolve(personasList.value) : personasService.personas.list()
+    fetchPromises.push(personasPromise)
+
+    const tiposPromise = (Array.isArray(tiposCursoList.value) && tiposCursoList.value.length) ? Promise.resolve(tiposCursoList.value) : mantenedores.tipoCursos.list()
+    fetchPromises.push(tiposPromise)
+
+    const ramasPromise = (Array.isArray(ramaslist.value) && ramaslist.value.length) ? Promise.resolve(ramaslist.value) : mantenedores.rama.list()
+    fetchPromises.push(ramasPromise)
+
+    const seccionesPromise = (Array.isArray(seccionesList.value) && seccionesList.value.length) ? Promise.resolve(seccionesList.value) : seccionesApi.list()
+    fetchPromises.push(seccionesPromise)
+
+    const fechasPromise = (Array.isArray(fechasCursoList.value) && fechasCursoList.value.length) ? Promise.resolve(fechasCursoList.value) : fechasApi.list()
+    fetchPromises.push(fechasPromise)
+
+    const comunasPromise = (Array.isArray(comunasList?.value) && comunasList.value.length) ? Promise.resolve(comunasList.value) : mantenedores.comuna.list()
+    fetchPromises.push(comunasPromise)
+
+    const cargosPromise = (Array.isArray(cargosList?.value) && cargosList.value.length) ? Promise.resolve(cargosList.value) : mantenedores.cargo.list()
+    fetchPromises.push(cargosPromise)
+
+    const rolesPromise = (Array.isArray(rolesList.value) && rolesList.value.length) ? Promise.resolve(rolesList.value) : mantenedores.rol.list()
+    fetchPromises.push(rolesPromise)
+
+    const alimentacionPromise = (Array.isArray(alimentacionCatalogo.value) && alimentacionCatalogo.value.length) ? Promise.resolve(alimentacionCatalogo.value) : mantenedores.alimentacion.list()
+    fetchPromises.push(alimentacionPromise)
 
     const [personasApi, tiposApi, ramasApi, seccionesData, fechasData, comunasApi, cargosApi, rolesApi, alimentacionCat] = await Promise.all(fetchPromises)
 
