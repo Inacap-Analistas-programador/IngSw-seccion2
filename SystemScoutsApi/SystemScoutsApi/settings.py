@@ -19,9 +19,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DEBUG_API")
+# Read DEBUG from env, convert to boolean. Default to True for local dev.
+DEBUG = str(os.getenv("DEBUG_API", "True")).lower() in ("1", "true", "yes")
 
-ALLOWED_HOSTS = []
+# Allow localhost addresses by default for development. Can be overridden
+# by setting an environment variable named ALLOWED_HOSTS (comma-separated).
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
 
 # Application definition
