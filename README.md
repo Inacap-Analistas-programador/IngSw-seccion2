@@ -174,7 +174,7 @@ A continuación se detallan los endpoints disponibles en la API, organizados por
 | `vigente` | boolean | Filtro por estado de vigencia | `?vigente=true` |
 
 ### Personas Cursos
-**Endpoint:** `individuales/` (asumiendo que corresponde a Persona_Curso)
+**Endpoint:** `cursos/`
 
 **Filtros disponibles:**
 | Parámetro | Tipo | Descripción | Ejemplo |
