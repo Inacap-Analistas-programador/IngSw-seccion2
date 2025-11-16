@@ -32,13 +32,8 @@
             <InputBase id="buscar-persona-input"
               v-model="buscarPersonaQ"
               placeholder="EJ: 12.345.678-9 O JUAN PÉREZ"
-              @keydown.enter.prevent="buscarPersonas"
             />
           </div>
-          <BaseButton class="btn-search btn-standard" variant="primary" @click="buscarPersonas">
-            <AppIcons name="search" :size="16" />
-             Buscar
-          </BaseButton>
         </div>
 
         <div v-if="buscandoPersonas" class="estado-carga">
@@ -278,7 +273,6 @@
         <InputBase class="filtro-busqueda filtro-corto"
           v-model="filtroQ"
           placeholder="NOMBRE / RUT / EMAIL"
-          @keydown.enter.prevent="cargarPagos"
         />
         <BaseSelect
           class="filtro-corto"
@@ -290,9 +284,6 @@
           v-model="filtroGrupo"
           :options="[{ value: '', label: 'Todos los grupos' }, ...grupoOptions]"
         />
-        <BaseButton class="btn-search btn-standard" variant="primary" @click="cargarPagos">
-          <AppIcons name="search" :size="16" /> Buscar
-        </BaseButton>
       </div>
 
       <!-- Toolbar -->
@@ -677,6 +668,10 @@ export default {
       }
     }
   },
+  created() {
+    // Crear la función con debounce una vez que el componente es creado
+    this.debounceBuscarPersonas = this.debounce(this.buscarPersonas, 400);
+  },
   computed: {
     allChecked () {
       return (
@@ -748,8 +743,7 @@ export default {
      * Se activa al escribir en el campo de búsqueda (con debounce).
      * @param {string} q - El término de búsqueda.
      */
-    async buscarPersonas () {
-      const q = (this.buscarPersonaQ || '').trim()
+    async buscarPersonas (q) {
       if (!q) {
         this.personasEncontradas = []
         return
@@ -1185,17 +1179,6 @@ export default {
       }
     },
     /**
-     * Abre el comprobante de pago en una nueva pestaña.
-     * @param {object} p - El objeto del pago.
-     */
-    descargarComprobante (p) {
-      if (p.PAP_RUTA_COMPROBANTE) {
-        window.open(p.PAP_RUTA_COMPROBANTE, '_blank')
-      } else {
-        alert('No hay comprobante disponible.')
-      }
-    },
-    /**
      * Función de debounce para retrasar la ejecución de una función.
      * Usado para la búsqueda de personas.
      */
@@ -1205,10 +1188,18 @@ export default {
         clearTimeout(timeout);
         timeout = setTimeout(() => func.apply(this, args), delay);
       };
+    },
+    /**
+     * Abre el comprobante de pago en una nueva pestaña.
+     * @param {object} p - El objeto del pago.
+     */
+    descargarComprobante (p) {
+      if (p.PAP_RUTA_COMPROBANTE) {
+        window.open(p.PAP_RUTA_COMPROBANTE, '_blank')
+      } else {
+        alert('No hay comprobante disponible.')
+      }
     }
-  },
-  created() {
-    this.debounceBuscarPersonas = this.debounce(this.buscarPersonas, 400);
   },
   async mounted () {
     // Carga los datos iniciales necesarios para el componente (catálogos y pagos).
