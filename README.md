@@ -22,6 +22,67 @@ Asegúrate de tener instalados en tu sistema:
 
 ---
 
+# 🔧 Inicializar Entorno Virtual (Backend Django)
+
+Para trabajar con el backend de Django, es indispensable levantar un entorno virtual.
+Esto permite aislar las dependencias del proyecto, evitando conflictos con otras instalaciones de Python.
+
+## 📌 Pasos en la terminal (CMD o PowerShell)
+
+**Crear el entorno virtual**
+* Crea una carpeta llamada venv con todos los paquetes de Python exclusivamente para tu proyecto:
+```bash
+python -m venv venv
+```
+
+**Activar el entorno virtual**
+* Esto “enciende” el entorno virtual para que cada comando use las dependencias del proyecto:
+```bash
+venv\Scripts\activate
+```
+
+**Instalar las dependencias del proyecto**
+* Con el entorno activado, instala todo lo necesario desde el archivo requirements.txt:
+```bash
+pip install -r requirements.txt
+```
+
+Una vez hecho esto, ya puedes ejecutar python manage.py runserver con total tranquilidad.
+Si el entorno está activado, verás (venv) al inicio de la línea de tu terminal. Como si tu consola te estuviera guiñando un ojo 😉
+
+---
+
+# 🔐 Crear un Superusuario en Django
+
+Para acceder al panel administrativo de Django y gestionar el sistema, necesitarás un superusuario.
+
+## 📌 Pasos para crear un superusuario
+
+**Asegúrate de estar en la carpeta correcta**
+Debes situarte en el mismo directorio donde está el archivo manage.py.
+Ejemplo:
+```bash
+cd IngSw-seccion2/SistemScoutsApi
+```
+
+**Crear el superusuario**
+Ejecuta el siguiente comando:
+```bash
+python manage.py createsuperuser
+```
+
+**Completar los datos solicitados**
+Django te pedirá:
+
+* Nombre de usuario
+* Correo electrónico (opcional)
+* Contraseña
+
+Y listo. Con eso ya puedes iniciar sesión en:
+👉 http://127.0.0.1:8000/admin/
+
+---
+
 ## 📂 Estructura del proyecto
 ```
 IngSw-seccion2/
@@ -282,67 +343,6 @@ GET /api/Personas/individuales/?rol_nombre=formador&alimentacion_nombre=vegetari
 ```
 
 ---
-
-
-# 🔧 Inicializar Entorno Virtual (Backend Django)
-
-Para trabajar con el backend de Django, es indispensable levantar un entorno virtual.
-Esto permite aislar las dependencias del proyecto, evitando conflictos con otras instalaciones de Python.
-
-## 📌 Pasos en la terminal (CMD o PowerShell)
-
-**Crear el entorno virtual**
-* Crea una carpeta llamada venv con todos los paquetes de Python exclusivamente para tu proyecto:
-```bash
-python -m venv venv
-```
-
-**Activar el entorno virtual**
-* Esto “enciende” el entorno virtual para que cada comando use las dependencias del proyecto:
-```bash
-venv\Scripts\activate
-```
-
-**Instalar las dependencias del proyecto**
-* Con el entorno activado, instala todo lo necesario desde el archivo requirements.txt:
-```bash
-pip install -r requirements.txt
-```
-
-Una vez hecho esto, ya puedes ejecutar python manage.py runserver con total tranquilidad.
-Si el entorno está activado, verás (venv) al inicio de la línea de tu terminal. Como si tu consola te estuviera guiñando un ojo 😉
-
----
-
-# 🔐 Crear un Superusuario en Django
-
-Para acceder al panel administrativo de Django y gestionar el sistema, necesitarás un superusuario.
-
-##📌 Pasos para crear un superusuario
-
-**Asegúrate de estar en la carpeta correcta**
-Debes situarte en el mismo directorio donde está el archivo manage.py.
-Ejemplo:
-```bash
-cd IngSw-seccion2/SistemScoutsApi
-```
-
-**Crear el superusuario**
-Ejecuta el siguiente comando:
-```bash
-python manage.py createsuperuser
-```
-
-**Completar los datos solicitados**
-Django te pedirá:
-
-* Nombre de usuario
-* Correo electrónico (opcional)
-* Contraseña
-
-Y listo. Con eso ya puedes iniciar sesión en:
-👉 http://127.0.0.1:8000/admin/
-
 
 ## 📝 Notas de Uso
 
