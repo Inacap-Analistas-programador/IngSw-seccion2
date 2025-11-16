@@ -1,7 +1,5 @@
 <template>
   <div class="gestion-pagos">
-    <!-- Iconos de Font Awesome para una mejor interfaz de usuario -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <!-- Encabezado -->
     <header class="header">
       <h2>Gestión de Pagos</h2>
@@ -267,7 +265,7 @@
             <AppIcons name="save" :size="16" /> Registrar Pago ({{ seleccionados.length }})
           </BaseButton>
           <BaseButton variant="secondary" class="btn-standard" @click="limpiarMasivo">
-            Limpiar
+            <AppIcons name="x" :size="16" /> Limpiar
           </BaseButton>
         </div>
       </section>
@@ -334,8 +332,8 @@
         </div>
       </div>
 
-      <!-- Tabla --> // v-if="!cargandoPagos && !errorPagos"
-      <div class="table-wrapper" v-if="!cargandoPagos">
+      <!-- Tabla -->
+      <div class="table-wrapper" v-if="!cargandoPagos && !errorPagos">
         <table>
           <thead>
             <tr>
@@ -473,7 +471,7 @@
       <template #default>
         <div class="confirm-content">
           <div class="confirm-icon">⚠️</div>
-          <p>¿Anular pago de <strong>{{ pagoAnular?.nombre }}</strong>?</p>
+          <p>¿Anular pago de <strong>{{ pagoAnular?.persona_nombre }}</strong>?</p>
           <div class="confirm-actions modal-actions">
             <BaseButton
               variant="secondary"
@@ -498,7 +496,7 @@
     <BaseModal v-model="modalTransferir" title="Transferir Pago">
       <template #default>
         <div class="modal-transfer">
-          <h3>Transferir pago de {{ pagoTransferir?.nombre }}</h3>
+          <h3>Transferir pago de {{ pagoTransferir?.persona_nombre }}</h3>
           <p class="muted">Busca al participante al que deseas transferir el pago.</p>
 
           <!-- Buscador de personas para transferencia -->
@@ -669,6 +667,14 @@ export default {
      */
     buscarPersonaQ(newValue) {
       this.debounceBuscarPersonas(newValue);
+    },
+    /**
+     * Observa cambios en la pestaña activa y recarga los pagos si se cambia a 'historico'.
+     */
+    tab(newTab, oldTab) {
+      if (newTab === 'historico' && oldTab !== 'historico') {
+        this.cargarPagos(true); // Forzar recarga al cambiar a la pestaña de histórico
+      }
     }
   },
   computed: {
@@ -941,7 +947,6 @@ export default {
      * @param {boolean} force - Si es true, fuerza la recarga aunque ya esté en proceso.
      */
     async cargarPagos (force = false) {
-      // Evita cargas múltiples si ya hay una en progreso.
       if (this.cargandoPagos && !force) return;
       this.cargandoPagos = true
       this.errorPagos = null
@@ -1049,6 +1054,8 @@ export default {
      * @param {object} p - El objeto del pago a transferir.
      */
     abrirTransferir (p) {
+      this.personasEncontradasTransferir = [];
+      this.buscandoPersonasTransferir = false;
       this.pagoTransferir = p
       this.transferForm = {
         nombre: '',
@@ -1069,6 +1076,31 @@ export default {
         `Transferencia registrada para pago ID ${this.pagoTransferir.id} (${this.transferForm.tipo})`
       )
       this.modalTransferir = false
+    },
+    /**
+     * Busca una persona para realizar la transferencia de un pago.
+     */
+    async buscarPersonaParaTransferir() {
+      const q = (this.transferForm.q || '').trim();
+      if (!q) {
+        this.personasEncontradasTransferir = [];
+        return;
+      }
+      this.buscandoPersonasTransferir = true;
+      try {
+        const response = await personasService.personas.list({ search: q });
+        const arr = Array.isArray(response) ? response : (response.results || []);
+        this.personasEncontradasTransferir = arr.map(p => ({
+          id: p.PER_ID,
+          nombre: `${p.PER_NOMBRES || ''} ${p.PER_APELPTA || ''}`.trim(),
+          rut: (p.PER_RUN && p.PER_DV) ? `${p.PER_RUN}-${p.PER_DV}` : (p.PER_RUN || ''),
+          email: p.PER_MAIL || ''
+        }));
+      } catch (e) {
+        this.personasEncontradasTransferir = [];
+      } finally {
+        this.buscandoPersonasTransferir = false;
+      }
     },
     /**
      * Abre el modal de edición con los datos del pago seleccionado.
