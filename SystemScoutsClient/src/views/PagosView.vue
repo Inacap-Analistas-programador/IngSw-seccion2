@@ -1,5 +1,7 @@
 <template>
   <div class="gestion-pagos">
+    <!-- Iconos de Font Awesome para una mejor interfaz de usuario -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <!-- Encabezado -->
     <header class="header">
       <h2>Gestión de Pagos</h2>
@@ -7,28 +9,20 @@
 
     <!-- Tabs principales -->
     <div class="tabs">
-      <button :class="{ active: tab === 'registro' }" @click="tab = 'registro'">
-        Registro
+      <button :class="{ active: tab === 'individual' }" @click="tab = 'individual'">
+        Registro Individual
+      </button>
+      <button :class="{ active: tab === 'masivo' }" @click="tab = 'masivo'">
+        Registro Masivo
       </button>
       <button :class="{ active: tab === 'historico' }" @click="tab = 'historico'">
         Histórico
       </button>
     </div>
 
-    <!-- ===================== REGISTRO ===================== -->
-    <div v-if="tab === 'registro'" class="card card-registro">
-      <!-- Subtabs -->
-      <div class="subtabs">
-        <button :class="{ active: subTab === 'individual' }" @click="subTab = 'individual'">
-          Individual
-        </button>
-        <button :class="{ active: subTab === 'masivo' }" @click="subTab = 'masivo'">
-          Masivo
-        </button>
-      </div>
-
-      <!-- -------- Registro Individual -------- -->
-      <section v-if="subTab === 'individual'" class="panel panel-box">
+    <!-- ===================== SECCIÓN: REGISTRO INDIVIDUAL ===================== -->
+    <div v-if="tab === 'individual'" class="card card-registro">
+      <section class="panel panel-box">
         <div class="panel-title">
           <h3>Registro Individual de Pagos</h3>
           <p>Busca un participante, selecciona el curso y registra el pago.</p>
@@ -37,19 +31,20 @@
         <!-- Buscar persona -->
         <div class="row-buscar">
           <div class="buscar-input">
-            <InputBase
+            <InputBase id="buscar-persona-input"
               v-model="buscarPersonaQ"
               placeholder="EJ: 12.345.678-9 O JUAN PÉREZ"
               @keydown.enter.prevent="buscarPersonas"
             />
           </div>
-          <BaseButton class="btn-search" variant="primary" @click="buscarPersonas">
-            Buscar
+          <BaseButton class="btn-search btn-standard" variant="primary" @click="buscarPersonas">
+            <AppIcons name="search" :size="16" />
+             Buscar
           </BaseButton>
         </div>
 
         <div v-if="buscandoPersonas" class="estado-carga">
-          Buscando personas...
+          <div class="spinner"></div> Buscando personas...
         </div>
 
         <div v-if="personasEncontradas.length" class="resultados">
@@ -63,7 +58,7 @@
               <strong>{{ p.nombre }}</strong>
               <span class="muted">{{ p.rut }} · {{ p.email }}</span>
             </div>
-            <BaseButton size="sm" variant="primary">
+            <BaseButton size="sm" variant="secondary" class="btn-action">
               Elegir
             </BaseButton>
           </div>
@@ -93,7 +88,7 @@
             />
           </div>
 
-          <div class="col">
+          <div class="col half">
             <label>Valor Pagado *</label>
             <div class="with-prefix">
               <span class="prefix">$</span>
@@ -106,13 +101,13 @@
             </div>
           </div>
 
-          <div class="col">
+          <div class="col half">
             <label>Fecha de Pago *</label>
             <InputBase type="date" v-model="formInd.fecha_pago" />
           </div>
 
-          <div class="col full">
-            <label>Comentario / Observación (máx. 200 caracteres)</label>
+          <div class="col span-2">
+            <label>Comentario / Observación</label>
             <textarea
               class="comentario-input"
               v-model="formInd.observacion"
@@ -122,7 +117,7 @@
           </div>
 
           <div class="col full comprobante-wrapper">
-            <label>Comprobante de transferencia (obligatorio)</label>
+            <label>Comprobante de transferencia *</label>
             <input
               ref="fileIndRef"
               type="file"
@@ -134,20 +129,23 @@
 
         <div class="acciones center acciones-individual">
           <BaseButton
-            variant="primary"
+            variant="success"
+            class="btn-standard"
             :disabled="!puedeRegistrarIndividual"
             @click="registrarPagoIndividual"
           >
-            Registrar Pago Individual
+            <AppIcons name="save" :size="16" /> Registrar Pago
           </BaseButton>
-          <BaseButton variant="primary" class="btn-secundario" @click="limpiarIndividual">
-            Limpiar
+          <BaseButton variant="secondary" class="btn-standard" @click="limpiarIndividual">
+            <AppIcons name="x" :size="16" /> Limpiar
           </BaseButton>
         </div>
       </section>
+    </div>
 
-      <!-- -------- Registro Masivo -------- -->
-      <section v-else class="panel panel-box">
+    <!-- ===================== SECCIÓN: REGISTRO MASIVO ===================== -->
+    <div v-else-if="tab === 'masivo'" class="card card-registro">
+      <section class="panel panel-box">
         <div class="panel-title">
           <h3>Registro Masivo de Pagos</h3>
           <p>Selecciona grupo y curso, participantes y registra pagos masivos.</p>
@@ -172,24 +170,24 @@
           </div>
           <div class="col auto">
             <label class="invisible">Cargar</label>
-            <BaseButton
+            <BaseButton class="btn-standard"
               variant="primary"
               :disabled="!formMasivo.grupo || !formMasivo.curso || cargandoParticipantes"
               @click="cargarParticipantes"
             >
-              {{ cargandoParticipantes ? 'Cargando...' : 'Cargar Participantes' }}
+              <AppIcons name="users" :size="16" /> {{ cargandoParticipantes ? 'Cargando...' : 'Cargar' }}
             </BaseButton>
           </div>
         </div>
 
         <div v-if="participantes.length" class="lista">
           <div class="lista-header">
-            <h5>Participantes disponibles ({{ participantes.length }})</h5>
+            <h5>Participantes ({{ participantes.length }})</h5>
             <div class="acciones">
-              <BaseButton size="sm" variant="primary" @click="selectAll">
+              <BaseButton size="sm" variant="secondary" @click="selectAll">
                 Seleccionar todos
               </BaseButton>
-              <BaseButton size="sm" variant="primary" class="btn-secundario" @click="unselectAll">
+              <BaseButton size="sm" variant="secondary" @click="unselectAll">
                 Deseleccionar
               </BaseButton>
             </div>
@@ -261,25 +259,25 @@
 
         <div class="acciones center acciones-individual" v-if="seleccionados.length">
           <BaseButton
-            variant="primary"
+            variant="success"
+            class="btn-standard"
             :disabled="!puedeRegistrarMasivo"
             @click="registrarPagoMasivo"
           >
-            Registrar Pago Masivo ({{ seleccionados.length }})
+            <AppIcons name="save" :size="16" /> Registrar Pago ({{ seleccionados.length }})
           </BaseButton>
-          <BaseButton variant="primary" class="btn-secundario" @click="limpiarMasivo">
+          <BaseButton variant="secondary" class="btn-standard" @click="limpiarMasivo">
             Limpiar
           </BaseButton>
         </div>
       </section>
     </div>
 
-    <!-- ===================== HISTÓRICO ===================== -->
-    <div v-else class="card card-historico">
+    <!-- ===================== SECCIÓN: HISTÓRICO DE PAGOS ===================== -->
+    <div v-else-if="tab === 'historico'" class="card card-historico">
       <!-- Filtros compactos -->
       <div class="filtros filtros-historico">
-        <InputBase
-          class="filtro-corto"
+        <InputBase class="filtro-busqueda filtro-corto"
           v-model="filtroQ"
           placeholder="NOMBRE / RUT / EMAIL"
           @keydown.enter.prevent="cargarPagos"
@@ -294,37 +292,40 @@
           v-model="filtroGrupo"
           :options="[{ value: '', label: 'Todos los grupos' }, ...grupoOptions]"
         />
-        <BaseButton class="btn-search" variant="primary" @click="cargarPagos">
-          Buscar
+        <BaseButton class="btn-search btn-standard" variant="primary" @click="cargarPagos">
+          <AppIcons name="search" :size="16" /> Buscar
         </BaseButton>
       </div>
 
       <!-- Toolbar -->
       <div class="toolbar">
-        <button class="btn btn-primary" @click="exportarCSV">
-          Exportar Correos
-        </button>
+        <BaseButton class="btn-standard" variant="secondary" @click="exportarCSV">
+          <AppIcons name="download" :size="16" />
+          Exportar CSV
+        </BaseButton>
 
-        <button
-          class="btn btn-primary"
+        <BaseButton
+          class="btn-standard"
+          variant="info"
           :disabled="!seleccionadosHistorico.length"
           @click="marcarEnviado"
         >
-          Marcar Enviado
-        </button>
+          <AppIcons name="check" :size="16" /> Marcar Enviado
+        </BaseButton>
 
-        <button
-          class="btn btn-primary"
+        <BaseButton
+          class="btn-standard"
+          variant="primary"
           :disabled="!seleccionadosHistorico.length"
           @click="enviarPorCorreo"
         >
-          Enviar por correo
-        </button>
+          <AppIcons name="send" :size="16" /> Enviar por correo
+        </BaseButton>
       </div>
 
       <!-- Estado -->
       <div v-if="cargandoPagos" class="estado-carga">
-        Cargando pagos...
+        <div class="spinner"></div> Cargando pagos...
       </div>
       <div v-if="errorPagos" class="mensaje-error">
         {{ errorPagos }}
@@ -333,7 +334,7 @@
         </div>
       </div>
 
-      <!-- Tabla -->
+      <!-- Tabla --> // v-if="!cargandoPagos && !errorPagos"
       <div class="table-wrapper" v-if="!cargandoPagos">
         <table>
           <thead>
@@ -363,53 +364,48 @@
                   v-model="seleccionadosHistorico"
                 />
               </td>
-              <td><strong>{{ p.nombre }}</strong></td>
-              <td>{{ p.rut }}</td>
-              <td>{{ cursoLabel(p.curso) }}</td>
-              <td>${{ (p.monto ?? p.valor_pagado)?.toLocaleString('es-CL') }}</td>
-              <td>{{ dateCL(p.fecha || p.fecha_pago) }}</td>
-              <td>{{ p.metodo || 'Transferencia' }}</td>
+              <td class="texto-largo" :title="p.persona_nombre"><strong>{{ p.persona_nombre }}</strong></td>
+              <td>{{ p.persona_rut }}</td>
+              <td>{{ cursoLabel(p.CUR_ID) }}</td>
+              <td>${{ (p.PAP_MONTO)?.toLocaleString('es-CL') }}</td>
+              <td>{{ dateCL(p.PAP_FECHA_PAGO) }}</td>
+              <td>{{ p.MET_DESCRIPCION || 'Transferencia' }}</td>
               <td class="acciones-buttons">
-                <BaseButton
+                <BaseButton class="btn-action"
                   size="sm"
-                  variant="primary"
-                  class="btn-with-icon"
+                  variant="info"
                   @click="verDetalle(p)"
                 >
-                  👁️ Ver
+                  <AppIcons name="eye" :size="14" /> Ver
                 </BaseButton>
-                <BaseButton
+                <BaseButton class="btn-action"
                   size="sm"
-                  variant="primary"
-                  class="btn-with-icon"
+                  variant="secondary"
                   @click="abrirEditar(p)"
                 >
-                  ✏️ Editar
+                  <AppIcons name="edit" :size="14" /> Editar
                 </BaseButton>
-                <BaseButton
+                <BaseButton class="btn-action"
                   size="sm"
-                  variant="primary"
-                  class="btn-with-icon"
+                  variant="secondary"
                   @click="abrirTransferir(p)"
                 >
-                  🔁 Transferir
+                  <AppIcons name="share" :size="14" /> Transferir
                 </BaseButton>
-                <BaseButton
+                <BaseButton class="btn-action"
                   size="sm"
-                  variant="primary"
-                  class="btn-with-icon btn-danger"
+                  variant="danger"
                   @click="abrirAnular(p)"
                 >
-                  🗑️ Anular
+                  <AppIcons name="trash" :size="14" /> Anular
                 </BaseButton>
-                <BaseButton
-                  v-if="p.comprobante || p.comprobante_url"
+                <BaseButton class="btn-action"
+                  v-if="p.PAP_RUTA_COMPROBANTE"
                   size="sm"
-                  variant="primary"
-                  class="btn-with-icon btn-secundario"
+                  variant="info"
                   @click="descargarComprobante(p)"
                 >
-                  🧾 Comprobante
+                  <AppIcons name="download" :size="14" /> Comprobante
                 </BaseButton>
               </td>
             </tr>
@@ -422,7 +418,7 @@
         </table>
       </div>
     </div>
-
+    <!-- ===================== MODALES ===================== -->
     <!-- Modal Editar -->
     <BaseModal v-model="modalEditar" class="pago-modal">
       <template #default>
@@ -432,11 +428,11 @@
             <div class="header-actions">
               <BaseButton
                 class="btn-save"
-                type="button"
                 variant="primary"
                 @click="guardarEdicion"
                 :disabled="guardando"
               >
+                <AppIcons :name="guardando ? 'clock' : 'save'" :size="16" />
                 {{ guardando ? 'Guardando...' : 'Guardar' }}
               </BaseButton>
             </div>
@@ -445,11 +441,11 @@
           <div class="form-fields-grid">
             <div class="row">
               <label>Nombre</label>
-              <input v-model="pagoEdit.nombre" readonly />
+              <InputBase v-model="pagoEdit.nombre" readonly />
             </div>
             <div class="row">
               <label>RUT</label>
-              <input v-model="pagoEdit.rut" readonly />
+              <InputBase v-model="pagoEdit.rut" readonly />
             </div>
             <div class="row">
               <label>Curso</label>
@@ -457,15 +453,15 @@
             </div>
             <div class="row">
               <label>Monto</label>
-              <input type="number" v-model.number="pagoEdit.monto" />
+              <InputBase type="number" v-model.number="pagoEdit.monto" />
             </div>
             <div class="row">
               <label>Fecha</label>
-              <input type="date" v-model="pagoEdit.fecha" />
+              <InputBase type="date" v-model="pagoEdit.fecha" />
             </div>
             <div class="row full-width">
               <label>Observación</label>
-              <input v-model="pagoEdit.observacion" />
+              <InputBase v-model="pagoEdit.observacion" />
             </div>
           </div>
         </div>
@@ -478,20 +474,20 @@
         <div class="confirm-content">
           <div class="confirm-icon">⚠️</div>
           <p>¿Anular pago de <strong>{{ pagoAnular?.nombre }}</strong>?</p>
-          <div class="confirm-actions">
+          <div class="confirm-actions modal-actions">
             <BaseButton
-              variant="primary"
-              class="btn-secundario"
+              variant="secondary"
+              class="btn-modal"
               @click="modalAnular = false"
             >
-              Cancelar
+              <AppIcons name="x" :size="16" /> Cancelar
             </BaseButton>
             <BaseButton
-              variant="primary"
-              class="btn-danger"
+              variant="danger"
+              class="btn-modal"
               @click="confirmarAnulacion"
             >
-              Anular
+              <AppIcons name="trash" :size="16" /> Anular
             </BaseButton>
           </div>
         </div>
@@ -503,15 +499,25 @@
       <template #default>
         <div class="modal-transfer">
           <h3>Transferir pago de {{ pagoTransferir?.nombre }}</h3>
-          <p class="muted">
-            Completa los datos del nuevo participante y el tipo de devolución.
-          </p>
+          <p class="muted">Busca al participante al que deseas transferir el pago.</p>
+
+          <!-- Buscador de personas para transferencia -->
+          <div class="row-buscar">
+            <div class="buscar-input">
+              <InputBase
+                v-model="transferForm.q"
+                placeholder="Buscar por RUT o nombre..."
+                @keydown.enter.prevent="buscarPersonaParaTransferir"
+              />
+            </div>
+            <BaseButton variant="primary" @click="buscarPersonaParaTransferir">Buscar</BaseButton>
+          </div>
+          <div v-if="buscandoPersonasTransferir" class="estado-carga">Buscando...</div>
+          <div v-if="personasEncontradasTransferir.length" class="resultados">
+             <!-- Resultados de la búsqueda -->
+          </div>
 
           <div class="form-fields-grid">
-            <div class="row">
-              <label>Nombre nuevo participante</label>
-              <input v-model="transferForm.nombre" />
-            </div>
             <div class="row">
               <label>RUT nuevo participante</label>
               <input v-model="transferForm.rut" />
@@ -537,19 +543,20 @@
             </div>
           </div>
 
-          <div class="confirm-actions">
+          <div class="confirm-actions modal-actions">
             <BaseButton
-              variant="primary"
-              class="btn-secundario"
+              variant="secondary"
+              class="btn-modal"
               @click="modalTransferir = false"
             >
-              Cancelar
+              <AppIcons name="x" :size="16" /> Cancelar
             </BaseButton>
             <BaseButton
               variant="primary"
+              class="btn-modal"
               @click="confirmarTransferencia"
             >
-              Confirmar Transferencia
+              <AppIcons name="check" :size="16" /> Confirmar
             </BaseButton>
           </div>
         </div>
@@ -559,10 +566,16 @@
 </template>
 
 <script>
+import AppIcons from '@/components/icons/AppIcons.vue'
 import InputBase from '@/components/InputBase.vue'
 import BaseSelect from '@/components/BaseSelect.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import BaseModal from '@/components/BaseModal.vue'
+import pagosService from '@/services/pagosService.js'
+import personasService from '@/services/personasService.js'
+import cursosService from '@/services/cursosService.js'
+import mantenedoresService from '@/services/mantenedoresService.js'
+import { format, parseISO } from 'date-fns'
 
 
 function hoyISO () {
@@ -572,21 +585,21 @@ function hoyISO () {
   return `${d.getFullYear()}-${m}-${day}`
 }
 function dateCL (f) {
-  if (!f) return '-'
-  return new Date(f).toLocaleDateString('es-CL', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric'
-  })
+  if (!f) return '-';
+  try {
+    const date = typeof f === 'string' ? parseISO(f) : f;
+    return format(date, 'dd-MM-yyyy');
+  } catch (e) {
+    return f;
+  }
 }
 
 export default {
   name: 'PagosView',
-  components: { InputBase, BaseSelect, BaseButton, BaseModal },
+  components: { InputBase, BaseSelect, BaseButton, BaseModal, AppIcons },
   data () {
     return {
-      tab: 'registro',
-      subTab: 'individual',
+      tab: 'individual',
 
       cursoOptions: [],
       grupoOptions: [],
@@ -635,13 +648,27 @@ export default {
 
       modalTransferir: false,
       pagoTransferir: null,
+      buscandoPersonasTransferir: false,
+      personasEncontradasTransferir: [],
       transferForm: {
+        q: '',
+        personaId: null,
         nombre: '',
         rut: '',
         email: '',
         tipo: 'total',
         monto_parcial: null
       }
+    }
+  },
+  watch: {
+    /**
+     * Observa cambios en el campo de búsqueda de persona y ejecuta la búsqueda
+     * con un debounce para no sobrecargar la API con cada pulsación de tecla.
+     * @param {string} newValue El nuevo valor del campo de búsqueda.
+     */
+    buscarPersonaQ(newValue) {
+      this.debounceBuscarPersonas(newValue);
     }
   },
   computed: {
@@ -672,36 +699,49 @@ export default {
     }
   },
   methods: {
-    // ===== Carga catálogos (ajusta a tus endpoints reales) =====
+    // ===================================================================
+    // MÉTODOS DE CARGA DE DATOS Y CATÁLOGOS
+    // ===================================================================
+    /**
+     * Carga los catálogos de cursos y grupos desde la API.
+     * Estos datos se usan en los selectores de los formularios.
+     */
     async cargarCatalogos () {
       try {
-        if (pagosService.cursos && pagosService.cursos.list) {
-          const cursos = await pagosService.cursos.list()
-          const arr = Array.isArray(cursos) ? cursos : (cursos.results || [])
-          this.cursoOptions = arr.map(c => ({
-            value: c.id,
-            label: c.nombre || c.descripcion || `Curso ${c.id}`
-          }))
-        }
+        const cursosResponse = await cursosService.cursos.list()
+        const cursos = Array.isArray(cursosResponse)
+          ? cursosResponse
+          : cursosResponse.results || []
+        this.cursoOptions = cursos.map(c => ({
+          value: c.CUR_ID,
+          label: c.CUR_DESCRIPCION || `Curso ${c.CUR_ID}`
+        }))
       } catch (e) {
+        console.error('Error cargando cursos:', e)
         this.cursoOptions = []
       }
 
       try {
-        if (pagosService.grupos && pagosService.grupos.list) {
-          const grupos = await pagosService.grupos.list()
-          const arr = Array.isArray(grupos) ? grupos : (grupos.results || [])
-          this.grupoOptions = arr.map(g => ({
-            value: g.id,
-            label: g.nombre || `Grupo ${g.id}`
-          }))
-        }
+        const gruposResponse = await mantenedoresService.grupo.list()
+        const grupos = Array.isArray(gruposResponse) ? gruposResponse : (gruposResponse.results || [])
+        this.grupoOptions = grupos.map(g => ({
+          value: g.GRU_ID,
+          label: g.GRU_DESCRIPCION || `Grupo ${g.GRU_ID}`
+        }))
       } catch (e) {
+        console.error('Error cargando grupos:', e)
         this.grupoOptions = []
       }
     },
 
-    // ===== Registro Individual =====
+    // ===================================================================
+    // MÉTODOS PARA REGISTRO INDIVIDUAL
+    // ===================================================================
+    /**
+     * Busca personas en la API según el texto ingresado.
+     * Se activa al escribir en el campo de búsqueda (con debounce).
+     * @param {string} q - El término de búsqueda.
+     */
     async buscarPersonas () {
       const q = (this.buscarPersonaQ || '').trim()
       if (!q) {
@@ -710,29 +750,26 @@ export default {
       }
       this.buscandoPersonas = true
       try {
-        let r = []
-        if (personasService.search) {
-          r = await personasService.search({ q })
-        } else if (personasService.personas?.search) {
-          r = await personasService.personas.search({ q })
-        }
-        const arr = Array.isArray(r) ? r : (r.results || [])
+        const response = await personasService.personas.list({ search: q })
+        const arr = Array.isArray(response) ? response : (response.results || [])
         this.personasEncontradas = arr.map(p => ({
-          id: p.id ?? p.PER_ID,
-          nombre:
-            p.nombre ??
-            `${p.PER_NOMBRES || ''} ${p.PER_APELPTA || ''}`.trim(),
-          rut:
-            p.rut ||
-            (p.PER_RUN && p.PER_DV ? `${p.PER_RUN}-${p.PER_DV}` : ''),
-          email: p.email ?? p.PER_MAIL ?? ''
+          id: p.PER_ID,
+          nombre: `${p.PER_NOMBRES || ''} ${p.PER_APELPTA || ''}`.trim(),
+          rut: (p.PER_RUN && p.PER_DV) ? `${p.PER_RUN}-${p.PER_DV}` : (p.PER_RUN || ''),
+          email: p.PER_MAIL || ''
         }))
       } catch (e) {
+        console.error('Error buscando personas:', e)
         this.personasEncontradas = []
       } finally {
         this.buscandoPersonas = false
       }
     },
+    /**
+     * Selecciona una persona de la lista de resultados de búsqueda
+     * y rellena el formulario de registro individual con sus datos.
+     * @param {object} p - El objeto de la persona seleccionada.
+     */
     seleccionarPersona (p) {
       this.formInd.personaId = p.id
       this.formInd.nombre = p.nombre
@@ -741,9 +778,16 @@ export default {
       this.personasEncontradas = []
       this.buscarPersonaQ = p.nombre
     },
+    /**
+     * Maneja la selección de un archivo de comprobante para el registro individual.
+     * @param {Event} e - El evento del input de archivo.
+     */
     onFileInd (e) {
       this.formInd.file = e.target.files?.[0] || null
     },
+    /**
+     * Limpia y resetea todos los campos del formulario de registro individual.
+     */
     limpiarIndividual () {
       this.formInd = {
         personaId: null,
@@ -759,25 +803,23 @@ export default {
       this.buscarPersonaQ = ''
       this.personasEncontradas = []
     },
+    /**
+     * Envía el formulario de pago individual a la API.
+     * Construye un FormData con los datos y el archivo del comprobante.
+     */
     async registrarPagoIndividual () {
       try {
         const fd = new FormData()
-        fd.append('persona', this.formInd.personaId)
-        fd.append('curso', this.formInd.curso)
-        fd.append('monto', this.formInd.valor_pagado)
-        fd.append('fecha_pago', this.formInd.fecha_pago)
+        fd.append('PER_ID', this.formInd.personaId)
+        fd.append('CUR_ID', this.formInd.curso)
+        fd.append('PAP_MONTO', this.formInd.valor_pagado)
+        fd.append('PAP_FECHA_PAGO', this.formInd.fecha_pago)
         if (this.formInd.observacion) {
-          fd.append('observacion', this.formInd.observacion)
+          fd.append('PAP_OBSERVACION', this.formInd.observacion)
         }
         fd.append('comprobante', this.formInd.file)
-
-        if (pagosService.pagos?.createIndividualForm) {
-          await pagosService.pagos.createIndividualForm(fd)
-        } else if (pagosService.pagos?.create) {
-          await pagosService.pagos.create(fd)
-        } else {
-          throw new Error('No hay endpoint definido para registro individual')
-        }
+        fd.append('MET_ID', 1) // Asumiendo 1 para Transferencia
+        await pagosService.pagos.create(fd)
 
         alert('Pago individual registrado correctamente')
         this.limpiarIndividual()
@@ -787,30 +829,34 @@ export default {
       }
     },
 
-    // ===== Registro Masivo =====
+    // ===================================================================
+    // MÉTODOS PARA REGISTRO MASIVO
+    // ===================================================================
+    /**
+     * Maneja la selección de un archivo de comprobante para el registro masivo.
+     * @param {Event} e - El evento del input de archivo.
+     */
     onFileMasivo (e) {
       this.formMasivo.file = e.target.files?.[0] || null
     },
+    /**
+     * Carga la lista de participantes de un grupo y curso específicos
+     * para el registro de pago masivo.
+     */
     async cargarParticipantes () {
       this.cargandoParticipantes = true
+      this.participantes = []
       try {
-        let r = []
-        if (personasService.byGrupoCurso) {
-          r = await personasService.byGrupoCurso({
-            grupo: this.formMasivo.grupo,
-            curso: this.formMasivo.curso
-          })
-        }
-        const arr = Array.isArray(r) ? r : (r.results || [])
+        const response = await personasService.personas.list({
+          grupo: this.formMasivo.grupo
+          // El backend debería filtrar por grupo, el curso es para el pago.
+        })
+        const arr = Array.isArray(response) ? response : (response.results || [])
         this.participantes = arr.map(p => ({
-          id: p.id ?? p.PER_ID,
-          nombre:
-            p.nombre ??
-            `${p.PER_NOMBRES || ''} ${p.PER_APELPTA || ''}`.trim(),
-          rut:
-            p.rut ||
-            (p.PER_RUN && p.PER_DV ? `${p.PER_RUN}-${p.PER_DV}` : ''),
-          email: p.email ?? p.PER_MAIL ?? ''
+          id: p.PER_ID,
+          nombre: `${p.PER_NOMBRES || ''} ${p.PER_APELPTA || ''}`.trim(),
+          rut: (p.PER_RUN && p.PER_DV) ? `${p.PER_RUN}-${p.PER_DV}` : (p.PER_RUN || ''),
+          email: p.PER_MAIL || ''
         }))
         this.seleccionados = []
       } catch (e) {
@@ -819,12 +865,21 @@ export default {
         this.cargandoParticipantes = false
       }
     },
+    /**
+     * Selecciona a todos los participantes de la lista para el pago masivo.
+     */
     selectAll () {
       this.seleccionados = this.participantes.map(u => u.id)
     },
+    /**
+     * Deselecciona a todos los participantes de la lista.
+     */
     unselectAll () {
       this.seleccionados = []
     },
+    /**
+     * Limpia y resetea todos los campos del formulario de registro masivo.
+     */
     limpiarMasivo () {
       this.formMasivo = {
         grupo: '',
@@ -837,28 +892,27 @@ export default {
       this.participantes = []
       this.seleccionados = []
     },
+    /**
+     * Envía el formulario de pago masivo a la API.
+     * Construye un FormData con los datos y el archivo del comprobante.
+     */
     async registrarPagoMasivo () {
       try {
         const fd = new FormData()
-        fd.append('grupo', this.formMasivo.grupo)
-        fd.append('curso', this.formMasivo.curso)
-        fd.append('valor_pagado', this.formMasivo.valor_pagado)
-        fd.append('fecha_pago', this.formMasivo.fecha_pago)
+        fd.append('GRU_ID', this.formMasivo.grupo)
+        fd.append('CUR_ID', this.formMasivo.curso)
+        fd.append('PAP_MONTO', this.formMasivo.valor_pagado)
+        fd.append('PAP_FECHA_PAGO', this.formMasivo.fecha_pago)
         if (this.formMasivo.observacion) {
-          fd.append('observacion', this.formMasivo.observacion)
+          fd.append('PAP_OBSERVACION', this.formMasivo.observacion)
         }
         this.seleccionados.forEach(id =>
-          fd.append('participantes[]', id)
+          fd.append('PER_IDS', id)
         )
         fd.append('comprobante', this.formMasivo.file)
-
-        if (pagosService.pagos?.createMasivoForm) {
-          await pagosService.pagos.createMasivoForm(fd)
-        } else if (pagosService.pagos?.createMasivo) {
-          await pagosService.pagos.createMasivo(fd)
-        } else {
-          throw new Error('No hay endpoint definido para registro masivo')
-        }
+        fd.append('MET_ID', 1) // Asumiendo 1 para Transferencia
+        
+        await pagosService.pagos.createMasivo(fd)
 
         alert('Pago masivo registrado correctamente')
         this.limpiarMasivo()
@@ -868,30 +922,39 @@ export default {
       }
     },
 
-    // ===== Histórico =====
+    // ===================================================================
+    // MÉTODOS PARA LA PESTAÑA DE HISTÓRICO
+    // ===================================================================
+    /**
+     * Obtiene la etiqueta (nombre) de un curso a partir de su ID.
+     * @param {number} id - El ID del curso.
+     * @returns {string} La etiqueta del curso o el ID si no se encuentra.
+     */
     cursoLabel (id) {
       const c = this.cursoOptions.find(
         x => String(x.value) === String(id)
       )
       return c ? c.label : id
     },
-    async cargarPagos () {
+    /**
+     * Carga la lista de pagos desde la API, aplicando los filtros seleccionados.
+     * @param {boolean} force - Si es true, fuerza la recarga aunque ya esté en proceso.
+     */
+    async cargarPagos (force = false) {
+      // Evita cargas múltiples si ya hay una en progreso.
+      if (this.cargandoPagos && !force) return;
       this.cargandoPagos = true
       this.errorPagos = null
       try {
-        let r = []
         const params = {
-          q: (this.filtroQ || '').trim(),
-          curso: this.filtroCurso || undefined,
-          grupo: this.filtroGrupo || undefined
+          search: (this.filtroQ || '').trim() || undefined,
+          CUR_ID: this.filtroCurso || undefined,
+          GRU_ID: this.filtroGrupo || undefined
         }
-        if (pagosService.pagos?.list) {
-          r = await pagosService.pagos.list(params)
-        } else if (pagosService.list) {
-          r = await pagosService.list(params)
-        }
-        this.pagos = Array.isArray(r) ? r : (r.results || [])
+        const response = await pagosService.pagos.list(params)
+        this.pagos = Array.isArray(response) ? response : (response.results || [])
       } catch (e) {
+        console.error("Error al cargar pagos:", e);
         this.pagos = []
         this.errorPagos =
           'No fue posible cargar pagos. Verifica el backend.'
@@ -899,14 +962,17 @@ export default {
         this.cargandoPagos = false
       }
     },
+    /**
+     * Exporta los pagos actualmente visibles en la tabla a un archivo CSV.
+     */
     exportarCSV () {
       const rows = this.pagos.map(p => ({
-        Nombre: p.nombre,
-        RUT: p.rut,
-        Curso: this.cursoLabel(p.curso),
-        Monto: p.monto ?? p.valor_pagado,
-        Fecha: dateCL(p.fecha || p.fecha_pago),
-        Metodo: p.metodo || 'Transferencia'
+        Nombre: p.persona_nombre,
+        RUT: p.persona_rut,
+        Curso: p.curso_descripcion,
+        Monto: p.PAP_MONTO,
+        Fecha: dateCL(p.PAP_FECHA_PAGO),
+        Metodo: p.metodo_descripcion
       }))
       const headers = rows.length
         ? Object.keys(rows[0])
@@ -934,11 +1000,18 @@ export default {
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
     },
+    /**
+     * Selecciona o deselecciona todos los checkboxes de la tabla de historial.
+     * @param {boolean} checked - El estado del checkbox principal.
+     */
     toggleSelectAllHistorico (checked) {
       this.seleccionadosHistorico = checked
         ? this.pagos.map(p => p.id)
         : []
     },
+    /**
+     * Simula la acción de marcar pagos como "enviados".
+     */
     marcarEnviado () {
       if (!this.seleccionadosHistorico.length) return
       alert(
@@ -947,6 +1020,9 @@ export default {
         )}`
       )
     },
+    /**
+     * Simula el envío de correos para los pagos seleccionados.
+     */
     enviarPorCorreo () {
       if (!this.seleccionadosHistorico.length) return
       alert(
@@ -956,14 +1032,22 @@ export default {
       )
     },
 
-    // ===== Acciones de fila =====
+    // ===================================================================
+    // ACCIONES DE FILA (Ver, Editar, Anular, etc.)
+    // ===================================================================
+    /**
+     * Muestra un detalle simple de un pago en un alert.
+     * @param {object} p - El objeto del pago.
+     */
     verDetalle (p) {
       alert(
-        `Pago de ${p.nombre}\nMonto: $${
-          (p.monto ?? p.valor_pagado)?.toLocaleString('es-CL') || ''
-        }\nFecha: ${dateCL(p.fecha || p.fecha_pago)}`
+        `Pago de ${p.persona_nombre}\nMonto: $${(p.PAP_MONTO)?.toLocaleString('es-CL') || ''}\nFecha: ${dateCL(p.PAP_FECHA_PAGO)}`
       )
     },
+    /**
+     * Abre el modal para transferir un pago a otra persona.
+     * @param {object} p - El objeto del pago a transferir.
+     */
     abrirTransferir (p) {
       this.pagoTransferir = p
       this.transferForm = {
@@ -975,44 +1059,59 @@ export default {
       }
       this.modalTransferir = true
     },
+    /**
+     * Confirma la transferencia de un pago. (Lógica de API pendiente)
+     */
     async confirmarTransferencia () {
       if (!this.pagoTransferir) return
       // Aquí llamarías al endpoint real de transferencia/devolución
-      alert(
+      console.log(
         `Transferencia registrada para pago ID ${this.pagoTransferir.id} (${this.transferForm.tipo})`
       )
       this.modalTransferir = false
     },
-
+    /**
+     * Abre el modal de edición con los datos del pago seleccionado.
+     * @param {object} p - El objeto del pago a editar.
+     */
     abrirEditar (p) {
       this.pagoEdit = {
-        id: p.id,
-        nombre: p.nombre,
-        rut: p.rut,
-        curso: p.curso,
-        monto: p.monto ?? p.valor_pagado,
-        fecha: (p.fecha || p.fecha_pago || '').slice(0, 10),
-        observacion: p.observacion || ''
+        id: p.PAP_ID,
+        nombre: p.persona_nombre,
+        rut: p.persona_rut,
+        curso: p.CUR_ID,
+        monto: p.PAP_MONTO,
+        fecha: (p.PAP_FECHA_PAGO || '').slice(0, 10),
+        observacion: p.PAP_OBSERVACION || ''
       }
       this.modalEditar = true
     },
+    /**
+     * Guarda los cambios realizados en el modal de edición.
+     */
     async guardarEdicion () {
       try {
+        // Validación de campos obligatorios
+        if (!this.pagoEdit.curso) {
+          alert('El campo "Curso" es obligatorio.');
+          return;
+        }
+        if (!this.pagoEdit.monto || this.pagoEdit.monto <= 0) {
+          alert('El campo "Monto" debe ser un valor positivo.');
+          return;
+        }
+        if (!this.pagoEdit.fecha) {
+          alert('El campo "Fecha" es obligatorio.');
+          return;
+        }
         this.guardando = true
         const body = {
-          curso: this.pagoEdit.curso,
-          monto: this.pagoEdit.monto,
-          fecha: this.pagoEdit.fecha,
-          observacion: this.pagoEdit.observacion
+          CUR_ID: this.pagoEdit.curso,
+          PAP_MONTO: this.pagoEdit.monto,
+          PAP_FECHA_PAGO: this.pagoEdit.fecha,
+          PAP_OBSERVACION: this.pagoEdit.observacion
         }
-        if (pagosService.pagos?.partialUpdate) {
-          await pagosService.pagos.partialUpdate(
-            this.pagoEdit.id,
-            body
-          )
-        } else if (pagosService.pagos?.update) {
-          await pagosService.pagos.update(this.pagoEdit.id, body)
-        }
+        await pagosService.pagos.partialUpdate(this.pagoEdit.id, body)
         this.modalEditar = false
         await this.cargarPagos()
         alert('Pago actualizado')
@@ -1023,17 +1122,21 @@ export default {
       }
     },
 
+    /**
+     * Abre el modal de confirmación para anular un pago.
+     * @param {object} p - El objeto del pago a anular.
+     */
     abrirAnular (p) {
       this.pagoAnular = p
       this.modalAnular = true
     },
+    /**
+     * Confirma y ejecuta la anulación de un pago.
+     */
     async confirmarAnulacion () {
+      if (!this.pagoAnular) return;
       try {
-        if (pagosService.pagos?.anular) {
-          await pagosService.pagos.anular(this.pagoAnular.id)
-        } else if (pagosService.anular) {
-          await pagosService.anular(this.pagoAnular.id)
-        }
+        await pagosService.pagos.remove(this.pagoAnular.PAP_ID)
         this.modalAnular = false
         await this.cargarPagos()
         alert('Pago anulado')
@@ -1041,20 +1144,44 @@ export default {
         alert('Error al anular pago')
       }
     },
+    /**
+     * Abre el comprobante de pago en una nueva pestaña.
+     * @param {object} p - El objeto del pago.
+     */
     descargarComprobante (p) {
-      if (p.comprobante_url) {
-        window.open(p.comprobante_url, '_blank')
+      if (p.PAP_RUTA_COMPROBANTE) {
+        window.open(p.PAP_RUTA_COMPROBANTE, '_blank')
       } else {
         alert('No hay comprobante disponible.')
       }
+    },
+    /**
+     * Función de debounce para retrasar la ejecución de una función.
+     * Usado para la búsqueda de personas.
+     */
+    debounce(func, delay) {
+      let timeout;
+      return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), delay);
+      };
     }
   },
-  async mounted () {
-    await Promise.all([this.cargarCatalogos(), this.cargarPagos()])
+  created() {
+    this.debounceBuscarPersonas = this.debounce(this.buscarPersonas, 400);
   },
-  filters: {
-    dateCL
-  }
+  async mounted () {
+    // Carga los datos iniciales de forma secuencial y robusta.
+    // Primero catálogos, luego pagos.
+    try {
+      await this.cargarCatalogos();
+      await this.cargarPagos();
+    } catch (error) {
+      console.error('Error en la carga inicial de PagosView:', error);
+      this.errorPagos = 'Ocurrió un error crítico al cargar la página. Por favor, recarga.';
+      this.cargandoPagos = false;
+    }
+  },
 }
 </script>
 
@@ -1062,10 +1189,10 @@ export default {
 .gestion-pagos {
   box-sizing: border-box;
   margin: 20px auto;
-  padding: 16px 40px 32px;
+  padding: 16px 24px;
   background: #f5f7fb;
   font-family: Arial, sans-serif;
-  max-width: 1400px;
+  max-width: calc(100% - 48px);
 }
 
 .header h2 {
@@ -1074,7 +1201,7 @@ export default {
   padding: 14px 18px;
   border-radius: 6px;
   margin: 0 0 18px 0;
-  text-align: center;
+  text-align: center; 
 }
 
 .tabs,
@@ -1106,7 +1233,9 @@ export default {
 .card {
   background: #ffffff;
   border-radius: 14px;
-  padding: 18px 22px 26px;
+  padding: 22px 28px 32px;
+  max-width: 1400px;
+  margin: 12px auto;
   margin-top: 12px;
   box-shadow: 0 8px 26px rgba(15, 23, 42, 0.08);
 }
@@ -1161,7 +1290,7 @@ export default {
 }
 
 .buscar-input {
-  flex: 0 0 320px;
+  flex: 0 0 400px;
 }
 
 /* Grid */
@@ -1171,12 +1300,16 @@ export default {
   gap: 10px 16px;
   margin-top: 8px;
 }
-
-.grid-individual .col:nth-child(1),
-.grid-individual .col:nth-child(2),
-.grid-individual .col:nth-child(3) {
-  max-width: 280px;
+.grid-individual {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px 18px;
 }
+.grid-masivo {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px 18px;
+}
+
+
 
 .col {
   display: flex;
@@ -1186,6 +1319,14 @@ export default {
 
 .col.full {
   grid-column: 1 / -1;
+}
+
+.col.span-2 {
+  grid-column: span 2;
+}
+
+.col.half {
+  /* Este no necesita una regla especial en una grilla de 3 columnas, se ajustará bien */
 }
 
 .col.auto {
@@ -1339,6 +1480,7 @@ label {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-start; /* Evita que los elementos se estiren */
   gap: 8px;
 }
 
@@ -1346,8 +1488,12 @@ label {
   margin-bottom: 10px;
 }
 
+.filtros-historico .filtro-busqueda {
+  width: 200px;
+}
+
 .filtros-historico .filtro-corto {
-  width: 160px;
+  width: 140px;
 }
 
 .filtros-historico .filtro-corto :deep(input),
@@ -1484,6 +1630,11 @@ th {
   font-style: italic;
 }
 
+.estado-carga .spinner {
+  display: inline-block;
+  vertical-align: middle;
+}
+
 .mensaje-error {
   background: #fee2e2;
   color: #b91c1c;
@@ -1492,6 +1643,12 @@ th {
   border: 1px solid #fecaca;
   font-size: 13px;
 }
+.mensaje-error div {
+  margin-top: 8px;
+  text-align: center;
+}
+
+
 
 /* Modales */
 .pago-modal :deep(.modal-overlay) {
@@ -1572,8 +1729,19 @@ th {
   .buscar-input {
     flex: 1 1 auto;
   }
-  .filtros-historico .filtro-corto {
-    width: 140px;
+  .filtros-historico .filtro-busqueda {
+    width: 170px;
   }
+  .filtros-historico .filtro-corto {
+    width: 120px;
+  }
+}
+
+/* Estilo para texto largo en tablas */
+.texto-largo {
+  max-width: 200px; /* o el ancho que prefieras */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>
