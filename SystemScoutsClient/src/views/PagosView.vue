@@ -80,7 +80,7 @@
           <div class="col">
             <label>Curso / Capacitación *</label>
             <BaseSelect
-              v-model="formInd.curso"
+              v-model="formInd.CUR_ID"
               :options="cursoOptions"
               placeholder="Seleccione curso"
             />
@@ -93,17 +93,17 @@
               <input
                 type="number"
                 min="0"
-                step="1"
-                v-model.number="formInd.valor_pagado"
+                step="100"
+                v-model.number="formInd.PAP_MONTO"
               />
             </div>
           </div>
 
           <div class="col half">
             <label>Fecha de Pago *</label>
-            <InputBase type="date" v-model="formInd.fecha_pago" />
+            <InputBase type="date" v-model="formInd.PAP_FECHA_PAGO" />
           </div>
-
+ 
           <div class="col span-2">
             <label>Comentario / Observación</label>
             <textarea
@@ -153,7 +153,7 @@
           <div class="col">
             <label>Grupo *</label>
             <BaseSelect
-              v-model="formMasivo.grupo"
+              v-model="formMasivo.GRU_ID"
               :options="grupoOptions"
               placeholder="Seleccione grupo"
             />
@@ -161,7 +161,7 @@
           <div class="col">
             <label>Curso / Capacitación *</label>
             <BaseSelect
-              v-model="formMasivo.curso"
+              v-model="formMasivo.CUR_ID"
               :options="cursoOptions"
               placeholder="Seleccione curso"
             />
@@ -170,7 +170,7 @@
             <label class="invisible">Cargar</label>
             <BaseButton class="btn-standard"
               variant="primary"
-              :disabled="!formMasivo.grupo || !formMasivo.curso || cargandoParticipantes"
+              :disabled="!formMasivo.GRU_ID || !formMasivo.CUR_ID || cargandoParticipantes"
               @click="cargarParticipantes"
             >
               <AppIcons name="users" :size="16" /> {{ cargandoParticipantes ? 'Cargando...' : 'Cargar' }}
@@ -210,14 +210,14 @@
               <input
                 type="number"
                 min="0"
-                step="1"
-                v-model.number="formMasivo.valor_pagado"
+                step="100"
+                v-model.number="formMasivo.PAP_MONTO"
               />
             </div>
           </div>
           <div class="col">
             <label>Fecha de Pago *</label>
-            <InputBase type="date" v-model="formMasivo.fecha_pago" />
+            <InputBase type="date" v-model="formMasivo.PAP_FECHA_PAGO" />
           </div>
           <div class="col full">
             <label>Comentario / Observación (máx. 200 caracteres)</label>
@@ -241,15 +241,15 @@
 
         <div
           class="resumen"
-          v-if="seleccionados.length && formMasivo.valor_pagado"
+          v-if="seleccionados.length && formMasivo.PAP_MONTO"
         >
           <div>Seleccionados: <strong>{{ seleccionados.length }}</strong></div>
-          <div>Valor por persona: <strong>${{ formMasivo.valor_pagado.toLocaleString('es-CL') }}</strong></div>
+          <div>Valor por persona: <strong>${{ formMasivo.PAP_MONTO.toLocaleString('es-CL') }}</strong></div>
           <div class="total">
             Total:
             <strong>
               ${{
-                (seleccionados.length * formMasivo.valor_pagado).toLocaleString('es-CL')
+                (seleccionados.length * formMasivo.PAP_MONTO).toLocaleString('es-CL')
               }}
             </strong>
           </div>
@@ -362,13 +362,13 @@
                   v-model="seleccionadosHistorico"
                 />
               </td>
-              <td class="texto-largo" :title="p.persona_nombre"><strong>{{ p.persona_nombre }}</strong></td>
-              <td>{{ p.persona_rut }}</td>
-              <td>{{ cursoLabel(p.CUR_ID) }}</td>
-              <td>${{ (p.PAP_MONTO)?.toLocaleString('es-CL') }}</td>
-              <td>{{ dateCL(p.PAP_FECHA_PAGO) }}</td>
-              <td>{{ p.MET_DESCRIPCION || 'Transferencia' }}</td>
-              <td class="acciones-buttons">
+              <td data-label="Nombre" class="texto-largo" :title="p.persona_nombre"><strong>{{ p.persona_nombre }}</strong></td>
+              <td data-label="RUT">{{ p.persona_rut }}</td>
+              <td data-label="Curso">{{ cursoLabel(p.CUR_ID) }}</td>
+              <td data-label="Monto">${{ (p.PAP_MONTO)?.toLocaleString('es-CL') }}</td>
+              <td data-label="Fecha">{{ dateCL(p.PAP_FECHA_PAGO) }}</td>
+              <td data-label="Método">{{ p.MET_DESCRIPCION || 'Transferencia' }}</td>
+              <td data-label="Acciones" class="acciones-buttons">
                 <BaseButton class="btn-action"
                   size="sm"
                   variant="info"
@@ -610,18 +610,18 @@ export default {
         nombre: '',
         rut: '',
         email: '',
-        curso: '',
-        valor_pagado: null,
-        fecha_pago: hoyISO(),
+        CUR_ID: '',
+        PAP_MONTO: null,
+        PAP_FECHA_PAGO: hoyISO(),
         observacion: '',
         file: null
       },
-
+ 
       formMasivo: {
-        grupo: '',
-        curso: '',
-        valor_pagado: null,
-        fecha_pago: hoyISO(),
+        GRU_ID: '',
+        CUR_ID: '',
+        PAP_MONTO: null,
+        PAP_FECHA_PAGO: hoyISO(),
         observacion: '',
         file: null
       },
@@ -687,19 +687,19 @@ export default {
     puedeRegistrarIndividual () {
       return (
         this.formInd.personaId &&
-        this.formInd.curso &&
-        this.formInd.valor_pagado &&
-        this.formInd.fecha_pago &&
+        this.formInd.CUR_ID &&
+        this.formInd.PAP_MONTO > 0 &&
+        this.formInd.PAP_FECHA_PAGO &&
         this.formInd.file
       )
     },
     puedeRegistrarMasivo () {
       return (
         this.seleccionados.length &&
-        this.formMasivo.curso &&
-        this.formMasivo.grupo &&
-        this.formMasivo.valor_pagado &&
-        this.formMasivo.fecha_pago &&
+        this.formMasivo.CUR_ID &&
+        this.formMasivo.GRU_ID &&
+        this.formMasivo.PAP_MONTO > 0 &&
+        this.formMasivo.PAP_FECHA_PAGO &&
         this.formMasivo.file
       )
     }
@@ -800,9 +800,9 @@ export default {
         nombre: '',
         rut: '',
         email: '',
-        curso: '',
-        valor_pagado: null,
-        fecha_pago: hoyISO(),
+        CUR_ID: '',
+        PAP_MONTO: null,
+        PAP_FECHA_PAGO: hoyISO(),
         observacion: '',
         file: null
       }
@@ -817,9 +817,9 @@ export default {
       try {
         const fd = new FormData()
         fd.append('PER_ID', this.formInd.personaId)
-        fd.append('CUR_ID', this.formInd.curso)
-        fd.append('PAP_MONTO', this.formInd.valor_pagado)
-        fd.append('PAP_FECHA_PAGO', this.formInd.fecha_pago)
+        fd.append('CUR_ID', this.formInd.CUR_ID)
+        fd.append('PAP_MONTO', this.formInd.PAP_MONTO)
+        fd.append('PAP_FECHA_PAGO', this.formInd.PAP_FECHA_PAGO)
         if (this.formInd.observacion) {
           fd.append('PAP_OBSERVACION', this.formInd.observacion)
         }
@@ -854,7 +854,7 @@ export default {
       this.participantes = []
       try {
         const response = await personasService.personas.list({
-          grupo: this.formMasivo.grupo
+          grupo: this.formMasivo.GRU_ID
           // El backend debería filtrar por grupo, el curso es para el pago.
         })
         const arr = Array.isArray(response) ? response : (response.results || [])
@@ -888,10 +888,10 @@ export default {
      */
     limpiarMasivo () {
       this.formMasivo = {
-        grupo: '',
-        curso: '',
-        valor_pagado: null,
-        fecha_pago: hoyISO(),
+        GRU_ID: '',
+        CUR_ID: '',
+        PAP_MONTO: null,
+        PAP_FECHA_PAGO: hoyISO(),
         observacion: '',
         file: null
       }
@@ -905,10 +905,10 @@ export default {
     async registrarPagoMasivo () {
       try {
         const fd = new FormData()
-        fd.append('GRU_ID', this.formMasivo.grupo)
-        fd.append('CUR_ID', this.formMasivo.curso)
-        fd.append('PAP_MONTO', this.formMasivo.valor_pagado)
-        fd.append('PAP_FECHA_PAGO', this.formMasivo.fecha_pago)
+        fd.append('GRU_ID', this.formMasivo.GRU_ID)
+        fd.append('CUR_ID', this.formMasivo.CUR_ID)
+        fd.append('PAP_MONTO', this.formMasivo.PAP_MONTO)
+        fd.append('PAP_FECHA_PAGO', this.formMasivo.PAP_FECHA_PAGO)
         if (this.formMasivo.observacion) {
           fd.append('PAP_OBSERVACION', this.formMasivo.observacion)
         }
@@ -947,6 +947,7 @@ export default {
      * @param {boolean} force - Si es true, fuerza la recarga aunque ya esté en proceso.
      */
     async cargarPagos (force = false) {
+      // Evita cargas múltiples si ya hay una en progreso.
       if (this.cargandoPagos && !force) return;
       this.cargandoPagos = true
       this.errorPagos = null
@@ -957,7 +958,15 @@ export default {
           GRU_ID: this.filtroGrupo || undefined
         }
         const response = await pagosService.pagos.list(params)
-        this.pagos = Array.isArray(response) ? response : (response.results || [])
+        // Asegurarse de que la respuesta es un array, incluso si la API devuelve otra cosa.
+        if (Array.isArray(response)) {
+          this.pagos = response;
+        } else if (response && Array.isArray(response.results)) {
+          this.pagos = response.results;
+        } else {
+          console.warn('La respuesta de la API de pagos no es un array:', response);
+          this.pagos = []; // Previene errores si la respuesta no es un array
+        }
       } catch (e) {
         console.error("Error al cargar pagos:", e);
         this.pagos = []
@@ -1203,15 +1212,16 @@ export default {
     this.debounceBuscarPersonas = this.debounce(this.buscarPersonas, 400);
   },
   async mounted () {
-    // Carga los datos iniciales de forma secuencial y robusta.
-    // Primero catálogos, luego pagos.
+    // Carga los datos iniciales necesarios para el componente (catálogos y pagos).
     try {
-      await this.cargarCatalogos();
-      await this.cargarPagos();
+      // Se ejecutan en paralelo para mejorar el tiempo de carga inicial.
+      await Promise.all([
+        this.cargarCatalogos(),
+        this.cargarPagos()
+      ])
     } catch (error) {
-      console.error('Error en la carga inicial de PagosView:', error);
-      this.errorPagos = 'Ocurrió un error crítico al cargar la página. Por favor, recarga.';
-      this.cargandoPagos = false;
+      console.error('Error en la carga inicial de PagosView:', error)
+      this.errorPagos = 'Ocurrió un error crítico al cargar la página. Por favor, recarga.'
     }
   },
 }
@@ -1355,10 +1365,6 @@ export default {
 
 .col.span-2 {
   grid-column: span 2;
-}
-
-.col.half {
-  /* Este no necesita una regla especial en una grilla de 3 columnas, se ajustará bien */
 }
 
 .col.auto {
@@ -1526,6 +1532,7 @@ label {
 
 .filtros-historico .filtro-corto {
   width: 140px;
+  width: 160px;
 }
 
 .filtros-historico .filtro-corto :deep(input),
@@ -1766,6 +1773,34 @@ th {
   }
   .filtros-historico .filtro-corto {
     width: 120px;
+    width: 140px;
+  }
+
+  /* Tabla responsiva */
+  .table-wrapper table thead {
+    display: none;
+  }
+  .table-wrapper table tr {
+    display: block;
+    margin-bottom: 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 0.5rem;
+  }
+  .table-wrapper table td {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #f3f4f6;
+    padding: 0.75rem 0.5rem;
+  }
+  .table-wrapper table td[data-label]::before {
+    content: attr(data-label);
+    font-weight: 600;
+    margin-right: 1rem;
+    color: #374151;
+  }
+  .table-wrapper table td:last-child {
+    border-bottom: none;
   }
 }
 
@@ -1775,5 +1810,35 @@ th {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+</style>
+<style>
+/* Estilos de botones estandarizados, inspirados en GestionPersonas */
+.btn-standard {
+  min-width: 140px !important;
+  padding: 10px 16px !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(40,92,168,0.08) !important;
+  border: none !important;
+  transition: all 0.3s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.btn-action {
+  padding: 6px 12px !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  border-radius: 6px !important;
+  box-shadow: 0 1px 4px rgba(40,92,168,0.06) !important;
+  border: none !important;
+  transition: all 0.3s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  min-width: auto !important;
 }
 </style>
