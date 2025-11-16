@@ -854,8 +854,7 @@ export default {
       this.participantes = []
       try {
         const response = await personasService.personas.list({
-          grupo: this.formMasivo.GRU_ID
-          // El backend debería filtrar por grupo, el curso es para el pago.
+          GRU_ID: this.formMasivo.GRU_ID
         })
         const arr = Array.isArray(response) ? response : (response.results || [])
         this.participantes = arr.map(p => ({
