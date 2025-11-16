@@ -109,7 +109,6 @@ La API usa **Django REST Framework** para:
 ```
 para mantener el repositorio sincronizado.
 
-
 ## Acciones recomendadas:
 
 1. Ir a la ruta de tu carpeta raíz del proyecto en una nueva terminal
@@ -138,6 +137,9 @@ para mantener el repositorio sincronizado.
 ```bash
   git push origin main
 ```
+
+---
+
 # 📡 Endpoints de la API
 
 A continuación se detallan los endpoints disponibles en la API, organizados por módulos funcionales.
@@ -155,12 +157,45 @@ A continuación se detallan los endpoints disponibles en la API, organizados por
 ## 👨‍👩‍👧‍👦 Módulo de Personas
 **Base URL:** `/api/Personas/`
 
+### Personas
+**Endpoint:** `personas/`
+
+**Filtros disponibles:**
+| Parámetro | Tipo | Descripción | Ejemplo |
+|-----------|------|-------------|----------|
+| `nombre` | string | Búsqueda por nombre (insensible a mayúsculas) | `?nombre=juan` |
+| `apellido` | string | Búsqueda por apellido (insensible a mayúsculas) | `?apellido=perez` |
+| `run` | string | Búsqueda exacta por RUN | `?run=12345678` |
+| `dv` | string | Búsqueda exacta por dígito verificador | `?dv=k` |
+| `comuna_nombre` | string | Búsqueda por nombre de comuna | `?comuna_nombre=santiago` |
+| `comuna_id` | number | Búsqueda por ID de comuna | `?comuna_id=1` |
+| `usuario_nombre` | string | Búsqueda por nombre de usuario | `?usuario_nombre=admin` |
+| `usuario_id` | number | Búsqueda por ID de usuario | `?usuario_id=1` |
+| `vigente` | boolean | Filtro por estado de vigencia | `?vigente=true` |
+
+### Personas Cursos
+**Endpoint:** `individuales/` (asumiendo que corresponde a Persona_Curso)
+
+**Filtros disponibles:**
+| Parámetro | Tipo | Descripción | Ejemplo |
+|-----------|------|-------------|----------|
+| `run` | string | Búsqueda exacta por RUN (sin DV) | `?run=12345678` |
+| `dv` | string | Búsqueda exacta por dígito verificador | `?dv=k` |
+| `nombre_persona` | string | Búsqueda por nombre de persona | `?nombre_persona=maria` |
+| `apellido_persona` | string | Búsqueda por apellido de persona | `?apellido_persona=gonzalez` |
+| `curso_codigo` | string | Búsqueda exacta por código de curso | `?curso_codigo=CUR-0778` |
+| `rol_nombre` | string | Búsqueda por nombre de rol | `?rol_nombre=participante` |
+| `alimentacion_nombre` | string | Búsqueda por tipo de alimentación | `?alimentacion_nombre=vegetariana` |
+| `nivel_nombre` | string | Búsqueda por nivel | `?nivel_nombre=basico` |
+| `registrado` | boolean | Filtro por registro completado | `?registrado=true` |
+| `acreditado` | boolean | Filtro por acreditación | `?acreditado=false` |
+| `correo_qr_enviado` | boolean | Filtro por correo QR enviado | `?correo_qr_enviado=true` |
+
+**Endpoints adicionales del módulo:**
 | Endpoint | Descripción |
 |----------|-------------|
-| `personas/` | Gestión completa de personas |
 | `grupos/` | Administración de grupos |
 | `formadores/` | Manejo de instructores/formadores |
-| `individuales/` | Gestión de registros individuales |
 | `niveles/` | Administración de niveles |
 | `cursos/` | Cursos asociados a personas |
 | `estado-cursos/` | Estados de los cursos |
@@ -189,7 +224,7 @@ A continuación se detallan los endpoints disponibles en la API, organizados por
 | `personas/` | Archivos asociados a personas |
 
 ## ⚙️ Módulo de Mantenedores
-**Base URL:** `/api/Mantenedores/`
+**Base URL:** `/api/Mantenedores/**
 
 | Endpoint | Descripción |
 |----------|-------------|
@@ -222,9 +257,37 @@ A continuación se detallan los endpoints disponibles en la API, organizados por
 
 ---
 
+## 🔍 Uso de Filtros
+
+### Ejemplos de consultas con filtros:
+
+**Buscar personas por nombre y apellido:**
+```
+GET /api/Personas/personas/?nombre=Juan&apellido=Perez
+```
+
+**Buscar participantes de un curso específico:**
+```
+GET /api/Personas/individuales/?curso_codigo=CUR-0778&acreditado=true
+```
+
+**Buscar personas no vigentes en una comuna:**
+```
+GET /api/Personas/personas/?comuna_nombre=providencia&vigente=false
+```
+
+**Buscar participantes por rol y alimentación:**
+```
+GET /api/Personas/individuales/?rol_nombre=formador&alimentacion_nombre=vegetariana
+```
+
+---
+
 ## 📝 Notas de Uso
 
 - Todos los endpoints soportan operaciones CRUD (GET, POST, PUT, DELETE) según los permisos del usuario
 - Las respuestas siguen el formato JSON estándar
 - Se requiere autenticación para acceder a la mayoría de los endpoints
 - Los códigos de estado HTTP siguen las convenciones REST estándar
+- Los filtros pueden combinarse usando múltiples parámetros en la URL
+- Los filtros de texto son insensibles a mayúsculas/minúsculas cuando usan `icontains`
