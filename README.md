@@ -284,12 +284,12 @@ GET /api/Personas/individuales/?rol_nombre=formador&alimentacion_nombre=vegetari
 ---
 
 
-🔧 Inicializar Entorno Virtual (Backend Django)
+# 🔧 Inicializar Entorno Virtual (Backend Django)
 
 Para trabajar con el backend de Django, es indispensable levantar un entorno virtual.
 Esto permite aislar las dependencias del proyecto, evitando conflictos con otras instalaciones de Python.
 
-📌 Pasos en la terminal (CMD o PowerShell)
+## 📌 Pasos en la terminal (CMD o PowerShell)
 
 Crear el entorno virtual
 Crea una carpeta llamada venv con todos los paquetes de Python exclusivamente para tu proyecto:
