@@ -61,10 +61,20 @@ cd IngSw-seccion2/SistemScoutsApi
    pip install -r requirements.txt
    ```
 4. **Ejecutar servidor de desarrollo**
+asegurate de estar posicionado en manage.py con
+   ```bash
+      ls
+   ```
+   si ves el archivo manage.py puedes ejecutar el comando que sigue.
    ```bash
    python manage.py runserver
    ```
-5. **La API estará disponible en:**
+   en caso de no estar posicionado, realiza lo siguiente
+   ```bash
+      cd SystemScoutsApi
+   ```
+   puedes usar "ls" para verificar tu posición, una vez veas **manage.py** puedes hacer **runserver**
+6. **La API estará disponible en:**
     👉 `http://127.0.0.1:8000/`
 
 ---
