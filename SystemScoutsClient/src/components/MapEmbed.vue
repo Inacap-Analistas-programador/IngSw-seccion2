@@ -32,16 +32,26 @@ const mapContainer = ref(null);
 let map = null;
 let marker = null;
 
+// Función para convertir a número de manera segura
+const toNumber = (val) => {
+  if (val === null || val === undefined || val === '') return null;
+  const num = Number(val);
+  return isNaN(num) ? null : num;
+};
+
 onMounted(() => {
   if (!mapContainer.value) return;
 
-  map = L.map(mapContainer.value).setView([props.lat, props.lng], props.zoom);
+  const lat = toNumber(props.lat) || -33.45694;
+  const lng = toNumber(props.lng) || -70.64827;
+
+  map = L.map(mapContainer.value).setView([lat, lng], props.zoom);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);
 
-  marker = L.marker([props.lat, props.lng], {
+  marker = L.marker([lat, lng], {
     draggable: true // Hacer el marcador arrastrable
   }).addTo(map);
 
@@ -62,10 +72,19 @@ onMounted(() => {
 });
 
 // Actualizar el mapa si las props cambian desde fuera
-watch(() => [props.lat, props.lng], ([newLat, newLng]) => {
-  if (map && marker) {
-    const newLatLng = L.latLng(newLat, newLng);
-    map.setView(newLatLng);
+watch(() => [props.lat, props.lng], ([newLat, newLng], [oldLat, oldLng]) => {
+  if (!map || !marker) return;
+  
+  const lat = toNumber(newLat);
+  const lng = toNumber(newLng);
+  const prevLat = toNumber(oldLat);
+  const prevLng = toNumber(oldLng);
+  
+  // Solo actualizar si ambas coordenadas son válidas y han cambiado realmente
+  if (lat !== null && lng !== null && (lat !== prevLat || lng !== prevLng)) {
+    console.log('[MapEmbed] Actualizando mapa:', { lat, lng, prevLat, prevLng });
+    const newLatLng = L.latLng(lat, lng);
+    map.setView(newLatLng, props.zoom);
     marker.setLatLng(newLatLng);
   }
 });

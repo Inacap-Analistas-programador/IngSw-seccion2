@@ -78,25 +78,26 @@
         <div class="form-grid-modal">
           <!-- Campos del formulario -->
           <div class="form-group span-2"><label>Descripción del curso</label><InputBase v-model="form.CUR_DESCRIPCION" /><small class="field-hint">Ej: Curso Básico de Primeros Auxilios</small></div>
-          <div class="form-group"><label>Código</label><InputBase v-model="form.CUR_CODIGO" /><small class="field-hint">Ej: CUR-2025-001</small></div>
+          <div class="form-group"><label>Código</label><InputBase v-model="form.CUR_CODIGO" /></div>
           <div class="form-group"><label>Tipo de Curso</label><BaseSelect v-model="form.TCU_ID" :options="tiposCursoOptions" optionLabel="text" /><small class="field-hint">Selecciona el tipo de curso</small></div>
           <div class="form-group"><label>Responsable</label><BaseSelect v-model="form.PER_ID_RESPONSABLE" :options="personasOptions" optionLabel="text" /><small class="field-hint">Selecciona a la persona responsable</small></div>
-          <div class="form-group"><label>Fecha de Solicitud</label><InputBase type="date" v-model="form.CUR_FECHA_SOLICITUD" /><small class="field-hint">Formato: AAAA-MM-DD (Ej: 2025-11-12)</small></div>
-          <div class="form-group"><label>Estado</label><BaseSelect v-model="form.CUR_ESTADO" :options="opcionesEstado" optionLabel="text" /><small class="field-hint">Ej: Pendiente, Aprobado o Anulado</small></div>
-          <div class="form-group"><label>Cuota con Almuerzo</label><InputBase type="number" v-model="form.CUR_COTA_CON_ALMUERZO" /><small class="field-hint">Monto en CLP, ej: 15000</small></div>
-          <div class="form-group"><label>Cuota sin Almuerzo</label><InputBase type="number" v-model="form.CUR_COTA_SIN_ALMUERZO" /><small class="field-hint">Monto en CLP, ej: 10000</small></div>
+          <div class="form-group"><label>Encargo</label><BaseSelect v-model="form.CAR_ID_RESPONSABLE" :options="cargosOptions" optionLabel="text" /><small class="field-hint">Selecciona el encargo del responsable</small></div>
+          <div class="form-group"><label>Fecha de Solicitud</label>
+            <InputBase type="date" v-model="form.CUR_FECHA_SOLICITUD" />
+            <small class="field-hint">Formato: AAAA-MM-DD (Ej: 2025-11-12)</small>
+          </div>
+          <!-- Estado ahora es automático; se elimina el selector manual -->
           <div class="form-group"><label>Modalidad</label><BaseSelect v-model="form.CUR_MODALIDAD" :options="opcionesModalidad" optionLabel="text" /><small class="field-hint">Selecciona la modalidad</small></div>
           <div class="form-group"><label>Tipo (Presencial/Online)</label><BaseSelect v-model="form.CUR_TIPO_CURSO" :options="opcionesTipoPresencial" optionLabel="text" /><small class="field-hint">Selecciona si es presencial u online</small></div>
           <div class="form-group"><label>Administra</label><BaseSelect v-model="form.CUR_ADMINISTRA" :options="opcionesAdministra" optionLabel="text" /><small class="field-hint">Indica quién administra el curso</small></div>
           <div class="form-group"><label>Comuna (lugar)</label><BaseSelect v-model="form.COM_ID_LUGAR" :options="comunasOptions" optionLabel="text" /><small class="field-hint">Selecciona la comuna donde se realiza</small></div>
-          <div class="form-group"><label>Cargo Responsable</label><BaseSelect v-model="form.CAR_ID_RESPONSABLE" :options="cargosOptions" optionLabel="text" /><small class="field-hint">Selecciona el cargo del responsable</small></div>
           <div class="form-group span-2"><label>Lugar</label><InputBase v-model="form.CUR_LUGAR" /><small class="field-hint">Ej: Sede Central, Sala 3</small></div>
           
           <!-- Mapa Interactivo -->
           <div class="form-group span-2">
             <label>Ubicación (haz clic en el mapa para seleccionar)</label>
-            <MapEmbed 
-              :lat="form.CUR_COORD_LATITUD" 
+            <MapEmbed
+              :lat="form.CUR_COORD_LATITUD"
               :lng="form.CUR_COORD_LONGITUD"
               @update:lat="form.CUR_COORD_LATITUD = $event"
               @update:lng="form.CUR_COORD_LONGITUD = $event"
@@ -127,14 +128,14 @@
               <tr v-if="fechasCurso.length === 0">
                 <td colspan="4" class="no-results-small">No hay períodos definidos.</td>
               </tr>
-              <tr v-for="fecha in fechasCurso" :key="fecha.CUF_ID || ('tmp-' + (fecha.__tmpId || 0))">
-                <td>{{ formatDateSimple(fecha.CUF_FECHA_INICIO) }}</td>
-                <td>{{ formatDateSimple(fecha.CUF_FECHA_TERMINO) }}</td>
-                <td>{{ opcionesTipoFecha.find(t => t.value === fecha.CUF_TIPO)?.text }}</td>
-                <td>
-                  <BaseButton @click="eliminarFecha(fecha.CUF_ID || ('tmp-' + (fecha.__tmpId || 0)))" variant="danger" size="sm">Eliminar</BaseButton>
-                </td>
-              </tr>
+                <tr v-for="fecha in fechasCurso" :key="fecha.CUF_ID || ('tmp-' + (fecha.__tmpId || 0))">
+                  <td>{{ formatDateSimple(fecha.CUF_FECHA_INICIO) }}</td>
+                  <td>{{ formatDateSimple(fecha.CUF_FECHA_TERMINO) }}</td>
+                  <td>{{ opcionesTipoFecha.find(t => t.value === fecha.CUF_TIPO)?.text }}</td>
+                  <td>
+                    <BaseButton @click="eliminarFecha(fecha.CUF_ID || ('tmp-' + (fecha.__tmpId || 0)))" variant="danger" size="sm">Eliminar</BaseButton>
+                  </td>
+                </tr>
             </tbody>
           </table>
 
@@ -173,14 +174,14 @@
               <tr v-if="seccionesCurso.length === 0">
                 <td colspan="4" class="no-results-small">No hay secciones definidas.</td>
               </tr>
-              <tr v-for="seccion in seccionesCurso" :key="seccion.CUS_ID || ('tmp-' + (seccion.__tmpId || 0))">
-                <td>{{ seccion.CUS_SECCION }}</td>
-                <td>{{ getRamaName(seccion.RAM_ID) }}</td>
-                <td>{{ seccion.CUS_CANT_PARTICIPANTE }}</td>
-                <td>
-                  <BaseButton @click="eliminarSeccion(seccion.CUS_ID || ('tmp-' + (seccion.__tmpId || 0)))" variant="danger" size="sm">Eliminar</BaseButton>
-                </td>
-              </tr>
+                <tr v-for="seccion in seccionesCurso" :key="seccion.CUS_ID || ('tmp-' + (seccion.__tmpId || 0))">
+                  <td>{{ seccion.CUS_SECCION }}</td>
+                  <td>{{ getRamaName(seccion.RAM_ID) }}</td>
+                  <td>{{ seccion.CUS_CANT_PARTICIPANTE }}</td>
+                  <td>
+                    <BaseButton @click="eliminarSeccion(seccion.CUS_ID || ('tmp-' + (seccion.__tmpId || 0)))" variant="danger" size="sm">Eliminar</BaseButton>
+                  </td>
+                </tr>
             </tbody>
           </table>
 
@@ -229,7 +230,7 @@
               </tr>
             </tbody>
           </table>
-          <div class="add-fecha-form">
+          <div class="add-fecha-form add-formadores-form">
             <div class="form-group">
               <label>Persona</label>
               <BaseSelect v-model="nuevaFormador.PER_ID" :options="personasOptions" optionLabel="text" />
@@ -251,7 +252,19 @@
 
           <!-- Sección Alimentación -->
           <hr class="section-divider">
-          <h4>Alimentación</h4>
+          <h4>Cuotas y Alimentación</h4>
+          <div class="cuotas-grid">
+            <div class="form-group">
+              <label>Cuota con Almuerzo</label>
+              <InputBase type="number" v-model="form.CUR_COTA_CON_ALMUERZO" />
+              <small class="field-hint">Monto en CLP, ej: 15000</small>
+            </div>
+            <div class="form-group">
+              <label>Cuota sin Almuerzo</label>
+              <InputBase type="number" v-model="form.CUR_COTA_SIN_ALMUERZO" />
+              <small class="field-hint">Monto en CLP, ej: 10000</small>
+            </div>
+          </div>
           <table class="fechas-table">
             <thead>
               <tr>
@@ -279,7 +292,7 @@
               </tr>
             </tbody>
           </table>
-          <div class="add-fecha-form">
+          <div class="add-fecha-form add-alimentacion-form">
             <div class="form-group">
               <label>Fecha</label>
               <InputBase type="date" v-model="nuevaAlimentacion.CUA_FECHA" />
@@ -300,7 +313,7 @@
               <label>Adicional</label>
               <InputBase type="number" v-model="nuevaAlimentacion.CUA_CANTIDAD_ADICIONAL" />
             </div>
-            <BaseButton @click="agregarAlimentacion" class="add-button">Añadir</BaseButton>
+            <BaseButton @click="agregarAlimentacion" class="add-button">Añadir Alimentación</BaseButton>
           </div>
         </div>
 
@@ -434,6 +447,7 @@ import BaseModal from '@/components/BaseModal.vue'
 import BaseSelect from '@/components/BaseSelect.vue'
 import MapEmbed from '@/components/MapEmbed.vue'
 import AppIcons from '@/components/icons/AppIcons.vue'
+import { comunasCoords } from '@/data/comunasChile.js'
 
 // --- Estado y Reactividad ---
 const isLoading = ref(true)
@@ -975,7 +989,13 @@ async function guardarCurso() {
     payload.CUR_MODALIDAD = Number(payload.CUR_MODALIDAD || 1)
     payload.CUR_TIPO_CURSO = Number(payload.CUR_TIPO_CURSO || 1)
     payload.CUR_ADMINISTRA = Number(payload.CUR_ADMINISTRA || 1)
-    payload.CUR_ESTADO = Number(payload.CUR_ESTADO !== undefined ? payload.CUR_ESTADO : 0)
+    // Estado automático: si estaba Anulado (2), mantener; si no, calcular según períodos
+    const originalEstado = originalCursoBackup.value?.CUR_ESTADO
+    if (Number(originalEstado) === 2) {
+      payload.CUR_ESTADO = 2
+    } else {
+      payload.CUR_ESTADO = computeAutoEstadoFromFechas(fechasCurso.value)
+    }
 
     if (isTrulyNew.value) {
       // Obtener usuario actual para USU_ID
@@ -1104,6 +1124,28 @@ async function guardarCurso() {
   }
 }
 
+// --- Estado automático basado en fechas ---
+function computeAutoEstadoFromFechas(fechas) {
+  try {
+    const list = Array.isArray(fechas) ? fechas : []
+    if (!list.length) return 0 // Pendiente
+    const starts = list.map(f => new Date(f.CUF_FECHA_INICIO)).filter(d => !isNaN(d))
+    const ends = list.map(f => new Date(f.CUF_FECHA_TERMINO || f.CUF_FECHA_INICIO)).filter(d => !isNaN(d))
+    if (!starts.length || !ends.length) return 0
+    const minStart = new Date(Math.min(...starts))
+    const maxEnd = new Date(Math.max(...ends))
+    const today = new Date()
+    const t = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+    const ms = new Date(minStart.getFullYear(), minStart.getMonth(), minStart.getDate())
+    const me = new Date(maxEnd.getFullYear(), maxEnd.getMonth(), maxEnd.getDate())
+    if (t < ms) return 0 // Pendiente
+    if (t > me) return 3 // Finalizado
+    return 1 // Vigente
+  } catch {
+    return 0
+  }
+}
+
 // --- Deshabilitar (CUR_ESTADO=2) ---
 async function deshabilitarCurso(curso) {
   if (!window.confirm('¿Deshabilitar este curso?')) return
@@ -1136,22 +1178,28 @@ const comunasList = ref([])
 const cargosList = ref([])
 const comunasOptions = computed(() => comunasList.value.map(c => ({ value: c.COM_ID, text: c.COM_DESCRIPCION })))
 
-// Ubicar mapa según comuna seleccionada (coordenadas aproximadas por nombre)
-const comunaCoords = {
-  'Concepción': { lat: -36.827, lng: -73.050 },
-  'Santiago': { lat: -33.45694, lng: -70.64827 },
-  'Valparaíso': { lat: -33.0472, lng: -71.6127 },
-}
+// Ubicar mapa según comuna seleccionada (coordenadas importadas de todas las comunas de Chile)
+const comunaCoords = comunasCoords
 
 watch(() => form.value.COM_ID_LUGAR, (newComunaId) => {
   if (!newComunaId) return
   const comunaObj = comunasList.value.find(c => Number(c.COM_ID) === Number(newComunaId))
-  if (!comunaObj) return
+  if (!comunaObj) {
+    console.warn('[CRUDcursos] Comuna no encontrada con ID:', newComunaId)
+    return
+  }
   const nombre = comunaObj.COM_DESCRIPCION
+  console.log('[CRUDcursos] Comuna seleccionada:', nombre)
   const coords = comunaCoords[nombre]
   if (coords) {
+    console.log('[CRUDcursos] Actualizando coordenadas a:', coords)
     form.value.CUR_COORD_LATITUD = coords.lat
     form.value.CUR_COORD_LONGITUD = coords.lng
+  } else {
+    console.warn('[CRUDcursos] No hay coordenadas definidas para:', nombre)
+    // Usar coordenadas por defecto de Santiago
+    form.value.CUR_COORD_LATITUD = -33.45694
+    form.value.CUR_COORD_LONGITUD = -70.64827
   }
 })
 const cargosOptions = computed(() => cargosList.value.map(c => ({ value: c.CAR_ID, text: c.CAR_DESCRIPCION })))
@@ -1288,23 +1336,32 @@ async function eliminarAlimentacion(item) {
   } finally { isDeletingAlimentacion.value = false }
 }
 
-function abrirModalVer(curso) {
+async function abrirModalVer(curso) {
   cursoSeleccionado.value = curso
-  cargarFechasDelCurso(curso.CUR_ID)
-  seccionesCurso.value = seccionesList.value.filter(s => s.CUR_ID === curso.CUR_ID)
-  // Cargar formadores y alimentación del curso para detalle
-  Promise.all([
-    formadoresApi.list({ CUR_ID: curso.CUR_ID }).catch(() => []),
-    alimentacionesApi.list({ CUR_ID: curso.CUR_ID }).catch(() => []),
-    alimentacionCatalogo.value.length ? Promise.resolve(alimentacionCatalogo.value) : mantenedores.list('alimentacion').catch(() => []),
-  ]).then(([forms, alims, cat]) => {
+  mostrarModalVer.value = true // Abrir modal inmediatamente para mostrar al usuario
+  
+  // Cargar datos en segundo plano
+  try {
+    await cargarFechasDelCurso(curso.CUR_ID)
+    seccionesCurso.value = seccionesList.value.filter(s => Number(s.CUR_ID) === Number(curso.CUR_ID))
+    
+    // Cargar formadores y alimentación en paralelo pero sin bloquear UI
+    const [forms, alims] = await Promise.all([
+      formadoresApi.list({ CUR_ID: curso.CUR_ID, page_size: 500 }).catch(() => []),
+      alimentacionesApi.list({ CUR_ID: curso.CUR_ID, page_size: 500 }).catch(() => []),
+    ])
+    
     formadoresCurso.value = Array.isArray(forms?.results) ? forms.results : (forms || [])
     alimentacionesCurso.value = Array.isArray(alims?.results) ? alims.results : (alims || [])
+    
+    // Cargar catálogo de alimentación solo si es necesario
     if (!alimentacionCatalogo.value.length) {
+      const cat = await mantenedores.alimentacion.list().catch(() => [])
       alimentacionCatalogo.value = Array.isArray(cat?.results) ? cat.results : (cat || [])
     }
-  }).finally(() => { /* noop */ })
-  mostrarModalVer.value = true
+  } catch (e) {
+    console.error('[abrirModalVer] Error cargando datos:', e)
+  }
 }
 
 function cerrarModalVer() {
@@ -1435,11 +1492,13 @@ function cerrarModalVer() {
 }
 
 .modal-body { padding: 16px; max-height: calc(92vh - 160px); overflow-y: auto; }
+/* Compactar un poco el contenido del modal para mayor comodidad visual */
+.modal-body { padding: 12px; }
 
 .form-grid-modal {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 10px;
 }
 
 .form-group {
@@ -1453,17 +1512,37 @@ function cerrarModalVer() {
 
 .form-group label {
   font-weight: 500;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   font-size: 14px;
   color: #374151;
 }
 
 .form-group input, .form-group select, .form-group textarea {
   width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 14px;
+  padding: 4px 8px; /* compact padding */
+  border: 1.5px solid #4b5563; /* más contraste */
+  border-radius: 5px;
+  font-size: 13px; /* ligeramente menor */
+  background: #ffffff;
+  line-height: 1.25;
+}
+.form-group :deep(input), .form-group :deep(select), .form-group :deep(textarea) {
+  padding: 4px 8px;
+  border: 1.5px solid #4b5563;
+  font-size: 13px;
+  background: #ffffff;
+  border-radius: 5px;
+  line-height: 1.25;
+}
+.form-group :deep(input:focus), .form-group :deep(select:focus), .form-group :deep(textarea:focus),
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37,99,235,0.15);
+}
+.form-group :deep(input::placeholder), .form-group :deep(textarea::placeholder) {
+  color: #374151;
+  opacity: 0.6;
 }
 .field-hint {
   margin-top: 4px;
@@ -1526,10 +1605,44 @@ function cerrarModalVer() {
 .add-fecha-form {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr auto;
-  gap: 16px;
+  gap: 10px;
   align-items: flex-end;
 }
 .add-button {
   height: fit-content;
+}
+
+/* Icono dentro de inputs de fecha */
+.input-icon { position: relative; }
+.input-icon :deep(input) { padding-right: 28px; }
+.input-icon .icon { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #6b7280; pointer-events: none; }
+/* Ocultar el ícono nativo del datepicker cuando usamos icono personalizado,
+   manteniendo el área clickeable para abrir el calendario */
+.input-icon :deep(input[type="date"])::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+/* Evitar iconos duplicados en otros motores cuando apliquen */
+.input-icon :deep(input[type="date"]) {
+  background-image: none;
+}
+
+/* Grid para cuotas */
+.cuotas-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+/* Línea de agregado específica para 4 campos + botón */
+.add-formadores-form {
+  grid-template-columns: 1fr 1fr 1fr 1fr auto;
+}
+/* Línea de agregado específica para 5 campos + botón */
+.add-alimentacion-form {
+  grid-template-columns: 1fr 1fr 1fr 1fr 0.8fr auto;
 }
 </style>
