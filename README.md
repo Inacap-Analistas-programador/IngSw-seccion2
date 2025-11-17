@@ -79,6 +79,31 @@ asegurate de estar posicionado en manage.py con
 
 ---
 
+# Crear .env para conectar con Base de Datos
+debes crear un archivo .env que posea los siguientes datos:
+```bash
+SECRET_KEY=django-insecure-@mmunrpygm35@p4d**^f34ixb%k6k5zcb^6+@v8hj3%s71
+DATABASE=ssb
+USER=root
+PASSWORD_DB=
+HOST=127.0.0.1
+PORT=3306
+DEBUG_API=True
+```
+## crear SECRET_KEY
+si no tienes una secret_key o te da problemas, intenta crear una nueva
+```bash
+from django.core.management.utils import get_random_secret_key
+print(get_random_secret_key())
+```
+esto te devolverá una clave, que deberás copiar y pegar en la variable **SECRET_KEY**
+
+---
+
+# Iniciar Base de Datos
+MYSQL debe estar instalado de manera global, no en el venv, por lo que debes dirigirte al siguiente link
+---
+
 ## 🔹 3. Frontend – Vue Cliente
 
 1. Desactivar el entorno virtual:
