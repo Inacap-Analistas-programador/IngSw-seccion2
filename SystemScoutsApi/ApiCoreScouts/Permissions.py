@@ -1,6 +1,8 @@
 # ApiCoreScouts/Permissions.py
 from rest_framework.permissions import BasePermission
 
+from .Models.ModuloUsuarios import Perfil_Aplicacion
+
 class PerfilPermission(BasePermission):
     """
     Permite acceso según el perfil y la aplicación.
@@ -14,9 +16,37 @@ class PerfilPermission(BasePermission):
         if not request.user.USU_VIGENTE:
             return False
 
-        # Ejemplo: chequea si el usuario tiene permiso de ingresar a una app específica
         app_name = getattr(view, 'APP_NAME', None)
-        if app_name:
-            return request.user.PEL_ID.perfil_aplicacion_set.filter(APL_ID__APL_DESCRIPCION=app_name, PEA_INGRESAR=True).exists()
-        
+        perfil = getattr(request.user, 'PEL_ID', None)
+        if not perfil:
+            return False
+
+        if not app_name:
+            return True
+
+        try:
+            perfil_aplicacion = perfil.perfil_aplicacion_set.select_related('APL_ID').get(
+                APL_ID__APL_DESCRIPCION=app_name
+            )
+        except Perfil_Aplicacion.DoesNotExist:
+            return False
+
+        required_permissions = getattr(view, 'REQUIRED_PERMISSIONS', None)
+        if required_permissions is None:
+            action_permissions = getattr(view, 'ACTION_PERMISSIONS', {})
+            action = getattr(view, 'action', None)
+            required_permissions = action_permissions.get(action) if action else None
+
+        if not required_permissions:
+            required_permissions = ('PEA_INGRESAR',)
+
+        if isinstance(required_permissions, str):
+            required_permissions = (required_permissions,)
+
+        for perm_name in required_permissions:
+            if not hasattr(perfil_aplicacion, perm_name):
+                return False
+            if not getattr(perfil_aplicacion, perm_name):
+                return False
+
         return True
