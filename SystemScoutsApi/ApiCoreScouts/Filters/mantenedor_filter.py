@@ -5,7 +5,6 @@ from ApiCoreScouts.Models.mantenedor_model import (
 	Tipo_Curso, Tipo_Archivo
 )
 
-
 class RolFilter(django_filters.FilterSet):
 	descripcion = django_filters.CharFilter(field_name='ROL_DESCRIPCION', lookup_expr='icontains')
 	tipo = django_filters.NumberFilter(field_name='ROL_TIPO')
@@ -14,7 +13,6 @@ class RolFilter(django_filters.FilterSet):
 	class Meta:
 		model = Rol
 		fields = ['descripcion', 'tipo', 'vigente']
-
 
 class CargoFilter(django_filters.FilterSet):
 	descripcion = django_filters.CharFilter(field_name='CAR_DESCRIPCION', lookup_expr='icontains')
@@ -34,7 +32,6 @@ class NivelFilter(django_filters.FilterSet):
 		model = Nivel
 		fields = ['descripcion', 'orden', 'vigente']
 
-
 class ComunaFilter(django_filters.FilterSet):
 	descripcion = django_filters.CharFilter(field_name='COM_DESCRIPCION', lookup_expr='icontains')
 	provincia_id = django_filters.NumberFilter(field_name='PRO_ID__PRO_ID')
@@ -44,7 +41,6 @@ class ComunaFilter(django_filters.FilterSet):
 		model = Comuna
 		fields = ['descripcion', 'provincia_id', 'vigente']
 
-
 class TipoCursoFilter(django_filters.FilterSet):
 	descripcion = django_filters.CharFilter(field_name='TCU_DESCRIPCION', lookup_expr='icontains')
 	tipo = django_filters.NumberFilter(field_name='TCU_TIPO')
@@ -53,7 +49,6 @@ class TipoCursoFilter(django_filters.FilterSet):
 	class Meta:
 		model = Tipo_Curso
 		fields = ['descripcion', 'tipo', 'vigente']
-
 
 class TipoArchivoFilter(django_filters.FilterSet):
 	descripcion = django_filters.CharFilter(field_name='TAR_DESCRIPCION', lookup_expr='icontains')
