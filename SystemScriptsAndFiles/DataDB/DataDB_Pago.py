@@ -1,11 +1,13 @@
 import mysql.connector
 from faker import Faker
+from dotenv import load_dotenv
 import random
 import os
 from datetime import datetime, timedelta
 from decimal import Decimal
 
 fake = Faker('es_CL')
+load_dotenv()
 
 # 🔧 Conexión a la base de datos
 conexion = mysql.connector.connect(
