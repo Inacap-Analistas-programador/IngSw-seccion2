@@ -1,7 +1,10 @@
 import mysql.connector
+from dotenv import load_dotenv
 from faker import Faker
 import random
 import os
+
+load_dotenv()
 
 fake = Faker('es_CL')
 
