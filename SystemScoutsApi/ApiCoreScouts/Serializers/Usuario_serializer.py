@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ..Models.ModuloUsuarios import *
+from ..Models.usuario_model import *
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 
