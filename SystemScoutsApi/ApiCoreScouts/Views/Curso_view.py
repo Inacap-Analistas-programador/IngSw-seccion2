@@ -12,6 +12,8 @@ class StandardResultsSetPagination(PageNumberPagination):
 class CursoViewSet(viewsets.ModelViewSet):
     queryset = Curso.objects.all()
     serializer_class = MC_S.CursoSerializer
+    filterset_class = CF.CursoFilter
+    pagination_class = StandardResultsSetPagination
 
 class CursoCuotaViewSet(viewsets.ModelViewSet):
     queryset = Curso_Cuota.objects.all()
@@ -34,6 +36,8 @@ class CursoCoordinadorViewSet(viewsets.ModelViewSet):
 class CursoSeccionViewSet(viewsets.ModelViewSet):
     queryset = Curso_Seccion.objects.all()
     serializer_class = MC_S.CursoSeccionSerializer
+    filterset_class = CF.CursoSeccionFilter
+    pagination_class = StandardResultsSetPagination
 
 class CursoFormadorViewSet(viewsets.ModelViewSet):
     queryset = Curso_Formador.objects.all()

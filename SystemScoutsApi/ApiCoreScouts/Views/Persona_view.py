@@ -1,9 +1,15 @@
 from rest_framework import viewsets
 from ..Serializers import Persona_serializer as MU_S
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.renderers import JSONRenderer
 from ..Filters.persona_filter import *
 from ..Models.persona_model import *
+
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 100
+    page_size_query_param = 'page_size'
+    max_page_size = 1000
 
 class PersonaViewSet(viewsets.ModelViewSet):
     queryset = Persona.objects.all()
