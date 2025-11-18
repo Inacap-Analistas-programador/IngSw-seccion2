@@ -114,8 +114,14 @@ DATABASES = {
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         },
+        'CONN_MAX_AGE': 0,
+        'DISABLE_SERVER_SIDE_CURSORS': True,
     }
 }
+
+# Deshabilitar verificación de versión para MariaDB 10.4
+import django.db.backends.mysql.base
+django.db.backends.mysql.base.DatabaseWrapper.check_database_version_supported = lambda self: None
 
 AUTHENTICATION_BACKENDS = [
     'ApiCoreScouts.authentication.UsuarioBackend',

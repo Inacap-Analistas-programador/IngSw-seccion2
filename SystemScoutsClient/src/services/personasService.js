@@ -11,7 +11,7 @@ const makeCrud = base => ({
 
 // Exportaciones CON prefijo 'personas/' (para componentes actuales como Gestionpersonas.vue)
 export const personas = makeCrud('personas/personas')
-export const personasCompletas = makeCrud('personas/personas-completas')
+export const personasCompletas = makeCrud('personas/personas') // Usar el mismo endpoint que personas
 export const grupos = makeCrud('personas/grupos')
 export const formadores = makeCrud('personas/formadores')
 export const individuales = makeCrud('personas/individuales')
@@ -22,7 +22,7 @@ export const vehiculos = makeCrud('personas/vehiculos')
 
 // Exportaciones SIN prefijo (para otros componentes que lo necesiten)
 export const personasSinPrefijo = makeCrud('personas')
-export const personasCompletasSinPrefijo = makeCrud('personas-completas')
+export const personasCompletasSinPrefijo = makeCrud('personas') // Usar el mismo endpoint
 export const gruposSinPrefijo = makeCrud('grupos')
 export const formadoresSinPrefijo = makeCrud('formadores')
 export const individualesSinPrefijo = makeCrud('individuales')
@@ -156,6 +156,8 @@ export default {
   obtenerRoles,
   obtenerRamas,
   obtenerGrupos,
+  // Método personalizado para obtener cursos de una persona
+  obtenerCursosPersona: (personaId) => request(`personas/personas/${personaId}/cursos/`),
   // Versiones sin prefijo también accesibles desde el objeto
   sinPrefijo: {
     personas: personasSinPrefijo,

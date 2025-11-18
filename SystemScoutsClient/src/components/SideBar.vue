@@ -1,5 +1,5 @@
 <template>
-  <aside class="sidebar">
+  <aside id="app-sidebar" :class="['sidebar', { collapsed }]">
     <nav class="sidebar-nav">
       
       <!-- Sin sesión iniciada: solo mostrar Formulario -->
@@ -12,41 +12,79 @@
       <div v-else>
         <!-- Apartado desplegable: Usuarios y Roles -->
         <div class="nav-item nav-collapsible" @click="toggleUsuarios" :class="{ 'router-link-exact-active': showUsuarios }">
+          <span class="nav-icon"><AppIcons name="users" :size="20" /></span>
           <span class="nav-collapsible-title">Usuarios y Roles</span>
           <span class="caret" :class="{ open: showUsuarios }">▾</span>
         </div>
-        <div v-show="showUsuarios" class="submenu">
-          <router-link to="/usuarios" class="submenu-item">Usuarios</router-link>
-          <router-link to="/roles" class="submenu-item">Roles</router-link>
-        </div>
+        <Transition name="submenu-slide">
+          <div v-show="showUsuarios" class="submenu">
+            <router-link to="/usuarios" class="submenu-item"><span class="submenu-icon"><AppIcons name="user" :size="16" /></span>Usuarios</router-link>
+            <router-link to="/roles" class="submenu-item"><span class="submenu-icon"><AppIcons name="lock" :size="16" /></span>Roles</router-link>
+          </div>
+        </Transition>
 
-        <router-link to="/cursos-capacitaciones" class="nav-item">Cursos y Capacitaciones</router-link>
-        <router-link to="/inscripciones" class="nav-item">Inscripciones</router-link>
-        <router-link to="/gestionpersonas" class="nav-item">Gestión de Personas</router-link>
-        <router-link to="/pagos" class="nav-item">Pagos</router-link>
-        <router-link to="/correos" class="nav-item">Envío de Correos</router-link>
-        <router-link to="/mantenedores" class="nav-item">Mantenedores</router-link>
-        <router-link to="/manual-acreditacion" class="nav-item">Acreditación Manual</router-link>
-        <router-link to="/verificador-qr" class="nav-item">Verificador QR</router-link>
+        <router-link to="/cursos-capacitaciones" class="nav-item">
+          <span class="nav-icon"><AppIcons name="book" :size="20" /></span>
+          <span class="nav-text">Cursos y Capacitaciones</span>
+        </router-link>
+        <router-link to="/inscripciones" class="nav-item">
+          <span class="nav-icon"><AppIcons name="clipboard" :size="20" /></span>
+          <span class="nav-text">Inscripciones</span>
+        </router-link>
+        <router-link to="/gestionpersonas" class="nav-item">
+          <span class="nav-icon"><AppIcons name="users" :size="20" /></span>
+          <span class="nav-text">Gestión de Personas</span>
+        </router-link>
+        <router-link to="/pagos" class="nav-item">
+          <span class="nav-icon"><AppIcons name="credit-card" :size="20" /></span>
+          <span class="nav-text">Pagos</span>
+        </router-link>
+        <router-link to="/correos" class="nav-item">
+          <span class="nav-icon"><AppIcons name="mail" :size="20" /></span>
+          <span class="nav-text">Envío de Correos</span>
+        </router-link>
+        <router-link to="/mantenedores" class="nav-item">
+          <span class="nav-icon"><AppIcons name="settings" :size="20" /></span>
+          <span class="nav-text">Mantenedores</span>
+        </router-link>
+        <router-link to="/manual-acreditacion" class="nav-item">
+          <span class="nav-icon"><AppIcons name="user-check" :size="20" /></span>
+          <span class="nav-text">Acreditación Manual</span>
+        </router-link>
+        <router-link to="/verificador-qr" class="nav-item">
+          <span class="nav-icon"><AppIcons name="qrcode" :size="20" /></span>
+          <span class="nav-text">Verificador QR</span>
+        </router-link>
 
   <!-- Apartado desplegable: Pantallas 2 -->
         <div class="nav-item nav-collapsible" @click="togglePantallas2" :class="{ 'router-link-exact-active': showPantallas2 }">
+          <span class="nav-icon"><AppIcons name="chart-bar" :size="20" /></span>
           <span class="nav-collapsible-title">Pantallas 2</span>
           <span class="caret" :class="{ open: showPantallas2 }">▾</span>
         </div>
-        <div v-show="showPantallas2" class="submenu">
-          <router-link to="/dashboard-2" class="submenu-item">Dashboard 2</router-link>
-          <router-link to="/inscripciones-2" class="submenu-item">Formulario 2</router-link>
-        </div>
+        <Transition name="submenu-slide">
+          <div v-show="showPantallas2" class="submenu">
+            <router-link to="/dashboard-2" class="submenu-item">Dashboard 2</router-link>
+            <router-link to="/inscripciones-2" class="submenu-item">Formulario 2</router-link>
+          </div>
+        </Transition>
       </div>
     </nav>
+    
+    <div class="sidebar-footer" v-if="typeof props.collapsed === 'undefined'">
+      <button class="collapse-btn-bottom" @click="toggleCollapse" :title="collapsed ? 'Expandir sidebar' : 'Colapsar sidebar'" :aria-pressed="collapsed" :aria-expanded="!collapsed" aria-controls="app-sidebar">
+        <AppIcons :name="collapsed ? 'chevron-right' : 'chevron-left'" :size="16" />
+        <span v-if="!collapsed" class="collapse-text">Contraer</span>
+      </button>
+    </div>
   </aside>
 </template>
 
 <script setup>
-import { ref, onMounted, watch, onBeforeUnmount } from 'vue'
-import { useRoute } from 'vue-router'
-import authService from '@/services/authService'
+import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import authService from '../services/authService';
+import AppIcons from './icons/AppIcons.vue';
 
 // Se mantiene el rol para condicionar el menú (por defecto admin para pruebas)
 // Backend auth fue deshabilitado: mostrar el menú completo en UI-only mode
@@ -77,6 +115,30 @@ function onStorage(e) {
 const showUsuarios = ref(false)
 const showMantenedores = ref(false)
 const showPantallas2 = ref(false)
+
+// Sidebar can be either controlled by parent via `collapsed` prop or operate in uncontrolled mode using localStorage
+const props = defineProps({
+  collapsed: { type: Boolean, default: undefined }
+})
+const emit = defineEmits(['update:collapsed'])
+
+const internalCollapsed = ref(false)
+
+// computed `collapsed` acts as a proxy: when prop is provided, it becomes controlled; otherwise it uses internal state.
+const collapsed = computed({
+  get() {
+    return typeof props.collapsed !== 'undefined' ? props.collapsed : internalCollapsed.value
+  },
+  set(v) {
+    if (typeof props.collapsed !== 'undefined') {
+      emit('update:collapsed', v)
+    } else {
+      internalCollapsed.value = v
+    }
+    try { localStorage.setItem('sidebar-collapsed', v ? '1' : '0') } catch (e) { /* ignore */ }
+  }
+})
+
 const mantenedoresTabs = [
   // Orden solicitado: región, provincia, comuna, zona, distrito, grupo
   { id: 'regiones', label: 'Regiones' },
@@ -109,28 +171,43 @@ function togglePantallas2() {
   showPantallas2.value = !showPantallas2.value
 }
 
-onMounted(async () => {
-  // No consultamos el backend de auth en modo UI-only; usar usuario por defecto
-  
-  const route = useRoute()
-  // Abrir automáticamente si se navega a /mantenedores o /usuarios
-  if (route && route.path) {
-    showUsuarios.value = route.path.startsWith('/usuarios') || route.path.startsWith('/roles')
-    showMantenedores.value = route.path.startsWith('/mantenedores')
-    showPantallas2.value = route.path.startsWith('/dashboard-2') || route.path.startsWith('/inscripciones-2')
-  }
+function toggleCollapse() {
+  const val = !collapsed.value
+  collapsed.value = val
+}
 
-  // Watch para actualizar estado al cambiar de ruta
-  watch(() => route && route.path, async (p) => {
-    if (p) {
-      showUsuarios.value = p.startsWith('/usuarios') || p.startsWith('/roles')
-      showMantenedores.value = p.startsWith('/mantenedores')
-      showPantallas2.value = p.startsWith('/dashboard-2') || p.startsWith('/inscripciones-2')
+function loadCollapsedState() {
+  const saved = localStorage.getItem('sidebar-collapsed')
+  if (saved !== null && typeof props.collapsed === 'undefined') {
+    internalCollapsed.value = saved === '1'
+  }
+}
+
+onMounted(() => {
+  loadCollapsedState()
+  
+  if (typeof window !== 'undefined') {
+    const route = useRoute()
+    // Abrir automáticamente si se navega a /mantenedores o /usuarios
+    if (route && route.path) {
+      showUsuarios.value = route.path.startsWith('/usuarios') || route.path.startsWith('/roles')
+      showMantenedores.value = route.path.startsWith('/mantenedores')
+      showPantallas2.value = route.path.startsWith('/dashboard-2') || route.path.startsWith('/inscripciones-2')
     }
-    // No actualizamos estado de autenticación ni consultamos authService en modo UI-only
-  })
-  // Registrar listener de storage para detectar login/logout en otras pestañas
-  window.addEventListener('storage', onStorage)
+
+    // Watch para actualizar estado al cambiar de ruta
+    watch(() => route && route.path, async (p) => {
+      if (p) {
+        showUsuarios.value = p.startsWith('/usuarios') || p.startsWith('/roles')
+        showMantenedores.value = p.startsWith('/mantenedores')
+        showPantallas2.value = p.startsWith('/dashboard-2') || p.startsWith('/inscripciones-2')
+      }
+      // No actualizamos estado de autenticación ni consultamos authService en modo UI-only
+    })
+    
+    // Registrar listener de storage para detectar login/logout en otras pestañas
+    window.addEventListener('storage', onStorage)
+  }
 })
 
 onBeforeUnmount(() => {
@@ -142,11 +219,11 @@ onBeforeUnmount(() => {
 .sidebar {
   display: flex;
   flex-direction: column;
+  position: fixed;
+  height: calc(100vh - 64px);
+  width: var(--sidebar-width, 250px);
   background: var(--color-primary);
   color: #fff;
-  width: 256px; /* ampliar para cubrir la zona derecha y eliminar franja blanca */
-  height: calc(100vh - 64px); /* Altura total menos la navbar reducida */
-  position: fixed;
   top: 64px; /* Altura ajustada de la navbar */
   left: 0;
   box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
@@ -154,9 +231,98 @@ onBeforeUnmount(() => {
   overflow-y: auto;
   font-weight: 400; /* Regular */
   box-sizing: border-box;
+  transition: width 0.3s ease;
+  padding-top: 0; /* Eliminar padding superior para que el header sea visible */
   /* Ocultar scrollbar */
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE y Edge */
+}
+
+.sidebar.collapsed {
+  width: var(--sidebar-collapsed-width, 70px);
+}
+
+.sidebar-footer {
+  padding: 16px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.collapse-btn-bottom {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.collapse-btn-bottom:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.collapse-btn-bottom:active {
+  transform: translateY(0);
+}
+
+.sidebar.collapsed .collapse-btn-bottom {
+  padding: 12px 8px;
+}
+
+.collapse-text {
+  font-size: 14px;
+}
+
+.sidebar-header {
+  padding: 20px 16px;
+  display: flex;
+  justify-content: flex-end;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--color-primary);
+  flex-shrink: 0;
+  min-height: 60px;
+}
+
+.sidebar.collapsed .sidebar-header {
+  justify-content: center;
+}
+
+.collapse-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 42px;
+  height: 42px;
+}
+
+.collapse-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+}
+
+.collapse-btn:active {
+  transform: scale(0.95);
 }
 
 /* Ocultar scrollbar en Chrome, Safari y Opera */
@@ -168,7 +334,7 @@ onBeforeUnmount(() => {
 /* 2. Navegación */
 .sidebar-nav {
   flex-grow: 1;
-  padding-top: 20px; /* más separación respecto a la navbar */
+  padding-top: 20px;
   padding-bottom: 8px;
 }
 .nav-section-title {
@@ -180,34 +346,117 @@ onBeforeUnmount(() => {
   font-size: 0.75rem; /* 12px */
   font-weight: 400; /* Regular */
   letter-spacing: 0.05em; /* Espaciado */
+  transition: opacity 0.2s ease;
 }
+
+.sidebar.collapsed .nav-section-title {
+  display: none;
+}
+
 .nav-item {
-  display: flex; /* permite alinear iconos y texto */
+  display: flex;
   align-items: center;
-  gap: 12px;
   color: #fff;
   text-decoration: none;
-  padding: 12px 18px; /* Padding para clic cómodo */
-  transition: background 0.15s ease, padding 0.12s ease;
-  /* Botones (14–16 px, Medium/500) */
-  font-size: 0.95rem; /* 15.2px */
-  font-weight: 600; /* Medium/Bold para mejor legibilidad */
-  width: 100%;
-  box-sizing: border-box;
-  border-left: 4px solid transparent; /* para indicar activo */
-  min-height: 44px; /* tamaño mínimo, clickable fácil */
+  padding: 12px 18px;
+  /* Texto mediano (14px, semibold/600) */
+  font-size: 0.875rem; /* 14px */
+  font-weight: 600; /* Semibold */
+  transition: all 0.3s ease;
+  border-left: 3px solid transparent;
+  gap: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+  border-radius: 8px;
+  margin: 2px 8px;
 }
-.nav-item:hover {
-  background: rgba(255,255,255,0.05);
+
+.sidebar.collapsed .nav-item,
+.sidebar.collapsed .nav-collapsible {
+  justify-content: center;
+  padding: 12px 8px;
 }
+
+.nav-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  transition: transform 0.3s ease;
+}
+
+.nav-item:hover .nav-icon,
+.nav-collapsible:hover .nav-icon {
+  transform: scale(1.1);
+}
+
+.nav-icon :deep(svg) {
+  margin-right: 0 !important;
+}
+
+.nav-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: opacity 0.3s ease;
+}
+
+.nav-collapsible-title {
+  transition: opacity 0.3s ease;
+}
+
+.sidebar.collapsed .nav-text,
+.sidebar.collapsed .nav-collapsible-title,
+.sidebar.collapsed .caret,
+.sidebar.collapsed .nav-section-title {
+  opacity: 0;
+  width: 0;
+  display: none;
+}
+
+.sidebar.collapsed .nav-icon {
+  margin: 0;
+  display: flex !important;
+  transform: scale(1);
+}
+
+.sidebar.collapsed .collapse-text {
+  opacity: 0;
+  width: 0;
+  display: none;
+}
+
+.submenu-icon {
+  margin-right: 8px;
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.submenu-icon :deep(svg) {
+  margin-right: 0 !important;
+}
+
+.sidebar.collapsed .submenu {
+  display: none;
+}
+
 .nav-item:hover {
   background: var(--color-primary-hover);
+  transform: translateX(4px);
 }
+
 .router-link-exact-active {
   /* Botones (Bold/600) para estado activo */
   font-weight: 700; /* Bold */
   background: var(--color-primary-hover);
   border-left-color: var(--color-warning); /* marca visual a la izquierda */
+}
+
+.sidebar.collapsed .nav-item:hover {
+  transform: translateX(0) scale(1.05);
 }
 
 /* Desplegable */
@@ -217,6 +466,18 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   cursor: pointer;
   padding: 12px 18px;
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  margin: 2px 8px;
+}
+
+.nav-collapsible:hover {
+  background: var(--color-primary-hover);
+  transform: translateX(4px);
+}
+
+.sidebar.collapsed .nav-collapsible:hover {
+  transform: translateX(0) scale(1.05);
 }
 /* Asegurar que el título del colapsable tenga el mismo peso que los nav-item */
 .nav-collapsible-title {
@@ -231,7 +492,44 @@ onBeforeUnmount(() => {
 .submenu {
   background: rgba(0,0,0,0.08);
   padding: 4px 0 6px 0;
+  overflow: hidden;
 }
+
+.sidebar.collapsed .submenu {
+  display: none;
+}
+
+/* Animación de expansión/contracción del submenú */
+.submenu-slide-enter-active,
+.submenu-slide-leave-active {
+  transition: all 0.3s ease;
+  transform-origin: top;
+}
+
+.submenu-slide-enter-from {
+  opacity: 0;
+  max-height: 0;
+  transform: scaleY(0.8);
+}
+
+.submenu-slide-enter-to {
+  opacity: 1;
+  max-height: 500px;
+  transform: scaleY(1);
+}
+
+.submenu-slide-leave-from {
+  opacity: 1;
+  max-height: 500px;
+  transform: scaleY(1);
+}
+
+.submenu-slide-leave-to {
+  opacity: 0;
+  max-height: 0;
+  transform: scaleY(0.8);
+}
+
 .submenu-item {
   display: block;
   color: rgba(255,255,255,0.95);
