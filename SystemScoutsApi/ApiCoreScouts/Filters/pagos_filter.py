@@ -1,5 +1,5 @@
 import django_filters
-from ApiCoreScouts.Models.pago_model import Pago_Persona, Comprobante_Pago, Pago_Comprobante, Prepago
+from ..Models.pago_model import *
 
 
 class PagoPersonaFilter(django_filters.FilterSet):
@@ -28,6 +28,15 @@ class ComprobantePagoFilter(django_filters.FilterSet):
 		fields = ['usuario_id', 'curso_id', 'numero', 'fecha', 'valor']
 
 
+class PagoComprobanteFilter(django_filters.FilterSet):
+	pago_persona_id = django_filters.NumberFilter(field_name='PAP_ID__PAP_ID', label='ID de pago de persona')
+	comprobante_pago_id = django_filters.NumberFilter(field_name='CPA_ID__CPA_ID', label='ID de comprobante de pago')
+
+	class Meta:
+		model = Pago_Comprobante
+		fields = ['pago_persona_id', 'comprobante_pago_id']
+
+
 class PrepagoFilter(django_filters.FilterSet):
 	persona_id = django_filters.NumberFilter(field_name='PER_ID__PER_ID')
 	curso_id = django_filters.NumberFilter(field_name='CUR_ID__CUR_ID')
@@ -37,3 +46,12 @@ class PrepagoFilter(django_filters.FilterSet):
 	class Meta:
 		model = Prepago
 		fields = ['persona_id', 'curso_id', 'valor', 'vigente']
+
+
+class ProveedorFilter(django_filters.FilterSet):
+	descripcion = django_filters.CharFilter(field_name='PRV_DESCRIPCION', lookup_expr='icontains')
+	vigente = django_filters.BooleanFilter(field_name='PRV_VIGENTE')
+
+	class Meta:
+		model = Proveedor
+		fields = ['descripcion', 'vigente']

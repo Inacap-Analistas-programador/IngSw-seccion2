@@ -108,6 +108,8 @@ https://dev.mysql.com/downloads/workbench/
 una vez instalado, puedes iniciar la base de datos
 has click derecho en el archivo **ssb** y abrir con **MySQL Workbench**
 
+**NOTA: no se debe usar *XAMPP*, solo funciona iniciando con *MySQL Workbench* o *MariaDB***
+
 ---
 
 ## 🔹 3. Frontend – Vue Cliente

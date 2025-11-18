@@ -1,5 +1,5 @@
 import django_filters
-from ApiCoreScouts.Models.archivo_model import Archivo, Archivo_Curso, Archivo_Persona
+from ..Models.archivo_model import *
 
 
 class ArchivoFilter(django_filters.FilterSet):
