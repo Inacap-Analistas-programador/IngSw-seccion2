@@ -1,8 +1,11 @@
 import mysql.connector
 from faker import Faker
+from dotenv import load_dotenv
 import random
 import os
 from datetime import timedelta
+
+load_dotenv()
 
 # ============================
 # CONFIGURACIÓN DE CONEXIÓN

@@ -14,7 +14,7 @@ class UsuarioManager(BaseUserManager):
         return usuario
 
     def create_superuser(self, USU_USERNAME, password=None, **extra_fields):
-        from .usuario_model import Perfil  # 👈 evita import circular
+        from .usuario_model import Perfil  
 
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
@@ -33,12 +33,18 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     USU_ID = models.BigAutoField(primary_key=True, db_column='USU_ID')
     PEL_ID = models.ForeignKey('Perfil',on_delete=models.PROTECT, null=False, db_column='PEL_ID')
     USU_USERNAME = models.CharField(max_length=100, unique=True, null=False, db_column='USU_USERNAME')
-    USU_PASSWORD = models.CharField(max_length=128, null=False, db_column='USU_PASSWORD')
+    password = models.CharField(max_length=128, null=False, db_column='USU_PASSWORD')
+    last_login = None
     USU_RUTA_FOTO = models.CharField(max_length=255, null=True, db_column='USU_RUTA_FOTO')
     USU_VIGENTE = models.BooleanField(default=True, null=False, db_column='USU_VIGENTE')
 
-    is_staff = models.BooleanField(default=False)
-    is_superuser = models.BooleanField(default=False)
+    @property
+    def is_staff(self):
+        return False
+
+    @property
+    def is_superuser(self):
+        return False
 
     objects = UsuarioManager()
 
@@ -53,8 +59,6 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     def id(self):
         return self.USU_ID
 
-
-    # Django espera estas propiedades
     @property
     def is_authenticated(self):
         return True
@@ -64,10 +68,10 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         return False
 
     def set_password(self, raw_password):
-        self.USU_PASSWORD = make_password(raw_password)
+        self.password = make_password(raw_password)
 
     def check_password(self, raw_password):
-        return check_password(raw_password, self.USU_PASSWORD)
+        return check_password(raw_password, self.password)
 
     class Meta:
         db_table = 'USUARIO'

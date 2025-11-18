@@ -1,8 +1,20 @@
 <template>
   <div class="dashboard-scout">
+    <!-- Bloque de alertas globales -->
+    <div v-if="alertas.length > 0" style="margin-bottom: 16px;">
+      <BaseAlert
+        v-for="alerta in alertas"
+        :key="alerta.id"
+        :type="alerta.type"
+        :title="alerta.title"
+        :message="alerta.message"
+        :dismissible="true"
+        @close="removerAlerta(alerta.id)"
+      />
+    </div>
     <!-- Contenido Principal -->
     <main class="main-content">
-      <!-- Selector de Curso con Semáforo - VERSIÓN ESTANDARIZADA -->
+      <!-- Selector de Curso con Semáforo -->
       <section class="course-selector-section">
         <div class="selector-container">
           <div class="native-select-wrapper">
@@ -16,10 +28,9 @@
             >
               <option value="" disabled>Seleccione un curso</option>
               <option value="todos">Todos los cursos</option>
-              <option value="1">CM-LS-2024 - Curso Medio - Liderazgo Scout</option>
-              <option value="2">PA-T-2024 - Primeros Auxilios en Terreno</option>
-              <option value="3">EA-S-2024 - Educación Ambiental Scout</option>
-              <option value="4">CM-LS-2023 - Curso Medio - Liderazgo Scout (Edición Anterior)</option>
+              <option v-for="curso in cursos" :key="curso.CUR_ID" :value="curso.CUR_ID">
+                {{ curso.CUR_CODIGO }} - {{ curso.CUR_DESCRIPCION }}
+              </option>
             </select>
           </div>
           
@@ -56,18 +67,6 @@
           description="Últimos 7 días"
         />
       </div>
-
-      <!-- Alertas del Sistema -->
-      <BaseAlert
-        v-if="alertas.length > 0"
-        v-for="alerta in alertas"
-        :key="alerta.id"
-        :type="alerta.type"
-        :title="alerta.title"
-        :message="alerta.message"
-        :dismissible="true"
-        @close="removerAlerta(alerta.id)"
-      />
 
       <!-- Gráficos -->
       <section class="charts-section">
@@ -107,15 +106,16 @@
         </div>
       </section>
 
-      <!-- Tabla de Cursos con Acciones - ESTILOS ESTANDARIZADOS -->
+      <!-- Tabla de Cursos -->
       <section class="courses-section">
         <div class="section-header">
           <h3>Cursos Vigentes</h3>
           <button 
             @click="actualizarDatos" 
             class="refresh-btn"
+            :disabled="loading"
           >
-            🔄 Actualizar
+            🔄 {{ loading ? 'Cargando...' : 'Actualizar' }}
           </button>
         </div>
         <div class="table-container-expanded">
@@ -127,6 +127,11 @@
               </tr>
             </thead>
             <tbody>
+              <tr v-if="cursosFiltrados.length === 0">
+                <td :colspan="columnasCursos.length + 1" style="text-align: center; padding: 20px; color: #999;">
+                  No hay cursos disponibles
+                </td>
+              </tr>
               <tr v-for="curso in cursosFiltrados" :key="curso.CUR_ID">
                 <td>{{ curso.CUR_CODIGO }}</td>
                 <td>{{ curso.CUR_DESCRIPCION }}</td>
@@ -139,8 +144,6 @@
                 <td class="actions">
                   <button class="btn-action btn-view" @click="verCurso(curso)">👁 Ver</button>
                   <button class="btn-action btn-edit" @click="editarCurso(curso)">✏ Editar</button>
-                  <button class="btn-action btn-activate" @click="activarCurso(curso)">✅ Activar</button>
-                  <button class="btn-action btn-anular" @click="anularCurso(curso)">🚫 Anular</button>
                 </td>
               </tr>
             </tbody>
@@ -148,7 +151,7 @@
         </div>
       </section>
 
-      <!-- Tabla de Responsables de Cursos - ESTILOS ESTANDARIZADOS CON ACCIONES -->
+      <!-- Tabla de Responsables -->
       <section class="responsibles-section">
         <h3>Responsables de Cursos</h3>
         <div class="tabs-container">
@@ -169,22 +172,25 @@
               <table class="data-table-expanded">
                 <thead>
                   <tr>
-                    <th v-for="col in columnasCoordinadores" :key="col.key">{{ col.label }}</th>
-                    <th>Acciones</th>
+                    <th>Coordinador</th>
+                    <th>Curso</th>
+                    <th>Cargo</th>
+                    <th>Contacto</th>
+                    <th>Estado</th>
                   </tr>
                 </thead>
                 <tbody>
+                  <tr v-if="coordinadores.length === 0">
+                    <td colspan="5" style="text-align: center; padding: 20px; color: #999;">
+                      No hay coordinadores disponibles
+                    </td>
+                  </tr>
                   <tr v-for="coord in coordinadores" :key="coord.CUC_ID">
                     <td>{{ coord.nombre }}</td>
                     <td>{{ coord.curso }}</td>
                     <td>{{ coord.cargo }}</td>
                     <td>{{ coord.contacto }}</td>
                     <td>{{ coord.estadoDisplay }}</td>
-                    <td class="actions">
-                      <button class="btn-action btn-view" @click="verResponsable('coordinador', coord)">👁 Ver</button>
-                      <button class="btn-action btn-edit" @click="editarResponsable('coordinador', coord)">✏ Editar</button>
-                      <button class="btn-action btn-anular" @click="anularResponsable('coordinador', coord)">🚫 Anular</button>
-                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -195,73 +201,25 @@
               <table class="data-table-expanded">
                 <thead>
                   <tr>
-                    <th v-for="col in columnasFormadores" :key="col.key">{{ col.label }}</th>
-                    <th>Acciones</th>
+                    <th>Formador</th>
+                    <th>Curso</th>
+                    <th>Tipo</th>
+                    <th>Contacto</th>
+                    <th>Estado</th>
                   </tr>
                 </thead>
                 <tbody>
+                  <tr v-if="formadores.length === 0">
+                    <td colspan="5" style="text-align: center; padding: 20px; color: #999;">
+                      No hay formadores disponibles
+                    </td>
+                  </tr>
                   <tr v-for="form in formadores" :key="form.CUO_ID">
                     <td>{{ form.nombre }}</td>
                     <td>{{ form.curso }}</td>
                     <td>{{ form.tipo }}</td>
                     <td>{{ form.contacto }}</td>
                     <td>{{ form.estadoDisplay }}</td>
-                    <td class="actions">
-                      <button class="btn-action btn-view" @click="verResponsable('formador', form)">👁 Ver</button>
-                      <button class="btn-action btn-edit" @click="editarResponsable('formador', form)">✏ Editar</button>
-                      <button class="btn-action btn-anular" @click="anularResponsable('formador', form)">🚫 Anular</button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            
-            <!-- Directores -->
-            <div v-if="activeTab === 'directores'" class="table-container-expanded">
-              <table class="data-table-expanded">
-                <thead>
-                  <tr>
-                    <th v-for="col in columnasDirectores" :key="col.key">{{ col.label }}</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="dir in directores" :key="dir.CUO_ID">
-                    <td>{{ dir.nombre }}</td>
-                    <td>{{ dir.curso }}</td>
-                    <td>{{ dir.contacto }}</td>
-                    <td>{{ dir.estadoDisplay }}</td>
-                    <td class="actions">
-                      <button class="btn-action btn-view" @click="verResponsable('director', dir)">👁 Ver</button>
-                      <button class="btn-action btn-edit" @click="editarResponsable('director', dir)">✏ Editar</button>
-                      <button class="btn-action btn-anular" @click="anularResponsable('director', dir)">🚫 Anular</button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            
-            <!-- Alimentación -->
-            <div v-if="activeTab === 'alimentacion'" class="table-container-expanded">
-              <table class="data-table-expanded">
-                <thead>
-                  <tr>
-                    <th v-for="col in columnasAlimentacion" :key="col.key">{{ col.label }}</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="alim in responsablesAlimentacion" :key="alim.CUA_ID">
-                    <td>{{ alim.nombre }}</td>
-                    <td>{{ alim.curso }}</td>
-                    <td>{{ alim.descripcion }}</td>
-                    <td>{{ alim.contacto }}</td>
-                    <td>{{ alim.estadoDisplay }}</td>
-                    <td class="actions">
-                      <button class="btn-action btn-view" @click="verResponsable('alimentacion', alim)">👁 Ver</button>
-                      <button class="btn-action btn-edit" @click="editarResponsable('alimentacion', alim)">✏ Editar</button>
-                      <button class="btn-action btn-anular" @click="anularResponsable('alimentacion', alim)">🚫 Anular</button>
-                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -279,15 +237,16 @@ import { useRouter } from 'vue-router'
 
 // Componentes del sistema
 import BaseAlert from '@/components/BaseAlert.vue'
-import BaseButton from '@/components/BaseButton.vue'
 import DataCard from '@/components/DataCard.vue'
+
+// Services para conectar con la API
+import { cursosService, personasService, pagosService } from '@/services'
 
 export default {
   name: 'DashboardScout',
   
   components: {
     BaseAlert,
-    BaseButton,
     DataCard
   },
   
@@ -300,203 +259,41 @@ export default {
     const loading = ref(false)
     const activeTab = ref('coordinadores')
 
-    // Datos de ejemplo basados en los cursos reales de pre-inscripción
-    const personas = ref([
-      { 
-        PER_ID: 1, 
-        PER_RUN: 12345678, 
-        PER_DV: '9', 
-        PER_APELPAT: 'Pérez', 
-        PER_APELMAT: 'González', 
-        PER_NOMBRES: 'Juan Antonio', 
-        PER_EMAIL: 'juan@email.com', 
-        PER_FECHA_NAC: '1990-05-15',
-        PER_FONO: '+56912345678',
-        PER_VIGENTE: true
-      },
-      { 
-        PER_ID: 2, 
-        PER_RUN: 23456789, 
-        PER_DV: '0', 
-        PER_APELPAT: 'González', 
-        PER_APELMAT: 'López', 
-        PER_NOMBRES: 'María Isabel', 
-        PER_EMAIL: 'maria@email.com', 
-        PER_FECHA_NAC: '1985-08-20',
-        PER_FONO: '+56923456789',
-        PER_VIGENTE: true
-      },
-      { 
-        PER_ID: 3, 
-        PER_RUN: 34567890, 
-        PER_DV: '1', 
-        PER_APELPAT: 'Martínez', 
-        PER_APELMAT: 'Silva', 
-        PER_NOMBRES: 'Carlos Alberto', 
-        PER_EMAIL: 'carlos@email.com', 
-        PER_FECHA_NAC: '1992-11-30',
-        PER_FONO: '+56934567890',
-        PER_VIGENTE: true
-      },
-      { 
-        PER_ID: 4, 
-        PER_RUN: 45678901, 
-        PER_DV: '2', 
-        PER_APELPAT: 'Rodríguez', 
-        PER_APELMAT: 'Fernández', 
-        PER_NOMBRES: 'Ana Carolina', 
-        PER_EMAIL: 'ana@email.com', 
-        PER_FECHA_NAC: '1993-03-25',
-        PER_FONO: '+56945678901',
-        PER_VIGENTE: true
-      },
-      { 
-        PER_ID: 5, 
-        PER_RUN: 56789012, 
-        PER_DV: '3', 
-        PER_APELPAT: 'López', 
-        PER_APELMAT: 'Morales', 
-        PER_NOMBRES: 'Pedro Alejandro', 
-        PER_EMAIL: 'pedro@email.com', 
-        PER_FECHA_NAC: '1988-07-12',
-        PER_FONO: '+56956789012',
-        PER_VIGENTE: true
-      }
-    ])
+    // Datos reactivos que se cargarán desde la API
+    const personas = ref([])
+    const cursos = ref([])
+    const personasCurso = ref([])
+    const pagosPersona = ref([])
+    const cursoCoordinadores = ref([])
+    const cursoFormadores = ref([])
 
-    // Cursos reales de pre-inscripción con diferentes estados para probar el semáforo
-    const cursos = ref([
-      { 
-        CUR_ID: 1,
-        CUR_CODIGO: 'CM-LS-2024',
-        CUR_DESCRIPCION: 'Curso Medio - Liderazgo Scout',
-        CUR_FECHA_HORA: '2024-03-15 09:00:00',
-        CUR_LUGAR: 'Campamento Regional Biobío',
-        CUR_ESTADO: 1, // Activo - Semáforo VERDE
-        CUR_CUOTA_CON_ALMUERZO: 85000,
-        CUR_CUOTA_SIN_ALMUERZO: 60000,
-        CUR_MODALIDAD: 1,
-        CUR_TIPO_CURSO: 1
-      },
-      { 
-        CUR_ID: 2,
-        CUR_CODIGO: 'PA-T-2024',
-        CUR_DESCRIPCION: 'Primeros Auxilios en Terreno',
-        CUR_FECHA_HORA: '2024-03-22 08:30:00',
-        CUR_LUGAR: 'Centro de Formación Scout',
-        CUR_ESTADO: 1, // Activo - Semáforo VERDE
-        CUR_CUOTA_CON_ALMUERZO: 75000,
-        CUR_CUOTA_SIN_ALMUERZO: 50000,
-        CUR_MODALIDAD: 1,
-        CUR_TIPO_CURSO: 2
-      },
-      { 
-        CUR_ID: 3,
-        CUR_CODIGO: 'EA-S-2024',
-        CUR_DESCRIPCION: 'Educación Ambiental Scout',
-        CUR_FECHA_HORA: '2024-02-10 10:00:00',
-        CUR_LUGAR: 'Reserva Natural Nonguén',
-        CUR_ESTADO: 2, // Finalizado - Semáforo AMARILLO
-        CUR_CUOTA_CON_ALMUERZO: 65000,
-        CUR_CUOTA_SIN_ALMUERZO: 45000,
-        CUR_MODALIDAD: 1,
-        CUR_TIPO_CURSO: 3
-      },
-      { 
-        CUR_ID: 4,
-        CUR_CODIGO: 'CM-LS-2023',
-        CUR_DESCRIPCION: 'Curso Medio - Liderazgo Scout (Edición Anterior)',
-        CUR_FECHA_HORA: '2023-11-05 09:00:00',
-        CUR_LUGAR: 'Campamento Regional',
-        CUR_ESTADO: 3, // Cancelado - Semáforo ROJO
-        CUR_CUOTA_CON_ALMUERZO: 80000,
-        CUR_CUOTA_SIN_ALMUERZO: 55000,
-        CUR_MODALIDAD: 1,
-        CUR_TIPO_CURSO: 1
-      }
-    ])
-
-    const personasCurso = ref([
-      // Curso Medio - Liderazgo Scout (CUR_ID: 1)
-      { PEC_ID: 1, PER_ID: 1, CUR_ID: 1, PEC_ACREDITADO: true, PEC_REGISTRO: true },
-      { PEC_ID: 2, PER_ID: 2, CUR_ID: 1, PEC_ACREDITADO: false, PEC_REGISTRO: true },
-      { PEC_ID: 3, PER_ID: 3, CUR_ID: 1, PEC_ACREDITADO: true, PEC_REGISTRO: true },
-      
-      // Primeros Auxilios en Terreno (CUR_ID: 2)
-      { PEC_ID: 4, PER_ID: 4, CUR_ID: 2, PEC_ACREDITADO: true, PEC_REGISTRO: true },
-      { PEC_ID: 5, PER_ID: 5, CUR_ID: 2, PEC_ACREDITADO: true, PEC_REGISTRO: true },
-      
-      // Educación Ambiental Scout (CUR_ID: 3)
-      { PEC_ID: 6, PER_ID: 1, CUR_ID: 3, PEC_ACREDITADO: true, PEC_REGISTRO: true },
-      { PEC_ID: 7, PER_ID: 3, CUR_ID: 3, PEC_ACREDITADO: true, PEC_REGISTRO: true },
-      { PEC_ID: 8, PER_ID: 5, CUR_ID: 3, PEC_ACREDITADO: true, PEC_REGISTRO: true }
-    ])
-
-    const pagosPersona = ref([
-      // Curso Medio - Liderazgo Scout
-      { PAP_ID: 1, PER_ID: 1, CUR_ID: 1, PAP_VALOR: 85000, PAP_ESTADO: 1 }, // Pagado
-      { PAP_ID: 2, PER_ID: 2, CUR_ID: 1, PAP_VALOR: 85000, PAP_ESTADO: 2 }, // Pendiente
-      { PAP_ID: 3, PER_ID: 3, CUR_ID: 1, PAP_VALOR: 85000, PAP_ESTADO: 1 }, // Pagado
-      
-      // Primeros Auxilios en Terreno
-      { PAP_ID: 4, PER_ID: 4, CUR_ID: 2, PAP_VALOR: 75000, PAP_ESTADO: 1 }, // Pagado
-      { PAP_ID: 5, PER_ID: 5, CUR_ID: 2, PAP_VALOR: 75000, PAP_ESTADO: 1 }, // Pagado
-      
-      // Educación Ambiental Scout
-      { PAP_ID: 6, PER_ID: 1, CUR_ID: 3, PAP_VALOR: 65000, PAP_ESTADO: 1 }, // Pagado
-      { PAP_ID: 7, PER_ID: 3, CUR_ID: 3, PAP_VALOR: 65000, PAP_ESTADO: 1 }, // Pagado
-      { PAP_ID: 8, PER_ID: 5, CUR_ID: 3, PAP_VALOR: 65000, PAP_ESTADO: 1 }  // Pagado
-    ])
-
-    // Datos de responsables según estructura CURSO_COORDINADOR, CURSO_FORMADOR
-    const cursoCoordinadores = ref([
-      { CUC_ID: 1, CUR_ID: 1, PER_ID: 1, CAR_ID: 1, CUC_CARGO: 'Coordinador General' },
-      { CUC_ID: 2, CUR_ID: 2, PER_ID: 2, CAR_ID: 2, CUC_CARGO: 'Coordinador Logística' },
-      { CUC_ID: 3, CUR_ID: 3, PER_ID: 3, CAR_ID: 1, CUC_CARGO: 'Coordinador Ambiental' }
-    ])
-
-    const cursoFormadores = ref([
-      { CUO_ID: 1, CUR_ID: 1, PER_ID: 2, ROL_ID: 1, CUO_DIRECTOR: false },
-      { CUO_ID: 2, CUR_ID: 2, PER_ID: 3, ROL_ID: 1, CUO_DIRECTOR: false },
-      { CUO_ID: 3, CUR_ID: 3, PER_ID: 4, ROL_ID: 1, CUO_DIRECTOR: false }
-    ])
-
-    const cursoDirectores = ref([
-      { CUO_ID: 4, CUR_ID: 1, PER_ID: 1, ROL_ID: 2, CUO_DIRECTOR: true },
-      { CUO_ID: 5, CUR_ID: 2, PER_ID: 2, ROL_ID: 2, CUO_DIRECTOR: true },
-      { CUO_ID: 6, CUR_ID: 3, PER_ID: 3, ROL_ID: 2, CUO_DIRECTOR: true }
-    ])
-
-    const cursoAlimentacion = ref([
-      { CUA_ID: 1, CUR_ID: 1, ALI_ID: 1, CUA_DESCRIPCION: 'Almuerzo tipo scout' },
-      { CUA_ID: 2, CUR_ID: 2, ALI_ID: 2, CUA_DESCRIPCION: 'Desayuno energético' },
-      { CUA_ID: 3, CUR_ID: 3, ALI_ID: 3, CUA_DESCRIPCION: 'Comida campamento ecológico' }
-    ])
-
-    // Computed properties
+    // Computed: información del curso seleccionado
     const cursoSeleccionadoInfo = computed(() => {
-      if (cursoSeleccionado.value === 'todos') return null
+      if (cursoSeleccionado.value === 'todos' || !cursoSeleccionado.value) return null
       return cursos.value.find(c => c.CUR_ID == cursoSeleccionado.value)
     })
 
+    // Computed: personas inscritas en el curso seleccionado
     const personasInscritas = computed(() => {
-      if (cursoSeleccionado.value === 'todos') {
+      if (cursoSeleccionado.value === 'todos' || !cursoSeleccionado.value) {
         return personasCurso.value.length
       }
       return personasCurso.value.filter(pc => pc.CUR_ID == cursoSeleccionado.value).length
     })
 
+    // Computed: pagos pendientes
     const pagosPendientesCurso = computed(() => {
-      if (cursoSeleccionado.value === 'todos') {
-        return pagosPersona.value.filter(p => p.PAP_ESTADO === 2).length
-      }
-      return pagosPersona.value.filter(p => 
-        p.CUR_ID == cursoSeleccionado.value && p.PAP_ESTADO === 2
-      ).length
+      const filtered = pagosPersona.value.filter(p => {
+        if (cursoSeleccionado.value === 'todos' || !cursoSeleccionado.value) return true
+        return p.CUR_ID == cursoSeleccionado.value
+      })
+      // Buscar estado = 2 o estado = "pendiente"
+      return filtered.filter(p => p.PAP_ESTADO === 2 || String(p.PAP_ESTADO).toLowerCase() === 'pendiente').length
     })
 
+    // Computed: acreditados
     const acreditadosCurso = computed(() => {
-      if (cursoSeleccionado.value === 'todos') {
+      if (cursoSeleccionado.value === 'todos' || !cursoSeleccionado.value) {
         return personasCurso.value.filter(pc => pc.PEC_ACREDITADO).length
       }
       return personasCurso.value.filter(pc => 
@@ -504,17 +301,17 @@ export default {
       ).length
     })
 
+    // Computed: inscripciones recientes
     const inscripcionesRecientes = computed(() => {
-      // Simular inscripciones de los últimos 7 días para cursos activos
       return personasCurso.value.filter(pc => {
         const curso = cursos.value.find(c => c.CUR_ID === pc.CUR_ID)
         return curso && curso.CUR_ESTADO === 1
       }).length
     })
 
+    // Computed: porcentajes
     const porcentajeInscritos = computed(() => {
-      const total = personasInscritas.value
-      return total > 0 ? 100 : 0
+      return personasInscritas.value > 0 ? 100 : 0
     })
 
     const porcentajeAcreditados = computed(() => {
@@ -524,14 +321,14 @@ export default {
     })
 
     const pagosPagadosCurso = computed(() => {
-      if (cursoSeleccionado.value === 'todos') {
-        return pagosPersona.value.filter(p => p.PAP_ESTADO === 1).length
-      }
-      return pagosPersona.value.filter(p => 
-        p.CUR_ID == cursoSeleccionado.value && p.PAP_ESTADO === 1
-      ).length
+      const filtered = pagosPersona.value.filter(p => {
+        if (cursoSeleccionado.value === 'todos' || !cursoSeleccionado.value) return true
+        return p.CUR_ID == cursoSeleccionado.value
+      })
+      return filtered.filter(p => p.PAP_ESTADO === 1 || String(p.PAP_ESTADO).toLowerCase() === 'pagado').length
     })
 
+    // Computed: cursos filtrados
     const cursosFiltrados = computed(() => {
       let cursosData = cursos.value.map(curso => {
         const inscripciones = personasCurso.value.filter(pc => pc.CUR_ID === curso.CUR_ID).length
@@ -539,14 +336,14 @@ export default {
           pc.CUR_ID === curso.CUR_ID && pc.PEC_ACREDITADO
         ).length
         const pagosCurso = pagosPersona.value.filter(p => p.CUR_ID === curso.CUR_ID)
-        const pendientesPago = pagosCurso.filter(p => p.PAP_ESTADO === 2).length
+        const pendientesPago = pagosCurso.filter(p => p.PAP_ESTADO === 2 || String(p.PAP_ESTADO).toLowerCase() === 'pendiente').length
 
         return {
           CUR_ID: curso.CUR_ID,
-          CUR_CODIGO: curso.CUR_CODIGO,
-          CUR_DESCRIPCION: curso.CUR_DESCRIPCION,
-          CUR_FECHA_HORA: curso.CUR_FECHA_HORA.split(' ')[0],
-          CUR_LUGAR: curso.CUR_LUGAR,
+          CUR_CODIGO: curso.CUR_CODIGO || 'N/A',
+          CUR_DESCRIPCION: curso.CUR_DESCRIPCION || 'N/A',
+          CUR_FECHA_HORA: curso.CUR_FECHA_HORA ? String(curso.CUR_FECHA_HORA).split(' ')[0] : 'N/A',
+          CUR_LUGAR: curso.CUR_LUGAR || 'N/A',
           CUR_ESTADO: getEstadoDisplay(curso.CUR_ESTADO),
           CUR_ESTADO_NUM: curso.CUR_ESTADO,
           inscripciones: inscripciones,
@@ -555,73 +352,46 @@ export default {
         }
       })
 
-      if (cursoSeleccionado.value !== 'todos') {
+      if (cursoSeleccionado.value !== 'todos' && cursoSeleccionado.value) {
         cursosData = cursosData.filter(curso => curso.CUR_ID == cursoSeleccionado.value)
       }
 
       return cursosData
     })
 
-    // Computed properties para responsables
+    // Computed: coordinadores
     const coordinadores = computed(() => {
       return cursoCoordinadores.value.map(coord => {
         const persona = personas.value.find(p => p.PER_ID === coord.PER_ID)
         const curso = cursos.value.find(c => c.CUR_ID === coord.CUR_ID)
         return {
           CUC_ID: coord.CUC_ID,
-          nombre: persona ? `${persona.PER_NOMBRES} ${persona.PER_APELPAT}` : 'N/A',
+          nombre: persona ? `${persona.PER_NOMBRES || ''} ${persona.PER_APELPAT || ''}`.trim() : 'N/A',
           curso: curso ? `${curso.CUR_CODIGO} - ${curso.CUR_DESCRIPCION}` : 'N/A',
-          contacto: persona ? persona.PER_EMAIL : 'N/A',
-          cargo: coord.CUC_CARGO,
+          contacto: persona ? persona.PER_EMAIL || 'N/A' : 'N/A',
+          cargo: coord.CUC_CARGO || 'N/A',
           estadoDisplay: '● Activo'
         }
       })
     })
 
+    // Computed: formadores
     const formadores = computed(() => {
       return cursoFormadores.value.map(form => {
         const persona = personas.value.find(p => p.PER_ID === form.PER_ID)
         const curso = cursos.value.find(c => c.CUR_ID === form.CUR_ID)
         return {
           CUO_ID: form.CUO_ID,
-          nombre: persona ? `${persona.PER_NOMBRES} ${persona.PER_APELPAT}` : 'N/A',
+          nombre: persona ? `${persona.PER_NOMBRES || ''} ${persona.PER_APELPAT || ''}`.trim() : 'N/A',
           curso: curso ? `${curso.CUR_CODIGO} - ${curso.CUR_DESCRIPCION}` : 'N/A',
-          contacto: persona ? persona.PER_EMAIL : 'N/A',
+          contacto: persona ? persona.PER_EMAIL || 'N/A' : 'N/A',
           tipo: form.CUO_DIRECTOR ? 'Director' : 'Formador',
           estadoDisplay: '● Activo'
         }
       })
     })
 
-    const directores = computed(() => {
-      return cursoDirectores.value.filter(dir => dir.CUO_DIRECTOR).map(dir => {
-        const persona = personas.value.find(p => p.PER_ID === dir.PER_ID)
-        const curso = cursos.value.find(c => c.CUR_ID === dir.CUR_ID)
-        return {
-          CUO_ID: dir.CUO_ID,
-          nombre: persona ? `${persona.PER_NOMBRES} ${persona.PER_APELPAT}` : 'N/A',
-          curso: curso ? `${curso.CUR_CODIGO} - ${curso.CUR_DESCRIPCION}` : 'N/A',
-          contacto: persona ? persona.PER_EMAIL : 'N/A',
-          estadoDisplay: '● Activo'
-        }
-      })
-    })
-
-    const responsablesAlimentacion = computed(() => {
-      return cursoAlimentacion.value.map(alim => {
-        const curso = cursos.value.find(c => c.CUR_ID === alim.CUR_ID)
-        return {
-          CUA_ID: alim.CUA_ID,
-          nombre: 'Responsable de Alimentación',
-          curso: curso ? `${curso.CUR_CODIGO} - ${curso.CUR_DESCRIPCION}` : 'N/A',
-          contacto: 'alimentacion@scoutsbiobio.cl',
-          descripcion: alim.CUA_DESCRIPCION,
-          estadoDisplay: '● Activo'
-        }
-      })
-    })
-
-    // Configuración de columnas para cursos
+    // Configuración de columnas
     const columnasCursos = [
       { key: 'CUR_CODIGO', label: 'Código', sortable: true },
       { key: 'CUR_DESCRIPCION', label: 'Descripción', sortable: true },
@@ -633,44 +403,10 @@ export default {
       { key: 'pendientesPago', label: 'Pendientes Pago', sortable: true }
     ]
 
-    // Configuración de columnas para responsables
-    const columnasCoordinadores = [
-      { key: 'nombre', label: 'Coordinador', sortable: true },
-      { key: 'curso', label: 'Curso', sortable: true },
-      { key: 'cargo', label: 'Cargo', sortable: true },
-      { key: 'contacto', label: 'Contacto', sortable: true },
-      { key: 'estadoDisplay', label: 'Estado', sortable: true }
-    ]
-
-    const columnasFormadores = [
-      { key: 'nombre', label: 'Formador', sortable: true },
-      { key: 'curso', label: 'Curso', sortable: true },
-      { key: 'tipo', label: 'Tipo', sortable: true },
-      { key: 'contacto', label: 'Contacto', sortable: true },
-      { key: 'estadoDisplay', label: 'Estado', sortable: true }
-    ]
-
-    const columnasDirectores = [
-      { key: 'nombre', label: 'Director', sortable: true },
-      { key: 'curso', label: 'Curso', sortable: true },
-      { key: 'contacto', label: 'Contacto', sortable: true },
-      { key: 'estadoDisplay', label: 'Estado', sortable: true }
-    ]
-
-    const columnasAlimentacion = [
-      { key: 'nombre', label: 'Responsable', sortable: true },
-      { key: 'curso', label: 'Curso', sortable: true },
-      { key: 'descripcion', label: 'Descripción', sortable: true },
-      { key: 'contacto', label: 'Contacto', sortable: true },
-      { key: 'estadoDisplay', label: 'Estado', sortable: true }
-    ]
-
-    // Tabs para responsables
+    // Tabs
     const tabs = ref([
       { id: 'coordinadores', label: 'Coordinadores' },
-      { id: 'formadores', label: 'Formadores' },
-      { id: 'directores', label: 'Directores' },
-      { id: 'alimentacion', label: 'Alimentación' }
+      { id: 'formadores', label: 'Formadores' }
     ])
 
     // Métodos auxiliares
@@ -684,7 +420,7 @@ export default {
     }
 
     const getSemaphoreClass = (cursoId) => {
-      if (cursoId === 'todos') return 'semaphore-gray'
+      if (cursoId === 'todos' || !cursoId) return 'semaphore-gray'
       
       const curso = cursos.value.find(c => c.CUR_ID == cursoId)
       if (!curso) return 'semaphore-gray'
@@ -697,7 +433,7 @@ export default {
       }
     }
 
-    // Métodos de acciones para cursos
+    // Métodos de navegación
     const verCurso = (curso) => {
       router.push(`/cursos/detalle/${curso.CUR_ID}`)
     }
@@ -706,80 +442,103 @@ export default {
       router.push(`/cursos/editar/${curso.CUR_ID}`)
     }
 
-    const activarCurso = (curso) => {
-      loading.value = true
-      setTimeout(() => {
-        const cursoIndex = cursos.value.findIndex(c => c.CUR_ID === curso.CUR_ID)
-        if (cursoIndex !== -1) {
-          cursos.value[cursoIndex].CUR_ESTADO = 1
-        }
-        alertas.value.push({
-          id: Date.now(),
-          type: 'success',
-          title: 'Curso Activado',
-          message: `El curso ${curso.CUR_CODIGO} ha sido activado correctamente.`
-        })
-        loading.value = false
-      }, 1000)
-    }
-
-    const anularCurso = (curso) => {
-      if (confirm(`¿Está seguro que desea anular el curso ${curso.CUR_CODIGO}?`)) {
-        loading.value = true
-        setTimeout(() => {
-          const cursoIndex = cursos.value.findIndex(c => c.CUR_ID === curso.CUR_ID)
-          if (cursoIndex !== -1) {
-            cursos.value[cursoIndex].CUR_ESTADO = 3
+    // Función para cargar datos desde la API
+    const cargarDatosDesdeAPI = async () => {
+      try {
+        console.log('Cargando datos desde API para base de datos SSB...')
+        
+        // Cargar cursos
+        try {
+          const cursosData = await cursosService.cursos.list()
+          if (cursosData && Array.isArray(cursosData)) {
+            cursos.value = cursosData
+            console.log(`✓ Cursos cargados desde SSB: ${cursosData.length}`)
           }
-          alertas.value.push({
-            id: Date.now(),
-            type: 'warning',
-            title: 'Curso Anulado',
-            message: `El curso ${curso.CUR_CODIGO} ha sido anulado.`
-          })
-          loading.value = false
-        }, 1000)
+        } catch (e) {
+          console.warn('Error cargando cursos desde SSB:', e.message)
+          throw new Error(`No se pudieron cargar los cursos: ${e.message}`)
+        }
+        
+        // Cargar personas
+        try {
+          const personasData = await personasService.personas.list()
+          if (personasData && Array.isArray(personasData)) {
+            personas.value = personasData
+            console.log(`✓ Personas cargadas desde SSB: ${personasData.length}`)
+          }
+        } catch (e) {
+          console.warn('Error cargando personas desde SSB:', e.message)
+        }
+        
+        // Cargar inscripciones
+        try {
+          const personasCursoData = await personasService.personaCursos.list()
+          if (personasCursoData && Array.isArray(personasCursoData)) {
+            personasCurso.value = personasCursoData
+            console.log(`✓ Inscripciones cargadas desde SSB: ${personasCursoData.length}`)
+          }
+        } catch (e) {
+          console.warn('Error cargando inscripciones desde SSB:', e.message)
+        }
+        
+        // Cargar pagos
+        try {
+          const pagosData = await pagosService.pagoPersona.list()
+          if (pagosData && Array.isArray(pagosData)) {
+            pagosPersona.value = pagosData
+            console.log(`✓ Pagos cargados desde SSB: ${pagosData.length}`)
+          }
+        } catch (e) {
+          console.warn('Error cargando pagos desde SSB:', e.message)
+        }
+        
+        // Cargar coordinadores
+        try {
+          const coordinadoresData = await cursosService.coordinadores.list()
+          if (coordinadoresData && Array.isArray(coordinadoresData)) {
+            cursoCoordinadores.value = coordinadoresData
+            console.log(`✓ Coordinadores cargados desde SSB: ${coordinadoresData.length}`)
+          }
+        } catch (e) {
+          console.warn('Error cargando coordinadores desde SSB:', e.message)
+        }
+        
+        // Cargar formadores
+        try {
+          const formadoresData = await cursosService.formadores.list()
+          if (formadoresData && Array.isArray(formadoresData)) {
+            cursoFormadores.value = formadoresData
+            console.log(`✓ Formadores cargados desde SSB: ${formadoresData.length}`)
+          }
+        } catch (e) {
+          console.warn('Error cargando formadores desde SSB:', e.message)
+        }
+        
+        console.log('✓ Carga de datos desde SSB completada')
+      } catch (error) {
+        console.error('Error general cargando datos desde SSB:', error)
+        throw error
       }
     }
 
-    // Métodos de acciones para responsables
-    const verResponsable = (tipo, responsable) => {
-      alert(`Ver ${tipo}: ${responsable.nombre}`)
-      // Aquí podrías redirigir o abrir un modal
-    }
-
-    const editarResponsable = (tipo, responsable) => {
-      alert(`Editar ${tipo}: ${responsable.nombre}`)
-      // Aquí podrías redirigir o abrir un modal
-    }
-
-    const anularResponsable = (tipo, responsable) => {
-      if (confirm(`¿Está seguro que desea anular al ${tipo} ${responsable.nombre}?`)) {
-        alertas.value.push({
-          id: Date.now(),
-          type: 'warning',
-          title: `${tipo.charAt(0).toUpperCase() + tipo.slice(1)} Anulado`,
-          message: `El ${tipo} ${responsable.nombre} ha sido anulado.`
-        })
-      }
-    }
-
+    // Actualizar datos
     const actualizarDatos = async () => {
       loading.value = true
       try {
-        await new Promise(resolve => setTimeout(resolve, 1500))
+        await cargarDatosDesdeAPI()
         alertas.value.push({
           id: Date.now(),
-          type: 'info',
-          title: 'Datos Actualizados',
-          message: 'La información se ha actualizado correctamente.'
+          type: 'success',
+          title: 'Datos Actualizados desde SSB',
+          message: 'La información se actualizó correctamente desde la base de datos SSB.'
         })
       } catch (error) {
+        console.error('Error actualizando datos desde SSB:', error.message)
         alertas.value.push({
           id: Date.now(),
           type: 'error',
-          title: 'Error',
-          message: 'No se pudieron actualizar los datos.'
+          title: 'Error al Actualizar desde SSB',
+          message: `No se pudieron actualizar los datos desde la base de datos SSB: ${error.message}`
         })
       } finally {
         loading.value = false
@@ -790,23 +549,19 @@ export default {
       alertas.value = alertas.value.filter(alerta => alerta.id !== id)
     }
 
-    // Watch para cambios en el curso seleccionado
-    watch(cursoSeleccionado, (newVal) => {
-      console.log('Curso seleccionado:', newVal)
-    })
-
+    // Ciclo de vida
     onMounted(async () => {
       loading.value = true
       try {
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        console.log('Dashboard cargado correctamente')
+        await cargarDatosDesdeAPI()
+        console.log('✓ Dashboard cargado correctamente desde SSB')
       } catch (error) {
-        console.error('Error cargando datos del dashboard:', error)
+        console.error('Error cargando dashboard desde SSB:', error)
         alertas.value.push({
           id: Date.now(),
-          type: 'error',
-          title: 'Error de Carga',
-          message: 'No se pudieron cargar los datos del dashboard.'
+          type: 'warning',
+          title: 'Datos No Disponibles desde SSB',
+          message: 'No se pudieron cargar los datos desde la base de datos SSB. Verifique la conexión.'
         })
       } finally {
         loading.value = false
@@ -830,30 +585,22 @@ export default {
       cursosFiltrados,
       coordinadores,
       formadores,
-      directores,
-      responsablesAlimentacion,
       columnasCursos,
-      columnasCoordinadores,
-      columnasFormadores,
-      columnasDirectores,
-      columnasAlimentacion,
       verCurso,
       editarCurso,
-      activarCurso,
-      anularCurso,
-      verResponsable,
-      editarResponsable,
-      anularResponsable,
       actualizarDatos,
       removerAlerta,
       getEstadoDisplay,
-      getSemaphoreClass
+      getSemaphoreClass,
+      cursos,
+      personas
     }
   }
 }
 </script>
 
 <style scoped>
+/* (Mantener los mismos estilos del archivo original) */
 .dashboard-scout {
   min-height: 100vh;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
@@ -867,7 +614,7 @@ export default {
   width: 100%;
 }
 
-/* Selector de Curso - ESTILOS ESTANDARIZADOS */
+/* Selector de Curso */
 .course-selector-section {
   background: var(--color-surface);
   padding: 24px;
@@ -884,7 +631,6 @@ export default {
   flex-wrap: wrap;
 }
 
-/* Estilos para el selector nativo estandarizado */
 .native-select-wrapper {
   flex: 1;
   min-width: 320px;
@@ -911,7 +657,6 @@ export default {
   cursor: pointer;
   transition: all 0.3s ease;
   outline: none;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .native-select:focus {
@@ -994,7 +739,7 @@ export default {
   font-size: 14px;
 }
 
-/* Stats Grid - ESTILOS ESTANDARIZADOS */
+/* Stats Grid */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -1002,7 +747,7 @@ export default {
   margin-bottom: 30px;
 }
 
-/* Charts Section - ESTILOS ESTANDARIZADOS */
+/* Charts Section */
 .charts-section {
   background: var(--color-surface);
   padding: 24px;
@@ -1121,7 +866,7 @@ export default {
   background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
 }
 
-/* Courses Section - ESTILOS ESTANDARIZADOS CON BOTONES MEJORADOS */
+/* Courses Section */
 .courses-section {
   background: var(--color-surface);
   padding: 24px;
@@ -1147,7 +892,6 @@ export default {
   padding-bottom: 8px;
 }
 
-/* BOTÓN ACTUALIZAR MEJORADO - ESTILOS DE MANTENEDORES */
 .refresh-btn {
   background: #2c5aa0;
   color: white;
@@ -1163,13 +907,18 @@ export default {
   white-space: nowrap;
 }
 
-.refresh-btn:hover {
+.refresh-btn:hover:not(:disabled) {
   background: #1e3d73;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(44, 90, 160, 0.3);
 }
 
-/* TABLAS ESTANDARIZADAS - ESTILOS DE MANTENEDORES */
+.refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Tablas */
 .table-container-expanded {
   background: var(--color-surface);
   border-radius: 8px;
@@ -1206,7 +955,7 @@ export default {
   background: #f8f9fa;
 }
 
-/* BOTONES DE ACCIÓN - ESTILOS DE MANTENEDORES */
+/* Botones de Acción */
 .actions {
   display: flex;
   gap: 8px;
@@ -1236,22 +985,12 @@ export default {
   color: #856404;
 }
 
-.btn-activate {
-  background: #d4edda;
-  color: #155724;
-}
-
-.btn-anular {
-  background: #f8d7da;
-  color: #721c24;
-}
-
 .btn-action:hover {
   transform: translateY(-2px);
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-/* Responsables Section - ESTILOS ESTANDARIZADOS CON TABS MEJORADOS */
+/* Responsables Section */
 .responsibles-section {
   background: var(--color-surface);
   padding: 24px;
@@ -1284,7 +1023,6 @@ export default {
   border-bottom: 1px solid #e9ecef;
 }
 
-/* BOTONES DE TABS MEJORADOS - ESTILOS DE MANTENEDORES */
 .tab-button {
   padding: 16px 24px;
   background: none;
@@ -1316,7 +1054,7 @@ export default {
   background: var(--color-surface);
 .}
 
-/* Responsive - ESTILOS ESTANDARIZADOS */
+/* Responsive */
 @media (max-width: 768px) {
   .main-content {
     padding: 16px;
@@ -1332,25 +1070,6 @@ export default {
     gap: 16px;
   }
   
-  .native-select-wrapper {
-    min-width: auto;
-    max-width: none;
-  }
-  
-  .native-select {
-    font-size: 14px;
-    padding: 10px 14px;
-  }
-  
-  .semaphore-container {
-    justify-content: center;
-    padding: 16px;
-  }
-  
-  .charts-grid {
-    grid-template-columns: 1fr;
-  }
-  
   .section-header {
     flex-direction: column;
     gap: 16px;
@@ -1359,34 +1078,6 @@ export default {
   
   .refresh-btn {
     width: 100%;
-    margin-top: 8px;
-  }
-  
-  .tabs-header {
-    flex-direction: column;
-  }
-  
-  .tab-button {
-    width: 100%;
-    text-align: left;
-    padding: 14px 20px;
-  }
-  
-  .chart-bars {
-    gap: 20px;
-  }
-  
-  .bar {
-    width: 40px;
-  }
-  
-  .actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .btn-action {
-    justify-content: center;
   }
 }
 

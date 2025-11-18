@@ -64,19 +64,34 @@
                 <div class="course-meta-uniform">
                   <span class="course-cupo-uniform">Cupos: {{ curso.inscritos }}/{{ curso.cupoMaximo }}</span>
                 </div>
+            
+                <!-- Secciones anidadas dentro de la tarjeta cuando está seleccionada -->
+                <div v-if="formData.cursoId === curso.id" style="margin-top: 18px;">
+                  <div v-if="cargandoSecciones" class="info-message" style="padding: 8px; background:#eef6ff; border:1px solid #cde6ff; border-radius:6px; color:#23527c; margin-bottom:8px;">Cargando secciones desde SSB...</div>
+
+                  <div v-else>
+                    <div v-if="getSeccionesParaCurso(curso).length === 0" class="no-sections-message" style="padding: 8px; background:#fff3cd; border:1px solid #ffeeba; border-radius:6px; color:#856404; margin-bottom:8px;">No se encontraron secciones para esta opción en SSB.</div>
+
+                    <div v-else style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:10px;">
+                      <div
+                        v-for="seccion in getSeccionesParaCurso(curso)"
+                        :key="seccion.id"
+                        :class="['seccion-card', { 'seccion-selected': formData.cusId === seccion.id }]"
+                        @click.stop.prevent="selectSeccion(seccion)"
+                        style="padding:10px; border:1px solid #ddd; border-radius:8px; cursor:pointer; background:white;"
+                      >
+                        <div style="font-weight:600; color:#2c5aa0;">{{ seccion.descripcion }}</div>
+                        <div style="font-size:0.85rem; color:#6c757d">{{ seccion.cursoNombre ? ('Curso: ' + seccion.cursoNombre) : '' }}</div>
+                        <div style="font-size:0.85rem; color:#6c757d">{{ seccion.fechaInicio ? ('Inicio: ' + seccion.fechaInicio) : '' }}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          <div v-if="formData.cursoId" class="selected-course-info-uniform">
-            <h4>Curso seleccionado:</h4>
-            <p><strong>{{ getCursoSeleccionado().nombre }}</strong></p>
-            <p>{{ getCursoSeleccionado().fechas }} - {{ getCursoSeleccionado().ubicacion }}</p>
-          </div>
 
-          <div v-else class="no-course-selected-uniform">
-            <p>⚠️ Por favor seleccione un curso para continuar</p>
-          </div>
         </div>
 
         <!-- Paso 2: Datos Personales (CON NUEVOS CAMPOS) -->
@@ -571,7 +586,7 @@
               v-if="showFinalAlert"
               type="informacion"
               title="Verifique sus datos"
-              message="Revise que toda la información sea correcta antes de confirmar la pre-inscripción."
+              message="Revise que toda la información sea correcta antes de confirmar la pre-inscripción en SSB."
               class="final-alert-expanded"
             />
           </div>
@@ -611,7 +626,7 @@
             :loading="submitting"
             class="nav-button-expanded submit-button-expanded"
           >
-            {{ submitting ? 'Enviando...' : '✅ Confirmar Pre-Inscripción' }}
+            {{ submitting ? 'Enviando a SSB...' : '✅ Confirmar Pre-Inscripción en SSB' }}
           </BaseButton>
         </div>
       </form>
@@ -624,8 +639,8 @@
     >
       <div class="success-modal-expanded">
         <div class="success-icon-expanded">🎉</div>
-        <h3>¡Pre-Inscripción Exitosa!</h3>
-        <p>Su formulario ha sido registrado correctamente en el sistema Scouts Biobío.</p>
+        <h3>¡Pre-Inscripción Exitosa en SSB!</h3>
+        <p>Su formulario ha sido registrado correctamente en la base de datos SSB Scouts Biobío.</p>
         
         <div class="success-actions-expanded">
           <BaseButton
@@ -643,6 +658,11 @@
 
 <script>
 import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
+import authService from '@/services/authService'
+import * as cursosService from '@/services/cursosService'
+import { personas as personasApi, personaCursos as personaCursosApi, personaGrupos as personaGruposApi, personaNiveles as personaNivelesApi, personaIndividuales as personaIndividualesApi } from '@/services/personasService'
+import { pagoPersona as pagoPersonaApi } from '@/services/pagosService'
+import mantenedoresService from '@/services/mantenedoresService'
 
 // Componentes
 import BaseAlert from '@/components/BaseAlert.vue'
@@ -652,6 +672,7 @@ import BaseModal from '@/components/BaseModal.vue'
 import BaseSelect from '@/components/BaseSelect.vue'
 import InputBase from '@/components/InputBase.vue'
 import FileUploader from '@/components/FileUploader.vue'
+
 export default {
   name: 'FormularioPreInscripcion2',
   components: {
@@ -670,8 +691,11 @@ export default {
     const showFinalAlert = ref(true)
     const mostrarCampoMMAA = ref(false)
     const mostrarEducacionFormador = ref(false)
-    const telefonoPlaceholder = ref('8 1234 5678') // MODIFICADO: Cambiado de 9 a 8
+    const telefonoPlaceholder = ref('8 1234 5678')
     const isNavigating = ref(false)
+    const seccionesDisponibles = ref([])
+    const seccionSeleccionada = ref('')
+    const cargandoSecciones = ref(false)
 
     // PASOS CORREGIDOS - Curso como primer paso
     const steps = ref([
@@ -684,10 +708,11 @@ export default {
     ])
 
     const formData = reactive({
-      // Paso 1 - Curso (primer paso)
+      // Paso 0 - Curso (primer paso)
       cursoId: '',
+      cusId: '', // ID de la sección seleccionada
       
-      // Paso 2 - Datos Personales (CON NUEVOS CAMPOS)
+      // Paso 1 - Datos Personales (CON NUEVOS CAMPOS)
       nombres: '',
       apellidoPaterno: '',
       apellidoMaterno: '',
@@ -816,104 +841,22 @@ export default {
       { value: '84', provinciaId: '22', label: 'Cerrillos' }
     ])
 
-    // Datos para selects y opciones
-    const estadosCiviles = [
-      { value: '1', label: 'Soltero' },
-      { value: '2', label: 'Casado' },
-      { value: '3', label: 'Divorciado' },
-      { value: '4', label: 'Viudo' },
-      { value: '5', label: 'Unión Civil' }
-    ]
-
+    // Datos para selects y opciones - CARGADOS DESDE API
+    const estadosCiviles = ref([])
     const tiposTelefono = [
       { value: 'movil', label: 'Móvil' },
       { value: 'casa', label: 'Casa' },
       { value: 'trabajo', label: 'Trabajo' }
     ]
+    const zonas = ref([])
+    const distritos = ref([])
+    const grupos = ref([])
+    const ramas = ref([])
+    const roles = ref([])
+    const niveles = ref([])
+    const tiposAlimentacion = ref([])
 
-    const zonas = [
-      { value: '1', label: 'Zona Centro' },
-      { value: '2', label: 'Zona Norte' },
-      { value: '3', label: 'Zona Sur' },
-      { value: '4', label: 'Zona Costa' }
-    ]
-
-    const distritos = [
-      { value: '1', label: 'Distrito Centro' },
-      { value: '2', label: 'Distrito Norte' },
-      { value: '3', label: 'Distrito Sur' },
-      { value: '4', label: 'Distrito Costa' }
-    ]
-
-    const grupos = [
-      { value: '1', label: 'Grupo Scout 1 - Concepción' },
-      { value: '2', label: 'Grupo Scout 2 - Talcahuano' },
-      { value: '3', label: 'Grupo Scout 3 - Chiguayante' },
-      { value: '4', label: 'Grupo Scout 4 - San Pedro' },
-      { value: '5', label: 'Grupo Scout 5 - Los Ángeles' },
-      { value: '6', label: 'Grupo Scout 6 - Cabrero' }
-    ]
-
-    const ramas = [
-      { value: '1', label: 'Manada' },
-      { value: '2', label: 'Tropa' },
-      { value: '3', label: 'Comunidad' },
-      { value: '4', label: 'Clan' }
-    ]
-
-    const roles = [
-      { value: '1', label: 'Participante' },
-      { value: '2', label: 'Formador' },
-      { value: '3', label: 'Director' },
-      { value: '4', label: 'Coordinador' },
-      { value: '5', label: 'Apoyo' }
-    ]
-
-    const niveles = [
-      { value: '0', label: 'N° Niveles' },
-      { value: '1', label: 'Nivel Inicial' },
-      { value: '2', label: 'Nivel Medio' },
-      { value: '3', label: 'Nivel Avanzado' }
-    ]
-
-    const tiposAlimentacion = [
-      { value: '1', label: 'Normal' },
-      { value: '2', label: 'Vegetariano' },
-      { value: '3', label: 'Vegano' },
-      { value: '4', label: 'Celíaco' },
-      { value: '5', label: 'Diabético' },
-      { value: '6', label: 'Sin Restricciones' }
-    ]
-
-    const cursosDisponibles = [
-      {
-        id: 1,
-        nombre: 'Curso Medio - Liderazgo Scout',
-        fechas: '01-03 Feb 2024',
-        ubicacion: 'Campamento Los Pinos, Concepción',
-        cupoMaximo: 26,
-        inscritos: 18,
-        icono: '🏕️'
-      },
-      {
-        id: 2,
-        nombre: 'Primeros Auxilios en Terreno',
-        fechas: '10-11 Feb 2024',
-        ubicacion: 'Sede Scouts Talcahuano',
-        cupoMaximo: 20,
-        inscritos: 20,
-        icono: '🩹'
-      },
-      {
-        id: 3,
-        nombre: 'Educación Ambiental Scout',
-        fechas: '15-16 Feb 2024',
-        ubicacion: 'Reserva Nacional Nonguén',
-        cupoMaximo: 25,
-        inscritos: 12,
-        icono: '🌿'
-      }
-    ]
+    const cursosDisponibles = ref([])
 
     // Computed properties para filtrar provincias y comunas
     const provinciasFiltradas = computed(() => {
@@ -929,8 +872,8 @@ export default {
     // CORRECCIÓN CRÍTICA: Validación por paso mejorada
     const isStepValid = (step) => {
       switch (step) {
-        case 0: // Selección de Curso
-          return !!formData.cursoId
+        case 0: // Selección de Curso y Sección
+          return !!(formData.cursoId && formData.cusId)
         
         case 1: // Datos Personales
           return !!(
@@ -989,7 +932,7 @@ export default {
     const actualizarPlaceholderTelefono = () => {
       switch (formData.tipoTelefono) {
         case 'movil':
-          telefonoPlaceholder.value = '8 1234 5678' // MODIFICADO: Cambiado de 9 a 8
+          telefonoPlaceholder.value = '8 1234 5678'
           break
         case 'casa':
           telefonoPlaceholder.value = '2 1234 5678'
@@ -998,16 +941,66 @@ export default {
           telefonoPlaceholder.value = '2 1234 5678'
           break
         default:
-          telefonoPlaceholder.value = '8 1234 5678' // MODIFICADO: Cambiado de 9 a 8
+          telefonoPlaceholder.value = '8 1234 5678'
       }
     }
 
-    const selectCurso = (curso) => {
-      formData.cursoId = curso.id
+    const selectCurso = async (curso) => {
+      formData.cursoId = Number(curso.id || curso.CUR_ID)
+      formData.cusId = 0 // Resetear sección seleccionada a 0 (nulo)
+      seccionSeleccionada.value = 0
+      cargandoSecciones.value = true
+
+      try {
+        // Cargar secciones del curso seleccionado por su CUR_ID desde SSB
+        const cursoId = Number(curso.id || curso.CUR_ID)
+        console.log(`📚 Cargando secciones desde SSB para curso CUR_ID=${cursoId} (${curso.CUR_DESCRIPCION || curso.nombre})`)
+        
+        const raw = await cursosService.secciones.list({ curso_id: cursoId })
+        const arr = Array.isArray(raw) ? raw : (Array.isArray(raw?.results) ? raw.results : [])
+        
+        seccionesDisponibles.value = arr.map(s => ({
+          id: Number(s.CUS_ID || s.id),
+          nombre: `${s.CUS_DESCRIPCION || s.descripcion || ''}`.trim(),
+          descripcion: s.CUS_DESCRIPCION || s.descripcion || '',
+          fechaInicio: s.CUS_FECHA_INICIO || s.fecha_inicio || '',
+          fechaFin: s.CUS_FECHA_TERMINO || s.fecha_fin || '',
+          cupo: s.CUS_CANT_PARTICIPANTE || s.cupo || 0,
+          cursoId: cursoId,
+          cursoNombre: curso.CUR_DESCRIPCION || curso.nombre || '',
+          original: s
+        }))
+        
+        console.log(`✅ ${seccionesDisponibles.value.length} secciones cargadas desde SSB para CUR_ID=${cursoId}`)
+      } catch (e) {
+        console.error('❌ Error cargando secciones desde SSB:', e?.message || e)
+        seccionesDisponibles.value = []
+      } finally {
+        cargandoSecciones.value = false
+      }
+    }
+
+    const selectSeccion = (seccion) => {
+      // Guardar id como número para consistencia
+      formData.cusId = Number(seccion.id)
+      seccionSeleccionada.value = Number(seccion.id)
+      console.log(`✅ Sección seleccionada desde SSB: ${seccion.descripcion} (id=${formData.cusId}, tipo=${typeof formData.cusId})`)
+      console.log(`✅ Validación step 0: cursoId=${formData.cursoId}, cusId=${formData.cusId}, válido=${!!(formData.cursoId && formData.cusId)}`)
     }
 
     const getCursoSeleccionado = () => {
-      return cursosDisponibles.find(curso => curso.id === formData.cursoId) || {}
+      return (cursosDisponibles.value || []).find(curso => curso.id === formData.cursoId) || {}
+    }
+
+    const getSeccionSeleccionada = () => {
+      return seccionesDisponibles.value.find(seccion => seccion.id === formData.cusId) || {}
+    }
+
+    // Devuelve las secciones relevantes para una tarjeta de curso.
+    const getSeccionesParaCurso = (curso) => {
+      if (!Array.isArray(seccionesDisponibles.value)) return []
+      const cursoId = Number(curso.id || curso.CUR_ID)
+      return seccionesDisponibles.value.filter(s => Number(s.cursoId) === cursoId)
     }
 
     // NUEVO: Manejar Enter en el campo de observaciones
@@ -1041,19 +1034,19 @@ export default {
 
     const getRamaLabel = (value) => {
       if (!value) return ''
-      const rama = ramas.find(r => r.value === value)
+      const rama = ramas.value.find(r => r.value === value)
       return rama ? rama.label : value
     }
 
     const getRolLabel = (value) => {
       if (!value) return ''
-      const rol = roles.find(r => r.value === value)
+      const rol = roles.value.find(r => r.value === value)
       return rol ? rol.label : value
     }
 
     const getNivelLabel = (value) => {
       if (!value) return ''
-      const nivel = niveles.find(n => n.value === value)
+      const nivel = niveles.value.find(n => n.value === value)
       return nivel ? nivel.label : value
     }
 
@@ -1114,19 +1107,143 @@ export default {
       submitting.value = true
 
       try {
-        // Simular envío
-        await new Promise(resolve => setTimeout(resolve, 2000))
-        
-        // Marcar todos los pasos como completados
+        // Obtener usuario actual (si no viene, usar id=1 como fallback)
+        let usuId = 1
+        try {
+          const currentUser = await authService.getCurrentUser()
+          usuId = (currentUser && (currentUser.id || currentUser.USU_ID)) ? (currentUser.id || currentUser.USU_ID) : 1
+        } catch (e) {
+          console.warn('No se pudo obtener usuario actual, usando USU_ID=1', e && e.message)
+        }
+
+        // Preparar payload para crear Persona en SSB
+        const rutRaw = (formData.rut || '').toString().trim()
+        let perRun = rutRaw
+        let perDv = ''
+        if (rutRaw.includes('-')) {
+          const parts = rutRaw.split('-')
+          perRun = parts[0].replace(/[^0-9]/g, '')
+          perDv = (parts[1] || '').toString().toUpperCase()
+        }
+
+        const tipoFono = (formData.tipoTelefono === 'movil') ? 2 : (formData.tipoTelefono === 'casa' ? 1 : 2)
+
+        const datosPersona = {
+          PER_NOMBRES: formData.nombres || '',
+          PER_APELPTA: formData.apellidoPaterno || '',
+          PER_APELMAT: formData.apellidoMaterno || '',
+          PER_RUN: perRun || '',
+          PER_DV: perDv || '',
+          PER_MAIL: formData.email || '',
+          PER_FECHA_NAC: formData.fechaNacimiento || null,
+          PER_DIRECCION: formData.direccion || null,
+          PER_TIPO_FONO: tipoFono,
+          PER_FONO: formData.telefono ? ('+56' + formData.telefono.toString().replace(/[^0-9]/g, '').replace(/^56/, '')) : null,
+          PER_APODO: formData.apodo || null,
+          PER_PROFESION: formData.profesion || null,
+          PER_NOM_EMERGENCIA: formData.contactoEmergenciaNombre || null,
+          PER_FONO_EMERGENCIA: formData.contactoEmergenciaTelefono ? ('+56' + formData.contactoEmergenciaTelefono.toString().replace(/[^0-9]/g, '').replace(/^56/, '')) : null,
+          PER_ALERGIA_ENFERMEDAD: formData.alergias || null,
+          PER_LIMITACION: formData.limitaciones || null,
+          PER_RELIGION: formData.religion || null,
+          PER_NUM_MMA: formData.numeroMMAA || null,
+          PER_OTROS: formData.observaciones || null,
+          PER_APODO: formData.apodo || '',
+          ESC_ID: formData.estadoCivil ? Number(formData.estadoCivil) : 1,
+          COM_ID: formData.comuna ? Number(formData.comuna) : 1,
+          USU_ID: usuId,
+          PER_VIGENTE: true
+        }
+
+        console.log('📤 Creando persona en SSB con payload:', datosPersona)
+
+        const personaCreada = await personasApi.create(datosPersona)
+        const personaId = personaCreada.PER_ID || personaCreada.id || personaCreada.PER_ID_id
+        console.log('✅ Persona creada en SSB:', personaCreada)
+
+        // Crear inscripción (Persona_Curso) en SSB - Usar directamente la sección seleccionada
+        const cusIdToUse = formData.cusId || null
+
+        if (!cusIdToUse) {
+          throw new Error('No hay sección de curso seleccionada en SSB')
+        }
+
+        const personaCursoPayload = {
+          PER_ID: personaId,
+          CUS_ID: cusIdToUse,
+          ROL_ID: formData.rol ? Number(formData.rol) : null,
+          ALI_ID: formData.alimentacion ? Number(formData.alimentacion) : null,
+          NIV_ID: formData.nivel ? Number(formData.nivel) : null,
+          PEC_OBSERVACION: formData.observaciones || null,
+          PEC_REGISTRO: true,
+          PEC_ACREDITACION: false,
+          PEC_ENVIO_CORREO_QR: false
+        }
+
+        console.log('📤 Registrando pre-inscripción en SSB (Persona_Curso):', personaCursoPayload)
+        const inscripcion = await personaCursosApi.create(personaCursoPayload)
+        console.log('✅ Inscripción creada en SSB:', inscripcion)
+
+        // GUARDAR EN TABLAS ADICIONALES DE SSB: Persona_Individual, Persona_Grupo, Persona_Nivel
+
+        // 1. Guardar en Persona_Individual (ZON_ID, DIS_ID)
+        if (formData.zona || formData.distrito) {
+          try {
+            const personaIndividualPayload = {
+              PER_ID: personaId,
+              ZON_ID: formData.zona ? Number(formData.zona) : null,
+              DIS_ID: formData.distrito ? Number(formData.distrito) : null
+            }
+            console.log('📤 Registrando Persona_Individual en SSB:', personaIndividualPayload)
+            await personaIndividualesApi.create(personaIndividualPayload)
+            console.log('✅ Persona_Individual creada en SSB')
+          } catch (e) {
+            console.warn('⚠️ Error creando Persona_Individual en SSB:', e?.response?.data || e?.message)
+          }
+        }
+
+        // 2. Guardar en Persona_Grupo (GRU_ID)
+        if (formData.grupo) {
+          try {
+            const personaGrupoPayload = {
+              PER_ID: personaId,
+              GRU_ID: Number(formData.grupo)
+            }
+            console.log('📤 Registrando Persona_Grupo en SSB:', personaGrupoPayload)
+            await personaGruposApi.create(personaGrupoPayload)
+            console.log('✅ Persona_Grupo creada en SSB')
+          } catch (e) {
+            console.warn('⚠️ Error creando Persona_Grupo en SSB:', e?.response?.data || e?.message)
+          }
+        }
+
+        // 3. Guardar en Persona_Nivel (RAM_ID, NIV_ID)
+        if (formData.rama || formData.nivel) {
+          try {
+            const personaNivelPayload = {
+              PER_ID: personaId,
+              RAM_ID: formData.rama ? Number(formData.rama) : null,
+              NIV_ID: formData.nivel ? Number(formData.nivel) : null
+            }
+            console.log('📤 Registrando Persona_Nivel en SSB:', personaNivelPayload)
+            await personaNivelesApi.create(personaNivelPayload)
+            console.log('✅ Persona_Nivel creada en SSB')
+          } catch (e) {
+            console.warn('⚠️ Error creando Persona_Nivel en SSB:', e?.response?.data || e?.message)
+          }
+        }
+
+        // Marcar pasos como completados y mostrar modal de éxito
         steps.value.forEach(step => {
           step.completed = true
           step.valid = true
         })
-        
         showSuccessModal.value = true
-        
+
       } catch (error) {
-        console.error('Error en la pre-inscripción:', error)
+        console.error('Error en la pre-inscripción en SSB (envío real):', error)
+        // Mostrar alerta simple; podemos mejorar con mensajes detallados según error.response
+        alert('Error al guardar la pre-inscripción en SSB. Revisa la consola para más detalles.')
       } finally {
         submitting.value = false
       }
@@ -1147,6 +1264,11 @@ export default {
         }
       })
       
+      // Resetear secciones
+      seccionesDisponibles.value = []
+      seccionSeleccionada.value = ''
+      cargandoSecciones.value = false
+      
       // Resetear pasos
       steps.value.forEach(step => {
         step.completed = false
@@ -1154,7 +1276,7 @@ export default {
       })
       
       currentStep.value = 0
-      telefonoPlaceholder.value = '8 1234 5678' // MODIFICADO: Cambiado de 9 a 8
+      telefonoPlaceholder.value = '8 1234 5678'
       isNavigating.value = false
     }
 
@@ -1169,8 +1291,133 @@ export default {
       mostrarEducacionFormador.value = (newVal === '2')
     })
 
-    onMounted(() => {
-      console.log('Formulario de pre-inscripción Scouts Biobío montado')
+    onMounted(async () => {
+      console.log('Formulario de pre-inscripción Scouts Biobío montado - Iniciando carga de datos desde SSB...')
+
+      try {
+        // 1. Cargar Estados Civiles desde SSB
+        try {
+          const estadosData = await mantenedoresService.estadoCivil.list()
+          if (Array.isArray(estadosData) && estadosData.length) {
+            estadosCiviles.value = estadosData.map(e => ({ value: String(e.ESC_ID), label: e.ESC_DESCRIPCION }))
+            console.log(`✓ Estados civiles cargados desde SSB: ${estadosData.length}`)
+          }
+        } catch (e) {
+          console.warn('⚠️ Error cargando estados civiles desde SSB:', e?.message)
+        }
+
+        // 2. Cargar Zonas desde SSB
+        try {
+          const zonasData = await mantenedoresService.zona.list()
+          if (Array.isArray(zonasData) && zonasData.length) {
+            zonas.value = zonasData.map(z => ({ value: String(z.ZON_ID), label: z.ZON_DESCRIPCION }))
+            console.log(`✓ Zonas cargadas desde SSB: ${zonasData.length}`)
+          }
+        } catch (e) {
+          console.warn('⚠️ Error cargando zonas desde SSB:', e?.message)
+        }
+
+        // 3. Cargar Distritos desde SSB
+        try {
+          const distritosData = await mantenedoresService.distrito.list()
+          if (Array.isArray(distritosData) && distritosData.length) {
+            distritos.value = distritosData.map(d => ({ value: String(d.DIS_ID), label: d.DIS_DESCRIPCION, zonaId: String(d.ZON_ID) }))
+            console.log(`✓ Distritos cargados desde SSB: ${distritosData.length}`)
+          }
+        } catch (e) {
+          console.warn('⚠️ Error cargando distritos desde SSB:', e?.message)
+        }
+
+        // 4. Cargar Grupos desde SSB
+        try {
+          const gruposData = await mantenedoresService.grupo.list()
+          if (Array.isArray(gruposData) && gruposData.length) {
+            grupos.value = gruposData.map(g => ({ value: String(g.GRU_ID), label: g.GRU_DESCRIPCION, distritoId: String(g.DIS_ID) }))
+            console.log(`✓ Grupos cargados desde SSB: ${gruposData.length}`)
+          }
+        } catch (e) {
+          console.warn('⚠️ Error cargando grupos desde SSB:', e?.message)
+        }
+
+        // 5. Cargar Ramas desde SSB
+        try {
+          const ramasData = await mantenedoresService.rama.list()
+          if (Array.isArray(ramasData) && ramasData.length) {
+            ramas.value = ramasData.map(r => ({ value: String(r.RAM_ID), label: r.RAM_DESCRIPCION }))
+            console.log(`✓ Ramas cargadas desde SSB: ${ramasData.length}`)
+          }
+        } catch (e) {
+          console.warn('⚠️ Error cargando ramas desde SSB:', e?.message)
+        }
+
+        // 6. Cargar Roles desde SSB
+        try {
+          const rolesData = await mantenedoresService.rol.list()
+          if (Array.isArray(rolesData) && rolesData.length) {
+            roles.value = rolesData.map(r => ({ value: String(r.ROL_ID), label: r.ROL_DESCRIPCION }))
+            console.log(`✓ Roles cargados desde SSB: ${rolesData.length}`)
+          }
+        } catch (e) {
+          console.warn('⚠️ Error cargando roles desde SSB:', e?.message)
+        }
+
+        // 7. Cargar Niveles desde SSB
+        try {
+          const nivelesData = await mantenedoresService.nivel.list()
+          if (Array.isArray(nivelesData) && nivelesData.length) {
+            niveles.value = nivelesData.map(n => ({ value: String(n.NIV_ID), label: n.NIV_DESCRIPCION }))
+            console.log(`✓ Niveles cargados desde SSB: ${nivelesData.length}`)
+          }
+        } catch (e) {
+          console.warn('⚠️ Error cargando niveles desde SSB:', e?.message)
+        }
+
+        // 8. Cargar Tipos de Alimentación desde SSB
+        try {
+          const alimentacionData = await mantenedoresService.alimentacion.list()
+          if (Array.isArray(alimentacionData) && alimentacionData.length) {
+            tiposAlimentacion.value = alimentacionData.map(a => ({ value: String(a.ALI_ID), label: a.ALI_DESCRIPCION }))
+            console.log(`✓ Tipos de alimentación cargados desde SSB: ${alimentacionData.length}`)
+          }
+        } catch (e) {
+          console.warn('⚠️ Error cargando tipos de alimentación desde SSB:', e?.message)
+        }
+
+        // 9. Cargar TODOS los cursos desde la API de SSB (sin predefinidas, SOLO de la base de datos SSB)
+        try {
+          console.log('🔄 Cargando cursos desde la API de SSB...')
+          const rawCursos = await cursosService.cursos.list()
+          const cursosArr = Array.isArray(rawCursos) ? rawCursos : (Array.isArray(rawCursos?.results) ? rawCursos.results : [])
+          
+          if (Array.isArray(cursosArr) && cursosArr.length) {
+            // Mapear TODOS los cursos desde la BD SSB
+            cursosDisponibles.value = cursosArr.map(c => ({
+              id: Number(c.CUR_ID || c.id),
+              CUR_ID: Number(c.CUR_ID || c.id),
+              nombre: c.CUR_DESCRIPCION || c.nombre || (`Curso ${c.CUR_ID}`),
+              CUR_DESCRIPCION: c.CUR_DESCRIPCION || '',
+              ubicacion: c.CUR_LUGAR || '',
+              CUR_LUGAR: c.CUR_LUGAR || '',
+              fechas: c.CUR_FECHA ? String(c.CUR_FECHA) : 'Fechas por definir',
+              cupoMaximo: c.CUR_CANT_PARTICIPANTE || 0,
+              inscritos: c.CUR_INSCRITOS || 0,
+              icono: '📚',
+              estado: c.CUR_ESTADO || 0,
+              CUR_ESTADO: c.CUR_ESTADO || 0
+            }))
+            console.log(`✅ ${cursosDisponibles.value.length} CURSOS CARGADOS DESDE LA BASE DE DATOS SSB`)
+          } else {
+            console.warn('⚠️ No se encontraron cursos en la base de datos SSB')
+          }
+        } catch (e) {
+          console.error('❌ Error cargando cursos desde la base de datos SSB:', e?.message || e)
+          cursosDisponibles.value = []
+        }
+
+        console.log('✓✓✓ Carga de todos los datos desde SSB completada ✓✓✓')
+      } catch (e) {
+        console.error('Error general en onMounted cargando desde SSB:', e)
+      }
     })
 
     return {
@@ -1197,13 +1444,17 @@ export default {
       niveles,
       tiposAlimentacion,
       cursosDisponibles,
+      seccionesDisponibles,
+      cargandoSecciones,
       isStepValid,
       isFormValid,
       actualizarProvincias,
       actualizarComunas,
       actualizarPlaceholderTelefono,
       selectCurso,
+      selectSeccion,
       getCursoSeleccionado,
+      getSeccionSeleccionada,
       getRegionLabel,
       getProvinciaLabel,
       getComunaLabel,

@@ -1,5 +1,5 @@
 import django_filters
-from ApiCoreScouts.Models.curso_model import Curso, Curso_Seccion, Curso_Fecha, Curso_Cuota
+from ApiCoreScouts.Models.curso_model import Curso, Curso_Seccion, Curso_Fecha, Curso_Cuota, Curso_Alimentacion, Curso_Formador
 
 
 class CursoFilter(django_filters.FilterSet):
@@ -22,3 +22,19 @@ class CursoSeccionFilter(django_filters.FilterSet):
 	class Meta:
 		model = Curso_Seccion
 		fields = ['curso_id', 'seccion']
+
+
+class CursoAlimentacionFilter(django_filters.FilterSet):
+	CUR_ID = django_filters.NumberFilter(field_name='CUR_ID')
+
+	class Meta:
+		model = Curso_Alimentacion
+		fields = ['CUR_ID']
+
+
+class CursoFormadorFilter(django_filters.FilterSet):
+	CUR_ID = django_filters.NumberFilter(field_name='CUR_ID')
+
+	class Meta:
+		model = Curso_Formador
+		fields = ['CUR_ID']
