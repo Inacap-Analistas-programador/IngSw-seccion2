@@ -180,6 +180,12 @@
   <svg v-else-if="name === 'chevron-up'" :width="size" :height="size" viewBox="0 0 24 24" fill="none" stroke="currentColor" :stroke-width="strokeWidth">
     <polyline points="18 15 12 9 6 15"/>
   </svg>
+  <svg v-else-if="name === 'chevron-left'" :width="size" :height="size" viewBox="0 0 24 24" fill="none" stroke="currentColor" :stroke-width="strokeWidth">
+    <polyline points="15 18 9 12 15 6"/>
+  </svg>
+  <svg v-else-if="name === 'chevron-right'" :width="size" :height="size" viewBox="0 0 24 24" fill="none" stroke="currentColor" :stroke-width="strokeWidth">
+    <polyline points="9 18 15 12 9 6"/>
+  </svg>
   <svg v-else-if="name === 'chevron-down'" :width="size" :height="size" viewBox="0 0 24 24" fill="none" stroke="currentColor" :stroke-width="strokeWidth">
     <polyline points="6 9 12 15 18 9"/>
   </svg>

@@ -869,7 +869,7 @@ export default {
 
 /* Selector de Curso - ESTILOS ESTANDARIZADOS */
 .course-selector-section {
-  background: white;
+  background: var(--color-surface);
   padding: 24px;
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0,0,0,0.1);
@@ -904,7 +904,7 @@ export default {
   padding: 12px 16px;
   border: 2px solid #e9ecef;
   border-radius: 8px;
-  background-color: #ffffff;
+  background-color: var(--color-surface);
   color: #495057;
   font-size: 16px;
   font-family: inherit;
@@ -921,7 +921,7 @@ export default {
 
 .native-select option {
   color: #495057;
-  background-color: #ffffff;
+  background-color: var(--color-surface);
   padding: 12px;
   font-size: 15px;
   border-bottom: 1px solid #f3f4f6;
@@ -1004,7 +1004,7 @@ export default {
 
 /* Charts Section - ESTILOS ESTANDARIZADOS */
 .charts-section {
-  background: white;
+  background: var(--color-surface);
   padding: 24px;
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0,0,0,0.1);
@@ -1054,7 +1054,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: white;
+  background-color: var(--color-surface);
   border-radius: 6px;
   border: 1px solid #e9ecef;
 }
@@ -1123,7 +1123,7 @@ export default {
 
 /* Courses Section - ESTILOS ESTANDARIZADOS CON BOTONES MEJORADOS */
 .courses-section {
-  background: white;
+  background: var(--color-surface);
   padding: 24px;
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0,0,0,0.1);
@@ -1171,7 +1171,7 @@ export default {
 
 /* TABLAS ESTANDARIZADAS - ESTILOS DE MANTENEDORES */
 .table-container-expanded {
-  background: white;
+  background: var(--color-surface);
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
   overflow: hidden;
@@ -1253,7 +1253,7 @@ export default {
 
 /* Responsables Section - ESTILOS ESTANDARIZADOS CON TABS MEJORADOS */
 .responsibles-section {
-  background: white;
+  background: var(--color-surface);
   padding: 24px;
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0,0,0,0.1);
@@ -1305,7 +1305,7 @@ export default {
 }
 
 .tab-button.active {
-  background-color: white;
+  background-color: var(--color-surface);
   color: #2c5aa0;
   border-bottom-color: #ffcc00;
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
@@ -1313,8 +1313,8 @@ export default {
 
 .tab-content {
   padding: 20px;
-  background: white;
-}
+  background: var(--color-surface);
+.}
 
 /* Responsive - ESTILOS ESTANDARIZADOS */
 @media (max-width: 768px) {
@@ -1465,7 +1465,7 @@ export default {
   --color-success: #28a745;
   --color-warning: #ffc107;
   --color-danger: #dc3545;
-  --color-surface: #f8f9fa;
+  /* Use global --color-surface from base.css for consistent surface color */
   --color-border: #e9ecef;
   --color-text: #495057;
 }
