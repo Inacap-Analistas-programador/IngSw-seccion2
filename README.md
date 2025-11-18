@@ -101,7 +101,8 @@ esto te devolverá una clave, que deberás copiar y pegar en la variable **SECRE
 ---
 
 # Iniciar Base de Datos
-MYSQL debe estar instalado de manera global, no en el venv, por lo que debes dirigirte al siguiente link
+MYSQL debe estar instalado de manera global en tu PC, no en el venv, por lo que debes dirigirte al siguiente link
+https://dev.mysql.com/downloads/workbench/
 ---
 
 ## 🔹 3. Frontend – Vue Cliente
