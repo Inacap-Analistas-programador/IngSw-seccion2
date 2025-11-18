@@ -90,7 +90,7 @@ HOST=127.0.0.1
 PORT=3306
 DEBUG_API=True
 ```
-## crear SECRET_KEY
+## Crear SECRET_KEY
 si no tienes una secret_key o te da problemas, intenta crear una nueva
 ```bash
 from django.core.management.utils import get_random_secret_key
@@ -102,7 +102,12 @@ esto te devolverá una clave, que deberás copiar y pegar en la variable **SECRE
 
 # Iniciar Base de Datos
 MYSQL debe estar instalado de manera global en tu PC, no en el venv, por lo que debes dirigirte al siguiente link
+
 https://dev.mysql.com/downloads/workbench/
+
+una vez instalado, puedes iniciar la base de datos
+has click derecho en el archivo **ssb** y abrir con **MySQL Workbench**
+
 ---
 
 ## 🔹 3. Frontend – Vue Cliente
