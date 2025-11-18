@@ -1041,7 +1041,9 @@ export default {
   background: white;
   border-radius: 0 0 8px 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: auto;
+  max-height: calc(100vh - var(--navbar-height) - var(--card-top-offset));
 }
 
 .usuarios-table {
@@ -1615,7 +1617,9 @@ export default {
   }
 
   .table-wrapper {
+    overflow-y: auto;
     overflow-x: auto;
+    max-height: calc(100vh - var(--navbar-height) - var(--card-top-offset));
   }
 
   .usuarios-table {

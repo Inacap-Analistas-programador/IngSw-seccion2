@@ -23,9 +23,11 @@
 
 /* semantic color variables for this project */
 :root {
-  --color-background: var(--vt-c-white);
-  --color-background-soft: var(--vt-c-white-soft);
-  --color-background-mute: var(--vt-c-white-mute);
+  /* Make white backgrounds slightly darker for better contrast on bright displays */
+  /* Main app background: slightly darker off-white for better contrast on bright screens */
+  --color-background: #fafafa; /* mucho más claro, casi blanco */
+  --color-background-soft: #f7f7f8;
+  --color-background-mute: #f2f2f2;
 
   --color-border: var(--vt-c-divider-light-2);
   --color-border-hover: var(--vt-c-divider-light-1);
@@ -42,7 +44,7 @@
   --color-info: #3b82f6;           /* Blue */
   --color-warning: #0284c7;        /* Amber */
   --color-danger: #dc2626;         /* Red */
-  --color-surface: #ffffff;        /* Cards/containers */
+  --color-surface: #f9f9f9;        /* Cards/containers — casi blanco */
 
   /* Colores tipo semáforo (estandarizados en toda la app) */
   --color-semaforo-green: #22c55e;  /* Verde - OK/Aprobado/Enviado */

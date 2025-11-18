@@ -476,7 +476,7 @@ export default {
 .table-header-bar { background: #fff; padding: .85rem 1rem; border-radius: 8px 8px 0 0; box-shadow: 0 2px 8px rgba(0,0,0,.1); display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #e0e0e0; }
 .table-title { margin: 0; font-size: 1.05rem; font-weight: 700; color: #1e3a8a; position:relative; padding-left: 12px; }
 .table-title::before { content:''; position:absolute; left:0; top:0; width:4px; height:100%; background:#1e3a8a; border-radius:2px; }
-.table-wrapper { background: #fff; border-radius: 0 0 8px 8px; box-shadow: 0 2px 8px rgba(0,0,0,.1); overflow:hidden; }
+.table-wrapper { background: #fff; border-radius: 0 0 8px 8px; box-shadow: 0 2px 8px rgba(0,0,0,.1); overflow-y: auto; overflow-x: auto; max-height: calc(100vh - var(--navbar-height) - var(--card-top-offset)); }
 
 .usuarios-table { width:100%; border-collapse: collapse; }
 .usuarios-table thead { background: #3d4f5f; color: #fff; }

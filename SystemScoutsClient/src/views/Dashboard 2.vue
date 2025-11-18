@@ -616,7 +616,7 @@ export default {
 
 /* Selector de Curso */
 .course-selector-section {
-  background: white;
+  background: var(--color-surface);
   padding: 24px;
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0,0,0,0.1);
@@ -650,7 +650,7 @@ export default {
   padding: 12px 16px;
   border: 2px solid #e9ecef;
   border-radius: 8px;
-  background-color: #ffffff;
+  background-color: var(--color-surface);
   color: #495057;
   font-size: 16px;
   font-family: inherit;
@@ -662,6 +662,34 @@ export default {
 .native-select:focus {
   border-color: #2c5aa0;
   box-shadow: 0 0 0 3px rgba(44, 90, 160, 0.2);
+}
+
+.native-select option {
+  color: #495057;
+  background-color: var(--color-surface);
+  padding: 12px;
+  font-size: 15px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.native-select option:hover {
+  background-color: #2c5aa0 !important;
+  color: #ffffff !important;
+}
+
+.native-select option:checked {
+  background-color: #2c5aa0 !important;
+  color: #ffffff !important;
+}
+
+/* Asegurar visibilidad en todos los navegadores */
+.native-select::-ms-expand {
+  display: block;
+}
+
+.native-select:-moz-focusring {
+  color: transparent;
+  text-shadow: 0 0 0 #000;
 }
 
 .semaphore-container {
@@ -721,7 +749,7 @@ export default {
 
 /* Charts Section */
 .charts-section {
-  background: white;
+  background: var(--color-surface);
   padding: 24px;
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0,0,0,0.1);
@@ -771,7 +799,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: white;
+  background-color: var(--color-surface);
   border-radius: 6px;
   border: 1px solid #e9ecef;
 }
@@ -840,7 +868,7 @@ export default {
 
 /* Courses Section */
 .courses-section {
-  background: white;
+  background: var(--color-surface);
   padding: 24px;
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0,0,0,0.1);
@@ -892,7 +920,7 @@ export default {
 
 /* Tablas */
 .table-container-expanded {
-  background: white;
+  background: var(--color-surface);
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
   overflow: hidden;
@@ -964,7 +992,7 @@ export default {
 
 /* Responsables Section */
 .responsibles-section {
-  background: white;
+  background: var(--color-surface);
   padding: 24px;
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0,0,0,0.1);
@@ -1015,7 +1043,7 @@ export default {
 }
 
 .tab-button.active {
-  background-color: white;
+  background-color: var(--color-surface);
   color: #2c5aa0;
   border-bottom-color: #ffcc00;
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
@@ -1023,8 +1051,8 @@ export default {
 
 .tab-content {
   padding: 20px;
-  background: white;
-}
+  background: var(--color-surface);
+.}
 
 /* Responsive */
 @media (max-width: 768px) {
@@ -1051,5 +1079,85 @@ export default {
   .refresh-btn {
     width: 100%;
   }
+}
+
+@media (max-width: 480px) {
+  .course-selector-section,
+  .charts-section,
+  .courses-section,
+  .responsibles-section {
+    padding: 16px;
+  }
+  
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .chart-bars {
+    flex-direction: column;
+    align-items: center;
+    height: auto;
+    gap: 20px;
+  }
+  
+  .bar-container {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .bar {
+    width: 60px;
+    height: 40px !important;
+    border-radius: 6px;
+  }
+  
+  .payment-status {
+    gap: 16px;
+  }
+  
+  .status-item {
+    justify-content: center;
+  }
+}
+
+/* Estilos para estados de deshabilitado */
+.native-select:disabled {
+  background-color: #e9ecef;
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Transiciones suaves para todos los elementos */
+.course-selector-section,
+.charts-section,
+.courses-section,
+.responsibles-section,
+.chart-card,
+.tab-button,
+.refresh-btn,
+.btn-action {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Efectos de hover para todas las tarjetas */
+.course-selector-section:hover,
+.charts-section:hover,
+.courses-section:hover,
+.responsibles-section:hover {
+  box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+/* Colores del sistema estandarizados */
+:root {
+  --color-primary: #2c5aa0;
+  --color-primary-dark: #1e3a8a;
+  --color-accent: #ffcc00;
+  --color-success: #28a745;
+  --color-warning: #ffc107;
+  --color-danger: #dc3545;
+  /* Use global --color-surface from base.css for consistent surface color */
+  --color-border: #e9ecef;
+  --color-text: #495057;
 }
 </style>
