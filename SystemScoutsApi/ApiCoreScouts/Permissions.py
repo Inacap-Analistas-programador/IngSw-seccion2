@@ -1,7 +1,7 @@
 # ApiCoreScouts/Permissions.py
 from rest_framework.permissions import BasePermission
 
-from .Models.usuario_model import Perfil_Aplicacion
+from .Models.ModuloUsuarios import Perfil_Aplicacion
 
 class PerfilPermission(BasePermission):
     """
