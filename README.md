@@ -109,7 +109,7 @@ debes realizar los siguientes pasos:
 2. click donde dice ***No, gracias, solo quiero iniciar la descarga.*** (incluye: MySQL Server + Workbench + utilidades)
 3. una vez iniciado el instalador, debes seleccionar mysql workbench y presionar en **ADD**
 4. aparecerán dos tablas, el de la izquierda son los productos y el de la derecha son los productos que instalarás
-5. debes dejar en la tabla de la derecha los productos que deseas instalar (Solo necesitas MySQL Server, MySQL Workbench es solo para ver la Base de Datos de forma más visual)
+5. debes dejar en la tabla de la derecha los productos que deseas instalar (Solo necesitas MySQL Server y MySQL Workbench)
 6. luego solo continuas con la instalación de manera normal
 7. luego te aparecerá el apartado *Type and Networking*
 8. si te dice que el puerto está ocupado, solo cambialo a cualquiera, por ejemplo: ***3306 está ocupado***, entonces lo cambias a 3305 o cualquiera (en tu archivo .env deberás colocar ese puerto)
