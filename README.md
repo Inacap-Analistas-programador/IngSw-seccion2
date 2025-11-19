@@ -116,10 +116,22 @@ debes realizar los siguientes pasos:
 9. ***Accounts and Roles***: debes asignar una contraseña root (luego deberás ingresar esa contraseña en tu archivo .env)
 10. Luego continuas con la instalación de manera normal
 
-una vez instalado, puedes iniciar la base de datos, de esta manera:
+una vez instalado, comprueba esto antes con **PowerShell Administrador**:
+
+
+```bash
+mysql -u root -p
+```
+
+si te devuelve un error, debes escribir en el buscador de windows ***editar las variables de entorno del sistema***, dirigirte a **Variables de entorno... > path y presiona editar**
+- copia la ruta de tu mysql, generalmente es esta ruta: C:\Program Files\MySQL\MySQL Server 8.0\bin
+- presiona nuevo e ingresa la ruta copiada
+- ahora ejecuta el codigo mostrado con anterioridad en PowerShell como administrador
+
 1. crea una nueva conexión, ingresa: ***nombre***; (cualquiera), ***port***; (el que configuraste en la instalación), en ***Store in Vault...*** debes ingresar la contraseña root que definiste en la instalación
-2. luego ingresa las consultas del archivo ssb.sql que está en el proyecto (todo)
-3. inicia todas las consultas en MySQL Workbench y ya puedes trabajar con la base de datos
+2. crea un nuevo *SCHEMA* e ingresa un nombre cualquiera
+3. en la pestaña de schema selecciona tu schema creado
+4. luego copia las consultas del archivo ssb.sql que está en el proyecto (todo), pegalo en mysql workbench y ejecuta todo
 
 
 **NOTA: no se debe usar *XAMPP*, solo funciona iniciando con *MySQL Workbench* o *MariaDB***
