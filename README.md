@@ -26,8 +26,8 @@ Asegúrate de tener instalados en tu sistema:
 ```
 IngSw-seccion2/
 │
-├─ SistemScoutsApi/       # Backend Django (API REST)
-├─ SistemScoutsClient/    # Frontend Vue (Vite)
+├─ SystemScoutsApi/       # Backend Django (API REST)
+├─ SystemScoutsClient/    # Frontend Vue (Vite)
 └─ README.md
 ```
 
@@ -36,7 +36,7 @@ IngSw-seccion2/
 ## 🔹 1. Clonar el repositorio (Abrir una nueva terminal)
 ```bash
 git clone https://github.com/Inacap-Analistas-programador/IngSw-seccion2.git
-cd IngSw-seccion2/SistemScoutsApi
+cd IngSw-seccion2/SystemScoutsApi
 ```
 
 ---
@@ -118,7 +118,6 @@ debes realizar los siguientes pasos:
 
 una vez instalado, comprueba esto antes con **PowerShell Administrador**:
 
-
 ```bash
 mysql -u root -p
 ```
@@ -127,6 +126,8 @@ si te devuelve un error, debes escribir en el buscador de windows ***editar las 
 - copia la ruta de tu mysql, generalmente es esta ruta: C:\Program Files\MySQL\MySQL Server 8.0\bin
 - presiona nuevo e ingresa la ruta copiada
 - ahora ejecuta el codigo mostrado con anterioridad en PowerShell como administrador
+
+una vez ejecutado, ingresa la contraseña root que habias definido en la instalación de mysql
 
 1. crea una nueva conexión, ingresa: ***nombre***; (cualquiera), ***port***; (el que configuraste en la instalación), en ***Store in Vault...*** debes ingresar la contraseña root que definiste en la instalación
 2. crea un nuevo *SCHEMA* e ingresa un nombre cualquiera
@@ -146,7 +147,7 @@ si te devuelve un error, debes escribir en el buscador de windows ***editar las 
    ```
 2. Entrar en la carpeta del cliente:
    ```bash
-   cd ../SistemScoutsClient
+   cd ../SystemScoutsClient
    ```
 3. Instalar dependencias:
    ```bash
@@ -249,7 +250,7 @@ Para acceder al panel administrativo de Django y gestionar el sistema, necesitar
 Debes situarte en el mismo directorio donde está el archivo manage.py.
 Ejemplo:
 ```bash
-cd IngSw-seccion2/SistemScoutsApi
+cd IngSw-seccion2/SystemScoutsApi
 ```
 
 **Crear el superusuario**
