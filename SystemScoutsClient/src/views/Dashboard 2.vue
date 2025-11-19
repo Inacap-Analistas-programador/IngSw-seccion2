@@ -1052,7 +1052,7 @@ export default {
 .tab-content {
   padding: 20px;
   background: var(--color-surface);
-.}
+}
 
 /* Responsive */
 @media (max-width: 768px) {
