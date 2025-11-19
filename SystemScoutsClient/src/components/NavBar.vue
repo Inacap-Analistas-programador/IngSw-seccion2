@@ -3,7 +3,16 @@ import { ref, onMounted, onUnmounted, watch } from 'vue'
 import AppIcons from './icons/AppIcons.vue'
 const emit = defineEmits(['toggle-sidebar'])
 const props = defineProps({ collapsed: { type: Boolean, default: false }})
-function toggleSidebar() { emit('toggle-sidebar') }
+function toggleSidebar() {
+  // On small screens, open the sidebar as a mobile overlay instead of toggling collapse
+  try {
+    if (typeof window !== 'undefined' && window.innerWidth <= 900) {
+      window.dispatchEvent(new Event('open-sidebar-mobile'))
+      return
+    }
+  } catch (e) {}
+  emit('toggle-sidebar')
+}
 import { useRouter, useRoute } from 'vue-router'
 import logoSrc from '@/assets/Logo_Boyscout_Chile.png'
 import authService from '@/services/authService.js'
@@ -340,6 +349,11 @@ function onLogoutImgError() {
 /* ====== Responsive ====== */
 @media (max-width: 768px) {
   .user-meta { display: none; }
+}
+
+/* Ocultar botón de toggle del sidebar en pantallas pequeñas (abrir via otra UI si se desea) */
+@media (max-width: 900px) {
+  .sidebar-toggle { display: none; }
 }
 
 /* ====== Animación de entrada/salida del usuario ====== */

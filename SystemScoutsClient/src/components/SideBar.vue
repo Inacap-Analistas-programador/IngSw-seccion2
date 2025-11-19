@@ -1,6 +1,9 @@
 <template>
-  <aside id="app-sidebar" :class="['sidebar', { collapsed }]">
-    <nav class="sidebar-nav">
+  <div class="sidebar-wrapper">
+    <div v-if="openMobile" class="sidebar-backdrop" @click="closeMobile"></div>
+    <aside id="app-sidebar" :class="['sidebar', { collapsed, 'mobile-open': openMobile }]" @click.self="closeMobile">
+      <button v-if="openMobile" class="mobile-close-btn" @click="closeMobile" aria-label="Cerrar menú">×</button>
+      <nav class="sidebar-nav">
       
       <!-- Sin sesión iniciada: solo mostrar Formulario -->
       <div v-if="!isLoggedIn">
@@ -10,16 +13,16 @@
       
       <!-- Con sesión: mostrar menú completo (por defecto admin) -->
       <div v-else>
-        <!-- Apartado desplegable: Usuarios y Roles -->
+        <!-- Apartado desplegable: Usuarios y Perfiles -->
         <div class="nav-item nav-collapsible" @click="toggleUsuarios" :class="{ 'router-link-exact-active': showUsuarios }">
           <span class="nav-icon"><AppIcons name="users" :size="20" /></span>
-          <span class="nav-collapsible-title">Usuarios y Roles</span>
+          <span class="nav-collapsible-title">Usuarios y Perfiles</span>
           <span class="caret" :class="{ open: showUsuarios }">▾</span>
         </div>
         <Transition name="submenu-slide">
           <div v-show="showUsuarios" class="submenu">
             <router-link to="/usuarios" class="submenu-item"><span class="submenu-icon"><AppIcons name="user" :size="16" /></span>Usuarios</router-link>
-            <router-link to="/roles" class="submenu-item"><span class="submenu-icon"><AppIcons name="lock" :size="16" /></span>Roles</router-link>
+            <router-link to="/roles" class="submenu-item"><span class="submenu-icon"><AppIcons name="lock" :size="16" /></span>Perfiles</router-link>
           </div>
         </Transition>
 
@@ -78,6 +81,7 @@
       </button>
     </div>
   </aside>
+  </div>
 </template>
 
 <script setup>
@@ -123,6 +127,7 @@ const props = defineProps({
 const emit = defineEmits(['update:collapsed'])
 
 const internalCollapsed = ref(false)
+const openMobile = ref(false)
 
 // computed `collapsed` acts as a proxy: when prop is provided, it becomes controlled; otherwise it uses internal state.
 const collapsed = computed({
@@ -154,7 +159,7 @@ const mantenedoresTabs = [
   { id: 'alimentacion', label: 'Alimentación' },
   { id: 'niveles', label: 'Niveles' },
   { id: 'estados-civiles', label: 'Estados Civiles' },
-  { id: 'roles', label: 'Roles' },
+  { id: 'roles', label: 'Perfiles' },
   { id: 'conceptos-contables', label: 'Conceptos Contables' },
   { id: 'tipos-archivo', label: 'Tipos de Archivo' }
 ]
@@ -207,12 +212,33 @@ onMounted(() => {
     
     // Registrar listener de storage para detectar login/logout en otras pestañas
     window.addEventListener('storage', onStorage)
+    // Registrar listener para abrir sidebar en móviles
+    window.addEventListener('open-sidebar-mobile', openMobileHandler)
   }
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('storage', onStorage)
+  window.removeEventListener('open-sidebar-mobile', openMobileHandler)
 })
+
+function closeMobile() { openMobile.value = false }
+
+// Scroll lock when mobile sidebar is open
+watch(openMobile, (v) => {
+  try {
+    if (v) {
+      document.documentElement.style.overflow = 'hidden'
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.documentElement.style.overflow = ''
+      document.body.style.overflow = ''
+    }
+  } catch (e) { /* ignore */ }
+})
+
+// Handler para abrir la sidebar en móvil (referencia para add/remove)
+function openMobileHandler() { openMobile.value = true }
 </script>
 
 <style scoped>
@@ -547,10 +573,61 @@ onBeforeUnmount(() => {
   color: #fff;
 }
 
-/* Responsive: ocultar sidebar en móviles */
-@media (max-width: 768px) {
+/* Responsive: transformar sidebar a panel deslizable en móviles */
+@media (max-width: 900px) {
+  .sidebar-wrapper { position: relative; }
+  .sidebar-backdrop {
+    position: fixed;
+    inset: var(--navbar-height, 64px) 0 0 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 1100;
+    transition: opacity 180ms ease;
+  }
   .sidebar {
-    display: none;
+    position: fixed;
+    top: var(--navbar-height, 64px);
+    left: 0;
+    height: calc(100vh - var(--navbar-height, 64px));
+    width: 88%;
+    max-width: 360px;
+    transform: translateX(-110%);
+    transition: transform 220ms ease, opacity 180ms ease;
+    z-index: 1200;
+    box-shadow: 0 8px 30px rgba(2,6,23,0.4);
+    background: var(--color-primary);
+  }
+  .sidebar.mobile-open { transform: translateX(0%); }
+
+  .mobile-close-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    border: none;
+    font-size: 20px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1210;
+    cursor: pointer;
+  }
+  .mobile-close-btn:hover { background: rgba(255,255,255,0.14); }
+
+  /* Evitar que el menú colapse bajo la X: dar espacio en la parte superior y
+     reservar zona a la derecha para el botón de cierre solo en móviles */
+  .sidebar {
+    padding-top: 56px; /* desplaza el contenido hacia abajo para separar de la X */
+  }
+  /* Reservar espacio a la derecha en el primer item colapsable para que no
+     quede pegado a la X (solo en móvil) */
+  .nav-collapsible:first-of-type {
+    padding-right: 64px;
+    margin-top: 6px;
   }
 }
 </style>

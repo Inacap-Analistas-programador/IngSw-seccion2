@@ -112,7 +112,9 @@ DATABASES = {
         'HOST': os.getenv("HOST"),
         'PORT': os.getenv("PORT", "3306"),
         'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            # Ensure connection uses utf8mb4 to correctly handle accents and ñ
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES', NAMES 'utf8mb4'",
+            'charset': 'utf8mb4',
         },
         'CONN_MAX_AGE': 0,
         'DISABLE_SERVER_SIDE_CURSORS': True,
