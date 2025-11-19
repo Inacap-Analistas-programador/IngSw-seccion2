@@ -93,7 +93,7 @@ DEBUG_API=True
 ## Crear SECRET_KEY
 si no tienes una secret_key o te da problemas, intenta crear una nueva
 ```bash
-(python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 ```
 esto te devolverá una clave, que deberás copiar y pegar en la variable **SECRET_KEY**
 
@@ -109,10 +109,10 @@ debes realizar los siguientes pasos:
 2. click donde dice ***No, gracias, solo quiero iniciar la descarga.*** (incluye: MySQL Server + Workbench + utilidades)
 3. una vez iniciado el instalador, debes seleccionar mysql workbench y presionar en **ADD**
 4. aparecerán dos tablas, el de la izquierda son los productos y el de la derecha son los productos que instalarás
-5. debes dejar en la tabla de la derecha los productos que deseas instalar (Solo necesitas MySQL Server y MySQL Workbench)
+5. debes dejar en la tabla de la derecha los productos que deseas instalar (Solo necesitas MySQL Server y MySQL Workbench, para django es suficiente)
 6. luego solo continuas con la instalación de manera normal
 7. luego te aparecerá el apartado *Type and Networking*
-8. si te dice que el puerto está ocupado, solo cambialo a cualquiera, por ejemplo: ***3306 está ocupado***, entonces lo cambias a 3305 o cualquiera (en tu archivo .env deberás colocar ese puerto)
+8. si te dice que el puerto está ocupado, solo cambialo a cualquiera, por ejemplo: Si el instalador dice: 3306 is already in use, cámbialo por 3307 (o el que quieras) *Ese mismo puerto debe quedar en tu archivo .env*
 9. ***Accounts and Roles***: debes asignar una contraseña root (luego deberás ingresar esa contraseña en tu archivo .env)
 10. Luego continuas con la instalación de manera normal
 
@@ -130,10 +130,24 @@ si te devuelve un error, debes escribir en el buscador de windows ***editar las 
 una vez ejecutado, ingresa la contraseña root que habias definido en la instalación de mysql
 
 1. crea una nueva conexión, ingresa: ***nombre***; (cualquiera), ***port***; (el que configuraste en la instalación), en ***Store in Vault...*** debes ingresar la contraseña root que definiste en la instalación
-2. crea un nuevo *SCHEMA* e ingresa un nombre cualquiera
-3. en la pestaña de schema selecciona tu schema creado
-4. luego copia las consultas del archivo ssb.sql que está en el proyecto (todo), pegalo en mysql workbench y ejecuta todo
+2. crea un nuevo SCHEMA con el nombre de la base de datos, aunque puede ser cualquiera, pero de preferencia algo estandar como ***ssb***
 
+para comprobar que estás conectado, intenta:
+- cd SystemScoutsApi
+- ejecutar python manage.py makemigrations
+si te dice: *No changes detected* entonces estás conectado correctamente
+
+## Makemigrations y Migrate
+para que se creen las tablas de los modelos, debes escribir lo siguiente (debes estar posicionado en **SystemScoutsApi**
+
+```bash
+python manage.py makemigrations ApiCoreScouts
+```
+si te detecta todas las tablas con sus atributos, es hora de migrar
+```bash
+python manage.py migrate
+```
+y ya tendrías todas las tablas creadas, ahora puedes empezar a trabajar con la base de datos
 
 **NOTA: no se debe usar *XAMPP*, solo funciona iniciando con *MySQL Workbench* o *MariaDB***
 
