@@ -116,8 +116,11 @@ debes realizar los siguientes pasos:
 9. ***Accounts and Roles***: debes asignar una contraseña root (luego deberás ingresar esa contraseña en tu archivo .env)
 10. Luego continuas con la instalación de manera normal
 
-una vez instalado, puedes iniciar la base de datos
-si quieres ver la base de datos de manera más visual, has click derecho en el archivo **ssb** del proyecto y abrir con **MySQL Workbench**
+una vez instalado, puedes iniciar la base de datos, de esta manera:
+1. crea una nueva conexión, ingresa: ***nombre***; (cualquiera), ***port***; (el que configuraste en la instalación), en ***Store in Vault...*** debes ingresar la contraseña root que definiste en la instalación
+2. luego ingresa las consultas del archivo ssb.sql que está en el proyecto (todo)
+3. inicia todas las consultas en MySQL Workbench y ya puedes trabajar con la base de datos
+
 
 **NOTA: no se debe usar *XAMPP*, solo funciona iniciando con *MySQL Workbench* o *MariaDB***
 
