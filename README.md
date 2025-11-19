@@ -93,20 +93,31 @@ DEBUG_API=True
 ## Crear SECRET_KEY
 si no tienes una secret_key o te da problemas, intenta crear una nueva
 ```bash
-from django.core.management.utils import get_random_secret_key
-print(get_random_secret_key())
+(python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 ```
 esto te devolverá una clave, que deberás copiar y pegar en la variable **SECRET_KEY**
 
 ---
 
-# Iniciar Base de Datos
-MYSQL debe estar instalado de manera global en tu PC, no en el venv, por lo que debes dirigirte al siguiente link
+# 🛢Iniciar Base de Datos🛢
+MYSQL debe estar instalado de manera global en tu PC, por lo que debes dirigirte al siguiente link
 
-https://dev.mysql.com/downloads/workbench/
+https://dev.mysql.com/downloads/installer/
+
+debes realizar los siguientes pasos:
+1. descargar mysql community que pesa +500mb
+2. click donde dice ***No, gracias, solo quiero iniciar la descarga.*** (incluye: MySQL Server + Workbench + utilidades)
+3. una vez iniciado el instalador, debes seleccionar mysql workbench y presionar en **ADD**
+4. aparecerán dos tablas, el de la izquierda son los productos y el de la derecha son los productos que instalarás
+5. debes dejar en la tabla de la derecha los productos que deseas instalar (Solo necesitas MySQL Server, MySQL Workbench es solo para ver la Base de Datos de forma más visual)
+6. luego solo continuas con la instalación de manera normal
+7. luego te aparecerá el apartado *Type and Networking*
+8. si te dice que el puerto está ocupado, solo cambialo a cualquiera, por ejemplo: ***3306 está ocupado***, entonces lo cambias a 3305 o cualquiera (en tu archivo .env deberás colocar ese puerto)
+9. ***Accounts and Roles***: debes asignar una contraseña root (luego deberás ingresar esa contraseña en tu archivo .env)
+10. Luego continuas con la instalación de manera normal
 
 una vez instalado, puedes iniciar la base de datos
-has click derecho en el archivo **ssb** y abrir con **MySQL Workbench**
+si quieres ver la base de datos de manera más visual, has click derecho en el archivo **ssb** del proyecto y abrir con **MySQL Workbench**
 
 **NOTA: no se debe usar *XAMPP*, solo funciona iniciando con *MySQL Workbench* o *MariaDB***
 
