@@ -39,3 +39,39 @@ html, body, #app, .app-root {
   /* Ensure text remains dark when we force a light background (prevents OS dark-mode vars from making text light) */
   color: #111111 !important;
 }
+
+/* Global invisible scrollbar (still scrollable)
+   - Hides scrollbar visuals across browsers but preserves scrolling behavior.
+   - Applied globally so no extra classes are required. */
+
+/* Internet Explorer and legacy Edge */
+* {
+  -ms-overflow-style: none; /* hide scrollbar */
+}
+
+/* Firefox */
+* {
+  scrollbar-width: none; /* hide scrollbar */
+}
+
+/* WebKit (Chrome, Edge, Safari) */
+::-webkit-scrollbar {
+  width: 0px;
+  height: 0px;
+}
+
+/* Keep corner transparent */
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Utility to show a thin scrollbar again if needed */
+.show-thin-scrollbar *::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.show-thin-scrollbar * {
+  scrollbar-width: thin;
+}
+
+

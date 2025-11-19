@@ -38,7 +38,9 @@ function toggleCollapsed() {
 
 body, html {
 	height: 100%;
-	overflow: hidden;
+	/* Allow the page to scroll when necessary. Previously set to hidden which prevents
+	   the global scrollbar from appearing; main content already has internal scrolling. */
+	overflow: auto;
 }
 
 .app-root {

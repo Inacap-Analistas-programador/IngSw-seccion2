@@ -2,15 +2,15 @@
   <ModernMainScrollbar>
     <div class="roles-view">
       <header class="page-header">
-        <h3>Roles</h3>
-        <p class="page-description">Administra los perfiles (roles) del sistema y sus permisos.</p>
+        <h3>Perfiles</h3>
+        <p class="page-description">Administra los perfiles del sistema y sus permisos.</p>
       </header>
 
       <div class="table-header-bar">
-        <h3 class="table-title">Lista de Roles</h3>
+        <h3 class="table-title">Lista de Perfiles</h3>
         <div class="table-actions">
           <BaseButton variant="primary" @click="abrirCrear">
-            <AppIcons name="plus" :size="16" /> Nuevo Rol
+            <AppIcons name="plus" :size="16" /> Nuevo Perfil
           </BaseButton>
         </div>
       </div>
@@ -26,13 +26,13 @@
           </thead>
           <tbody>
             <tr v-if="cargando">
-              <td colspan="3">Cargando roles...</td>
+              <td colspan="3">Cargando perfiles...</td>
             </tr>
             <tr v-else-if="error">
               <td colspan="3" style="color: var(--color-danger)">{{ error }}</td>
             </tr>
             <tr v-else-if="!roles.length">
-              <td colspan="3">No hay roles registrados.</td>
+              <td colspan="3">No hay perfiles registrados.</td>
             </tr>
             <tr v-else v-for="rol in roles" :key="rol.id">
               <td>{{ getDescripcion(rol) }}</td>
@@ -60,14 +60,14 @@
         <template #default>
           <div class="modal-rol">
             <header class="modal-header">
-              <h3>{{ editando ? 'Editar Rol' : 'Nuevo Rol' }}</h3>
-            </header>
+                <h3>{{ editando ? 'Editar Perfil' : 'Nuevo Perfil' }}</h3>
+              </header>
             <form class="rol-form" @submit.prevent="guardar">
               <!-- Sección Datos Básicos -->
               <div class="form-section datos-basicos">
                 <div class="section-title">
                   <AppIcons name="user" :size="22" />
-                  <span>Información del Rol</span>
+                  <span>Información del Perfil</span>
                 </div>
                 <div class="form-row">
                   <div class="form-group flex-1">
@@ -96,7 +96,7 @@
               <div class="form-section permisos-section">
                 <div class="section-title">
                   <AppIcons name="lock" :size="22" />
-                  <span>Permisos del Rol</span>
+                  <span>Permisos del Perfil</span>
                   <span class="permisos-subtitle">Define los permisos CRUD por módulo</span>
                 </div>
                 <div v-if="cargandoAplicaciones" class="loading-permisos">
@@ -413,15 +413,15 @@ export default {
       try {
         let rolId = this.form.id
         
-        if (this.editando && rolId != null) {
+          if (this.editando && rolId != null) {
           await perfilesService.partialUpdate(rolId, this.payloadFromForm())
           await this.guardarPermisos(rolId)
-          this.mostrarToast('Rol y permisos actualizados', 'success')
+          this.mostrarToast('Perfil y permisos actualizados', 'success')
         } else {
           const resp = await perfilesService.create(this.payloadFromForm())
           rolId = resp.PEL_ID || resp.id
           await this.guardarPermisos(rolId)
-          this.mostrarToast('Rol y permisos creados', 'success')
+          this.mostrarToast('Perfil y permisos creados', 'success')
         }
         
         this.modalVisible = false
