@@ -1,10 +1,7 @@
 <template>
   <div class="mantenedores-scouts">
-    <!-- Error Alert -->
-    <div v-if="error" class="error-alert">
-      <p>{{ error }}</p>
-      <button @click="error = null">×</button>
-    </div>
+    <!-- Error Alert replaced by NotificationToast -->
+    <NotificationToast v-if="error" :message="error" @close="error = null" />
 
     <!-- Loading Indicator -->
     <div v-if="cargando" class="loading-indicator">
@@ -68,7 +65,7 @@
             type="text" 
             class="search-input" 
             placeholder="Buscar zona por descripción..."
-            v-model="searchZonas"
+            v-model="searchZonasInput"
           >
           <button class="btn-primary" @click="buscarZonas">🔍 Buscar</button>
         </div>
@@ -375,22 +372,10 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('zona', zona)">👁 Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('zona', zona)">✏ Editar</button>
-                  <button 
-                    v-if="zona.vigente" 
-                    class="btn-action btn-anular" 
-                    @click="cambiarEstado('zona', zona)"
-                  >
-                    🚫 Anular
-                  </button>
-                  <button 
-                    v-else 
-                    class="btn-action btn-habilitar" 
-                    @click="cambiarEstado('zona', zona)"
-                  >
-                    ✅ Habilitar
-                  </button>
+                  <BaseButton variant="secondary" size="sm" @click="verElemento('zona', zona)" title="Ver" :aria-label="'Ver ' + getTipoNombre('zona')"><AppIcons name="view" size="16" /></BaseButton>
+                  <BaseButton variant="primary" size="sm" @click="editarElemento('zona', zona)" title="Editar" :aria-label="'Editar ' + getTipoNombre('zona')"><AppIcons name="modify" size="16" /></BaseButton>
+                  <BaseButton v-if="zona.vigente" variant="primary" size="sm" @click="cambiarEstado('zona', zona)" title="Anular" :aria-label="'Anular ' + getTipoNombre('zona')"><AppIcons name="delete" size="16" /></BaseButton>
+                  <BaseButton v-else variant="secondary" size="sm" @click="cambiarEstado('zona', zona)" title="Habilitar" :aria-label="'Habilitar ' + getTipoNombre('zona')"><AppIcons name="check" size="16" /></BaseButton>
                 </td>
               </tr>
             </tbody>
@@ -412,9 +397,9 @@
             type="text" 
             class="search-input" 
             placeholder="Buscar distrito..."
-            v-model="searchDistritos"
+            v-model="searchDistritosInput"
           >
-          <select class="select-filter" v-model="filtroZona">
+          <select class="select-filter" v-model="filtroZonaInput">
             <option value="">Todas las zonas</option>
             <option v-for="zona in zonas" :key="zona.id" :value="zona.descripcion">
               {{ zona.descripcion }}
@@ -443,22 +428,10 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('distrito', distrito)">👁 Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('distrito', distrito)">✏ Editar</button>
-                  <button 
-                    v-if="distrito.vigente" 
-                    class="btn-action btn-anular" 
-                    @click="cambiarEstado('distrito', distrito)"
-                  >
-                    🚫 Anular
-                  </button>
-                  <button 
-                    v-else 
-                    class="btn-action btn-habilitar" 
-                    @click="cambiarEstado('distrito', distrito)"
-                  >
-                    ✅ Habilitar
-                  </button>
+                  <BaseButton variant="secondary" size="sm" @click="verElemento('distrito', distrito)" title="Ver" :aria-label="'Ver ' + getTipoNombre('distrito')"><AppIcons name="view" size="16" /></BaseButton>
+                  <BaseButton variant="primary" size="sm" @click="editarElemento('distrito', distrito)" title="Editar" :aria-label="'Editar ' + getTipoNombre('distrito')"><AppIcons name="modify" size="16" /></BaseButton>
+                  <BaseButton v-if="distrito.vigente" variant="primary" size="sm" @click="cambiarEstado('distrito', distrito)" title="Anular" :aria-label="'Anular ' + getTipoNombre('distrito')"><AppIcons name="delete" size="16" /></BaseButton>
+                  <BaseButton v-else variant="secondary" size="sm" @click="cambiarEstado('distrito', distrito)" title="Habilitar" :aria-label="'Habilitar ' + getTipoNombre('distrito')"><AppIcons name="check" size="16" /></BaseButton>
                 </td>
               </tr>
             </tbody>
@@ -480,9 +453,9 @@
             type="text" 
             class="search-input" 
             placeholder="Buscar grupo..."
-            v-model="searchGrupos"
+            v-model="searchGruposInput"
           >
-          <select class="select-filter" v-model="filtroDistrito">
+          <select class="select-filter" v-model="filtroDistritoInput">
             <option value="">Todos los distritos</option>
             <option v-for="distrito in distritos" :key="distrito.id" :value="distrito.descripcion">
               {{ distrito.descripcion }}
@@ -511,22 +484,10 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('grupo', grupo)">👁 Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('grupo', grupo)">✏ Editar</button>
-                  <button 
-                    v-if="grupo.vigente" 
-                    class="btn-action btn-anular" 
-                    @click="cambiarEstado('grupo', grupo)"
-                  >
-                    🚫 Anular
-                  </button>
-                  <button 
-                    v-else 
-                    class="btn-action btn-habilitar" 
-                    @click="cambiarEstado('grupo', grupo)"
-                  >
-                    ✅ Habilitar
-                  </button>
+                  <BaseButton variant="secondary" size="sm" @click="verElemento('grupo', grupo)" title="Ver" :aria-label="'Ver ' + getTipoNombre('grupo')"><AppIcons name="view" size="16" /></BaseButton>
+                  <BaseButton variant="primary" size="sm" @click="editarElemento('grupo', grupo)" title="Editar" :aria-label="'Editar ' + getTipoNombre('grupo')"><AppIcons name="modify" size="16" /></BaseButton>
+                  <BaseButton v-if="grupo.vigente" variant="primary" size="sm" @click="cambiarEstado('grupo', grupo)" title="Anular" :aria-label="'Anular ' + getTipoNombre('grupo')"><AppIcons name="delete" size="16" /></BaseButton>
+                  <BaseButton v-else variant="secondary" size="sm" @click="cambiarEstado('grupo', grupo)" title="Habilitar" :aria-label="'Habilitar ' + getTipoNombre('grupo')"><AppIcons name="check" size="16" /></BaseButton>
                 </td>
               </tr>
             </tbody>
@@ -561,22 +522,10 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('rama', rama)">👁 Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('rama', rama)">✏ Editar</button>
-                  <button 
-                    v-if="rama.vigente" 
-                    class="btn-action btn-anular" 
-                    @click="cambiarEstado('rama', rama)"
-                  >
-                    🚫 Anular
-                  </button>
-                  <button 
-                    v-else 
-                    class="btn-action btn-habilitar" 
-                    @click="cambiarEstado('rama', rama)"
-                  >
-                    ✅ Habilitar
-                  </button>
+                  <BaseButton variant="secondary" size="sm" @click="verElemento('rama', rama)" title="Ver" :aria-label="'Ver ' + getTipoNombre('rama')"><AppIcons name="view" size="16" /></BaseButton>
+                  <BaseButton variant="primary" size="sm" @click="editarElemento('rama', rama)" title="Editar" :aria-label="'Editar ' + getTipoNombre('rama')"><AppIcons name="modify" size="16" /></BaseButton>
+                  <BaseButton v-if="rama.vigente" variant="primary" size="sm" @click="cambiarEstado('rama', rama)" title="Anular" :aria-label="'Anular ' + getTipoNombre('rama')"><AppIcons name="delete" size="16" /></BaseButton>
+                  <BaseButton v-else variant="secondary" size="sm" @click="cambiarEstado('rama', rama)" title="Habilitar" :aria-label="'Habilitar ' + getTipoNombre('rama')"><AppIcons name="check" size="16" /></BaseButton>
                 </td>
               </tr>
             </tbody>
@@ -615,22 +564,10 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('tipoCurso', tipoCurso)">👁 Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('tipoCurso', tipoCurso)">✏ Editar</button>
-                  <button 
-                    v-if="tipoCurso.vigente" 
-                    class="btn-action btn-anular" 
-                    @click="cambiarEstado('tipoCurso', tipoCurso)"
-                  >
-                    🚫 Anular
-                  </button>
-                  <button 
-                    v-else 
-                    class="btn-action btn-habilitar" 
-                    @click="cambiarEstado('tipoCurso', tipoCurso)"
-                  >
-                    ✅ Habilitar
-                  </button>
+                  <BaseButton variant="secondary" size="sm" @click="verElemento('tipoCurso', tipoCurso)" title="Ver" :aria-label="'Ver ' + getTipoNombre('tipoCurso')"><AppIcons name="view" size="16" /></BaseButton>
+                  <BaseButton variant="primary" size="sm" @click="editarElemento('tipoCurso', tipoCurso)" title="Editar" :aria-label="'Editar ' + getTipoNombre('tipoCurso')"><AppIcons name="modify" size="16" /></BaseButton>
+                  <BaseButton v-if="tipoCurso.vigente" variant="primary" size="sm" @click="cambiarEstado('tipoCurso', tipoCurso)" title="Anular" :aria-label="'Anular ' + getTipoNombre('tipoCurso')"><AppIcons name="delete" size="16" /></BaseButton>
+                  <BaseButton v-else variant="secondary" size="sm" @click="cambiarEstado('tipoCurso', tipoCurso)" title="Habilitar" :aria-label="'Habilitar ' + getTipoNombre('tipoCurso')"><AppIcons name="check" size="16" /></BaseButton>
                 </td>
               </tr>
             </tbody>
@@ -665,22 +602,10 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('cargo', cargo)">👁 Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('cargo', cargo)">✏ Editar</button>
-                  <button 
-                    v-if="cargo.vigente" 
-                    class="btn-action btn-anular" 
-                    @click="cambiarEstado('cargo', cargo)"
-                  >
-                    🚫 Anular
-                  </button>
-                  <button 
-                    v-else 
-                    class="btn-action btn-habilitar" 
-                    @click="cambiarEstado('cargo', cargo)"
-                  >
-                    ✅ Habilitar
-                  </button>
+                  <BaseButton variant="secondary" size="sm" @click="verElemento('cargo', cargo)" title="Ver" :aria-label="'Ver ' + getTipoNombre('cargo')"><AppIcons name="view" size="16" /></BaseButton>
+                  <BaseButton variant="primary" size="sm" @click="editarElemento('cargo', cargo)" title="Editar" :aria-label="'Editar ' + getTipoNombre('cargo')"><AppIcons name="modify" size="16" /></BaseButton>
+                  <BaseButton v-if="cargo.vigente" variant="primary" size="sm" @click="cambiarEstado('cargo', cargo)" title="Anular" :aria-label="'Anular ' + getTipoNombre('cargo')"><AppIcons name="delete" size="16" /></BaseButton>
+                  <BaseButton v-else variant="secondary" size="sm" @click="cambiarEstado('cargo', cargo)" title="Habilitar" :aria-label="'Habilitar ' + getTipoNombre('cargo')"><AppIcons name="check" size="16" /></BaseButton>
                 </td>
               </tr>
             </tbody>
@@ -717,22 +642,10 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('alimentacion', alimentacionItem)">👁 Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('alimentacion', alimentacionItem)">✏ Editar</button>
-                  <button 
-                    v-if="alimentacionItem.vigente" 
-                    class="btn-action btn-anular" 
-                    @click="cambiarEstado('alimentacion', alimentacionItem)"
-                  >
-                    🚫 Anular
-                  </button>
-                  <button 
-                    v-else 
-                    class="btn-action btn-habilitar" 
-                    @click="cambiarEstado('alimentacion', alimentacionItem)"
-                  >
-                    ✅ Habilitar
-                  </button>
+                  <BaseButton variant="secondary" size="sm" @click="verElemento('alimentacion', alimentacionItem)" title="Ver" :aria-label="'Ver ' + getTipoNombre('alimentacion')"><AppIcons name="view" size="16" /></BaseButton>
+                  <BaseButton variant="primary" size="sm" @click="editarElemento('alimentacion', alimentacionItem)" title="Editar" :aria-label="'Editar ' + getTipoNombre('alimentacion')"><AppIcons name="modify" size="16" /></BaseButton>
+                  <BaseButton v-if="alimentacionItem.vigente" variant="primary" size="sm" @click="cambiarEstado('alimentacion', alimentacionItem)" title="Anular" :aria-label="'Anular ' + getTipoNombre('alimentacion')"><AppIcons name="delete" size="16" /></BaseButton>
+                  <BaseButton v-else variant="secondary" size="sm" @click="cambiarEstado('alimentacion', alimentacionItem)" title="Habilitar" :aria-label="'Habilitar ' + getTipoNombre('alimentacion')"><AppIcons name="check" size="16" /></BaseButton>
                 </td>
               </tr>
             </tbody>
@@ -754,7 +667,7 @@
             type="text" 
             class="search-input" 
             placeholder="Buscar comuna..."
-            v-model="searchComunas"
+            v-model="searchComunasInput"
           >
           <button class="btn-primary" @click="buscarComunas">🔍 Buscar</button>
         </div>
@@ -779,22 +692,10 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('comuna', comuna)">👁 Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('comuna', comuna)">✏ Editar</button>
-                  <button 
-                    v-if="comuna.vigente" 
-                    class="btn-action btn-anular" 
-                    @click="cambiarEstado('comuna', comuna)"
-                  >
-                    🚫 Anular
-                  </button>
-                  <button 
-                    v-else 
-                    class="btn-action btn-habilitar" 
-                    @click="cambiarEstado('comuna', comuna)"
-                  >
-                    ✅ Habilitar
-                  </button>
+                  <BaseButton variant="secondary" size="sm" @click="verElemento('comuna', comuna)" title="Ver" :aria-label="'Ver ' + getTipoNombre('comuna')"><AppIcons name="view" size="16" /></BaseButton>
+                  <BaseButton variant="primary" size="sm" @click="editarElemento('comuna', comuna)" title="Editar" :aria-label="'Editar ' + getTipoNombre('comuna')"><AppIcons name="modify" size="16" /></BaseButton>
+                  <BaseButton v-if="comuna.vigente" variant="primary" size="sm" @click="cambiarEstado('comuna', comuna)" title="Anular" :aria-label="'Anular ' + getTipoNombre('comuna')"><AppIcons name="delete" size="16" /></BaseButton>
+                  <BaseButton v-else variant="secondary" size="sm" @click="cambiarEstado('comuna', comuna)" title="Habilitar" :aria-label="'Habilitar ' + getTipoNombre('comuna')"><AppIcons name="check" size="16" /></BaseButton>
                 </td>
               </tr>
             </tbody>
@@ -831,22 +732,10 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('provincia', provincia)">👁 Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('provincia', provincia)">✏ Editar</button>
-                  <button 
-                    v-if="provincia.vigente" 
-                    class="btn-action btn-anular" 
-                    @click="cambiarEstado('provincia', provincia)"
-                  >
-                    🚫 Anular
-                  </button>
-                  <button 
-                    v-else 
-                    class="btn-action btn-habilitar" 
-                    @click="cambiarEstado('provincia', provincia)"
-                  >
-                    ✅ Habilitar
-                  </button>
+                  <BaseButton variant="secondary" size="sm" @click="verElemento('provincia', provincia)" title="Ver" :aria-label="'Ver ' + getTipoNombre('provincia')"><AppIcons name="view" size="16" /></BaseButton>
+                  <BaseButton variant="primary" size="sm" @click="editarElemento('provincia', provincia)" title="Editar" :aria-label="'Editar ' + getTipoNombre('provincia')"><AppIcons name="modify" size="16" /></BaseButton>
+                  <BaseButton v-if="provincia.vigente" variant="primary" size="sm" @click="cambiarEstado('provincia', provincia)" title="Anular" :aria-label="'Anular ' + getTipoNombre('provincia')"><AppIcons name="delete" size="16" /></BaseButton>
+                  <BaseButton v-else variant="secondary" size="sm" @click="cambiarEstado('provincia', provincia)" title="Habilitar" :aria-label="'Habilitar ' + getTipoNombre('provincia')"><AppIcons name="check" size="16" /></BaseButton>
                 </td>
               </tr>
             </tbody>
@@ -881,22 +770,10 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('region', region)">👁 Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('region', region)">✏ Editar</button>
-                  <button 
-                    v-if="region.vigente" 
-                    class="btn-action btn-anular" 
-                    @click="cambiarEstado('region', region)"
-                  >
-                    🚫 Anular
-                  </button>
-                  <button 
-                    v-else 
-                    class="btn-action btn-habilitar" 
-                    @click="cambiarEstado('region', region)"
-                  >
-                    ✅ Habilitar
-                  </button>
+                  <BaseButton variant="secondary" size="sm" @click="verElemento('region', region)" title="Ver" :aria-label="'Ver ' + getTipoNombre('region')"><AppIcons name="view" size="16" /></BaseButton>
+                  <BaseButton variant="primary" size="sm" @click="editarElemento('region', region)" title="Editar" :aria-label="'Editar ' + getTipoNombre('region')"><AppIcons name="modify" size="16" /></BaseButton>
+                  <BaseButton v-if="region.vigente" variant="primary" size="sm" @click="cambiarEstado('region', region)" title="Anular" :aria-label="'Anular ' + getTipoNombre('region')"><AppIcons name="delete" size="16" /></BaseButton>
+                  <BaseButton v-else variant="secondary" size="sm" @click="cambiarEstado('region', region)" title="Habilitar" :aria-label="'Habilitar ' + getTipoNombre('region')"><AppIcons name="check" size="16" /></BaseButton>
                 </td>
               </tr>
             </tbody>
@@ -931,22 +808,10 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('nivel', nivel)">👁 Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('nivel', nivel)">✏ Editar</button>
-                  <button 
-                    v-if="nivel.vigente" 
-                    class="btn-action btn-anular" 
-                    @click="cambiarEstado('nivel', nivel)"
-                  >
-                    🚫 Anular
-                  </button>
-                  <button 
-                    v-else 
-                    class="btn-action btn-habilitar" 
-                    @click="cambiarEstado('nivel', nivel)"
-                  >
-                    ✅ Habilitar
-                  </button>
+                  <BaseButton variant="secondary" size="sm" @click="verElemento('nivel', nivel)" title="Ver" :aria-label="'Ver ' + getTipoNombre('nivel')"><AppIcons name="view" size="16" /></BaseButton>
+                  <BaseButton variant="primary" size="sm" @click="editarElemento('nivel', nivel)" title="Editar" :aria-label="'Editar ' + getTipoNombre('nivel')"><AppIcons name="modify" size="16" /></BaseButton>
+                  <BaseButton v-if="nivel.vigente" variant="primary" size="sm" @click="cambiarEstado('nivel', nivel)" title="Anular" :aria-label="'Anular ' + getTipoNombre('nivel')"><AppIcons name="delete" size="16" /></BaseButton>
+                  <BaseButton v-else variant="secondary" size="sm" @click="cambiarEstado('nivel', nivel)" title="Habilitar" :aria-label="'Habilitar ' + getTipoNombre('nivel')"><AppIcons name="check" size="16" /></BaseButton>
                 </td>
               </tr>
             </tbody>
@@ -981,22 +846,10 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('estadoCivil', estadoCivil)">👁 Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('estadoCivil', estadoCivil)">✏ Editar</button>
-                  <button 
-                    v-if="estadoCivil.vigente" 
-                    class="btn-action btn-anular" 
-                    @click="cambiarEstado('estadoCivil', estadoCivil)"
-                  >
-                    🚫 Anular
-                  </button>
-                  <button 
-                    v-else 
-                    class="btn-action btn-habilitar" 
-                    @click="cambiarEstado('estadoCivil', estadoCivil)"
-                  >
-                    ✅ Habilitar
-                  </button>
+                  <BaseButton variant="secondary" size="sm" @click="verElemento('estadoCivil', estadoCivil)" title="Ver" :aria-label="'Ver ' + getTipoNombre('estadoCivil')"><AppIcons name="view" size="16" /></BaseButton>
+                  <BaseButton variant="primary" size="sm" @click="editarElemento('estadoCivil', estadoCivil)" title="Editar" :aria-label="'Editar ' + getTipoNombre('estadoCivil')"><AppIcons name="modify" size="16" /></BaseButton>
+                  <BaseButton v-if="estadoCivil.vigente" variant="primary" size="sm" @click="cambiarEstado('estadoCivil', estadoCivil)" title="Anular" :aria-label="'Anular ' + getTipoNombre('estadoCivil')"><AppIcons name="delete" size="16" /></BaseButton>
+                  <BaseButton v-else variant="secondary" size="sm" @click="cambiarEstado('estadoCivil', estadoCivil)" title="Habilitar" :aria-label="'Habilitar ' + getTipoNombre('estadoCivil')"><AppIcons name="check" size="16" /></BaseButton>
                 </td>
               </tr>
             </tbody>
@@ -1031,22 +884,10 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('rol', rol)">👁 Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('rol', rol)">✏ Editar</button>
-                  <button 
-                    v-if="rol.vigente" 
-                    class="btn-action btn-anular" 
-                    @click="cambiarEstado('rol', rol)"
-                  >
-                    🚫 Anular
-                  </button>
-                  <button 
-                    v-else 
-                    class="btn-action btn-habilitar" 
-                    @click="cambiarEstado('rol', rol)"
-                  >
-                    ✅ Habilitar
-                  </button>
+                  <BaseButton variant="secondary" size="sm" @click="verElemento('rol', rol)" title="Ver" :aria-label="'Ver ' + getTipoNombre('rol')"><AppIcons name="view" size="16" /></BaseButton>
+                  <BaseButton variant="primary" size="sm" @click="editarElemento('rol', rol)" title="Editar" :aria-label="'Editar ' + getTipoNombre('rol')"><AppIcons name="modify" size="16" /></BaseButton>
+                  <BaseButton v-if="rol.vigente" variant="primary" size="sm" @click="cambiarEstado('rol', rol)" title="Anular" :aria-label="'Anular ' + getTipoNombre('rol')"><AppIcons name="delete" size="16" /></BaseButton>
+                  <BaseButton v-else variant="secondary" size="sm" @click="cambiarEstado('rol', rol)" title="Habilitar" :aria-label="'Habilitar ' + getTipoNombre('rol')"><AppIcons name="check" size="16" /></BaseButton>
                 </td>
               </tr>
             </tbody>
@@ -1068,7 +909,6 @@
             <thead>
               <tr>
                 <th>Descripción</th>
-                <th>Tipo</th>
                 <th>Estado</th>
                 <th>Acciones</th>
               </tr>
@@ -1076,29 +916,16 @@
             <tbody>
               <tr v-for="concepto in conceptosContables" :key="concepto.id">
                 <td>{{ concepto.descripcion }}</td>
-                <td>{{ concepto.tipo }}</td>
                 <td>
                   <span class="status-badge" :class="concepto.vigente ? 'status-active' : 'status-inactive'">
                     {{ concepto.vigente ? 'Activo' : 'Inactivo' }}
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('conceptoContable', concepto)">👁 Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('conceptoContable', concepto)">✏ Editar</button>
-                  <button 
-                    v-if="concepto.vigente" 
-                    class="btn-action btn-anular" 
-                    @click="cambiarEstado('conceptoContable', concepto)"
-                  >
-                    🚫 Anular
-                  </button>
-                  <button 
-                    v-else 
-                    class="btn-action btn-habilitar" 
-                    @click="cambiarEstado('conceptoContable', concepto)"
-                  >
-                    ✅ Habilitar
-                  </button>
+                  <BaseButton variant="secondary" size="sm" @click="verElemento('conceptoContable', concepto)"><AppIcons name="view" size="16" /></BaseButton>
+                  <BaseButton variant="primary" size="sm" @click="editarElemento('conceptoContable', concepto)"><AppIcons name="modify" size="16" /></BaseButton>
+                  <BaseButton v-if="concepto.vigente" variant="primary" size="sm" @click="cambiarEstado('conceptoContable', concepto)"><AppIcons name="delete" size="16" /></BaseButton>
+                  <BaseButton v-else variant="secondary" size="sm" @click="cambiarEstado('conceptoContable', concepto)"><AppIcons name="check" size="16" /></BaseButton>
                 </td>
               </tr>
             </tbody>
@@ -1120,7 +947,6 @@
             <thead>
               <tr>
                 <th>Descripción</th>
-                <th>Extensión</th>
                 <th>Estado</th>
                 <th>Acciones</th>
               </tr>
@@ -1128,29 +954,16 @@
             <tbody>
               <tr v-for="tipoArchivo in tiposArchivo" :key="tipoArchivo.id">
                 <td>{{ tipoArchivo.descripcion }}</td>
-                <td>{{ tipoArchivo.extension }}</td>
                 <td>
                   <span class="status-badge" :class="tipoArchivo.vigente ? 'status-active' : 'status-inactive'">
                     {{ tipoArchivo.vigente ? 'Activo' : 'Inactivo' }}
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verElemento('tipoArchivo', tipoArchivo)">👁 Ver</button>
-                  <button class="btn-action btn-edit" @click="editarElemento('tipoArchivo', tipoArchivo)">✏ Editar</button>
-                  <button 
-                    v-if="tipoArchivo.vigente" 
-                    class="btn-action btn-anular" 
-                    @click="cambiarEstado('tipoArchivo', tipoArchivo)"
-                  >
-                    🚫 Anular
-                  </button>
-                  <button 
-                    v-else 
-                    class="btn-action btn-habilitar" 
-                    @click="cambiarEstado('tipoArchivo', tipoArchivo)"
-                  >
-                    ✅ Habilitar
-                  </button>
+                  <BaseButton variant="secondary" size="sm" @click="verElemento('tipoArchivo', tipoArchivo)"><AppIcons name="view" size="16" /></BaseButton>
+                  <BaseButton variant="primary" size="sm" @click="editarElemento('tipoArchivo', tipoArchivo)"><AppIcons name="modify" size="16" /></BaseButton>
+                  <BaseButton v-if="tipoArchivo.vigente" variant="primary" size="sm" @click="cambiarEstado('tipoArchivo', tipoArchivo)"><AppIcons name="delete" size="16" /></BaseButton>
+                  <BaseButton v-else variant="secondary" size="sm" @click="cambiarEstado('tipoArchivo', tipoArchivo)"><AppIcons name="check" size="16" /></BaseButton>
                 </td>
               </tr>
             </tbody>
@@ -1176,14 +989,7 @@
               <label class="view-label">Unilateral:</label>
               <div class="view-value">{{ elementoSeleccionado.unilateral ? 'Sí' : 'No' }}</div>
             </div>
-            <div v-if="tipoElemento === 'zona'" class="view-group">
-              <label class="view-label">Estado:</label>
-              <div class="view-value">
-                <span class="status-badge" :class="elementoSeleccionado.vigente ? 'status-active' : 'status-inactive'">
-                  {{ elementoSeleccionado.vigente ? 'Activo' : 'Inactivo' }}
-                </span>
-              </div>
-            </div>
+            
 
             <!-- Campos para otros tipos de elementos -->
             <div v-if="tipoElemento !== 'zona'" class="view-group">
@@ -1202,18 +1008,8 @@
               <label class="view-label">Cant. Participantes:</label>
               <div class="view-value">{{ elementoSeleccionado.cant_participante }}</div>
             </div>
-            <div v-if="tipoElemento === 'tipoArchivo'" class="view-group">
-              <label class="view-label">Extensión:</label>
-              <div class="view-value">{{ elementoSeleccionado.extension }}</div>
-            </div>
-            <div class="view-group">
-              <label class="view-label">Estado:</label>
-              <div class="view-value">
-                <span class="status-badge" :class="elementoSeleccionado.vigente ? 'status-active' : 'status-inactive'">
-                  {{ elementoSeleccionado.vigente ? 'Activo' : 'Inactivo' }}
-                </span>
-              </div>
-            </div>
+            
+            
           </div>
           <div class="form-actions">
             <button type="button" class="btn-secondary" @click="cerrarModal">Cerrar</button>
@@ -1248,14 +1044,7 @@
                 Zona Unilateral
               </label>
             </div>
-            <!-- Solo mostrar estado en edición -->
-            <div class="form-group" v-if="editando">
-              <label class="form-label">Estado:</label>
-              <select class="form-control" v-model="formZona.vigente" required>
-                <option :value="true">Activo</option>
-                <option :value="false">Inactivo</option>
-              </select>
-            </div>
+            
             <div class="form-actions">
               <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
               <button type="submit" class="btn-primary">
@@ -1296,14 +1085,7 @@
                 </option>
               </select>
             </div>
-            <!-- Solo mostrar estado en edición -->
-            <div class="form-group" v-if="editando">
-              <label class="form-label">Estado:</label>
-              <select class="form-control" v-model="formDistrito.vigente" required>
-                <option :value="true">Activo</option>
-                <option :value="false">Inactivo</option>
-              </select>
-            </div>
+            
             <div class="form-actions">
               <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
               <button type="submit" class="btn-primary">
@@ -1344,14 +1126,7 @@
                 </option>
               </select>
             </div>
-            <!-- Solo mostrar estado en edición -->
-            <div class="form-group" v-if="editando">
-              <label class="form-label">Estado:</label>
-              <select class="form-control" v-model="formGrupo.vigente" required>
-                <option :value="true">Activo</option>
-                <option :value="false">Inactivo</option>
-              </select>
-            </div>
+            
             <div class="form-actions">
               <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
               <button type="submit" class="btn-primary">
@@ -1383,14 +1158,7 @@
                 required
               >
             </div>
-            <!-- Solo mostrar estado en edición -->
-            <div class="form-group" v-if="editando">
-              <label class="form-label">Estado:</label>
-              <select class="form-control" v-model="formRama.vigente" required>
-                <option :value="true">Activo</option>
-                <option :value="false">Inactivo</option>
-              </select>
-            </div>
+            
             <div class="form-actions">
               <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
               <button type="submit" class="btn-primary">
@@ -1442,14 +1210,7 @@
                 required
               >
             </div>
-            <!-- Solo mostrar estado en edición -->
-            <div class="form-group" v-if="editando">
-              <label class="form-label">Estado:</label>
-              <select class="form-control" v-model="formTipoCurso.vigente" required>
-                <option :value="true">Activo</option>
-                <option :value="false">Inactivo</option>
-              </select>
-            </div>
+            
             <div class="form-actions">
               <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
               <button type="submit" class="btn-primary">
@@ -1481,14 +1242,7 @@
                 required
               >
             </div>
-            <!-- Solo mostrar estado en edición -->
-            <div class="form-group" v-if="editando">
-              <label class="form-label">Estado:</label>
-              <select class="form-control" v-model="formCargo.vigente" required>
-                <option :value="true">Activo</option>
-                <option :value="false">Inactivo</option>
-              </select>
-            </div>
+            
             <div class="form-actions">
               <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
               <button type="submit" class="btn-primary">
@@ -1530,14 +1284,7 @@
                 required
               >
             </div>
-            <!-- Solo mostrar estado en edición -->
-            <div class="form-group" v-if="editando">
-              <label class="form-label">Estado:</label>
-              <select class="form-control" v-model="formAlimentacion.vigente" required>
-                <option :value="true">Activo</option>
-                <option :value="false">Inactivo</option>
-              </select>
-            </div>
+            
             <div class="form-actions">
               <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
               <button type="submit" class="btn-primary">
@@ -1578,14 +1325,7 @@
                 </option>
               </select>
             </div>
-            <!-- Solo mostrar estado en edición -->
-            <div class="form-group" v-if="editando">
-              <label class="form-label">Estado:</label>
-              <select class="form-control" v-model="formComuna.vigente" required>
-                <option :value="true">Activo</option>
-                <option :value="false">Inactivo</option>
-              </select>
-            </div>
+            
             <div class="form-actions">
               <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
               <button type="submit" class="btn-primary">
@@ -1626,14 +1366,7 @@
                 </option>
               </select>
             </div>
-            <!-- Solo mostrar estado en edición -->
-            <div class="form-group" v-if="editando">
-              <label class="form-label">Estado:</label>
-              <select class="form-control" v-model="formProvincia.vigente" required>
-                <option :value="true">Activo</option>
-                <option :value="false">Inactivo</option>
-              </select>
-            </div>
+            
             <div class="form-actions">
               <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
               <button type="submit" class="btn-primary">
@@ -1665,14 +1398,7 @@
                 required
               >
             </div>
-            <!-- Solo mostrar estado en edición -->
-            <div class="form-group" v-if="editando">
-              <label class="form-label">Estado:</label>
-              <select class="form-control" v-model="formRegion.vigente" required>
-                <option :value="true">Activo</option>
-                <option :value="false">Inactivo</option>
-              </select>
-            </div>
+            
             <div class="form-actions">
               <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
               <button type="submit" class="btn-primary">
@@ -1704,14 +1430,7 @@
                 required
               >
             </div>
-            <!-- Solo mostrar estado en edición -->
-            <div class="form-group" v-if="editando">
-              <label class="form-label">Estado:</label>
-              <select class="form-control" v-model="formNivel.vigente" required>
-                <option :value="true">Activo</option>
-                <option :value="false">Inactivo</option>
-              </select>
-            </div>
+            
             <div class="form-actions">
               <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
               <button type="submit" class="btn-primary">
@@ -1743,14 +1462,7 @@
                 required
               >
             </div>
-            <!-- Solo mostrar estado en edición -->
-            <div class="form-group" v-if="editando">
-              <label class="form-label">Estado:</label>
-              <select class="form-control" v-model="formEstadoCivil.vigente" required>
-                <option :value="true">Activo</option>
-                <option :value="false">Inactivo</option>
-              </select>
-            </div>
+            
             <div class="form-actions">
               <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
               <button type="submit" class="btn-primary">
@@ -1782,14 +1494,7 @@
                 required
               >
             </div>
-            <!-- Solo mostrar estado en edición -->
-            <div class="form-group" v-if="editando">
-              <label class="form-label">Estado:</label>
-              <select class="form-control" v-model="formRol.vigente" required>
-                <option :value="true">Activo</option>
-                <option :value="false">Inactivo</option>
-              </select>
-            </div>
+            
             <div class="form-actions">
               <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
               <button type="submit" class="btn-primary">
@@ -1821,22 +1526,7 @@
                 required
               >
             </div>
-            <div class="form-group">
-              <label class="form-label">Tipo:</label>
-              <select class="form-control" v-model="formConceptoContable.tipo" required>
-                <option value="">Seleccione un tipo</option>
-                <option value="INGRESO">INGRESO</option>
-                <option value="EGRESO">EGRESO</option>
-              </select>
-            </div>
-            <!-- Solo mostrar estado en edición -->
-            <div class="form-group" v-if="editando">
-              <label class="form-label">Estado:</label>
-              <select class="form-control" v-model="formConceptoContable.vigente" required>
-                <option :value="true">Activo</option>
-                <option :value="false">Inactivo</option>
-              </select>
-            </div>
+            
             <div class="form-actions">
               <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
               <button type="submit" class="btn-primary">
@@ -1868,24 +1558,8 @@
                 required
               >
             </div>
-            <div class="form-group">
-              <label class="form-label">Extensión:</label>
-              <input 
-                type="text" 
-                class="form-control" 
-                v-model="formTipoArchivo.extension"
-                placeholder="Ej: .pdf"
-                required
-              >
-            </div>
-            <!-- Solo mostrar estado en edición -->
-            <div class="form-group" v-if="editando">
-              <label class="form-label">Estado:</label>
-              <select class="form-control" v-model="formTipoArchivo.vigente" required>
-                <option :value="true">Activo</option>
-                <option :value="false">Inactivo</option>
-              </select>
-            </div>
+            
+            
             <div class="form-actions">
               <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
               <button type="submit" class="btn-primary">
@@ -1900,11 +1574,15 @@
 </template>
 
 <script>
-import { ref, computed, reactive, onMounted, onUnmounted } from 'vue'
+import { ref, computed, reactive, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import * as mantenedoresService from '@/services/mantenedoresService'
+import BaseButton from '@/components/BaseButton.vue'
+import NotificationToast from '@/components/NotificationToast.vue'
+import AppIcons from '@/components/icons/AppIcons.vue'
 
 export default {
   name: 'MantenedoresScouts',
+  components: { BaseButton, NotificationToast, AppIcons },
   setup() {
     // Estado reactivo
     const activeTab = ref('zonas')
@@ -1917,13 +1595,22 @@ export default {
     const cargando = ref(false)
     const error = ref(null)
     
-    // Estados de búsqueda
+    // Estados de búsqueda (valor usado por los filtros)
     const searchZonas = ref('')
     const searchDistritos = ref('')
     const searchGrupos = ref('')
     const searchComunas = ref('')
+    // Inputs separados para búsqueda manual (vinculados a los campos de texto)
+    const searchZonasInput = ref('')
+    const searchDistritosInput = ref('')
+    const searchGruposInput = ref('')
+    const searchComunasInput = ref('')
+    // Filtros que usan las computed (solo cambian al apretar Buscar)
     const filtroZona = ref('')
     const filtroDistrito = ref('')
+    // Inputs separados para filtros manuales (selects)
+    const filtroZonaInput = ref('')
+    const filtroDistritoInput = ref('')
 
     // Tabs de navegación (sidebar)
     const tabs = [
@@ -1995,7 +1682,7 @@ export default {
       estadosCiviles.value = (rawEstadosCiviles || []).map(e => ({ id: e.ESC_ID ?? e.id, descripcion: e.ESC_DESCRIPCION ?? e.descripcion, vigente: e.ESC_VIGENTE ?? e.vigente }))
       roles.value = (rawRoles || []).map(r => ({ id: r.ROL_ID ?? r.id, descripcion: r.ROL_DESCRIPCION ?? r.descripcion, tipo: r.ROL_TIPO ?? r.tipo, vigente: r.ROL_VIGENTE ?? r.vigente }))
       conceptosContables.value = (rawConceptos || []).map(c => ({ id: c.COC_ID ?? c.id, descripcion: c.COC_DESCRIPCION ?? c.descripcion, vigente: c.COC_VIGENTE ?? c.vigente }))
-      tiposArchivo.value = (rawTiposArchivo || []).map(t => ({ id: t.TAR_ID ?? t.id, descripcion: t.TAR_DESCRIPCION ?? t.descripcion, extension: t.TAR_EXTENSION ?? t.extension, vigente: t.TAR_VIGENTE ?? t.vigente }))
+      tiposArchivo.value = (rawTiposArchivo || []).map(t => ({ id: t.TAR_ID ?? t.id, descripcion: t.TAR_DESCRIPCION ?? t.descripcion, vigente: t.TAR_VIGENTE ?? t.vigente }))
     }
 
     onMounted(() => {
@@ -2005,6 +1692,8 @@ export default {
 
     // Recarga tras crear/editar/eliminar
     const recargar = cargarMantenedores
+    // Alias para compatibilidad: algunas llamadas usan cargarDatos()
+    const cargarDatos = cargarMantenedores
 
     // Formularios
     const formZona = reactive({
@@ -2095,20 +1784,23 @@ export default {
 
     // Métodos de búsqueda activados por los botones "Buscar"
     const buscarZonas = () => {
-      searchZonas.value = (searchZonas.value || '').trim()
+      searchZonas.value = (searchZonasInput.value || '').trim()
     }
 
     const buscarDistritos = () => {
-      searchDistritos.value = (searchDistritos.value || '').trim()
-      // si hay filtro de zona, aplicarlo (la computed ya lo usa)
+      searchDistritos.value = (searchDistritosInput.value || '').trim()
+      // aplicar filtro de zona solo al apretar buscar
+      filtroZona.value = (filtroZonaInput.value || '').trim()
     }
 
     const buscarGrupos = () => {
-      searchGrupos.value = (searchGrupos.value || '').trim()
+      searchGrupos.value = (searchGruposInput.value || '').trim()
+      // aplicar filtro de distrito solo al apretar buscar
+      filtroDistrito.value = (filtroDistritoInput.value || '').trim()
     }
 
     const buscarComunas = () => {
-      searchComunas.value = (searchComunas.value || '').trim()
+      searchComunas.value = (searchComunasInput.value || '').trim()
     }
 
     // Métodos auxiliares
@@ -2191,7 +1883,24 @@ export default {
     const selectTab = (tabId) => {
       activeTab.value = tabId
       isDropdownOpen.value = false // Cerrar dropdown después de seleccionar
+      // Limpiar inputs de búsqueda y filtros al cambiar de pestaña (manual search)
+      searchZonasInput.value = ''
+      searchDistritosInput.value = ''
+      searchGruposInput.value = ''
+      searchComunasInput.value = ''
+      filtroZonaInput.value = ''
+      filtroDistritoInput.value = ''
     }
+
+    // También vigilar cambios directos a activeTab por seguridad
+    watch(activeTab, () => {
+      searchZonasInput.value = ''
+      searchDistritosInput.value = ''
+      searchGruposInput.value = ''
+      searchComunasInput.value = ''
+      filtroZonaInput.value = ''
+      filtroDistritoInput.value = ''
+    })
 
     // Cerrar dropdown al hacer clic fuera
     const handleClickOutside = (event) => {
@@ -2209,7 +1918,50 @@ export default {
       document.removeEventListener('click', handleClickOutside)
     })
 
+    // Helper to coerce different incoming representations into a boolean
+    const toBool = (v) => {
+      return v === true || v === 'true' || v === 1 || v === '1'
+    }
+
     // Métodos principales
+    // Convierte el objeto usado en la UI a la forma esperada por la API/DB
+    const desnormalizarDatos = (datosUI, tipo) => {
+      switch (tipo) {
+        case 'zona':
+          return { ZON_DESCRIPCION: datosUI.descripcion, ZON_UNILATERAL: toBool(datosUI.unilateral), ZON_VIGENTE: toBool(datosUI.vigente) }
+        case 'distrito':
+          return { DIS_DESCRIPCION: datosUI.descripcion, ZON_ID: datosUI.zona_id, DIS_VIGENTE: toBool(datosUI.vigente) }
+        case 'grupo':
+          return { GRU_DESCRIPCION: datosUI.descripcion, DIS_ID: datosUI.distrito_id, GRU_VIGENTE: toBool(datosUI.vigente) }
+        case 'rama':
+          return { RAM_DESCRIPCION: datosUI.descripcion, RAM_VIGENTE: toBool(datosUI.vigente) }
+        case 'tipoCurso':
+          return { TCU_DESCRIPCION: datosUI.descripcion, TCU_TIPO: datosUI.tipo, TCU_CANT_PARTICIPANTE: datosUI.cant_participante, TCU_VIGENTE: toBool(datosUI.vigente) }
+        case 'cargo':
+          return { CAR_DESCRIPCION: datosUI.descripcion, CAR_VIGENTE: toBool(datosUI.vigente) }
+        case 'alimentacion':
+          return { ALI_DESCRIPCION: datosUI.descripcion, ALI_TIPO: datosUI.tipo, ALI_VIGENTE: toBool(datosUI.vigente) }
+        case 'comuna':
+          return { COM_DESCRIPCION: datosUI.descripcion, PRO_ID: datosUI.provincia_id, COM_VIGENTE: toBool(datosUI.vigente) }
+        case 'provincia':
+          return { PRO_DESCRIPCION: datosUI.descripcion, REG_ID: datosUI.region_id, PRO_VIGENTE: toBool(datosUI.vigente) }
+        case 'region':
+          return { REG_DESCRIPCION: datosUI.descripcion, REG_VIGENTE: toBool(datosUI.vigente) }
+        case 'nivel':
+          return { NIV_DESCRIPCION: datosUI.descripcion, NIV_ORDEN: datosUI.orden, NIV_VIGENTE: toBool(datosUI.vigente) }
+        case 'estadoCivil':
+          return { ESC_DESCRIPCION: datosUI.descripcion, ESC_VIGENTE: toBool(datosUI.vigente) }
+        case 'rol':
+          return { ROL_DESCRIPCION: datosUI.descripcion, ROL_TIPO: datosUI.tipo, ROL_VIGENTE: toBool(datosUI.vigente) }
+        case 'conceptoContable':
+          return { COC_DESCRIPCION: datosUI.descripcion, COC_VIGENTE: toBool(datosUI.vigente) }
+        case 'tipoArchivo':
+          return { TAR_DESCRIPCION: datosUI.descripcion, TAR_VIGENTE: toBool(datosUI.vigente) }
+        default:
+          return datosUI
+      }
+    }
+
     const abrirModalCrear = (tipo) => {
       modalActivo.value = `crear-${tipo}`
       editando.value = false
@@ -2225,11 +1977,15 @@ export default {
       elementoSeleccionado.value = elemento
     }
 
-    const editarElemento = (tipo, elemento) => {
+    const editarElemento = async (tipo, elemento) => {
+      console.log('editarElemento called', tipo, elemento)
+      // Abrir modal y preparar estado antes de rellenar formulario
       modalActivo.value = `editar-${tipo}`
       editando.value = true
       tipoElemento.value = tipo
       elementoSeleccionado.value = elemento
+      // Esperar al siguiente tick para asegurar que el modal esté renderizado
+      await nextTick()
       cargarDatosFormulario(tipo, elemento)
     }
 
@@ -2296,49 +2052,49 @@ export default {
     const cargarDatosFormulario = (tipo, elemento) => {
       switch (tipo) {
         case 'zona':
-          Object.assign(formZona, elemento)
+          Object.assign(formZona, { ...elemento, vigente: toBool(elemento.vigente) })
           break
         case 'distrito':
-          Object.assign(formDistrito, elemento)
+          Object.assign(formDistrito, { ...elemento, vigente: toBool(elemento.vigente) })
           break
         case 'grupo':
-          Object.assign(formGrupo, elemento)
+          Object.assign(formGrupo, { ...elemento, vigente: toBool(elemento.vigente) })
           break
         case 'rama':
-          Object.assign(formRama, elemento)
+          Object.assign(formRama, { ...elemento, vigente: toBool(elemento.vigente) })
           break
         case 'tipoCurso':
-          Object.assign(formTipoCurso, { id: elemento.id, descripcion: elemento.descripcion, tipo: elemento.tipo, cant_participante: elemento.cant_participante, vigente: elemento.vigente })
+          Object.assign(formTipoCurso, { id: elemento.id, descripcion: elemento.descripcion, tipo: elemento.tipo, cant_participante: elemento.cant_participante, vigente: toBool(elemento.vigente) })
           break
         case 'cargo':
-          Object.assign(formCargo, elemento)
+          Object.assign(formCargo, { ...elemento, vigente: toBool(elemento.vigente) })
           break
         case 'alimentacion':
-          Object.assign(formAlimentacion, { id: elemento.id, descripcion: elemento.descripcion, tipo: elemento.tipo, vigente: elemento.vigente })
+          Object.assign(formAlimentacion, { id: elemento.id, descripcion: elemento.descripcion, tipo: elemento.tipo, vigente: toBool(elemento.vigente) })
           break
         case 'comuna':
-          Object.assign(formComuna, elemento)
+          Object.assign(formComuna, { ...elemento, vigente: toBool(elemento.vigente) })
           break
         case 'provincia':
-          Object.assign(formProvincia, elemento)
+          Object.assign(formProvincia, { ...elemento, vigente: toBool(elemento.vigente) })
           break
         case 'region':
-          Object.assign(formRegion, elemento)
+          Object.assign(formRegion, { ...elemento, vigente: toBool(elemento.vigente) })
           break
         case 'nivel':
-          Object.assign(formNivel, elemento)
+          Object.assign(formNivel, { ...elemento, vigente: toBool(elemento.vigente) })
           break
         case 'estadoCivil':
-          Object.assign(formEstadoCivil, elemento)
+          Object.assign(formEstadoCivil, { ...elemento, vigente: toBool(elemento.vigente) })
           break
         case 'rol':
-          Object.assign(formRol, { id: elemento.id, descripcion: elemento.descripcion, tipo: elemento.tipo, vigente: elemento.vigente })
+          Object.assign(formRol, { id: elemento.id, descripcion: elemento.descripcion, tipo: elemento.tipo, vigente: toBool(elemento.vigente) })
           break
         case 'conceptoContable':
-          Object.assign(formConceptoContable, elemento)
+          Object.assign(formConceptoContable, { ...elemento, vigente: toBool(elemento.vigente) })
           break
         case 'tipoArchivo':
-          Object.assign(formTipoArchivo, elemento)
+          Object.assign(formTipoArchivo, { ...elemento, vigente: toBool(elemento.vigente) })
           break
         // Agregar casos para otros tipos
       }
@@ -2429,6 +2185,15 @@ export default {
       cerrarModal()
     }
 
+    // Solicita la anulación (API): prepara el elemento y llama a confirmarAnular.
+    // Se usa como helper desde la plantilla o desde otros componentes.
+    const solicitarAnular = (tipo, elemento) => {
+      tipoElemento.value = tipo
+      elementoSeleccionado.value = elemento
+      // Llamar a la confirmación que ejecuta la petición
+      confirmarAnular()
+    }
+
     const getArrayByTipo = (tipo) => {
       const arrays = {
         'zona': zonas,
@@ -2455,16 +2220,9 @@ export default {
     // Métodos CRUD para zonas, distritos, grupos, ramas (ejemplo, igual para los demás)
     const guardarZona = async () => {
       try {
-        const payload = {
-          ZON_DESCRIPCION: formZona.descripcion,
-          ZON_UNILATERAL: !!formZona.unilateral,
-          ZON_VIGENTE: !!formZona.vigente
-        }
-        if (editando.value) {
-          await mantenedoresService.zona.update(formZona.id, payload)
-        } else {
-          await mantenedoresService.zona.create(payload)
-        }
+        const payload = desnormalizarDatos(formZona, 'zona')
+        if (editando.value) await mantenedoresService.zona.update(formZona.id, payload)
+        else await mantenedoresService.zona.create(payload)
       } catch (err) {
         console.error('Error guardarZona:', err)
       } finally {
@@ -2475,16 +2233,9 @@ export default {
 
     const guardarDistrito = async () => {
       try {
-        const payload = {
-          DIS_DESCRIPCION: formDistrito.descripcion,
-          ZON_ID: formDistrito.zona_id,
-          DIS_VIGENTE: !!formDistrito.vigente
-        }
-        if (editando.value) {
-          await mantenedoresService.distrito.update(formDistrito.id, payload)
-        } else {
-          await mantenedoresService.distrito.create(payload)
-        }
+        const payload = desnormalizarDatos(formDistrito, 'distrito')
+        if (editando.value) await mantenedoresService.distrito.update(formDistrito.id, payload)
+        else await mantenedoresService.distrito.create(payload)
       } catch (err) {
         console.error('Error guardarDistrito:', err)
       } finally {
@@ -2495,16 +2246,9 @@ export default {
 
     const guardarGrupo = async () => {
       try {
-        const payload = {
-          GRU_DESCRIPCION: formGrupo.descripcion,
-          DIS_ID: formGrupo.distrito_id,
-          GRU_VIGENTE: !!formGrupo.vigente
-        }
-        if (editando.value) {
-          await mantenedoresService.grupo.update(formGrupo.id, payload)
-        } else {
-          await mantenedoresService.grupo.create(payload)
-        }
+        const payload = desnormalizarDatos(formGrupo, 'grupo')
+        if (editando.value) await mantenedoresService.grupo.update(formGrupo.id, payload)
+        else await mantenedoresService.grupo.create(payload)
       } catch (err) {
         console.error('Error guardarGrupo:', err)
       } finally {
@@ -2515,15 +2259,9 @@ export default {
 
     const guardarRama = async () => {
       try {
-        const payload = {
-          RAM_DESCRIPCION: formRama.descripcion,
-          RAM_VIGENTE: !!formRama.vigente
-        }
-        if (editando.value) {
-          await mantenedoresService.rama.update(formRama.id, payload)
-        } else {
-          await mantenedoresService.rama.create(payload)
-        }
+        const payload = desnormalizarDatos(formRama, 'rama')
+        if (editando.value) await mantenedoresService.rama.update(formRama.id, payload)
+        else await mantenedoresService.rama.create(payload)
       } catch (err) {
         console.error('Error guardarRama:', err)
       } finally {
@@ -2535,50 +2273,50 @@ export default {
     // Guardar otros mantenedores
     const guardarTipoCurso = async () => {
       try {
-        const payload = { TCU_DESCRIPCION: formTipoCurso.descripcion, TCU_TIPO: formTipoCurso.tipo, TCU_CANT_PARTICIPANTE: formTipoCurso.cant_participante, TCU_VIGENTE: !!formTipoCurso.vigente }
+        const payload = desnormalizarDatos(formTipoCurso, 'tipoCurso')
         if (editando.value) await mantenedoresService.tipoCursos.update(formTipoCurso.id, payload)
         else await mantenedoresService.tipoCursos.create(payload)
       } catch (err) { console.error('Error guardarTipoCurso', err) } finally { cerrarModal(); recargar() }
     }
 
     const guardarCargo = async () => {
-      try { const payload = { CAR_DESCRIPCION: formCargo.descripcion, CAR_VIGENTE: !!formCargo.vigente }; if (editando.value) await mantenedoresService.cargo.update(formCargo.id, payload); else await mantenedoresService.cargo.create(payload) } catch (err) { console.error('Error guardarCargo', err) } finally { cerrarModal(); recargar() }
+      try { const payload = desnormalizarDatos(formCargo, 'cargo'); if (editando.value) await mantenedoresService.cargo.update(formCargo.id, payload); else await mantenedoresService.cargo.create(payload) } catch (err) { console.error('Error guardarCargo', err) } finally { cerrarModal(); recargar() }
     }
 
     const guardarAlimentacion = async () => {
-      try { const payload = { ALI_DESCRIPCION: formAlimentacion.descripcion, ALI_TIPO: formAlimentacion.tipo, ALI_VIGENTE: !!formAlimentacion.vigente }; if (editando.value) await mantenedoresService.alimentacion.update(formAlimentacion.id, payload); else await mantenedoresService.alimentacion.create(payload) } catch (err) { console.error('Error guardarAlimentacion', err) } finally { cerrarModal(); recargar() }
+      try { const payload = desnormalizarDatos(formAlimentacion, 'alimentacion'); if (editando.value) await mantenedoresService.alimentacion.update(formAlimentacion.id, payload); else await mantenedoresService.alimentacion.create(payload) } catch (err) { console.error('Error guardarAlimentacion', err) } finally { cerrarModal(); recargar() }
     }
 
     const guardarComuna = async () => {
-      try { const payload = { COM_DESCRIPCION: formComuna.descripcion, PRO_ID: formComuna.provincia_id, COM_VIGENTE: !!formComuna.vigente }; if (editando.value) await mantenedoresService.comuna.update(formComuna.id, payload); else await mantenedoresService.comuna.create(payload) } catch (err) { console.error('Error guardarComuna', err) } finally { cerrarModal(); recargar() }
+      try { const payload = desnormalizarDatos(formComuna, 'comuna'); if (editando.value) await mantenedoresService.comuna.update(formComuna.id, payload); else await mantenedoresService.comuna.create(payload) } catch (err) { console.error('Error guardarComuna', err) } finally { cerrarModal(); recargar() }
     }
 
     const guardarProvincia = async () => {
-      try { const payload = { PRO_DESCRIPCION: formProvincia.descripcion, REG_ID: formProvincia.region_id, PRO_VIGENTE: !!formProvincia.vigente }; if (editando.value) await mantenedoresService.provincia.update(formProvincia.id, payload); else await mantenedoresService.provincia.create(payload) } catch (err) { console.error('Error guardarProvincia', err) } finally { cerrarModal(); recargar() }
+      try { const payload = desnormalizarDatos(formProvincia, 'provincia'); if (editando.value) await mantenedoresService.provincia.update(formProvincia.id, payload); else await mantenedoresService.provincia.create(payload) } catch (err) { console.error('Error guardarProvincia', err) } finally { cerrarModal(); recargar() }
     }
 
     const guardarRegion = async () => {
-      try { const payload = { REG_DESCRIPCION: formRegion.descripcion, REG_VIGENTE: !!formRegion.vigente }; if (editando.value) await mantenedoresService.region.update(formRegion.id, payload); else await mantenedoresService.region.create(payload) } catch (err) { console.error('Error guardarRegion', err) } finally { cerrarModal(); recargar() }
+      try { const payload = desnormalizarDatos(formRegion, 'region'); if (editando.value) await mantenedoresService.region.update(formRegion.id, payload); else await mantenedoresService.region.create(payload) } catch (err) { console.error('Error guardarRegion', err) } finally { cerrarModal(); recargar() }
     }
 
     const guardarNivel = async () => {
-      try { const payload = { NIV_DESCRIPCION: formNivel.descripcion, NIV_ORDEN: formNivel.orden, NIV_VIGENTE: !!formNivel.vigente }; if (editando.value) await mantenedoresService.nivel.update(formNivel.id, payload); else await mantenedoresService.nivel.create(payload) } catch (err) { console.error('Error guardarNivel', err) } finally { cerrarModal(); recargar() }
+      try { const payload = desnormalizarDatos(formNivel, 'nivel'); if (editando.value) await mantenedoresService.nivel.update(formNivel.id, payload); else await mantenedoresService.nivel.create(payload) } catch (err) { console.error('Error guardarNivel', err) } finally { cerrarModal(); recargar() }
     }
 
     const guardarEstadoCivil = async () => {
-      try { const payload = { ESC_DESCRIPCION: formEstadoCivil.descripcion, ESC_VIGENTE: !!formEstadoCivil.vigente }; if (editando.value) await mantenedoresService.estadoCivil.update(formEstadoCivil.id, payload); else await mantenedoresService.estadoCivil.create(payload) } catch (err) { console.error('Error guardarEstadoCivil', err) } finally { cerrarModal(); recargar() }
+      try { const payload = desnormalizarDatos(formEstadoCivil, 'estadoCivil'); if (editando.value) await mantenedoresService.estadoCivil.update(formEstadoCivil.id, payload); else await mantenedoresService.estadoCivil.create(payload) } catch (err) { console.error('Error guardarEstadoCivil', err) } finally { cerrarModal(); recargar() }
     }
 
     const guardarRol = async () => {
-      try { const payload = { ROL_DESCRIPCION: formRol.descripcion, ROL_TIPO: formRol.tipo, ROL_VIGENTE: !!formRol.vigente }; if (editando.value) await mantenedoresService.rol.update(formRol.id, payload); else await mantenedoresService.rol.create(payload) } catch (err) { console.error('Error guardarRol', err) } finally { cerrarModal(); recargar() }
+      try { const payload = desnormalizarDatos(formRol, 'rol'); if (editando.value) await mantenedoresService.rol.update(formRol.id, payload); else await mantenedoresService.rol.create(payload) } catch (err) { console.error('Error guardarRol', err) } finally { cerrarModal(); recargar() }
     }
 
     const guardarConceptoContable = async () => {
-      try { const payload = { COC_DESCRIPCION: formConceptoContable.descripcion, COC_VIGENTE: !!formConceptoContable.vigente }; if (editando.value) await mantenedoresService.conceptoContable.update(formConceptoContable.id, payload); else await mantenedoresService.conceptoContable.create(payload) } catch (err) { console.error('Error guardarConceptoContable', err) } finally { cerrarModal(); recargar() }
+      try { const payload = desnormalizarDatos(formConceptoContable, 'conceptoContable'); if (editando.value) await mantenedoresService.conceptoContable.update(formConceptoContable.id, payload); else await mantenedoresService.conceptoContable.create(payload) } catch (err) { console.error('Error guardarConceptoContable', err) } finally { cerrarModal(); recargar() }
     }
 
     const guardarTipoArchivo = async () => {
-      try { const payload = { TAR_DESCRIPCION: formTipoArchivo.descripcion, TAR_VIGENTE: !!formTipoArchivo.vigente }; if (editando.value) await mantenedoresService.tipoArchivos.update(formTipoArchivo.id, payload); else await mantenedoresService.tipoArchivos.create(payload) } catch (err) { console.error('Error guardarTipoArchivo', err) } finally { cerrarModal(); recargar() }
+      try { const payload = desnormalizarDatos(formTipoArchivo, 'tipoArchivo'); if (editando.value) await mantenedoresService.tipoArchivos.update(formTipoArchivo.id, payload); else await mantenedoresService.tipoArchivos.create(payload) } catch (err) { console.error('Error guardarTipoArchivo', err) } finally { cerrarModal(); recargar() }
     }
 
     return {
@@ -2592,11 +2330,17 @@ export default {
       cargando,
       error,
       searchZonas,
+      searchZonasInput,
       searchDistritos,
+      searchDistritosInput,
       searchGrupos,
+      searchGruposInput,
       searchComunas,
+      searchComunasInput,
       filtroZona,
+      filtroZonaInput,
       filtroDistrito,
+      filtroDistritoInput,
       tabs,
       zonas,
       distritos,
@@ -2672,11 +2416,12 @@ export default {
       guardarRol,
       guardarConceptoContable,
       guardarTipoArchivo,
+      cambiarEstado,
       // misc
       recargar
     }
   }
-} 
+}
 </script>
 
 <style scoped>
@@ -3000,11 +2745,15 @@ export default {
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
   overflow: hidden;
   width: 100%;
+  /* center the table content and allow it to have a max width */
+  display: flex;
+  justify-content: center;
   box-sizing: border-box;
 }
 
 .data-table-expanded {
-  width: 100%;
+  width: 100%; /* occupy available space up to max-width */
+  max-width: 1200px; /* center and constrain to a readable width */
   border-collapse: collapse;
   box-sizing: border-box;
 }
@@ -3050,6 +2799,13 @@ export default {
 .actions {
   display: flex;
   gap: 8px;
+}
+
+.data-table-expanded th.actions,
+.data-table-expanded td.actions {
+  width: 120px; /* narrow actions column to fit ~3 icon buttons */
+  white-space: nowrap;
+  text-align: right;
 }
 
 .btn-action {

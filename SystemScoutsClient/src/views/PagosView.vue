@@ -34,6 +34,20 @@
               placeholder="EJ: 12.345.678-9 O JUAN PÉREZ"
             />
           </div>
+          <div>
+            <BaseButton
+              variant="primary"
+              :disabled="!buscarPersonaQ || buscandoPersonas"
+              @click="buscarPersonas(buscarPersonaQ)"
+            >
+              <template v-if="buscandoPersonas">
+                <span class="spinner"></span> Buscando...
+              </template>
+              <template v-else>
+                Buscar
+              </template>
+            </BaseButton>
+          </div>
         </div>
 
         <div v-if="buscandoPersonas" class="estado-carga">
@@ -271,9 +285,22 @@
       <!-- Filtros compactos -->
       <div class="filtros filtros-historico">
         <InputBase class="filtro-busqueda filtro-corto"
-          v-model="filtroQ"
-          placeholder="NOMBRE / RUT / EMAIL"
+            v-model="filtroQ"
+            placeholder="NOMBRE / RUT / EMAIL"
+            @keydown.enter.prevent="cargarPagos"
         />
+        <div class="row-buscar">
+          <div class="buscar-input">
+            <InputBase
+              v-model="filtroQ"
+              placeholder="NOMBRE / RUT / EMAIL"
+              @keydown.enter.prevent="cargarPagos"
+            />
+          </div>
+          <BaseButton variant="primary" @click="cargarPagos" :disabled="cargandoPagos">
+            Buscar
+          </BaseButton>
+        </div>
         <BaseSelect
           class="filtro-corto"
           v-model="filtroCurso"
@@ -561,6 +588,7 @@ import BaseSelect from '@/components/BaseSelect.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import BaseModal from '@/components/BaseModal.vue'
 import pagosService from '@/services/pagosService.js'
+import { request } from '@/services/apiClient.js'
 import personasService from '@/services/personasService.js'
 import cursosService from '@/services/cursosService.js'
 import mantenedoresService from '@/services/mantenedoresService.js'
@@ -652,12 +680,11 @@ export default {
   },
   watch: {
     /**
-     * Observa cambios en el campo de búsqueda de persona y ejecuta la búsqueda
-     * con un debounce para no sobrecargar la API con cada pulsación de tecla.
-     * @param {string} newValue El nuevo valor del campo de búsqueda.
+     * Observa cambios en el filtro de histórico y ejecuta la carga de pagos con debounce.
      */
-    buscarPersonaQ(newValue) {
-      this.debounceBuscarPersonas(newValue);
+    filtroQ(newVal) {
+      if (!this.debounceCargarPagos) return
+      this.debounceCargarPagos()
     },
     /**
      * Observa cambios en la pestaña activa y recarga los pagos si se cambia a 'historico'.
@@ -670,7 +697,8 @@ export default {
   },
   created() {
     // Crear la función con debounce una vez que el componente es creado
-    this.debounceBuscarPersonas = this.debounce(this.buscarPersonas, 400);
+    this.debounceCargarPagos = this.debounce(() => this.cargarPagos(), 400);
+    // this.debounceCargarPagos = this.debounce(() => this.cargarPagos(), 400); // Ya no es necesario
   },
   computed: {
     allChecked () {
@@ -744,13 +772,31 @@ export default {
      * @param {string} q - El término de búsqueda.
      */
     async buscarPersonas (q) {
+      console.debug('[buscarPersonas] q=', q)
       if (!q) {
         this.personasEncontradas = []
         return
       }
       this.buscandoPersonas = true
       try {
-        const response = await personasService.personas.list({ search: q })
+        // Detectar si q es un RUT (con o sin DV y puntos). Si es RUT, usar el filtro `run` (exacto).
+        const cleaned = String(q).replace(/\./g, '').replace(/\s+/g, '')
+        let params = null
+        if (/^\d{6,8}-?\w?$/.test(cleaned)) {
+          // RUT: usar filtro exacto `run` para devolver solo esa persona
+          params = { run: cleaned.split('-')[0] }
+        } else {
+          // Nombre/email: requerir al menos 3 caracteres para evitar traer todo
+          if (String(q).trim().length < 3) {
+            this.personasEncontradas = []
+            this.buscandoPersonas = false
+            return
+          }
+          // Usar el filtro `nombre` definido en PersonaFilter (icontains)
+          params = { nombre: q }
+        }
+        console.debug('[buscarPersonas] params=', params)
+        const response = await personasService.personas.list(params)
         const arr = Array.isArray(response) ? response : (response.results || [])
         this.personasEncontradas = arr.map(p => ({
           id: p.PER_ID,
@@ -809,23 +855,32 @@ export default {
      */
     async registrarPagoIndividual () {
       try {
+        // Construir FormData para crear un Comprobante_Pago
         const fd = new FormData()
-        fd.append('PER_ID', this.formInd.personaId)
-        fd.append('CUR_ID', this.formInd.CUR_ID)
-        fd.append('PAP_MONTO', this.formInd.PAP_MONTO)
-        fd.append('PAP_FECHA_PAGO', this.formInd.PAP_FECHA_PAGO)
-        if (this.formInd.observacion) {
-          fd.append('PAP_OBSERVACION', this.formInd.observacion)
-        }
-        fd.append('comprobante', this.formInd.file)
-        fd.append('MET_ID', 1) // Asumiendo 1 para Transferencia
-        await pagosService.pagos.create(fd)
+        // En el modelo Comprobante_Pago:
+        // USU_ID, PEC_ID (curso), COC_ID, CPA_FECHA_HORA, CPA_NUMERO, CPA_VALOR
+        // Usamos valores por defecto para USU_ID y COC_ID si no disponibles en el frontend.
+        fd.append('USU_ID', 1)
+        fd.append('PEC_ID', this.formInd.CUR_ID)
+        fd.append('COC_ID', 1)
+        // Fecha/hora: usar la fecha seleccionada con hora actual
+        const fechaPago = this.formInd.PAP_FECHA_PAGO || hoyISO()
+        const fechaHoraIso = new Date(fechaPago).toISOString()
+        fd.append('CPA_FECHA_HORA', fechaHoraIso)
+        // Número y valor
+        fd.append('CPA_NUMERO', 0)
+        fd.append('CPA_VALOR', this.formInd.PAP_MONTO)
+        // Si se sube un comprobante como archivo (campo libre), lo incluimos con la clave 'comprobante'
+        if (this.formInd.file) fd.append('comprobante', this.formInd.file)
 
-        alert('Pago individual registrado correctamente')
+        await request('pagos/comprobante-pago', { method: 'POST', body: fd })
+
+        alert('Comprobante registrado correctamente')
         this.limpiarIndividual()
         this.cargarPagos()
       } catch (e) {
-        alert('Error registrando pago individual')
+        console.error('Error registrando comprobante:', e)
+        alert('Error registrando comprobante')
       }
     },
 
@@ -911,7 +966,7 @@ export default {
         fd.append('comprobante', this.formMasivo.file)
         fd.append('MET_ID', 1) // Asumiendo 1 para Transferencia
         
-        await pagosService.pagos.createMasivo(fd)
+        await request('pagos/pago-persona', { method: 'POST', body: fd })
 
         alert('Pago masivo registrado correctamente')
         this.limpiarMasivo()
@@ -945,12 +1000,31 @@ export default {
       this.cargandoPagos = true
       this.errorPagos = null
       try {
+        // Construir parámetros de filtros para la API.
+        // Si el filtro Q parece ser un RUT (contiene '-') enviamos `persona_run`
+        // (sin DV ni puntos). En otro caso enviamos `search` para búsqueda por nombre/email.
         const params = {
-          search: (this.filtroQ || '').trim() || undefined,
           CUR_ID: this.filtroCurso || undefined,
           GRU_ID: this.filtroGrupo || undefined
         }
-        const response = await pagosService.pagos.list(params)
+
+        const q = (this.filtroQ || '').trim()
+        if (q) {
+          // Normalizar para detectar RUT (ej: 12.345.678-9 o 12345678-9)
+          const cleaned = q.replace(/\./g, '').replace(/\s+/g, '')
+          if (/^\d{7,8}-?\w?$/.test(cleaned)) {
+            // Extraer la parte numérica antes del guión (sin DV)
+            const runPart = cleaned.split('-')[0]
+            params.persona_run = runPart
+          } else {
+            params.search = q
+          }
+        }
+        // Eliminar claves con valor undefined o cadena vacía para no enviar `...=undefined`
+        const qp = Object.fromEntries(
+          Object.entries(params).filter(([, v]) => v !== undefined && v !== '' && v !== 'undefined')
+        )
+        const response = await pagosService.pagoPersona.list(qp)
         // Asegurarse de que la respuesta es un array, incluso si la API devuelve otra cosa.
         if (Array.isArray(response)) {
           this.pagos = response;
@@ -1090,7 +1164,22 @@ export default {
       }
       this.buscandoPersonasTransferir = true;
       try {
-        const response = await personasService.personas.list({ search: q });
+        console.debug('[buscarPersonaParaTransferir] q=', q)
+        // Si q parece RUT, buscar por run exacto para no devolver muchos resultados
+        const cleaned = String(q).replace(/\./g, '').replace(/\s+/g, '')
+        let params = null
+        if (/^\d{6,8}-?\w?$/.test(cleaned)) {
+          params = { run: cleaned.split('-')[0] }
+        } else {
+          if (String(q).trim().length < 3) {
+            this.personasEncontradasTransferir = []
+            this.buscandoPersonasTransferir = false
+            return;
+          }
+          params = { nombre: q }
+        }
+        console.debug('[buscarPersonaParaTransferir] params=', params)
+        const response = await personasService.personas.list(params);
         const arr = Array.isArray(response) ? response : (response.results || []);
         this.personasEncontradasTransferir = arr.map(p => ({
           id: p.PER_ID,
@@ -1145,7 +1234,7 @@ export default {
           PAP_FECHA_PAGO: this.pagoEdit.fecha,
           PAP_OBSERVACION: this.pagoEdit.observacion
         }
-        await pagosService.pagos.partialUpdate(this.pagoEdit.id, body)
+        await pagosService.pagoPersona.partialUpdate(this.pagoEdit.id, body)
         this.modalEditar = false
         await this.cargarPagos()
         alert('Pago actualizado')
@@ -1170,7 +1259,7 @@ export default {
     async confirmarAnulacion () {
       if (!this.pagoAnular) return;
       try {
-        await pagosService.pagos.remove(this.pagoAnular.PAP_ID)
+        await pagosService.pagoPersona.remove(this.pagoAnular.PAP_ID)
         this.modalAnular = false
         await this.cargarPagos()
         alert('Pago anulado')

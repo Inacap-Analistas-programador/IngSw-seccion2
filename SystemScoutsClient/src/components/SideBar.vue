@@ -1,5 +1,7 @@
 <template>
   <div class="sidebar-wrapper">
+    <!-- Botón para abrir sidebar en móviles -->
+    <button v-if="!openMobile" class="mobile-open-btn" @click="openMobile = true" aria-label="Abrir menú" title="Abrir menú">☰</button>
     <div v-if="openMobile" class="sidebar-backdrop" @click="closeMobile"></div>
     <aside id="app-sidebar" :class="['sidebar', { collapsed, 'mobile-open': openMobile }]" @click.self="closeMobile">
       <button v-if="openMobile" class="mobile-close-btn" @click="closeMobile" aria-label="Cerrar menú">×</button>
@@ -222,6 +224,8 @@ onMounted(() => {
     window.addEventListener('auth-changed', handleAuthChanged)
     // Registrar listener para abrir sidebar en móviles
     window.addEventListener('open-sidebar-mobile', openMobileHandler)
+    // Cerrar sidebar con tecla Escape
+    window.addEventListener('keydown', escHandler)
   }
 })
 
@@ -229,6 +233,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('storage', onStorage)
   window.removeEventListener('auth-changed', handleAuthChanged)
   window.removeEventListener('open-sidebar-mobile', openMobileHandler)
+  window.removeEventListener('keydown', escHandler)
 })
 
 function closeMobile() { openMobile.value = false }
@@ -248,6 +253,15 @@ watch(openMobile, (v) => {
 
 // Handler para abrir la sidebar en móvil (referencia para add/remove)
 function openMobileHandler() { openMobile.value = true }
+
+// Cerrar sidebar con tecla ESC
+function escHandler(e) {
+  if (!e) return
+  const key = e.key || e.code || ''
+  if (key === 'Escape' || key === 'Esc') {
+    if (openMobile.value) closeMobile()
+  }
+}
 </script>
 
 <style scoped>
@@ -632,6 +646,25 @@ function openMobileHandler() { openMobile.value = true }
   .sidebar {
     padding-top: 56px; /* desplaza el contenido hacia abajo para separar de la X */
   }
+  /* Botón para abrir menú en móvil */
+  .mobile-open-btn {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 1300;
+    background: var(--color-primary);
+    color: #fff;
+    border: none;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 18px;
+    box-shadow: 0 6px 18px rgba(2,6,23,0.35);
+    cursor: pointer;
+  }
+  .mobile-open-btn:hover { opacity: 0.95 }
+
+  /* Ocultar footer dentro de móviles para ahorrar espacio */
+  .sidebar-footer { display: none; }
   /* Reservar espacio a la derecha en el primer item colapsable para que no
      quede pegado a la X (solo en móvil) */
   .nav-collapsible:first-of-type {
