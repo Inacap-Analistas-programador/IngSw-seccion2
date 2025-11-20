@@ -1,5 +1,15 @@
 <template>
   <div class="mantenedores-scouts">
+    <!-- Error Alert -->
+    <div v-if="error" class="error-alert">
+      <p>{{ error }}</p>
+      <button @click="error = null">×</button>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div v-if="cargando" class="loading-indicator">
+      <p>Cargando datos...</p>
+    </div>
     <!-- Selector de Mantenedores Fijo -->
     <div class="mantenedor-selector-fixed">
       <div class="selector-container">
@@ -51,13 +61,6 @@
           <button class="btn-primary" @click="abrirModalCrear('zona')">
             + Nueva Zona
           </button>
-        </div>
-        
-        <div class="alert">
-          <span class="alert-icon">ℹ️</span>
-          <div>
-            <strong>Información:</strong> Las zonas son agrupaciones geográficas de distritos scouts.
-          </div>
         </div>
         
         <div class="search-bar">
@@ -374,7 +377,20 @@
                 <td class="actions">
                   <button class="btn-action btn-view" @click="verElemento('zona', zona)">👁 Ver</button>
                   <button class="btn-action btn-edit" @click="editarElemento('zona', zona)">✏ Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('zona', zona)">🚫 Anular</button>
+                  <button 
+                    v-if="zona.vigente" 
+                    class="btn-action btn-anular" 
+                    @click="cambiarEstado('zona', zona)"
+                  >
+                    🚫 Anular
+                  </button>
+                  <button 
+                    v-else 
+                    class="btn-action btn-habilitar" 
+                    @click="cambiarEstado('zona', zona)"
+                  >
+                    ✅ Habilitar
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -389,13 +405,6 @@
           <button class="btn-primary" @click="abrirModalCrear('distrito')">
             + Nuevo Distrito
           </button>
-        </div>
-        
-        <div class="alert">
-          <span class="alert-icon">ℹ️</span>
-          <div>
-            <strong>Información:</strong> Los distritos agrupan varios grupos scouts dentro de una zona específica.
-          </div>
         </div>
         
         <div class="search-bar">
@@ -436,7 +445,20 @@
                 <td class="actions">
                   <button class="btn-action btn-view" @click="verElemento('distrito', distrito)">👁 Ver</button>
                   <button class="btn-action btn-edit" @click="editarElemento('distrito', distrito)">✏ Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('distrito', distrito)">🚫 Anular</button>
+                  <button 
+                    v-if="distrito.vigente" 
+                    class="btn-action btn-anular" 
+                    @click="cambiarEstado('distrito', distrito)"
+                  >
+                    🚫 Anular
+                  </button>
+                  <button 
+                    v-else 
+                    class="btn-action btn-habilitar" 
+                    @click="cambiarEstado('distrito', distrito)"
+                  >
+                    ✅ Habilitar
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -444,20 +466,13 @@
         </div>
       </div>
       
-      <!-- Grupos Scout -->
+      <!-- Grupos -->
       <div v-if="activeTab === 'grupos'" class="mantenedor-section-expanded">
         <div class="mantenedor-header">
-          <h2>👥 Gestión de Grupos Scout</h2>
+          <h2>👥 Gestión de Grupos</h2>
           <button class="btn-primary" @click="abrirModalCrear('grupo')">
             + Nuevo Grupo
           </button>
-        </div>
-        
-        <div class="alert">
-          <span class="alert-icon">ℹ️</span>
-          <div>
-            <strong>Información:</strong> Los grupos scout son las unidades operativas donde se desarrollan las actividades con los jóvenes.
-          </div>
         </div>
         
         <div class="search-bar">
@@ -498,7 +513,20 @@
                 <td class="actions">
                   <button class="btn-action btn-view" @click="verElemento('grupo', grupo)">👁 Ver</button>
                   <button class="btn-action btn-edit" @click="editarElemento('grupo', grupo)">✏ Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('grupo', grupo)">🚫 Anular</button>
+                  <button 
+                    v-if="grupo.vigente" 
+                    class="btn-action btn-anular" 
+                    @click="cambiarEstado('grupo', grupo)"
+                  >
+                    🚫 Anular
+                  </button>
+                  <button 
+                    v-else 
+                    class="btn-action btn-habilitar" 
+                    @click="cambiarEstado('grupo', grupo)"
+                  >
+                    ✅ Habilitar
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -513,13 +541,6 @@
           <button class="btn-primary" @click="abrirModalCrear('rama')">
             + Nueva Rama
           </button>
-        </div>
-        
-        <div class="alert">
-          <span class="alert-icon">ℹ️</span>
-          <div>
-            <strong>Información:</strong> Las ramas definen las divisiones por edad dentro del movimiento scout.
-          </div>
         </div>
         
         <div class="table-container-expanded">
@@ -542,7 +563,20 @@
                 <td class="actions">
                   <button class="btn-action btn-view" @click="verElemento('rama', rama)">👁 Ver</button>
                   <button class="btn-action btn-edit" @click="editarElemento('rama', rama)">✏ Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('rama', rama)">🚫 Anular</button>
+                  <button 
+                    v-if="rama.vigente" 
+                    class="btn-action btn-anular" 
+                    @click="cambiarEstado('rama', rama)"
+                  >
+                    🚫 Anular
+                  </button>
+                  <button 
+                    v-else 
+                    class="btn-action btn-habilitar" 
+                    @click="cambiarEstado('rama', rama)"
+                  >
+                    ✅ Habilitar
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -557,13 +591,6 @@
           <button class="btn-primary" @click="abrirModalCrear('tipoCurso')">
             + Nuevo Tipo
           </button>
-        </div>
-        
-        <div class="alert">
-          <span class="alert-icon">ℹ️</span>
-          <div>
-            <strong>Información:</strong> Los tipos de curso definen las categorías de formación disponibles en el sistema.
-          </div>
         </div>
         
         <div class="table-container-expanded">
@@ -590,7 +617,20 @@
                 <td class="actions">
                   <button class="btn-action btn-view" @click="verElemento('tipoCurso', tipoCurso)">👁 Ver</button>
                   <button class="btn-action btn-edit" @click="editarElemento('tipoCurso', tipoCurso)">✏ Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('tipoCurso', tipoCurso)">🚫 Anular</button>
+                  <button 
+                    v-if="tipoCurso.vigente" 
+                    class="btn-action btn-anular" 
+                    @click="cambiarEstado('tipoCurso', tipoCurso)"
+                  >
+                    🚫 Anular
+                  </button>
+                  <button 
+                    v-else 
+                    class="btn-action btn-habilitar" 
+                    @click="cambiarEstado('tipoCurso', tipoCurso)"
+                  >
+                    ✅ Habilitar
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -605,13 +645,6 @@
           <button class="btn-primary" @click="abrirModalCrear('cargo')">
             + Nuevo Cargo
           </button>
-        </div>
-        
-        <div class="alert">
-          <span class="alert-icon">ℹ️</span>
-          <div>
-            <strong>Información:</strong> Los cargos definen las responsabilidades dentro de la organización scout.
-          </div>
         </div>
         
         <div class="table-container-expanded">
@@ -634,7 +667,20 @@
                 <td class="actions">
                   <button class="btn-action btn-view" @click="verElemento('cargo', cargo)">👁 Ver</button>
                   <button class="btn-action btn-edit" @click="editarElemento('cargo', cargo)">✏ Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('cargo', cargo)">🚫 Anular</button>
+                  <button 
+                    v-if="cargo.vigente" 
+                    class="btn-action btn-anular" 
+                    @click="cambiarEstado('cargo', cargo)"
+                  >
+                    🚫 Anular
+                  </button>
+                  <button 
+                    v-else 
+                    class="btn-action btn-habilitar" 
+                    @click="cambiarEstado('cargo', cargo)"
+                  >
+                    ✅ Habilitar
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -649,13 +695,6 @@
           <button class="btn-primary" @click="abrirModalCrear('alimentacion')">
             + Nueva Alimentación
           </button>
-        </div>
-        
-        <div class="alert">
-          <span class="alert-icon">ℹ️</span>
-          <div>
-            <strong>Información:</strong> Tipos de alimentación disponibles para los participantes de cursos.
-          </div>
         </div>
         
         <div class="table-container-expanded">
@@ -680,7 +719,20 @@
                 <td class="actions">
                   <button class="btn-action btn-view" @click="verElemento('alimentacion', alimentacionItem)">👁 Ver</button>
                   <button class="btn-action btn-edit" @click="editarElemento('alimentacion', alimentacionItem)">✏ Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('alimentacion', alimentacionItem)">🚫 Anular</button>
+                  <button 
+                    v-if="alimentacionItem.vigente" 
+                    class="btn-action btn-anular" 
+                    @click="cambiarEstado('alimentacion', alimentacionItem)"
+                  >
+                    🚫 Anular
+                  </button>
+                  <button 
+                    v-else 
+                    class="btn-action btn-habilitar" 
+                    @click="cambiarEstado('alimentacion', alimentacionItem)"
+                  >
+                    ✅ Habilitar
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -695,13 +747,6 @@
           <button class="btn-primary" @click="abrirModalCrear('comuna')">
             + Nueva Comuna
           </button>
-        </div>
-        
-        <div class="alert">
-          <span class="alert-icon">ℹ️</span>
-          <div>
-            <strong>Información:</strong> Las comunas son divisiones administrativas dentro de las provincias.
-          </div>
         </div>
         
         <div class="search-bar">
@@ -736,7 +781,20 @@
                 <td class="actions">
                   <button class="btn-action btn-view" @click="verElemento('comuna', comuna)">👁 Ver</button>
                   <button class="btn-action btn-edit" @click="editarElemento('comuna', comuna)">✏ Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('comuna', comuna)">🚫 Anular</button>
+                  <button 
+                    v-if="comuna.vigente" 
+                    class="btn-action btn-anular" 
+                    @click="cambiarEstado('comuna', comuna)"
+                  >
+                    🚫 Anular
+                  </button>
+                  <button 
+                    v-else 
+                    class="btn-action btn-habilitar" 
+                    @click="cambiarEstado('comuna', comuna)"
+                  >
+                    ✅ Habilitar
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -751,13 +809,6 @@
           <button class="btn-primary" @click="abrirModalCrear('provincia')">
             + Nueva Provincia
           </button>
-        </div>
-        
-        <div class="alert">
-          <span class="alert-icon">ℹ️</span>
-          <div>
-            <strong>Información:</strong> Las provincias son divisiones administrativas dentro de las regiones.
-          </div>
         </div>
         
         <div class="table-container-expanded">
@@ -782,7 +833,20 @@
                 <td class="actions">
                   <button class="btn-action btn-view" @click="verElemento('provincia', provincia)">👁 Ver</button>
                   <button class="btn-action btn-edit" @click="editarElemento('provincia', provincia)">✏ Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('provincia', provincia)">🚫 Anular</button>
+                  <button 
+                    v-if="provincia.vigente" 
+                    class="btn-action btn-anular" 
+                    @click="cambiarEstado('provincia', provincia)"
+                  >
+                    🚫 Anular
+                  </button>
+                  <button 
+                    v-else 
+                    class="btn-action btn-habilitar" 
+                    @click="cambiarEstado('provincia', provincia)"
+                  >
+                    ✅ Habilitar
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -797,13 +861,6 @@
           <button class="btn-primary" @click="abrirModalCrear('region')">
             + Nueva Región
           </button>
-        </div>
-        
-        <div class="alert">
-          <span class="alert-icon">ℹ️</span>
-          <div>
-            <strong>Información:</strong> Las regiones son las principales divisiones territoriales del país.
-          </div>
         </div>
         
         <div class="table-container-expanded">
@@ -826,7 +883,20 @@
                 <td class="actions">
                   <button class="btn-action btn-view" @click="verElemento('region', region)">👁 Ver</button>
                   <button class="btn-action btn-edit" @click="editarElemento('region', region)">✏ Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('region', region)">🚫 Anular</button>
+                  <button 
+                    v-if="region.vigente" 
+                    class="btn-action btn-anular" 
+                    @click="cambiarEstado('region', region)"
+                  >
+                    🚫 Anular
+                  </button>
+                  <button 
+                    v-else 
+                    class="btn-action btn-habilitar" 
+                    @click="cambiarEstado('region', region)"
+                  >
+                    ✅ Habilitar
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -841,13 +911,6 @@
           <button class="btn-primary" @click="abrirModalCrear('nivel')">
             + Nuevo Nivel
           </button>
-        </div>
-        
-        <div class="alert">
-          <span class="alert-icon">ℹ️</span>
-          <div>
-            <strong>Información:</strong> Los niveles definen escalas o rangos dentro de la organización.
-          </div>
         </div>
         
         <div class="table-container-expanded">
@@ -870,7 +933,20 @@
                 <td class="actions">
                   <button class="btn-action btn-view" @click="verElemento('nivel', nivel)">👁 Ver</button>
                   <button class="btn-action btn-edit" @click="editarElemento('nivel', nivel)">✏ Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('nivel', nivel)">🚫 Anular</button>
+                  <button 
+                    v-if="nivel.vigente" 
+                    class="btn-action btn-anular" 
+                    @click="cambiarEstado('nivel', nivel)"
+                  >
+                    🚫 Anular
+                  </button>
+                  <button 
+                    v-else 
+                    class="btn-action btn-habilitar" 
+                    @click="cambiarEstado('nivel', nivel)"
+                  >
+                    ✅ Habilitar
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -878,20 +954,13 @@
         </div>
       </div>
 
-      <!-- Estados Civiles -->
+      <!-- Estado Civil -->
       <div v-if="activeTab === 'estados-civiles'" class="mantenedor-section-expanded">
         <div class="mantenedor-header">
-          <h2>💑 Gestión de Estados Civiles</h2>
+          <h2>💑 Gestión de Estado Civil</h2>
           <button class="btn-primary" @click="abrirModalCrear('estadoCivil')">
             + Nuevo Estado Civil
           </button>
-        </div>
-        
-        <div class="alert">
-          <span class="alert-icon">ℹ️</span>
-          <div>
-            <strong>Información:</strong> Los estados civiles definen las situaciones personales de los miembros.
-          </div>
         </div>
         
         <div class="table-container-expanded">
@@ -914,7 +983,20 @@
                 <td class="actions">
                   <button class="btn-action btn-view" @click="verElemento('estadoCivil', estadoCivil)">👁 Ver</button>
                   <button class="btn-action btn-edit" @click="editarElemento('estadoCivil', estadoCivil)">✏ Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('estadoCivil', estadoCivil)">🚫 Anular</button>
+                  <button 
+                    v-if="estadoCivil.vigente" 
+                    class="btn-action btn-anular" 
+                    @click="cambiarEstado('estadoCivil', estadoCivil)"
+                  >
+                    🚫 Anular
+                  </button>
+                  <button 
+                    v-else 
+                    class="btn-action btn-habilitar" 
+                    @click="cambiarEstado('estadoCivil', estadoCivil)"
+                  >
+                    ✅ Habilitar
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -929,13 +1011,6 @@
           <button class="btn-primary" @click="abrirModalCrear('rol')">
             + Nuevo Rol
           </button>
-        </div>
-        
-        <div class="alert">
-          <span class="alert-icon">ℹ️</span>
-          <div>
-            <strong>Información:</strong> Los roles definen las funciones y permisos dentro del sistema.
-          </div>
         </div>
         
         <div class="table-container-expanded">
@@ -958,7 +1033,20 @@
                 <td class="actions">
                   <button class="btn-action btn-view" @click="verElemento('rol', rol)">👁 Ver</button>
                   <button class="btn-action btn-edit" @click="editarElemento('rol', rol)">✏ Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('rol', rol)">🚫 Anular</button>
+                  <button 
+                    v-if="rol.vigente" 
+                    class="btn-action btn-anular" 
+                    @click="cambiarEstado('rol', rol)"
+                  >
+                    🚫 Anular
+                  </button>
+                  <button 
+                    v-else 
+                    class="btn-action btn-habilitar" 
+                    @click="cambiarEstado('rol', rol)"
+                  >
+                    ✅ Habilitar
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -973,13 +1061,6 @@
           <button class="btn-primary" @click="abrirModalCrear('conceptoContable')">
             + Nuevo Concepto
           </button>
-        </div>
-        
-        <div class="alert">
-          <span class="alert-icon">ℹ️</span>
-          <div>
-            <strong>Información:</strong> Los conceptos contables definen las clasificaciones financieras.
-          </div>
         </div>
         
         <div class="table-container-expanded">
@@ -1004,7 +1085,20 @@
                 <td class="actions">
                   <button class="btn-action btn-view" @click="verElemento('conceptoContable', concepto)">👁 Ver</button>
                   <button class="btn-action btn-edit" @click="editarElemento('conceptoContable', concepto)">✏ Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('conceptoContable', concepto)">🚫 Anular</button>
+                  <button 
+                    v-if="concepto.vigente" 
+                    class="btn-action btn-anular" 
+                    @click="cambiarEstado('conceptoContable', concepto)"
+                  >
+                    🚫 Anular
+                  </button>
+                  <button 
+                    v-else 
+                    class="btn-action btn-habilitar" 
+                    @click="cambiarEstado('conceptoContable', concepto)"
+                  >
+                    ✅ Habilitar
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -1019,13 +1113,6 @@
           <button class="btn-primary" @click="abrirModalCrear('tipoArchivo')">
             + Nuevo Tipo
           </button>
-        </div>
-        
-        <div class="alert">
-          <span class="alert-icon">ℹ️</span>
-          <div>
-            <strong>Información:</strong> Los tipos de archivo definen los formatos de documento aceptados en el sistema.
-          </div>
         </div>
         
         <div class="table-container-expanded">
@@ -1050,7 +1137,20 @@
                 <td class="actions">
                   <button class="btn-action btn-view" @click="verElemento('tipoArchivo', tipoArchivo)">👁 Ver</button>
                   <button class="btn-action btn-edit" @click="editarElemento('tipoArchivo', tipoArchivo)">✏ Editar</button>
-                  <button class="btn-action btn-anular" @click="solicitarAnular('tipoArchivo', tipoArchivo)">🚫 Anular</button>
+                  <button 
+                    v-if="tipoArchivo.vigente" 
+                    class="btn-action btn-anular" 
+                    @click="cambiarEstado('tipoArchivo', tipoArchivo)"
+                  >
+                    🚫 Anular
+                  </button>
+                  <button 
+                    v-else 
+                    class="btn-action btn-habilitar" 
+                    @click="cambiarEstado('tipoArchivo', tipoArchivo)"
+                  >
+                    ✅ Habilitar
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -1122,31 +1222,6 @@
       </div>
     </div>
 
-    <!-- Modal de Confirmación de Anulación -->
-    <div v-if="modalActivo === 'confirmar-anular'" class="modal-overlay" @click="cerrarModal">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h3>🚫 Confirmar Anulación</h3>
-          <button class="modal-close" @click="cerrarModal">×</button>
-        </div>
-        <div class="modal-body">
-          <div class="confirmation-message">
-            <p>¿Está seguro que desea anular el siguiente elemento?</p>
-            <div class="elemento-info">
-              <strong>{{ getTipoNombre(tipoElemento) }}:</strong> {{ elementoSeleccionado.descripcion }}
-            </div>
-            <p class="warning-text">⚠️ Esta acción no se puede deshacer.</p>
-          </div>
-          <div class="form-actions">
-            <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
-            <button type="button" class="btn-danger" @click="confirmarAnular">
-              🚫 Confirmar Anulación
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Modal de Edición/Creación para Zonas -->
     <div v-if="modalActivo === 'crear-zona' || modalActivo === 'editar-zona'" class="modal-overlay" @click="cerrarModal">
       <div class="modal-content" @click.stop>
@@ -1162,6 +1237,7 @@
                 type="text" 
                 class="form-control" 
                 v-model="formZona.descripcion"
+                @input="formZona.descripcion = formZona.descripcion.toUpperCase()"
                 placeholder="Ej: ZONA NORTE BIOBÍO"
                 required
               >
@@ -1172,7 +1248,8 @@
                 Zona Unilateral
               </label>
             </div>
-            <div class="form-group">
+            <!-- Solo mostrar estado en edición -->
+            <div class="form-group" v-if="editando">
               <label class="form-label">Estado:</label>
               <select class="form-control" v-model="formZona.vigente" required>
                 <option :value="true">Activo</option>
@@ -1205,6 +1282,7 @@
                 type="text" 
                 class="form-control" 
                 v-model="formDistrito.descripcion"
+                @input="formDistrito.descripcion = formDistrito.descripcion.toUpperCase()"
                 placeholder="Ej: DISTRITO CONCEPCIÓN"
                 required
               >
@@ -1218,7 +1296,8 @@
                 </option>
               </select>
             </div>
-            <div class="form-group">
+            <!-- Solo mostrar estado en edición -->
+            <div class="form-group" v-if="editando">
               <label class="form-label">Estado:</label>
               <select class="form-control" v-model="formDistrito.vigente" required>
                 <option :value="true">Activo</option>
@@ -1240,7 +1319,7 @@
     <div v-if="modalActivo === 'crear-grupo' || modalActivo === 'editar-grupo'" class="modal-overlay" @click="cerrarModal">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
-          <h3>{{ editando ? 'Editar' : 'Nuevo' }} Grupo Scout</h3>
+          <h3>{{ editando ? 'Editar' : 'Nuevo' }} Grupo</h3>
           <button class="modal-close" @click="cerrarModal">×</button>
         </div>
         <div class="modal-body">
@@ -1251,6 +1330,7 @@
                 type="text" 
                 class="form-control" 
                 v-model="formGrupo.descripcion"
+                @input="formGrupo.descripcion = formGrupo.descripcion.toUpperCase()"
                 placeholder="Ej: GRUPO ARAUCO"
                 required
               >
@@ -1264,7 +1344,8 @@
                 </option>
               </select>
             </div>
-            <div class="form-group">
+            <!-- Solo mostrar estado en edición -->
+            <div class="form-group" v-if="editando">
               <label class="form-label">Estado:</label>
               <select class="form-control" v-model="formGrupo.vigente" required>
                 <option :value="true">Activo</option>
@@ -1297,13 +1378,510 @@
                 type="text" 
                 class="form-control" 
                 v-model="formRama.descripcion"
+                @input="formRama.descripcion = formRama.descripcion.toUpperCase()"
                 placeholder="Ej: LOBATOS"
                 required
               >
             </div>
-            <div class="form-group">
+            <!-- Solo mostrar estado en edición -->
+            <div class="form-group" v-if="editando">
               <label class="form-label">Estado:</label>
               <select class="form-control" v-model="formRama.vigente" required>
+                <option :value="true">Activo</option>
+                <option :value="false">Inactivo</option>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
+              <button type="submit" class="btn-primary">
+                💾 {{ editando ? 'Actualizar' : 'Guardar' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Edición/Creación para Tipos de Curso -->
+    <div v-if="modalActivo === 'crear-tipoCurso' || modalActivo === 'editar-tipoCurso'" class="modal-overlay" @click="cerrarModal">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3>{{ editando ? 'Editar' : 'Nuevo' }} Tipo de Curso</h3>
+          <button class="modal-close" @click="cerrarModal">×</button>
+        </div>
+        <div class="modal-body">
+          <form @submit.prevent="guardarTipoCurso">
+            <div class="form-group">
+              <label class="form-label">Descripción:</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                v-model="formTipoCurso.descripcion"
+                @input="formTipoCurso.descripcion = formTipoCurso.descripcion.toUpperCase()"
+                placeholder="Ej: CURSO BÁSICO"
+                required
+              >
+            </div>
+            <div class="form-group">
+              <label class="form-label">Tipo:</label>
+              <input 
+                type="number" 
+                class="form-control" 
+                v-model="formTipoCurso.tipo"
+                placeholder="Ej: 1"
+                required
+              >
+            </div>
+            <div class="form-group">
+              <label class="form-label">Cant. Participantes:</label>
+              <input 
+                type="number" 
+                class="form-control" 
+                v-model="formTipoCurso.cant_participante"
+                placeholder="Ej: 30"
+                required
+              >
+            </div>
+            <!-- Solo mostrar estado en edición -->
+            <div class="form-group" v-if="editando">
+              <label class="form-label">Estado:</label>
+              <select class="form-control" v-model="formTipoCurso.vigente" required>
+                <option :value="true">Activo</option>
+                <option :value="false">Inactivo</option>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
+              <button type="submit" class="btn-primary">
+                💾 {{ editando ? 'Actualizar' : 'Guardar' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Edición/Creación para Cargos -->
+    <div v-if="modalActivo === 'crear-cargo' || modalActivo === 'editar-cargo'" class="modal-overlay" @click="cerrarModal">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3>{{ editando ? 'Editar' : 'Nuevo' }} Cargo</h3>
+          <button class="modal-close" @click="cerrarModal">×</button>
+        </div>
+        <div class="modal-body">
+          <form @submit.prevent="guardarCargo">
+            <div class="form-group">
+              <label class="form-label">Descripción:</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                v-model="formCargo.descripcion"
+                @input="formCargo.descripcion = formCargo.descripcion.toUpperCase()"
+                placeholder="Ej: JEFE DE GRUPO"
+                required
+              >
+            </div>
+            <!-- Solo mostrar estado en edición -->
+            <div class="form-group" v-if="editando">
+              <label class="form-label">Estado:</label>
+              <select class="form-control" v-model="formCargo.vigente" required>
+                <option :value="true">Activo</option>
+                <option :value="false">Inactivo</option>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
+              <button type="submit" class="btn-primary">
+                💾 {{ editando ? 'Actualizar' : 'Guardar' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Edición/Creación para Alimentación -->
+    <div v-if="modalActivo === 'crear-alimentacion' || modalActivo === 'editar-alimentacion'" class="modal-overlay" @click="cerrarModal">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3>{{ editando ? 'Editar' : 'Nueva' }} Alimentación</h3>
+          <button class="modal-close" @click="cerrarModal">×</button>
+        </div>
+        <div class="modal-body">
+          <form @submit.prevent="guardarAlimentacion">
+            <div class="form-group">
+              <label class="form-label">Descripción:</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                v-model="formAlimentacion.descripcion"
+                @input="formAlimentacion.descripcion = formAlimentacion.descripcion.toUpperCase()"
+                placeholder="Ej: DIETA REGULAR"
+                required
+              >
+            </div>
+            <div class="form-group">
+              <label class="form-label">Tipo:</label>
+              <input 
+                type="number" 
+                class="form-control" 
+                v-model="formAlimentacion.tipo"
+                placeholder="Ej: 1"
+                required
+              >
+            </div>
+            <!-- Solo mostrar estado en edición -->
+            <div class="form-group" v-if="editando">
+              <label class="form-label">Estado:</label>
+              <select class="form-control" v-model="formAlimentacion.vigente" required>
+                <option :value="true">Activo</option>
+                <option :value="false">Inactivo</option>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
+              <button type="submit" class="btn-primary">
+                💾 {{ editando ? 'Actualizar' : 'Guardar' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Edición/Creación para Comunas -->
+    <div v-if="modalActivo === 'crear-comuna' || modalActivo === 'editar-comuna'" class="modal-overlay" @click="cerrarModal">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3>{{ editando ? 'Editar' : 'Nueva' }} Comuna</h3>
+          <button class="modal-close" @click="cerrarModal">×</button>
+        </div>
+        <div class="modal-body">
+          <form @submit.prevent="guardarComuna">
+            <div class="form-group">
+              <label class="form-label">Descripción:</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                v-model="formComuna.descripcion"
+                @input="formComuna.descripcion = formComuna.descripcion.toUpperCase()"
+                placeholder="Ej: CONCEPCIÓN"
+                required
+              >
+            </div>
+            <div class="form-group">
+              <label class="form-label">Provincia:</label>
+              <select class="form-control" v-model="formComuna.provincia_id" required>
+                <option value="">Seleccione una provincia</option>
+                <option v-for="provincia in provincias" :key="provincia.id" :value="provincia.id">
+                  {{ provincia.descripcion }}
+                </option>
+              </select>
+            </div>
+            <!-- Solo mostrar estado en edición -->
+            <div class="form-group" v-if="editando">
+              <label class="form-label">Estado:</label>
+              <select class="form-control" v-model="formComuna.vigente" required>
+                <option :value="true">Activo</option>
+                <option :value="false">Inactivo</option>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
+              <button type="submit" class="btn-primary">
+                💾 {{ editando ? 'Actualizar' : 'Guardar' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Edición/Creación para Provincias -->
+    <div v-if="modalActivo === 'crear-provincia' || modalActivo === 'editar-provincia'" class="modal-overlay" @click="cerrarModal">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3>{{ editando ? 'Editar' : 'Nueva' }} Provincia</h3>
+          <button class="modal-close" @click="cerrarModal">×</button>
+        </div>
+        <div class="modal-body">
+          <form @submit.prevent="guardarProvincia">
+            <div class="form-group">
+              <label class="form-label">Descripción:</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                v-model="formProvincia.descripcion"
+                @input="formProvincia.descripcion = formProvincia.descripcion.toUpperCase()"
+                placeholder="Ej: CONCEPCIÓN"
+                required
+              >
+            </div>
+            <div class="form-group">
+              <label class="form-label">Región:</label>
+              <select class="form-control" v-model="formProvincia.region_id" required>
+                <option value="">Seleccione una región</option>
+                <option v-for="region in regiones" :key="region.id" :value="region.id">
+                  {{ region.descripcion }}
+                </option>
+              </select>
+            </div>
+            <!-- Solo mostrar estado en edición -->
+            <div class="form-group" v-if="editando">
+              <label class="form-label">Estado:</label>
+              <select class="form-control" v-model="formProvincia.vigente" required>
+                <option :value="true">Activo</option>
+                <option :value="false">Inactivo</option>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
+              <button type="submit" class="btn-primary">
+                💾 {{ editando ? 'Actualizar' : 'Guardar' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Edición/Creación para Regiones -->
+    <div v-if="modalActivo === 'crear-region' || modalActivo === 'editar-region'" class="modal-overlay" @click="cerrarModal">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3>{{ editando ? 'Editar' : 'Nueva' }} Región</h3>
+          <button class="modal-close" @click="cerrarModal">×</button>
+        </div>
+        <div class="modal-body">
+          <form @submit.prevent="guardarRegion">
+            <div class="form-group">
+              <label class="form-label">Descripción:</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                v-model="formRegion.descripcion"
+                @input="formRegion.descripcion = formRegion.descripcion.toUpperCase()"
+                placeholder="Ej: REGIÓN DEL BIOBÍO"
+                required
+              >
+            </div>
+            <!-- Solo mostrar estado en edición -->
+            <div class="form-group" v-if="editando">
+              <label class="form-label">Estado:</label>
+              <select class="form-control" v-model="formRegion.vigente" required>
+                <option :value="true">Activo</option>
+                <option :value="false">Inactivo</option>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
+              <button type="submit" class="btn-primary">
+                💾 {{ editando ? 'Actualizar' : 'Guardar' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Edición/Creación para Niveles -->
+    <div v-if="modalActivo === 'crear-nivel' || modalActivo === 'editar-nivel'" class="modal-overlay" @click="cerrarModal">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3>{{ editando ? 'Editar' : 'Nuevo' }} Nivel</h3>
+          <button class="modal-close" @click="cerrarModal">×</button>
+        </div>
+        <div class="modal-body">
+          <form @submit.prevent="guardarNivel">
+            <div class="form-group">
+              <label class="form-label">Descripción:</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                v-model="formNivel.descripcion"
+                @input="formNivel.descripcion = formNivel.descripcion.toUpperCase()"
+                placeholder="Ej: NIVEL BÁSICO"
+                required
+              >
+            </div>
+            <!-- Solo mostrar estado en edición -->
+            <div class="form-group" v-if="editando">
+              <label class="form-label">Estado:</label>
+              <select class="form-control" v-model="formNivel.vigente" required>
+                <option :value="true">Activo</option>
+                <option :value="false">Inactivo</option>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
+              <button type="submit" class="btn-primary">
+                💾 {{ editando ? 'Actualizar' : 'Guardar' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Edición/Creación para Estado Civil -->
+    <div v-if="modalActivo === 'crear-estadoCivil' || modalActivo === 'editar-estadoCivil'" class="modal-overlay" @click="cerrarModal">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3>{{ editando ? 'Editar' : 'Nuevo' }} Estado Civil</h3>
+          <button class="modal-close" @click="cerrarModal">×</button>
+        </div>
+        <div class="modal-body">
+          <form @submit.prevent="guardarEstadoCivil">
+            <div class="form-group">
+              <label class="form-label">Descripción:</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                v-model="formEstadoCivil.descripcion"
+                @input="formEstadoCivil.descripcion = formEstadoCivil.descripcion.toUpperCase()"
+                placeholder="Ej: SOLTERO/A"
+                required
+              >
+            </div>
+            <!-- Solo mostrar estado en edición -->
+            <div class="form-group" v-if="editando">
+              <label class="form-label">Estado:</label>
+              <select class="form-control" v-model="formEstadoCivil.vigente" required>
+                <option :value="true">Activo</option>
+                <option :value="false">Inactivo</option>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
+              <button type="submit" class="btn-primary">
+                💾 {{ editando ? 'Actualizar' : 'Guardar' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Edición/Creación para Roles -->
+    <div v-if="modalActivo === 'crear-rol' || modalActivo === 'editar-rol'" class="modal-overlay" @click="cerrarModal">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3>{{ editando ? 'Editar' : 'Nuevo' }} Rol</h3>
+          <button class="modal-close" @click="cerrarModal">×</button>
+        </div>
+        <div class="modal-body">
+          <form @submit.prevent="guardarRol">
+            <div class="form-group">
+              <label class="form-label">Descripción:</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                v-model="formRol.descripcion"
+                @input="formRol.descripcion = formRol.descripcion.toUpperCase()"
+                placeholder="Ej: ADMINISTRADOR"
+                required
+              >
+            </div>
+            <!-- Solo mostrar estado en edición -->
+            <div class="form-group" v-if="editando">
+              <label class="form-label">Estado:</label>
+              <select class="form-control" v-model="formRol.vigente" required>
+                <option :value="true">Activo</option>
+                <option :value="false">Inactivo</option>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
+              <button type="submit" class="btn-primary">
+                💾 {{ editando ? 'Actualizar' : 'Guardar' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Edición/Creación para Conceptos Contables -->
+    <div v-if="modalActivo === 'crear-conceptoContable' || modalActivo === 'editar-conceptoContable'" class="modal-overlay" @click="cerrarModal">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3>{{ editando ? 'Editar' : 'Nuevo' }} Concepto Contable</h3>
+          <button class="modal-close" @click="cerrarModal">×</button>
+        </div>
+        <div class="modal-body">
+          <form @submit.prevent="guardarConceptoContable">
+            <div class="form-group">
+              <label class="form-label">Descripción:</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                v-model="formConceptoContable.descripcion"
+                @input="formConceptoContable.descripcion = formConceptoContable.descripcion.toUpperCase()"
+                placeholder="Ej: MATRÍCULA"
+                required
+              >
+            </div>
+            <div class="form-group">
+              <label class="form-label">Tipo:</label>
+              <select class="form-control" v-model="formConceptoContable.tipo" required>
+                <option value="">Seleccione un tipo</option>
+                <option value="INGRESO">INGRESO</option>
+                <option value="EGRESO">EGRESO</option>
+              </select>
+            </div>
+            <!-- Solo mostrar estado en edición -->
+            <div class="form-group" v-if="editando">
+              <label class="form-label">Estado:</label>
+              <select class="form-control" v-model="formConceptoContable.vigente" required>
+                <option :value="true">Activo</option>
+                <option :value="false">Inactivo</option>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
+              <button type="submit" class="btn-primary">
+                💾 {{ editando ? 'Actualizar' : 'Guardar' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Edición/Creación para Tipos de Archivo -->
+    <div v-if="modalActivo === 'crear-tipoArchivo' || modalActivo === 'editar-tipoArchivo'" class="modal-overlay" @click="cerrarModal">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3>{{ editando ? 'Editar' : 'Nuevo' }} Tipo de Archivo</h3>
+          <button class="modal-close" @click="cerrarModal">×</button>
+        </div>
+        <div class="modal-body">
+          <form @submit.prevent="guardarTipoArchivo">
+            <div class="form-group">
+              <label class="form-label">Descripción:</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                v-model="formTipoArchivo.descripcion"
+                @input="formTipoArchivo.descripcion = formTipoArchivo.descripcion.toUpperCase()"
+                placeholder="Ej: DOCUMENTO PDF"
+                required
+              >
+            </div>
+            <div class="form-group">
+              <label class="form-label">Extensión:</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                v-model="formTipoArchivo.extension"
+                placeholder="Ej: .pdf"
+                required
+              >
+            </div>
+            <!-- Solo mostrar estado en edición -->
+            <div class="form-group" v-if="editando">
+              <label class="form-label">Estado:</label>
+              <select class="form-control" v-model="formTipoArchivo.vigente" required>
                 <option :value="true">Activo</option>
                 <option :value="false">Inactivo</option>
               </select>
@@ -1336,6 +1914,8 @@ export default {
     const elementoSeleccionado = ref(null)
     const isDropdownOpen = ref(false)
     const dropdownContainer = ref(null)
+    const cargando = ref(false)
+    const error = ref(null)
     
     // Estados de búsqueda
     const searchZonas = ref('')
@@ -1349,7 +1929,7 @@ export default {
     const tabs = [
       { id: 'zonas', label: 'Zonas', icon: '🗺️' },
       { id: 'distritos', label: 'Distritos', icon: '📍' },
-      { id: 'grupos', label: 'Grupos Scout', icon: '👥' },
+      { id: 'grupos', label: 'Grupos', icon: '👥' },
       { id: 'ramas', label: 'Ramas', icon: '🏕️' },
       { id: 'tipos-curso', label: 'Tipos Curso', icon: '📚' },
       { id: 'cargos', label: 'Cargos', icon: '👔' },
@@ -1358,13 +1938,17 @@ export default {
       { id: 'provincias', label: 'Provincias', icon: '🏞️' },
       { id: 'regiones', label: 'Regiones', icon: '🗾' },
       { id: 'niveles', label: 'Niveles', icon: '📊' },
-      { id: 'estados-civiles', label: 'Estados Civiles', icon: '💑' },
+      { id: 'estados-civiles', label: 'Estado Civil', icon: '💑' },
       { id: 'roles', label: 'Roles', icon: '👤' },
       { id: 'conceptos-contables', label: 'Conceptos Contables', icon: '💰' },
       { id: 'tipos-archivo', label: 'Tipos de Archivo', icon: '📁' }
     ]
 
+<<<<<<< HEAD
+    // Datos de ejemplo para todos los mantenedores
+=======
     // Datos reactivos para todos los mantenedores (inicialmente vacíos, se llenan desde la API)
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
     const zonas = ref([])
     const distritos = ref([])
     const grupos = ref([])
@@ -1380,6 +1964,8 @@ export default {
     const roles = ref([])
     const conceptosContables = ref([])
     const tiposArchivo = ref([])
+<<<<<<< HEAD
+=======
 
     // Carga inicial de todos los mantenedores
     const cargarMantenedores = async () => {
@@ -1425,6 +2011,7 @@ export default {
 
     // Recarga tras crear/editar/eliminar
     const recargar = cargarMantenedores
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
 
     // Formularios
     const formZona = reactive({
@@ -1454,6 +2041,337 @@ export default {
       vigente: true
     })
 
+<<<<<<< HEAD
+    const formTipoCurso = reactive({
+      id: null,
+      descripcion: '',
+      tipo: null,
+      cant_participante: null,
+      vigente: true
+    })
+
+    const formCargo = reactive({
+      id: null,
+      descripcion: '',
+      vigente: true
+    })
+
+    const formAlimentacion = reactive({
+      id: null,
+      descripcion: '',
+      tipo: null,
+      vigente: true
+    })
+
+    const formComuna = reactive({
+      id: null,
+      descripcion: '',
+      provincia_id: null,
+      vigente: true
+    })
+
+    const formProvincia = reactive({
+      id: null,
+      descripcion: '',
+      region_id: null,
+      vigente: true
+    })
+
+    const formRegion = reactive({
+      id: null,
+      descripcion: '',
+      vigente: true
+    })
+
+    const formNivel = reactive({
+      id: null,
+      descripcion: '',
+      vigente: true
+    })
+
+    const formEstadoCivil = reactive({
+      id: null,
+      descripcion: '',
+      vigente: true
+    })
+
+    const formRol = reactive({
+      id: null,
+      descripcion: '',
+      vigente: true
+    })
+
+    const formConceptoContable = reactive({
+      id: null,
+      descripcion: '',
+      tipo: '',
+      vigente: true
+    })
+
+    const formTipoArchivo = reactive({
+      id: null,
+      descripcion: '',
+      extension: '',
+      vigente: true
+    })
+
+    // Función para normalizar los datos de la API al formato esperado por la UI
+    const normalizarDatos = (datos, tipo) => {
+      if (!datos) return [];
+      
+      const datosArray = datos.results || datos;
+      
+      const mapeoCampos = {
+        zona: {
+          id: 'ZON_ID',
+          descripcion: 'ZON_DESCRIPCION',
+          unilateral: 'ZON_UNILATERAL',
+          vigente: 'ZON_VIGENTE'
+        },
+        distrito: {
+          id: 'DIS_ID',
+          descripcion: 'DIS_DESCRIPCION',
+          zona_id: 'DIS_ZON_ID',
+          vigente: 'DIS_VIGENTE'
+        },
+        grupo: {
+          id: 'GRU_ID',
+          descripcion: 'GRU_DESCRIPCION',
+          distrito_id: 'GRU_DIS_ID',
+          vigente: 'GRU_VIGENTE'
+        },
+        rama: {
+          id: 'RAM_ID',
+          descripcion: 'RAM_DESCRIPCION',
+          vigente: 'RAM_VIGENTE'
+        },
+        tipoCurso: {
+          id: 'TIC_ID',
+          descripcion: 'TIC_DESCRIPCION',
+          tipo: 'TIC_TIPO',
+          cant_participante: 'TIC_CANT_PARTICIPANTE',
+          vigente: 'TIC_VIGENTE'
+        },
+        cargo: {
+          id: 'CAR_ID',
+          descripcion: 'CAR_DESCRIPCION',
+          vigente: 'CAR_VIGENTE'
+        },
+        alimentacion: {
+          id: 'ALI_ID',
+          descripcion: 'ALI_DESCRIPCION',
+          tipo: 'ALI_TIPO',
+          vigente: 'ALI_VIGENTE'
+        },
+        comuna: {
+          id: 'COM_ID',
+          descripcion: 'COM_DESCRIPCION',
+          provincia_id: 'COM_PRO_ID',
+          vigente: 'COM_VIGENTE'
+        },
+        provincia: {
+          id: 'PRO_ID',
+          descripcion: 'PRO_DESCRIPCION',
+          region_id: 'PRO_REG_ID',
+          vigente: 'PRO_VIGENTE'
+        },
+        region: {
+          id: 'REG_ID',
+          descripcion: 'REG_DESCRIPCION',
+          vigente: 'REG_VIGENTE'
+        },
+        nivel: {
+          id: 'NIV_ID',
+          descripcion: 'NIV_DESCRIPCION',
+          vigente: 'NIV_VIGENTE'
+        },
+        estadoCivil: {
+          id: 'ESC_ID',
+          descripcion: 'ESC_DESCRIPCION',
+          vigente: 'ESC_VIGENTE'
+        },
+        rol: {
+          id: 'ROL_ID',
+          descripcion: 'ROL_DESCRIPCION',
+          vigente: 'ROL_VIGENTE'
+        },
+        conceptoContable: {
+          id: 'COC_ID',
+          descripcion: 'COC_DESCRIPCION',
+          tipo: 'COC_TIPO',
+          vigente: 'COC_VIGENTE'
+        },
+        tipoArchivo: {
+          id: 'TIA_ID',
+          descripcion: 'TIA_DESCRIPCION',
+          extension: 'TIA_EXTENSION',
+          vigente: 'TIA_VIGENTE'
+        }
+      };
+
+      const mapeo = mapeoCampos[tipo];
+      if (!mapeo) return datosArray;
+
+      return datosArray.map(item => {
+        const normalizado = {};
+        for (const [key, campoApi] of Object.entries(mapeo)) {
+          normalizado[key] = item[campoApi];
+        }
+        return normalizado;
+      });
+    };
+
+    // Función para desnormalizar datos al formato de la API
+    const desnormalizarDatos = (datos, tipo) => {
+      const mapeoCampos = {
+        zona: {
+          id: 'ZON_ID',
+          descripcion: 'ZON_DESCRIPCION',
+          unilateral: 'ZON_UNILATERAL',
+          vigente: 'ZON_VIGENTE'
+        },
+        distrito: {
+          id: 'DIS_ID',
+          descripcion: 'DIS_DESCRIPCION',
+          zona_id: 'DIS_ZON_ID',
+          vigente: 'DIS_VIGENTE'
+        },
+        grupo: {
+          id: 'GRU_ID',
+          descripcion: 'GRU_DESCRIPCION',
+          distrito_id: 'GRU_DIS_ID',
+          vigente: 'GRU_VIGENTE'
+        },
+        rama: {
+          id: 'RAM_ID',
+          descripcion: 'RAM_DESCRIPCION',
+          vigente: 'RAM_VIGENTE'
+        },
+        tipoCurso: {
+          id: 'TIC_ID',
+          descripcion: 'TIC_DESCRIPCION',
+          tipo: 'TIC_TIPO',
+          cant_participante: 'TIC_CANT_PARTICIPANTE',
+          vigente: 'TIC_VIGENTE'
+        },
+        cargo: {
+          id: 'CAR_ID',
+          descripcion: 'CAR_DESCRIPCION',
+          vigente: 'CAR_VIGENTE'
+        },
+        alimentacion: {
+          id: 'ALI_ID',
+          descripcion: 'ALI_DESCRIPCION',
+          tipo: 'ALI_TIPO',
+          vigente: 'ALI_VIGENTE'
+        },
+        comuna: {
+          id: 'COM_ID',
+          descripcion: 'COM_DESCRIPCION',
+          provincia_id: 'COM_PRO_ID',
+          vigente: 'COM_VIGENTE'
+        },
+        provincia: {
+          id: 'PRO_ID',
+          descripcion: 'PRO_DESCRIPCION',
+          region_id: 'PRO_REG_ID',
+          vigente: 'PRO_VIGENTE'
+        },
+        region: {
+          id: 'REG_ID',
+          descripcion: 'REG_DESCRIPCION',
+          vigente: 'REG_VIGENTE'
+        },
+        nivel: {
+          id: 'NIV_ID',
+          descripcion: 'NIV_DESCRIPCION',
+          vigente: 'NIV_VIGENTE'
+        },
+        estadoCivil: {
+          id: 'ESC_ID',
+          descripcion: 'ESC_DESCRIPCION',
+          vigente: 'ESC_VIGENTE'
+        },
+        rol: {
+          id: 'ROL_ID',
+          descripcion: 'ROL_DESCRIPCION',
+          vigente: 'ROL_VIGENTE'
+        },
+        conceptoContable: {
+          id: 'COC_ID',
+          descripcion: 'COC_DESCRIPCION',
+          tipo: 'COC_TIPO',
+          vigente: 'COC_VIGENTE'
+        },
+        tipoArchivo: {
+          id: 'TIA_ID',
+          descripcion: 'TIA_DESCRIPCION',
+          extension: 'TIA_EXTENSION',
+          vigente: 'TIA_VIGENTE'
+        }
+      };
+
+      const mapeo = mapeoCampos[tipo];
+      if (!mapeo) return datos;
+
+      const desnormalizado = {};
+      for (const [key, campoApi] of Object.entries(mapeo)) {
+        if (datos[key] !== undefined) {
+          desnormalizado[campoApi] = datos[key];
+        }
+      }
+      return desnormalizado;
+    };
+
+    // Función para cargar todos los datos desde la API
+    const cargarDatos = async () => {
+      cargando.value = true
+      error.value = null
+      try {
+        const [zonasData, distritosData, gruposData, ramasData, tiposCursoData, cargosData, 
+          alimentacionData, comunasData, provinciasData, regionesData, nivelesData, 
+          estadosCivilesData, rolesData, conceptosData, tiposArchivoData] = await Promise.all([
+          mantenedoresService.zona.list(),
+          mantenedoresService.distrito.list(),
+          mantenedoresService.grupo.list(),
+          mantenedoresService.rama.list(),
+          mantenedoresService.tipoCursos.list(),
+          mantenedoresService.cargo.list(),
+          mantenedoresService.alimentacion.list(),
+          mantenedoresService.comuna.list(),
+          mantenedoresService.provincia.list(),
+          mantenedoresService.region.list(),
+          mantenedoresService.nivel.list(),
+          mantenedoresService.estadoCivil.list(),
+          mantenedoresService.rol.list(),
+          mantenedoresService.conceptoContable.list(),
+          mantenedoresService.tipoArchivos.list()
+        ])
+
+        // Normalizar los datos de la API al formato esperado por la UI
+        zonas.value = normalizarDatos(zonasData, 'zona')
+        distritos.value = normalizarDatos(distritosData, 'distrito')
+        grupos.value = normalizarDatos(gruposData, 'grupo')
+        ramas.value = normalizarDatos(ramasData, 'rama')
+        tiposCurso.value = normalizarDatos(tiposCursoData, 'tipoCurso')
+        cargos.value = normalizarDatos(cargosData, 'cargo')
+        alimentacion.value = normalizarDatos(alimentacionData, 'alimentacion')
+        comunas.value = normalizarDatos(comunasData, 'comuna')
+        provincias.value = normalizarDatos(provinciasData, 'provincia')
+        regiones.value = normalizarDatos(regionesData, 'region')
+        niveles.value = normalizarDatos(nivelesData, 'nivel')
+        estadosCiviles.value = normalizarDatos(estadosCivilesData, 'estadoCivil')
+        roles.value = normalizarDatos(rolesData, 'rol')
+        conceptosContables.value = normalizarDatos(conceptosData, 'conceptoContable')
+        tiposArchivo.value = normalizarDatos(tiposArchivoData, 'tipoArchivo')
+      } catch (err) {
+        error.value = err.message
+        console.error('Error al cargar datos:', err)
+      } finally {
+        cargando.value = false
+      }
+    }
+=======
     // Formularios adicionales para otros mantenedores
     const formTipoCurso = reactive({ id: null, descripcion: '', tipo: 1, cant_participante: null, vigente: true })
     const formCargo = reactive({ id: null, descripcion: '', vigente: true })
@@ -1466,6 +2384,7 @@ export default {
     const formRol = reactive({ id: null, descripcion: '', tipo: 1, vigente: true })
     const formConceptoContable = reactive({ id: null, descripcion: '', vigente: true })
     const formTipoArchivo = reactive({ id: null, descripcion: '', vigente: true })
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
 
     // Computed properties para filtros
     const filteredZonas = computed(() => {
@@ -1556,7 +2475,7 @@ export default {
       const nombres = {
         'zona': 'Zona',
         'distrito': 'Distrito',
-        'grupo': 'Grupo Scout',
+        'grupo': 'Grupo',
         'rama': 'Rama',
         'tipoCurso': 'Tipo de Curso',
         'cargo': 'Cargo',
@@ -1622,6 +2541,7 @@ export default {
 
     onMounted(() => {
       document.addEventListener('click', handleClickOutside)
+      cargarDatos()
     })
 
     onUnmounted(() => {
@@ -1652,11 +2572,64 @@ export default {
       cargarDatosFormulario(tipo, elemento)
     }
 
-    const solicitarAnular = (tipo, elemento) => {
-      modalActivo.value = 'confirmar-anular'
-      editando.value = false
-      tipoElemento.value = tipo
-      elementoSeleccionado.value = elemento
+    const cambiarEstado = async (tipo, elemento) => {
+      try {
+        const nuevoEstado = !elemento.vigente;
+        const datosUI = { ...elemento, vigente: nuevoEstado }
+        const datosAPI = desnormalizarDatos(datosUI, tipo)
+        
+        // Llamar a la API para actualizar el estado
+        switch (tipo) {
+          case 'zona':
+            await mantenedoresService.zona.update(elemento.id, datosAPI)
+            break
+          case 'distrito':
+            await mantenedoresService.distrito.update(elemento.id, datosAPI)
+            break
+          case 'grupo':
+            await mantenedoresService.grupo.update(elemento.id, datosAPI)
+            break
+          case 'rama':
+            await mantenedoresService.rama.update(elemento.id, datosAPI)
+            break
+          case 'tipoCurso':
+            await mantenedoresService.tipoCursos.update(elemento.id, datosAPI)
+            break
+          case 'cargo':
+            await mantenedoresService.cargo.update(elemento.id, datosAPI)
+            break
+          case 'alimentacion':
+            await mantenedoresService.alimentacion.update(elemento.id, datosAPI)
+            break
+          case 'comuna':
+            await mantenedoresService.comuna.update(elemento.id, datosAPI)
+            break
+          case 'provincia':
+            await mantenedoresService.provincia.update(elemento.id, datosAPI)
+            break
+          case 'region':
+            await mantenedoresService.region.update(elemento.id, datosAPI)
+            break
+          case 'nivel':
+            await mantenedoresService.nivel.update(elemento.id, datosAPI)
+            break
+          case 'estadoCivil':
+            await mantenedoresService.estadoCivil.update(elemento.id, datosAPI)
+            break
+          case 'rol':
+            await mantenedoresService.rol.update(elemento.id, datosAPI)
+            break
+          case 'conceptoContable':
+            await mantenedoresService.conceptoContable.update(elemento.id, datosAPI)
+            break
+          case 'tipoArchivo':
+            await mantenedoresService.tipoArchivos.update(elemento.id, datosAPI)
+            break
+        }
+        await cargarDatos()
+      } catch (err) {
+        error.value = 'Error al cambiar estado: ' + err.message
+      }
     }
 
     const cargarDatosFormulario = (tipo, elemento) => {
@@ -1674,13 +2647,21 @@ export default {
           Object.assign(formRama, elemento)
           break
         case 'tipoCurso':
+<<<<<<< HEAD
+          Object.assign(formTipoCurso, elemento)
+=======
           Object.assign(formTipoCurso, { id: elemento.id, descripcion: elemento.descripcion, tipo: elemento.tipo, cant_participante: elemento.cant_participante, vigente: elemento.vigente })
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
           break
         case 'cargo':
           Object.assign(formCargo, elemento)
           break
         case 'alimentacion':
+<<<<<<< HEAD
+          Object.assign(formAlimentacion, elemento)
+=======
           Object.assign(formAlimentacion, { id: elemento.id, descripcion: elemento.descripcion, tipo: elemento.tipo, vigente: elemento.vigente })
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
           break
         case 'comuna':
           Object.assign(formComuna, elemento)
@@ -1698,7 +2679,11 @@ export default {
           Object.assign(formEstadoCivil, elemento)
           break
         case 'rol':
+<<<<<<< HEAD
+          Object.assign(formRol, elemento)
+=======
           Object.assign(formRol, { id: elemento.id, descripcion: elemento.descripcion, tipo: elemento.tipo, vigente: elemento.vigente })
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
           break
         case 'conceptoContable':
           Object.assign(formConceptoContable, elemento)
@@ -1706,7 +2691,10 @@ export default {
         case 'tipoArchivo':
           Object.assign(formTipoArchivo, elemento)
           break
+<<<<<<< HEAD
+=======
         // Agregar casos para otros tipos
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
       }
     }
 
@@ -1734,6 +2722,70 @@ export default {
         descripcion: '',
         vigente: true
       })
+<<<<<<< HEAD
+      Object.assign(formTipoCurso, {
+        id: null,
+        descripcion: '',
+        tipo: null,
+        cant_participante: null,
+        vigente: true
+      })
+      Object.assign(formCargo, {
+        id: null,
+        descripcion: '',
+        vigente: true
+      })
+      Object.assign(formAlimentacion, {
+        id: null,
+        descripcion: '',
+        tipo: null,
+        vigente: true
+      })
+      Object.assign(formComuna, {
+        id: null,
+        descripcion: '',
+        provincia_id: null,
+        vigente: true
+      })
+      Object.assign(formProvincia, {
+        id: null,
+        descripcion: '',
+        region_id: null,
+        vigente: true
+      })
+      Object.assign(formRegion, {
+        id: null,
+        descripcion: '',
+        vigente: true
+      })
+      Object.assign(formNivel, {
+        id: null,
+        descripcion: '',
+        vigente: true
+      })
+      Object.assign(formEstadoCivil, {
+        id: null,
+        descripcion: '',
+        vigente: true
+      })
+      Object.assign(formRol, {
+        id: null,
+        descripcion: '',
+        vigente: true
+      })
+      Object.assign(formConceptoContable, {
+        id: null,
+        descripcion: '',
+        tipo: '',
+        vigente: true
+      })
+      Object.assign(formTipoArchivo, {
+        id: null,
+        descripcion: '',
+        extension: '',
+        vigente: true
+      })
+=======
       Object.assign(formTipoCurso, { id: null, descripcion: '', tipo: 1, cant_participante: null, vigente: true })
       Object.assign(formCargo, { id: null, descripcion: '', vigente: true })
       Object.assign(formAlimentacion, { id: null, descripcion: '', tipo: 1, vigente: true })
@@ -1745,6 +2797,7 @@ export default {
       Object.assign(formRol, { id: null, descripcion: '', tipo: 1, vigente: true })
       Object.assign(formConceptoContable, { id: null, descripcion: '', vigente: true })
       Object.assign(formTipoArchivo, { id: null, descripcion: '', vigente: true })
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
     }
 
     const cerrarModal = () => {
@@ -1755,6 +2808,28 @@ export default {
       limpiarFormularios()
     }
 
+<<<<<<< HEAD
+    // Métodos de guardado
+    const guardarZona = async () => {
+      try {
+        const datosUI = {
+          descripcion: formZona.descripcion.toUpperCase(),
+          unilateral: formZona.unilateral,
+          vigente: editando.value ? formZona.vigente : true
+        }
+
+        const datosAPI = desnormalizarDatos(datosUI, 'zona')
+
+        if (editando.value) {
+          await mantenedoresService.zona.update(formZona.id, datosAPI)
+        } else {
+          await mantenedoresService.zona.create(datosAPI)
+        }
+        await cargarDatos()
+        cerrarModal()
+      } catch (err) {
+        error.value = 'Error al guardar zona: ' + err.message
+=======
     const confirmarAnular = () => {
       const tipo = tipoElemento.value
       const elemento = elementoSeleccionado.value
@@ -1836,11 +2911,31 @@ export default {
       } finally {
         cerrarModal()
         recargar()
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
       }
     }
 
     const guardarDistrito = async () => {
       try {
+<<<<<<< HEAD
+        const datosUI = {
+          descripcion: formDistrito.descripcion.toUpperCase(),
+          zona_id: formDistrito.zona_id,
+          vigente: editando.value ? formDistrito.vigente : true
+        }
+
+        const datosAPI = desnormalizarDatos(datosUI, 'distrito')
+
+        if (editando.value) {
+          await mantenedoresService.distrito.update(formDistrito.id, datosAPI)
+        } else {
+          await mantenedoresService.distrito.create(datosAPI)
+        }
+        await cargarDatos()
+        cerrarModal()
+      } catch (err) {
+        error.value = 'Error al guardar distrito: ' + err.message
+=======
         const payload = {
           DIS_DESCRIPCION: formDistrito.descripcion,
           ZON_ID: formDistrito.zona_id,
@@ -1856,11 +2951,31 @@ export default {
       } finally {
         cerrarModal()
         recargar()
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
       }
     }
 
     const guardarGrupo = async () => {
       try {
+<<<<<<< HEAD
+        const datosUI = {
+          descripcion: formGrupo.descripcion.toUpperCase(),
+          distrito_id: formGrupo.distrito_id,
+          vigente: editando.value ? formGrupo.vigente : true
+        }
+
+        const datosAPI = desnormalizarDatos(datosUI, 'grupo')
+
+        if (editando.value) {
+          await mantenedoresService.grupo.update(formGrupo.id, datosAPI)
+        } else {
+          await mantenedoresService.grupo.create(datosAPI)
+        }
+        await cargarDatos()
+        cerrarModal()
+      } catch (err) {
+        error.value = 'Error al guardar grupo: ' + err.message
+=======
         const payload = {
           GRU_DESCRIPCION: formGrupo.descripcion,
           DIS_ID: formGrupo.distrito_id,
@@ -1876,11 +2991,269 @@ export default {
       } finally {
         cerrarModal()
         recargar()
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
       }
     }
 
     const guardarRama = async () => {
       try {
+<<<<<<< HEAD
+        const datosUI = {
+          descripcion: formRama.descripcion.toUpperCase(),
+          vigente: editando.value ? formRama.vigente : true
+        }
+
+        const datosAPI = desnormalizarDatos(datosUI, 'rama')
+
+        if (editando.value) {
+          await mantenedoresService.rama.update(formRama.id, datosAPI)
+        } else {
+          await mantenedoresService.rama.create(datosAPI)
+        }
+        await cargarDatos()
+        cerrarModal()
+      } catch (err) {
+        error.value = 'Error al guardar rama: ' + err.message
+      }
+    }
+
+    const guardarTipoCurso = async () => {
+      try {
+        const datosUI = {
+          descripcion: formTipoCurso.descripcion.toUpperCase(),
+          tipo: formTipoCurso.tipo,
+          cant_participante: formTipoCurso.cant_participante,
+          vigente: editando.value ? formTipoCurso.vigente : true
+        }
+
+        const datosAPI = desnormalizarDatos(datosUI, 'tipoCurso')
+
+        if (editando.value) {
+          await mantenedoresService.tipoCursos.update(formTipoCurso.id, datosAPI)
+        } else {
+          await mantenedoresService.tipoCursos.create(datosAPI)
+        }
+        await cargarDatos()
+        cerrarModal()
+      } catch (err) {
+        error.value = 'Error al guardar tipo de curso: ' + err.message
+      }
+    }
+
+    const guardarCargo = async () => {
+      try {
+        const datosUI = {
+          descripcion: formCargo.descripcion.toUpperCase(),
+          vigente: editando.value ? formCargo.vigente : true
+        }
+
+        const datosAPI = desnormalizarDatos(datosUI, 'cargo')
+
+        if (editando.value) {
+          await mantenedoresService.cargo.update(formCargo.id, datosAPI)
+        } else {
+          await mantenedoresService.cargo.create(datosAPI)
+        }
+        await cargarDatos()
+        cerrarModal()
+      } catch (err) {
+        error.value = 'Error al guardar cargo: ' + err.message
+      }
+    }
+
+    const guardarAlimentacion = async () => {
+      try {
+        const datosUI = {
+          descripcion: formAlimentacion.descripcion.toUpperCase(),
+          tipo: formAlimentacion.tipo,
+          vigente: editando.value ? formAlimentacion.vigente : true
+        }
+
+        const datosAPI = desnormalizarDatos(datosUI, 'alimentacion')
+
+        if (editando.value) {
+          await mantenedoresService.alimentacion.update(formAlimentacion.id, datosAPI)
+        } else {
+          await mantenedoresService.alimentacion.create(datosAPI)
+        }
+        await cargarDatos()
+        cerrarModal()
+      } catch (err) {
+        error.value = 'Error al guardar alimentación: ' + err.message
+      }
+    }
+
+    const guardarComuna = async () => {
+      try {
+        const datosUI = {
+          descripcion: formComuna.descripcion.toUpperCase(),
+          provincia_id: formComuna.provincia_id,
+          vigente: editando.value ? formComuna.vigente : true
+        }
+
+        const datosAPI = desnormalizarDatos(datosUI, 'comuna')
+
+        if (editando.value) {
+          await mantenedoresService.comuna.update(formComuna.id, datosAPI)
+        } else {
+          await mantenedoresService.comuna.create(datosAPI)
+        }
+        await cargarDatos()
+        cerrarModal()
+      } catch (err) {
+        error.value = 'Error al guardar comuna: ' + err.message
+      }
+    }
+
+    const guardarProvincia = async () => {
+      try {
+        const datosUI = {
+          descripcion: formProvincia.descripcion.toUpperCase(),
+          region_id: formProvincia.region_id,
+          vigente: editando.value ? formProvincia.vigente : true
+        }
+
+        const datosAPI = desnormalizarDatos(datosUI, 'provincia')
+
+        if (editando.value) {
+          await mantenedoresService.provincia.update(formProvincia.id, datosAPI)
+        } else {
+          await mantenedoresService.provincia.create(datosAPI)
+        }
+        await cargarDatos()
+        cerrarModal()
+      } catch (err) {
+        error.value = 'Error al guardar provincia: ' + err.message
+      }
+    }
+
+    const guardarRegion = async () => {
+      try {
+        const datosUI = {
+          descripcion: formRegion.descripcion.toUpperCase(),
+          vigente: editando.value ? formRegion.vigente : true
+        }
+
+        const datosAPI = desnormalizarDatos(datosUI, 'region')
+
+        if (editando.value) {
+          await mantenedoresService.region.update(formRegion.id, datosAPI)
+        } else {
+          await mantenedoresService.region.create(datosAPI)
+        }
+        await cargarDatos()
+        cerrarModal()
+      } catch (err) {
+        error.value = 'Error al guardar región: ' + err.message
+      }
+    }
+
+    const guardarNivel = async () => {
+      try {
+        const datosUI = {
+          descripcion: formNivel.descripcion.toUpperCase(),
+          vigente: editando.value ? formNivel.vigente : true
+        }
+
+        const datosAPI = desnormalizarDatos(datosUI, 'nivel')
+
+        if (editando.value) {
+          await mantenedoresService.nivel.update(formNivel.id, datosAPI)
+        } else {
+          await mantenedoresService.nivel.create(datosAPI)
+        }
+        await cargarDatos()
+        cerrarModal()
+      } catch (err) {
+        error.value = 'Error al guardar nivel: ' + err.message
+      }
+    }
+
+    const guardarEstadoCivil = async () => {
+      try {
+        const datosUI = {
+          descripcion: formEstadoCivil.descripcion.toUpperCase(),
+          vigente: editando.value ? formEstadoCivil.vigente : true
+        }
+
+        const datosAPI = desnormalizarDatos(datosUI, 'estadoCivil')
+
+        if (editando.value) {
+          await mantenedoresService.estadoCivil.update(formEstadoCivil.id, datosAPI)
+        } else {
+          await mantenedoresService.estadoCivil.create(datosAPI)
+        }
+        await cargarDatos()
+        cerrarModal()
+      } catch (err) {
+        error.value = 'Error al guardar estado civil: ' + err.message
+      }
+    }
+
+    const guardarRol = async () => {
+      try {
+        const datosUI = {
+          descripcion: formRol.descripcion.toUpperCase(),
+          vigente: editando.value ? formRol.vigente : true
+        }
+
+        const datosAPI = desnormalizarDatos(datosUI, 'rol')
+
+        if (editando.value) {
+          await mantenedoresService.rol.update(formRol.id, datosAPI)
+        } else {
+          await mantenedoresService.rol.create(datosAPI)
+        }
+        await cargarDatos()
+        cerrarModal()
+      } catch (err) {
+        error.value = 'Error al guardar rol: ' + err.message
+      }
+    }
+
+    const guardarConceptoContable = async () => {
+      try {
+        const datosUI = {
+          descripcion: formConceptoContable.descripcion.toUpperCase(),
+          tipo: formConceptoContable.tipo,
+          vigente: editando.value ? formConceptoContable.vigente : true
+        }
+
+        const datosAPI = desnormalizarDatos(datosUI, 'conceptoContable')
+
+        if (editando.value) {
+          await mantenedoresService.conceptoContable.update(formConceptoContable.id, datosAPI)
+        } else {
+          await mantenedoresService.conceptoContable.create(datosAPI)
+        }
+        await cargarDatos()
+        cerrarModal()
+      } catch (err) {
+        error.value = 'Error al guardar concepto contable: ' + err.message
+      }
+    }
+
+    const guardarTipoArchivo = async () => {
+      try {
+        const datosUI = {
+          descripcion: formTipoArchivo.descripcion.toUpperCase(),
+          extension: formTipoArchivo.extension,
+          vigente: editando.value ? formTipoArchivo.vigente : true
+        }
+
+        const datosAPI = desnormalizarDatos(datosUI, 'tipoArchivo')
+
+        if (editando.value) {
+          await mantenedoresService.tipoArchivos.update(formTipoArchivo.id, datosAPI)
+        } else {
+          await mantenedoresService.tipoArchivos.create(datosAPI)
+        }
+        await cargarDatos()
+        cerrarModal()
+      } catch (err) {
+        error.value = 'Error al guardar tipo de archivo: ' + err.message
+      }
+=======
         const payload = {
           RAM_DESCRIPCION: formRama.descripcion,
           RAM_VIGENTE: !!formRama.vigente
@@ -1945,6 +3318,7 @@ export default {
 
     const guardarTipoArchivo = async () => {
       try { const payload = { TAR_DESCRIPCION: formTipoArchivo.descripcion, TAR_VIGENTE: !!formTipoArchivo.vigente }; if (editando.value) await mantenedoresService.tipoArchivos.update(formTipoArchivo.id, payload); else await mantenedoresService.tipoArchivos.create(payload) } catch (err) { console.error('Error guardarTipoArchivo', err) } finally { cerrarModal(); recargar() }
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
     }
 
     return {
@@ -1955,6 +3329,8 @@ export default {
       elementoSeleccionado,
       isDropdownOpen,
       dropdownContainer,
+      cargando,
+      error,
       searchZonas,
       searchDistritos,
       searchGrupos,
@@ -1981,7 +3357,10 @@ export default {
       formDistrito,
       formGrupo,
       formRama,
+<<<<<<< HEAD
+=======
       // nuevos formularios
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
       formTipoCurso,
       formCargo,
       formAlimentacion,
@@ -1993,7 +3372,10 @@ export default {
       formRol,
       formConceptoContable,
       formTipoArchivo,
+<<<<<<< HEAD
+=======
       // filtros computados
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
       filteredZonas,
       filteredDistritos,
       filteredGrupos,
@@ -2012,6 +3394,11 @@ export default {
       abrirModalCrear,
       verElemento,
       editarElemento,
+<<<<<<< HEAD
+      cambiarEstado,
+      cerrarModal,
+      cargarDatos,
+=======
       solicitarAnular,
       // búsquedas
       buscarZonas,
@@ -2021,6 +3408,7 @@ export default {
       cerrarModal,
       confirmarAnular,
       // guardados
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
       guardarZona,
       guardarDistrito,
       guardarGrupo,
@@ -2035,9 +3423,13 @@ export default {
       guardarEstadoCivil,
       guardarRol,
       guardarConceptoContable,
+<<<<<<< HEAD
+      guardarTipoArchivo
+=======
       guardarTipoArchivo,
       // misc
       recargar
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
     }
   }
 }
@@ -2053,9 +3445,51 @@ export default {
   flex-direction: column;
 }
 
+/* Error Alert */
+.error-alert {
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+  padding: 15px 20px;
+  margin: 10px 20px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.error-alert p {
+  margin: 0;
+}
+
+.error-alert button {
+  background: none;
+  border: none;
+  color: #721c24;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Loading Indicator */
+.loading-indicator {
+  background: #d1ecf1;
+  border: 1px solid #bee5eb;
+  color: #0c5460;
+  padding: 15px 20px;
+  margin: 10px 20px;
+  border-radius: 8px;
+  text-align: center;
+}
+
 /* Selector de Mantenedores Fijo - CORREGIDO */
 .mantenedor-selector-fixed {
-  background: #1e3d73;
+  background: #1a237e;
   color: white;
   padding: 0;
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
@@ -2100,7 +3534,7 @@ export default {
 .mantenedor-dropdown-toggle {
   width: 100%;
   padding: 12px 45px 12px 16px;
-  border: 2px solid #2c5aa0;
+  border: 2px solid #3949ab;
   border-radius: 8px;
   background: white;
   color: #333;
@@ -2132,7 +3566,7 @@ export default {
 }
 
 .dropdown-icon {
-  color: #2c5aa0;
+  color: #3949ab;
   transition: transform 0.3s ease;
   font-size: 0.9rem;
 }
@@ -2147,7 +3581,7 @@ export default {
   left: 0;
   right: 0;
   background: white;
-  border: 2px solid #2c5aa0;
+  border: 2px solid #3949ab;
   border-top: none;
   border-radius: 0 0 8px 8px;
   max-height: 400px;
@@ -2176,7 +3610,7 @@ export default {
 
 .dropdown-item.active {
   background: #e3f2fd;
-  color: #2c5aa0;
+  color: #3949ab;
   font-weight: 600;
 }
 
@@ -2193,12 +3627,12 @@ export default {
 }
 
 .dropdown-item.active .dropdown-item-text {
-  color: #2c5aa0;
+  color: #3949ab;
   font-weight: 600;
 }
 
 .dropdown-item:hover .dropdown-item-text {
-  color: #1e3d73;
+  color: #1a237e;
 }
 
 /* Main Content Expandido */
@@ -2211,7 +3645,7 @@ export default {
 }
 
 .header-expanded {
-  background: linear-gradient(135deg, #2c5aa0 0%, #1e3d73 100%);
+  background: #1a237e;
   color: white;
   padding: 30px 20px;
   margin: 0;
@@ -2244,13 +3678,13 @@ export default {
   align-items: center;
   margin-bottom: 25px;
   padding-bottom: 15px;
-  border-bottom: 3px solid #2c5aa0;
+  border-bottom: 3px solid #3949ab;
   width: 100%;
   box-sizing: border-box;
 }
 
 .mantenedor-header h2 {
-  color: #2c5aa0;
+  color: #1a237e;
   font-size: 1.6rem;
   display: flex;
   align-items: center;
@@ -2259,7 +3693,7 @@ export default {
 }
 
 .btn-primary {
-  background: #2c5aa0;
+  background: #3949ab;
   color: white;
   border: none;
   padding: 12px 24px;
@@ -2274,28 +3708,9 @@ export default {
 }
 
 .btn-primary:hover {
-  background: #1e3d73;
+  background: #1a237e;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(44, 90, 160, 0.3);
-}
-
-.alert {
-  background: #e3f2fd;
-  border: 1px solid #bbdefb;
-  color: #1565c0;
-  padding: 16px 20px;
-  border-radius: 8px;
-  margin-bottom: 25px;
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.alert-icon {
-  font-size: 1.2rem;
-  margin-top: 2px;
+  box-shadow: 0 4px 12px rgba(57, 73, 171, 0.3);
 }
 
 .search-bar {
@@ -2321,8 +3736,8 @@ export default {
 
 .search-input:focus {
   outline: none;
-  border-color: #2c5aa0;
-  box-shadow: 0 0 0 3px rgba(44, 90, 160, 0.1);
+  border-color: #3949ab;
+  box-shadow: 0 0 0 3px rgba(57, 73, 171, 0.1);
 }
 
 .select-filter {
@@ -2358,7 +3773,7 @@ export default {
   padding: 16px 12px;
   text-align: left;
   font-weight: 600;
-  color: #2c5aa0;
+  color: #1a237e;
   border-bottom: 2px solid #e1e5e9;
 }
 
@@ -2418,6 +3833,11 @@ export default {
   color: #721c24;
 }
 
+.btn-habilitar {
+  background: #d4edda;
+  color: #155724;
+}
+
 .btn-action:hover {
   transform: translateY(-2px);
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -2450,14 +3870,14 @@ export default {
 
 .modal-header {
   padding: 25px 30px 20px;
-  border-bottom: 2px solid #2c5aa0;
+  border-bottom: 2px solid #3949ab;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .modal-header h3 {
-  color: #2c5aa0;
+  color: #1a237e;
   font-size: 1.4rem;
   display: flex;
   align-items: center;
@@ -2475,7 +3895,7 @@ export default {
 }
 
 .modal-close:hover {
-  color: #2c5aa0;
+  color: #1a237e;
 }
 
 .modal-body {
@@ -2504,25 +3924,6 @@ export default {
   border: 2px solid #e1e5e9;
   border-radius: 8px;
   font-size: 1rem;
-}
-
-/* Confirmation Message */
-.confirmation-message {
-  text-align: center;
-  margin-bottom: 25px;
-}
-
-.elemento-info {
-  background: #f8f9fa;
-  padding: 15px;
-  border-radius: 8px;
-  margin: 15px 0;
-  border-left: 4px solid #2c5aa0;
-}
-
-.warning-text {
-  color: #dc3545;
-  font-weight: 600;
 }
 
 .btn-danger {
@@ -2567,8 +3968,8 @@ export default {
 
 .form-control:focus {
   outline: none;
-  border-color: #2c5aa0;
-  box-shadow: 0 0 0 3px rgba(44, 90, 160, 0.1);
+  border-color: #3949ab;
+  box-shadow: 0 0 0 3px rgba(57, 73, 171, 0.1);
 }
 
 .form-checkbox {
