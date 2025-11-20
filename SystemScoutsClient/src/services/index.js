@@ -11,12 +11,8 @@ import * as cursosService from './cursosService'
 import * as mantenedoresService from './mantenedoresService'
 import * as pagosService from './pagosService'
 import * as archivosService from './archivosService'
-<<<<<<< HEAD
-=======
-import * as reportesService from './reportesService'
 import dashboardService from './dashboardService'
 import dashboard2Service from './dashboard_2'
->>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
 // usuariosRolesService and CorreosService are legacy files removed after migration
 
 // Export everything as named exports. Prefer importing from '@/services' in views.
@@ -31,12 +27,9 @@ export {
   mantenedoresService,
   pagosService,
   archivosService,
-<<<<<<< HEAD
-=======
   reportesService,
   dashboardService,
   dashboard2Service,
->>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
   // Removed legacy CorreosService,
 }
 

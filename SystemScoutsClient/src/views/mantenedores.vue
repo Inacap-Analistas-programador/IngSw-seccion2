@@ -1944,11 +1944,7 @@ export default {
       { id: 'tipos-archivo', label: 'Tipos de Archivo', icon: '📁' }
     ]
 
-<<<<<<< HEAD
-    // Datos de ejemplo para todos los mantenedores
-=======
     // Datos reactivos para todos los mantenedores (inicialmente vacíos, se llenan desde la API)
->>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
     const zonas = ref([])
     const distritos = ref([])
     const grupos = ref([])
@@ -1964,8 +1960,6 @@ export default {
     const roles = ref([])
     const conceptosContables = ref([])
     const tiposArchivo = ref([])
-<<<<<<< HEAD
-=======
 
     // Carga inicial de todos los mantenedores
     const cargarMantenedores = async () => {
@@ -2011,7 +2005,6 @@ export default {
 
     // Recarga tras crear/editar/eliminar
     const recargar = cargarMantenedores
->>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
 
     // Formularios
     const formZona = reactive({
@@ -2041,337 +2034,6 @@ export default {
       vigente: true
     })
 
-<<<<<<< HEAD
-    const formTipoCurso = reactive({
-      id: null,
-      descripcion: '',
-      tipo: null,
-      cant_participante: null,
-      vigente: true
-    })
-
-    const formCargo = reactive({
-      id: null,
-      descripcion: '',
-      vigente: true
-    })
-
-    const formAlimentacion = reactive({
-      id: null,
-      descripcion: '',
-      tipo: null,
-      vigente: true
-    })
-
-    const formComuna = reactive({
-      id: null,
-      descripcion: '',
-      provincia_id: null,
-      vigente: true
-    })
-
-    const formProvincia = reactive({
-      id: null,
-      descripcion: '',
-      region_id: null,
-      vigente: true
-    })
-
-    const formRegion = reactive({
-      id: null,
-      descripcion: '',
-      vigente: true
-    })
-
-    const formNivel = reactive({
-      id: null,
-      descripcion: '',
-      vigente: true
-    })
-
-    const formEstadoCivil = reactive({
-      id: null,
-      descripcion: '',
-      vigente: true
-    })
-
-    const formRol = reactive({
-      id: null,
-      descripcion: '',
-      vigente: true
-    })
-
-    const formConceptoContable = reactive({
-      id: null,
-      descripcion: '',
-      tipo: '',
-      vigente: true
-    })
-
-    const formTipoArchivo = reactive({
-      id: null,
-      descripcion: '',
-      extension: '',
-      vigente: true
-    })
-
-    // Función para normalizar los datos de la API al formato esperado por la UI
-    const normalizarDatos = (datos, tipo) => {
-      if (!datos) return [];
-      
-      const datosArray = datos.results || datos;
-      
-      const mapeoCampos = {
-        zona: {
-          id: 'ZON_ID',
-          descripcion: 'ZON_DESCRIPCION',
-          unilateral: 'ZON_UNILATERAL',
-          vigente: 'ZON_VIGENTE'
-        },
-        distrito: {
-          id: 'DIS_ID',
-          descripcion: 'DIS_DESCRIPCION',
-          zona_id: 'DIS_ZON_ID',
-          vigente: 'DIS_VIGENTE'
-        },
-        grupo: {
-          id: 'GRU_ID',
-          descripcion: 'GRU_DESCRIPCION',
-          distrito_id: 'GRU_DIS_ID',
-          vigente: 'GRU_VIGENTE'
-        },
-        rama: {
-          id: 'RAM_ID',
-          descripcion: 'RAM_DESCRIPCION',
-          vigente: 'RAM_VIGENTE'
-        },
-        tipoCurso: {
-          id: 'TIC_ID',
-          descripcion: 'TIC_DESCRIPCION',
-          tipo: 'TIC_TIPO',
-          cant_participante: 'TIC_CANT_PARTICIPANTE',
-          vigente: 'TIC_VIGENTE'
-        },
-        cargo: {
-          id: 'CAR_ID',
-          descripcion: 'CAR_DESCRIPCION',
-          vigente: 'CAR_VIGENTE'
-        },
-        alimentacion: {
-          id: 'ALI_ID',
-          descripcion: 'ALI_DESCRIPCION',
-          tipo: 'ALI_TIPO',
-          vigente: 'ALI_VIGENTE'
-        },
-        comuna: {
-          id: 'COM_ID',
-          descripcion: 'COM_DESCRIPCION',
-          provincia_id: 'COM_PRO_ID',
-          vigente: 'COM_VIGENTE'
-        },
-        provincia: {
-          id: 'PRO_ID',
-          descripcion: 'PRO_DESCRIPCION',
-          region_id: 'PRO_REG_ID',
-          vigente: 'PRO_VIGENTE'
-        },
-        region: {
-          id: 'REG_ID',
-          descripcion: 'REG_DESCRIPCION',
-          vigente: 'REG_VIGENTE'
-        },
-        nivel: {
-          id: 'NIV_ID',
-          descripcion: 'NIV_DESCRIPCION',
-          vigente: 'NIV_VIGENTE'
-        },
-        estadoCivil: {
-          id: 'ESC_ID',
-          descripcion: 'ESC_DESCRIPCION',
-          vigente: 'ESC_VIGENTE'
-        },
-        rol: {
-          id: 'ROL_ID',
-          descripcion: 'ROL_DESCRIPCION',
-          vigente: 'ROL_VIGENTE'
-        },
-        conceptoContable: {
-          id: 'COC_ID',
-          descripcion: 'COC_DESCRIPCION',
-          tipo: 'COC_TIPO',
-          vigente: 'COC_VIGENTE'
-        },
-        tipoArchivo: {
-          id: 'TIA_ID',
-          descripcion: 'TIA_DESCRIPCION',
-          extension: 'TIA_EXTENSION',
-          vigente: 'TIA_VIGENTE'
-        }
-      };
-
-      const mapeo = mapeoCampos[tipo];
-      if (!mapeo) return datosArray;
-
-      return datosArray.map(item => {
-        const normalizado = {};
-        for (const [key, campoApi] of Object.entries(mapeo)) {
-          normalizado[key] = item[campoApi];
-        }
-        return normalizado;
-      });
-    };
-
-    // Función para desnormalizar datos al formato de la API
-    const desnormalizarDatos = (datos, tipo) => {
-      const mapeoCampos = {
-        zona: {
-          id: 'ZON_ID',
-          descripcion: 'ZON_DESCRIPCION',
-          unilateral: 'ZON_UNILATERAL',
-          vigente: 'ZON_VIGENTE'
-        },
-        distrito: {
-          id: 'DIS_ID',
-          descripcion: 'DIS_DESCRIPCION',
-          zona_id: 'DIS_ZON_ID',
-          vigente: 'DIS_VIGENTE'
-        },
-        grupo: {
-          id: 'GRU_ID',
-          descripcion: 'GRU_DESCRIPCION',
-          distrito_id: 'GRU_DIS_ID',
-          vigente: 'GRU_VIGENTE'
-        },
-        rama: {
-          id: 'RAM_ID',
-          descripcion: 'RAM_DESCRIPCION',
-          vigente: 'RAM_VIGENTE'
-        },
-        tipoCurso: {
-          id: 'TIC_ID',
-          descripcion: 'TIC_DESCRIPCION',
-          tipo: 'TIC_TIPO',
-          cant_participante: 'TIC_CANT_PARTICIPANTE',
-          vigente: 'TIC_VIGENTE'
-        },
-        cargo: {
-          id: 'CAR_ID',
-          descripcion: 'CAR_DESCRIPCION',
-          vigente: 'CAR_VIGENTE'
-        },
-        alimentacion: {
-          id: 'ALI_ID',
-          descripcion: 'ALI_DESCRIPCION',
-          tipo: 'ALI_TIPO',
-          vigente: 'ALI_VIGENTE'
-        },
-        comuna: {
-          id: 'COM_ID',
-          descripcion: 'COM_DESCRIPCION',
-          provincia_id: 'COM_PRO_ID',
-          vigente: 'COM_VIGENTE'
-        },
-        provincia: {
-          id: 'PRO_ID',
-          descripcion: 'PRO_DESCRIPCION',
-          region_id: 'PRO_REG_ID',
-          vigente: 'PRO_VIGENTE'
-        },
-        region: {
-          id: 'REG_ID',
-          descripcion: 'REG_DESCRIPCION',
-          vigente: 'REG_VIGENTE'
-        },
-        nivel: {
-          id: 'NIV_ID',
-          descripcion: 'NIV_DESCRIPCION',
-          vigente: 'NIV_VIGENTE'
-        },
-        estadoCivil: {
-          id: 'ESC_ID',
-          descripcion: 'ESC_DESCRIPCION',
-          vigente: 'ESC_VIGENTE'
-        },
-        rol: {
-          id: 'ROL_ID',
-          descripcion: 'ROL_DESCRIPCION',
-          vigente: 'ROL_VIGENTE'
-        },
-        conceptoContable: {
-          id: 'COC_ID',
-          descripcion: 'COC_DESCRIPCION',
-          tipo: 'COC_TIPO',
-          vigente: 'COC_VIGENTE'
-        },
-        tipoArchivo: {
-          id: 'TIA_ID',
-          descripcion: 'TIA_DESCRIPCION',
-          extension: 'TIA_EXTENSION',
-          vigente: 'TIA_VIGENTE'
-        }
-      };
-
-      const mapeo = mapeoCampos[tipo];
-      if (!mapeo) return datos;
-
-      const desnormalizado = {};
-      for (const [key, campoApi] of Object.entries(mapeo)) {
-        if (datos[key] !== undefined) {
-          desnormalizado[campoApi] = datos[key];
-        }
-      }
-      return desnormalizado;
-    };
-
-    // Función para cargar todos los datos desde la API
-    const cargarDatos = async () => {
-      cargando.value = true
-      error.value = null
-      try {
-        const [zonasData, distritosData, gruposData, ramasData, tiposCursoData, cargosData, 
-          alimentacionData, comunasData, provinciasData, regionesData, nivelesData, 
-          estadosCivilesData, rolesData, conceptosData, tiposArchivoData] = await Promise.all([
-          mantenedoresService.zona.list(),
-          mantenedoresService.distrito.list(),
-          mantenedoresService.grupo.list(),
-          mantenedoresService.rama.list(),
-          mantenedoresService.tipoCursos.list(),
-          mantenedoresService.cargo.list(),
-          mantenedoresService.alimentacion.list(),
-          mantenedoresService.comuna.list(),
-          mantenedoresService.provincia.list(),
-          mantenedoresService.region.list(),
-          mantenedoresService.nivel.list(),
-          mantenedoresService.estadoCivil.list(),
-          mantenedoresService.rol.list(),
-          mantenedoresService.conceptoContable.list(),
-          mantenedoresService.tipoArchivos.list()
-        ])
-
-        // Normalizar los datos de la API al formato esperado por la UI
-        zonas.value = normalizarDatos(zonasData, 'zona')
-        distritos.value = normalizarDatos(distritosData, 'distrito')
-        grupos.value = normalizarDatos(gruposData, 'grupo')
-        ramas.value = normalizarDatos(ramasData, 'rama')
-        tiposCurso.value = normalizarDatos(tiposCursoData, 'tipoCurso')
-        cargos.value = normalizarDatos(cargosData, 'cargo')
-        alimentacion.value = normalizarDatos(alimentacionData, 'alimentacion')
-        comunas.value = normalizarDatos(comunasData, 'comuna')
-        provincias.value = normalizarDatos(provinciasData, 'provincia')
-        regiones.value = normalizarDatos(regionesData, 'region')
-        niveles.value = normalizarDatos(nivelesData, 'nivel')
-        estadosCiviles.value = normalizarDatos(estadosCivilesData, 'estadoCivil')
-        roles.value = normalizarDatos(rolesData, 'rol')
-        conceptosContables.value = normalizarDatos(conceptosData, 'conceptoContable')
-        tiposArchivo.value = normalizarDatos(tiposArchivoData, 'tipoArchivo')
-      } catch (err) {
-        error.value = err.message
-        console.error('Error al cargar datos:', err)
-      } finally {
-        cargando.value = false
-      }
-    }
-=======
     // Formularios adicionales para otros mantenedores
     const formTipoCurso = reactive({ id: null, descripcion: '', tipo: 1, cant_participante: null, vigente: true })
     const formCargo = reactive({ id: null, descripcion: '', vigente: true })
@@ -2384,7 +2046,6 @@ export default {
     const formRol = reactive({ id: null, descripcion: '', tipo: 1, vigente: true })
     const formConceptoContable = reactive({ id: null, descripcion: '', vigente: true })
     const formTipoArchivo = reactive({ id: null, descripcion: '', vigente: true })
->>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
 
     // Computed properties para filtros
     const filteredZonas = computed(() => {
@@ -2647,21 +2308,13 @@ export default {
           Object.assign(formRama, elemento)
           break
         case 'tipoCurso':
-<<<<<<< HEAD
-          Object.assign(formTipoCurso, elemento)
-=======
           Object.assign(formTipoCurso, { id: elemento.id, descripcion: elemento.descripcion, tipo: elemento.tipo, cant_participante: elemento.cant_participante, vigente: elemento.vigente })
->>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
           break
         case 'cargo':
           Object.assign(formCargo, elemento)
           break
         case 'alimentacion':
-<<<<<<< HEAD
-          Object.assign(formAlimentacion, elemento)
-=======
           Object.assign(formAlimentacion, { id: elemento.id, descripcion: elemento.descripcion, tipo: elemento.tipo, vigente: elemento.vigente })
->>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
           break
         case 'comuna':
           Object.assign(formComuna, elemento)
@@ -2679,11 +2332,7 @@ export default {
           Object.assign(formEstadoCivil, elemento)
           break
         case 'rol':
-<<<<<<< HEAD
-          Object.assign(formRol, elemento)
-=======
           Object.assign(formRol, { id: elemento.id, descripcion: elemento.descripcion, tipo: elemento.tipo, vigente: elemento.vigente })
->>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
           break
         case 'conceptoContable':
           Object.assign(formConceptoContable, elemento)
@@ -2691,10 +2340,7 @@ export default {
         case 'tipoArchivo':
           Object.assign(formTipoArchivo, elemento)
           break
-<<<<<<< HEAD
-=======
         // Agregar casos para otros tipos
->>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
       }
     }
 
@@ -2722,70 +2368,6 @@ export default {
         descripcion: '',
         vigente: true
       })
-<<<<<<< HEAD
-      Object.assign(formTipoCurso, {
-        id: null,
-        descripcion: '',
-        tipo: null,
-        cant_participante: null,
-        vigente: true
-      })
-      Object.assign(formCargo, {
-        id: null,
-        descripcion: '',
-        vigente: true
-      })
-      Object.assign(formAlimentacion, {
-        id: null,
-        descripcion: '',
-        tipo: null,
-        vigente: true
-      })
-      Object.assign(formComuna, {
-        id: null,
-        descripcion: '',
-        provincia_id: null,
-        vigente: true
-      })
-      Object.assign(formProvincia, {
-        id: null,
-        descripcion: '',
-        region_id: null,
-        vigente: true
-      })
-      Object.assign(formRegion, {
-        id: null,
-        descripcion: '',
-        vigente: true
-      })
-      Object.assign(formNivel, {
-        id: null,
-        descripcion: '',
-        vigente: true
-      })
-      Object.assign(formEstadoCivil, {
-        id: null,
-        descripcion: '',
-        vigente: true
-      })
-      Object.assign(formRol, {
-        id: null,
-        descripcion: '',
-        vigente: true
-      })
-      Object.assign(formConceptoContable, {
-        id: null,
-        descripcion: '',
-        tipo: '',
-        vigente: true
-      })
-      Object.assign(formTipoArchivo, {
-        id: null,
-        descripcion: '',
-        extension: '',
-        vigente: true
-      })
-=======
       Object.assign(formTipoCurso, { id: null, descripcion: '', tipo: 1, cant_participante: null, vigente: true })
       Object.assign(formCargo, { id: null, descripcion: '', vigente: true })
       Object.assign(formAlimentacion, { id: null, descripcion: '', tipo: 1, vigente: true })
@@ -2797,7 +2379,6 @@ export default {
       Object.assign(formRol, { id: null, descripcion: '', tipo: 1, vigente: true })
       Object.assign(formConceptoContable, { id: null, descripcion: '', vigente: true })
       Object.assign(formTipoArchivo, { id: null, descripcion: '', vigente: true })
->>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
     }
 
     const cerrarModal = () => {
@@ -2808,28 +2389,6 @@ export default {
       limpiarFormularios()
     }
 
-<<<<<<< HEAD
-    // Métodos de guardado
-    const guardarZona = async () => {
-      try {
-        const datosUI = {
-          descripcion: formZona.descripcion.toUpperCase(),
-          unilateral: formZona.unilateral,
-          vigente: editando.value ? formZona.vigente : true
-        }
-
-        const datosAPI = desnormalizarDatos(datosUI, 'zona')
-
-        if (editando.value) {
-          await mantenedoresService.zona.update(formZona.id, datosAPI)
-        } else {
-          await mantenedoresService.zona.create(datosAPI)
-        }
-        await cargarDatos()
-        cerrarModal()
-      } catch (err) {
-        error.value = 'Error al guardar zona: ' + err.message
-=======
     const confirmarAnular = () => {
       const tipo = tipoElemento.value
       const elemento = elementoSeleccionado.value
@@ -2911,31 +2470,11 @@ export default {
       } finally {
         cerrarModal()
         recargar()
->>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
       }
     }
 
     const guardarDistrito = async () => {
       try {
-<<<<<<< HEAD
-        const datosUI = {
-          descripcion: formDistrito.descripcion.toUpperCase(),
-          zona_id: formDistrito.zona_id,
-          vigente: editando.value ? formDistrito.vigente : true
-        }
-
-        const datosAPI = desnormalizarDatos(datosUI, 'distrito')
-
-        if (editando.value) {
-          await mantenedoresService.distrito.update(formDistrito.id, datosAPI)
-        } else {
-          await mantenedoresService.distrito.create(datosAPI)
-        }
-        await cargarDatos()
-        cerrarModal()
-      } catch (err) {
-        error.value = 'Error al guardar distrito: ' + err.message
-=======
         const payload = {
           DIS_DESCRIPCION: formDistrito.descripcion,
           ZON_ID: formDistrito.zona_id,
@@ -2951,31 +2490,11 @@ export default {
       } finally {
         cerrarModal()
         recargar()
->>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
       }
     }
 
     const guardarGrupo = async () => {
       try {
-<<<<<<< HEAD
-        const datosUI = {
-          descripcion: formGrupo.descripcion.toUpperCase(),
-          distrito_id: formGrupo.distrito_id,
-          vigente: editando.value ? formGrupo.vigente : true
-        }
-
-        const datosAPI = desnormalizarDatos(datosUI, 'grupo')
-
-        if (editando.value) {
-          await mantenedoresService.grupo.update(formGrupo.id, datosAPI)
-        } else {
-          await mantenedoresService.grupo.create(datosAPI)
-        }
-        await cargarDatos()
-        cerrarModal()
-      } catch (err) {
-        error.value = 'Error al guardar grupo: ' + err.message
-=======
         const payload = {
           GRU_DESCRIPCION: formGrupo.descripcion,
           DIS_ID: formGrupo.distrito_id,
@@ -2991,269 +2510,11 @@ export default {
       } finally {
         cerrarModal()
         recargar()
->>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
       }
     }
 
     const guardarRama = async () => {
       try {
-<<<<<<< HEAD
-        const datosUI = {
-          descripcion: formRama.descripcion.toUpperCase(),
-          vigente: editando.value ? formRama.vigente : true
-        }
-
-        const datosAPI = desnormalizarDatos(datosUI, 'rama')
-
-        if (editando.value) {
-          await mantenedoresService.rama.update(formRama.id, datosAPI)
-        } else {
-          await mantenedoresService.rama.create(datosAPI)
-        }
-        await cargarDatos()
-        cerrarModal()
-      } catch (err) {
-        error.value = 'Error al guardar rama: ' + err.message
-      }
-    }
-
-    const guardarTipoCurso = async () => {
-      try {
-        const datosUI = {
-          descripcion: formTipoCurso.descripcion.toUpperCase(),
-          tipo: formTipoCurso.tipo,
-          cant_participante: formTipoCurso.cant_participante,
-          vigente: editando.value ? formTipoCurso.vigente : true
-        }
-
-        const datosAPI = desnormalizarDatos(datosUI, 'tipoCurso')
-
-        if (editando.value) {
-          await mantenedoresService.tipoCursos.update(formTipoCurso.id, datosAPI)
-        } else {
-          await mantenedoresService.tipoCursos.create(datosAPI)
-        }
-        await cargarDatos()
-        cerrarModal()
-      } catch (err) {
-        error.value = 'Error al guardar tipo de curso: ' + err.message
-      }
-    }
-
-    const guardarCargo = async () => {
-      try {
-        const datosUI = {
-          descripcion: formCargo.descripcion.toUpperCase(),
-          vigente: editando.value ? formCargo.vigente : true
-        }
-
-        const datosAPI = desnormalizarDatos(datosUI, 'cargo')
-
-        if (editando.value) {
-          await mantenedoresService.cargo.update(formCargo.id, datosAPI)
-        } else {
-          await mantenedoresService.cargo.create(datosAPI)
-        }
-        await cargarDatos()
-        cerrarModal()
-      } catch (err) {
-        error.value = 'Error al guardar cargo: ' + err.message
-      }
-    }
-
-    const guardarAlimentacion = async () => {
-      try {
-        const datosUI = {
-          descripcion: formAlimentacion.descripcion.toUpperCase(),
-          tipo: formAlimentacion.tipo,
-          vigente: editando.value ? formAlimentacion.vigente : true
-        }
-
-        const datosAPI = desnormalizarDatos(datosUI, 'alimentacion')
-
-        if (editando.value) {
-          await mantenedoresService.alimentacion.update(formAlimentacion.id, datosAPI)
-        } else {
-          await mantenedoresService.alimentacion.create(datosAPI)
-        }
-        await cargarDatos()
-        cerrarModal()
-      } catch (err) {
-        error.value = 'Error al guardar alimentación: ' + err.message
-      }
-    }
-
-    const guardarComuna = async () => {
-      try {
-        const datosUI = {
-          descripcion: formComuna.descripcion.toUpperCase(),
-          provincia_id: formComuna.provincia_id,
-          vigente: editando.value ? formComuna.vigente : true
-        }
-
-        const datosAPI = desnormalizarDatos(datosUI, 'comuna')
-
-        if (editando.value) {
-          await mantenedoresService.comuna.update(formComuna.id, datosAPI)
-        } else {
-          await mantenedoresService.comuna.create(datosAPI)
-        }
-        await cargarDatos()
-        cerrarModal()
-      } catch (err) {
-        error.value = 'Error al guardar comuna: ' + err.message
-      }
-    }
-
-    const guardarProvincia = async () => {
-      try {
-        const datosUI = {
-          descripcion: formProvincia.descripcion.toUpperCase(),
-          region_id: formProvincia.region_id,
-          vigente: editando.value ? formProvincia.vigente : true
-        }
-
-        const datosAPI = desnormalizarDatos(datosUI, 'provincia')
-
-        if (editando.value) {
-          await mantenedoresService.provincia.update(formProvincia.id, datosAPI)
-        } else {
-          await mantenedoresService.provincia.create(datosAPI)
-        }
-        await cargarDatos()
-        cerrarModal()
-      } catch (err) {
-        error.value = 'Error al guardar provincia: ' + err.message
-      }
-    }
-
-    const guardarRegion = async () => {
-      try {
-        const datosUI = {
-          descripcion: formRegion.descripcion.toUpperCase(),
-          vigente: editando.value ? formRegion.vigente : true
-        }
-
-        const datosAPI = desnormalizarDatos(datosUI, 'region')
-
-        if (editando.value) {
-          await mantenedoresService.region.update(formRegion.id, datosAPI)
-        } else {
-          await mantenedoresService.region.create(datosAPI)
-        }
-        await cargarDatos()
-        cerrarModal()
-      } catch (err) {
-        error.value = 'Error al guardar región: ' + err.message
-      }
-    }
-
-    const guardarNivel = async () => {
-      try {
-        const datosUI = {
-          descripcion: formNivel.descripcion.toUpperCase(),
-          vigente: editando.value ? formNivel.vigente : true
-        }
-
-        const datosAPI = desnormalizarDatos(datosUI, 'nivel')
-
-        if (editando.value) {
-          await mantenedoresService.nivel.update(formNivel.id, datosAPI)
-        } else {
-          await mantenedoresService.nivel.create(datosAPI)
-        }
-        await cargarDatos()
-        cerrarModal()
-      } catch (err) {
-        error.value = 'Error al guardar nivel: ' + err.message
-      }
-    }
-
-    const guardarEstadoCivil = async () => {
-      try {
-        const datosUI = {
-          descripcion: formEstadoCivil.descripcion.toUpperCase(),
-          vigente: editando.value ? formEstadoCivil.vigente : true
-        }
-
-        const datosAPI = desnormalizarDatos(datosUI, 'estadoCivil')
-
-        if (editando.value) {
-          await mantenedoresService.estadoCivil.update(formEstadoCivil.id, datosAPI)
-        } else {
-          await mantenedoresService.estadoCivil.create(datosAPI)
-        }
-        await cargarDatos()
-        cerrarModal()
-      } catch (err) {
-        error.value = 'Error al guardar estado civil: ' + err.message
-      }
-    }
-
-    const guardarRol = async () => {
-      try {
-        const datosUI = {
-          descripcion: formRol.descripcion.toUpperCase(),
-          vigente: editando.value ? formRol.vigente : true
-        }
-
-        const datosAPI = desnormalizarDatos(datosUI, 'rol')
-
-        if (editando.value) {
-          await mantenedoresService.rol.update(formRol.id, datosAPI)
-        } else {
-          await mantenedoresService.rol.create(datosAPI)
-        }
-        await cargarDatos()
-        cerrarModal()
-      } catch (err) {
-        error.value = 'Error al guardar rol: ' + err.message
-      }
-    }
-
-    const guardarConceptoContable = async () => {
-      try {
-        const datosUI = {
-          descripcion: formConceptoContable.descripcion.toUpperCase(),
-          tipo: formConceptoContable.tipo,
-          vigente: editando.value ? formConceptoContable.vigente : true
-        }
-
-        const datosAPI = desnormalizarDatos(datosUI, 'conceptoContable')
-
-        if (editando.value) {
-          await mantenedoresService.conceptoContable.update(formConceptoContable.id, datosAPI)
-        } else {
-          await mantenedoresService.conceptoContable.create(datosAPI)
-        }
-        await cargarDatos()
-        cerrarModal()
-      } catch (err) {
-        error.value = 'Error al guardar concepto contable: ' + err.message
-      }
-    }
-
-    const guardarTipoArchivo = async () => {
-      try {
-        const datosUI = {
-          descripcion: formTipoArchivo.descripcion.toUpperCase(),
-          extension: formTipoArchivo.extension,
-          vigente: editando.value ? formTipoArchivo.vigente : true
-        }
-
-        const datosAPI = desnormalizarDatos(datosUI, 'tipoArchivo')
-
-        if (editando.value) {
-          await mantenedoresService.tipoArchivos.update(formTipoArchivo.id, datosAPI)
-        } else {
-          await mantenedoresService.tipoArchivos.create(datosAPI)
-        }
-        await cargarDatos()
-        cerrarModal()
-      } catch (err) {
-        error.value = 'Error al guardar tipo de archivo: ' + err.message
-      }
-=======
         const payload = {
           RAM_DESCRIPCION: formRama.descripcion,
           RAM_VIGENTE: !!formRama.vigente
@@ -3318,7 +2579,6 @@ export default {
 
     const guardarTipoArchivo = async () => {
       try { const payload = { TAR_DESCRIPCION: formTipoArchivo.descripcion, TAR_VIGENTE: !!formTipoArchivo.vigente }; if (editando.value) await mantenedoresService.tipoArchivos.update(formTipoArchivo.id, payload); else await mantenedoresService.tipoArchivos.create(payload) } catch (err) { console.error('Error guardarTipoArchivo', err) } finally { cerrarModal(); recargar() }
->>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
     }
 
     return {
@@ -3357,10 +2617,7 @@ export default {
       formDistrito,
       formGrupo,
       formRama,
-<<<<<<< HEAD
-=======
       // nuevos formularios
->>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
       formTipoCurso,
       formCargo,
       formAlimentacion,
@@ -3372,10 +2629,7 @@ export default {
       formRol,
       formConceptoContable,
       formTipoArchivo,
-<<<<<<< HEAD
-=======
       // filtros computados
->>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
       filteredZonas,
       filteredDistritos,
       filteredGrupos,
@@ -3394,11 +2648,6 @@ export default {
       abrirModalCrear,
       verElemento,
       editarElemento,
-<<<<<<< HEAD
-      cambiarEstado,
-      cerrarModal,
-      cargarDatos,
-=======
       solicitarAnular,
       // búsquedas
       buscarZonas,
@@ -3408,7 +2657,6 @@ export default {
       cerrarModal,
       confirmarAnular,
       // guardados
->>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
       guardarZona,
       guardarDistrito,
       guardarGrupo,
@@ -3423,16 +2671,12 @@ export default {
       guardarEstadoCivil,
       guardarRol,
       guardarConceptoContable,
-<<<<<<< HEAD
-      guardarTipoArchivo
-=======
       guardarTipoArchivo,
       // misc
       recargar
->>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
     }
   }
-}
+} 
 </script>
 
 <style scoped>

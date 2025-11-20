@@ -65,20 +65,12 @@
           <span class="nav-collapsible-title">Pantallas 2</span>
           <span class="caret" :class="{ open: showPantallas2 }">▾</span>
         </div>
-<<<<<<< HEAD
-        <div v-show="showPantallas2" class="submenu">
-          <router-link to="/dashboard-2" class="submenu-item">Dashboard 2</router-link>
-          <!-- CORRECCIÓN: Usar el nombre correcto de la ruta -->
-          <router-link to="/inscripciones-2" class="submenu-item">Formulario 2</router-link>
-        </div>
-=======
         <Transition name="submenu-slide">
           <div v-show="showPantallas2" class="submenu">
             <router-link to="/dashboard-2" class="submenu-item">Dashboard 2</router-link>
             <router-link to="/inscripciones-2" class="submenu-item">Formulario 2</router-link>
           </div>
         </Transition>
->>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
       </div>
     </nav>
     
@@ -127,8 +119,6 @@ function onStorage(e) {
 const showUsuarios = ref(false)
 const showMantenedores = ref(false)
 const showPantallas2 = ref(false)
-<<<<<<< HEAD
-=======
 
 // Sidebar can be either controlled by parent via `collapsed` prop or operate in uncontrolled mode using localStorage
 const props = defineProps({
@@ -173,7 +163,6 @@ const mantenedoresTabs = [
   { id: 'conceptos-contables', label: 'Conceptos Contables' },
   { id: 'tipos-archivo', label: 'Tipos de Archivo' }
 ]
->>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
 
 function toggleUsuarios() {
   showUsuarios.value = !showUsuarios.value
@@ -187,27 +176,6 @@ function togglePantallas2() {
   showPantallas2.value = !showPantallas2.value
 }
 
-<<<<<<< HEAD
-onMounted(async () => {
-  // No consultamos el backend de auth en modo UI-only; usar usuario por defecto
-  
-  const route = useRoute()
-  // Abrir automáticamente si se navega a /mantenedores o /usuarios
-  if (route && route.path) {
-    showUsuarios.value = route.path.startsWith('/usuarios') || route.path.startsWith('/roles')
-    showMantenedores.value = route.path.startsWith('/mantenedores')
-    // CORRECCIÓN: Incluir también la ruta del formulario 2
-    showPantallas2.value = route.path.startsWith('/dashboard-2') || route.path.startsWith('/inscripciones-2')
-  }
-
-  // Watch para actualizar estado al cambiar de ruta
-  watch(() => route && route.path, async (p) => {
-    if (p) {
-      showUsuarios.value = p.startsWith('/usuarios') || p.startsWith('/roles')
-      showMantenedores.value = p.startsWith('/mantenedores')
-      // CORRECCIÓN: Incluir también la ruta del formulario 2
-      showPantallas2.value = p.startsWith('/dashboard-2') || p.startsWith('/inscripciones-2')
-=======
 function toggleCollapse() {
   const val = !collapsed.value
   collapsed.value = val
@@ -230,7 +198,6 @@ onMounted(() => {
       showUsuarios.value = route.path.startsWith('/usuarios') || route.path.startsWith('/roles')
       showMantenedores.value = route.path.startsWith('/mantenedores')
       showPantallas2.value = route.path.startsWith('/dashboard-2') || route.path.startsWith('/inscripciones-2')
->>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
     }
 
     // Watch para actualizar estado al cambiar de ruta
