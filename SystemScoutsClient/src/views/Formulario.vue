@@ -1,5 +1,6 @@
 <template>
-  <div class="formulario"> 
+  <div class="formulario">
+    <h1 class="titulo-pre-registro">Pre-Registro</h1>
     <div class="form-outer">
       <form class="form-inner">
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
@@ -11,41 +12,48 @@
   <!--::::::::::::::::::::::::::::::::::CURSO DE PARTICIPACIÓN::::::::::::::::::::::::::::::::::::::::-->
   <section>
     <div class="seleccioneCurso"></div> <!-- Titulo Eleccion de Cursos-->
-          <h2>Seleccione Curso</h2>
+          <h2 class="titulo-seleccion-curso">Selección de Curso</h2>
 
     <div class="curso-container">
       <div class="campos-curso-seccion">
         <div class="campo-curso">
-          <label for="curso">¿En qué curso participará?</label>
-          <select id="curso" v-model="cursoSeleccionado" required @change="handleCursoChange">
-            <option value="">Seleccione un curso</option>
-            <option value="liderazgoJuvenil">Curso de Liderazgo Juvenil</option>
-            <option value="primerosAuxilios">Curso de Primeros Auxilios en Campamento</option>
-            <option value="gestionAmbiental">Curso de Gestión Ambiental Scout</option>
+          <select id="curso" v-model="cursoSeleccionado" required @change="handleCursoChange" style="color: #000;">
+            <option value="" disabled selected hidden></option>
+            <option v-for="curso in listaCursosApi" :key="curso.CUR_ID" :value="curso.CUR_ID" style="color: #000;">
+              {{ curso.CUR_DESCRIPCION }}
+            </option>
           </select>
+          <label for="curso">
+            <span style="transition-delay:450ms">¿</span><span style="transition-delay:400ms">E</span><span style="transition-delay:350ms">n</span><span style="transition-delay:300ms"> </span><span style="transition-delay:250ms">q</span><span style="transition-delay:200ms">u</span><span style="transition-delay:150ms">é</span><span style="transition-delay:100ms"> </span><span style="transition-delay:50ms">c</span><span style="transition-delay:0ms">u</span><span style="transition-delay:50ms">r</span><span style="transition-delay:100ms">s</span><span style="transition-delay:150ms">o</span><span style="transition-delay:200ms"> </span><span style="transition-delay:250ms">p</span><span style="transition-delay:300ms">a</span><span style="transition-delay:350ms">r</span><span style="transition-delay:400ms">t</span><span style="transition-delay:450ms">i</span><span style="transition-delay:500ms">c</span><span style="transition-delay:550ms">i</span><span style="transition-delay:600ms">p</span><span style="transition-delay:650ms">a</span><span style="transition-delay:700ms">r</span><span style="transition-delay:750ms">á</span><span style="transition-delay:800ms">?</span>
+          </label>
         </div>
 
         <transition name="desplegar">
-          <div v-if="cursoSeleccionado" class="campo-seccion">
-            <label for="seccionCurso">Selecciona la Sección del Curso: <span style="color: red;">*</span></label>
+          <div v-if="cursoSeleccionado !== '' && cursoSeleccionado !== null && cursoSeleccionado !== undefined" class="campo-seccion">
             <select
               id="seccionCurso"
               v-model="seccionCurso"
               required
               @change="handleSeccionChange"
             >
-              <option value="">Seleccione una sección</option>
-              <option value="mañana">Mañana</option>
-              <option value="tarde">Tarde</option>
-              <option value="vespertino">Vespertino</option>
+              <option value="" disabled selected hidden></option>
+              <option v-for="seccion in listaSeccionesApi" :key="seccion.CUS_ID" :value="seccion.CUS_ID">
+                {{ seccion.CUS_SECCION }}
+              </option>
             </select>
+            <label for="seccionCurso">
+              <span style="transition-delay:400ms">S</span><span style="transition-delay:350ms">e</span><span style="transition-delay:300ms">l</span><span style="transition-delay:250ms">e</span><span style="transition-delay:200ms">c</span><span style="transition-delay:150ms">c</span><span style="transition-delay:100ms">i</span><span style="transition-delay:50ms">o</span><span style="transition-delay:0ms">n</span><span style="transition-delay:50ms">a</span><span style="transition-delay:100ms"> </span><span style="transition-delay:150ms">s</span><span style="transition-delay:200ms">e</span><span style="transition-delay:250ms">c</span><span style="transition-delay:300ms">c</span><span style="transition-delay:350ms">i</span><span style="transition-delay:400ms">ó</span><span style="transition-delay:450ms">n</span> <span style="color: red;">*</span>
+            </label>
           </div>
         </transition>
       </div>
 
       <div class="boton-descarga-container">
         <img src="/favicon.ico" alt="Logo Scout" class="logo-descarga" />
-        <label class="label-descarga">Descarga y rellena tu ficha médica, te la pediremos más adelante!</label>
+        <div class="label-descarga">
+          <p class="label-principal">Descarga y rellena tu ficha médica</p>
+          <p class="label-secundario">¡Te la pediremos más adelante!</p>
+        </div>
         <a href="/Ficha Medica.docx" download class="btn-download">
           <div class="svg-wrapper-1">
             <div class="svg-wrapper">
@@ -72,6 +80,29 @@
 <!--:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
   <transition name="fade">
     <div v-if="cursoSeleccionado && seccionCurso" class="resto-formulario">
+      
+      <!-- Navegación flotante -->
+      <nav class="nav-flotante">
+        <a href="#top-formulario" class="nav-item nav-logo" @click.prevent="scrollToTop">
+            <img src="/favicon.ico" alt="Logo Scout" class="nav-logo-img" />
+        </a>
+        <a href="#seccion-1" class="nav-item" @click.prevent="scrollToSection(1)">
+          <span class="nav-numero">1</span>
+        </a>
+        <a href="#seccion-2" class="nav-item" @click.prevent="scrollToSection(2)">
+          <span class="nav-numero">2</span>
+        </a>
+        <a href="#seccion-3" class="nav-item" @click.prevent="scrollToSection(3)">
+          <span class="nav-numero">3</span>
+        </a>
+        <a href="#seccion-4" class="nav-item" @click.prevent="scrollToSection(4)">
+          <span class="nav-numero">4</span>
+        </a>
+      </nav>
+
+      <div id="seccion-1" class="inicio-linea-verde">
+        <span class="numero-seccion">1</span>
+      </div>
       <section>
               <div class="section-header">
                 <h2>Datos Personales</h2>
@@ -81,18 +112,18 @@
         <div class="section-grid">
           <div class="campo">
             <label for="nombre">Nombres:</label>
-            <input id="nombre" v-model="nombre" type="text" placeholder="PRIMER Y SEGUNDO NOMBRE" />
+            <input id="nombre" v-model="nombre" type="text" placeholder="Primer y segundo nombre" />
           </div>
           <div class="campo">
             <label for="apellidoPaterno">Apellido Paterno:</label>
-            <input id="apellidoPaterno" v-model="apellidoPaterno" type="text" placeholder="APELLIDO PATERNO" />
+            <input id="apellidoPaterno" v-model="apellidoPaterno" type="text" placeholder="Apellido paterno" />
           </div>
         </div>
 
         <div class="section-grid">
           <div class="campo">
             <label for="apellidoMaterno">Apellido Materno:</label>
-            <input id="apellidoMaterno" v-model="apellidoMaterno" type="text" placeholder="APELLIDO MATERNO" />
+            <input id="apellidoMaterno" v-model="apellidoMaterno" type="text" placeholder="Apellido materno" />
           </div>
 
           <div class="campo">
@@ -110,38 +141,42 @@
           </div>
           <div class="campo">
             <label for="email">Correo Electrónico:</label>
-            <input id="email" v-model="email" type="email" placeholder="INGRESE EMAIL" />
+            <input id="email" v-model="email" type="email" placeholder="Ingrese email" />
           </div>
         </div>
-
-  <!--::::::::::::::::::: NÚMEROS DE CONTACTO :::::::::::::::::::::::::-->
-      <div class="section-header">
-        <!-- empty spacer to keep alignment if needed -->
-      </div>
-              <!-- Selector único de teléfono: el usuario elige qué tipo de teléfono ingresará y se muestra un solo input con prefijo +56 -->
-              <!-- Número de contacto eliminado por solicitud del usuario -->
 
 <!-- :::::::::::::::::: SELECTOR DE REGIONES Y DIRECCIÓN (agrupados) ::::::::::::::::::::::::: -->
 <div class="section-grid">
   <div class="campo">
-    <label for="Provincia">Provincia:</label>
-    <select id="Provincia" v-model="regionSeleccionada">
+    <label for="Region">Región:</label>
+    <select id="Region" v-model="regionSeleccionada">
       <option disabled value="">Seleccione una región</option>
-      <option v-for="region in Object.keys(comunasPorRegion)" :key="region" :value="region">
-        {{ region }}
+      <option v-for="reg in listaRegionApi" :key="reg.REG_ID" :value="reg.REG_ID">
+        {{ reg.REG_DESCRIPCION }}
+      </option>
+    </select>
+  </div>
+</div>
+<div class="section-grid">
+  <div class="campo">
+    <label for="Provincia">Provincia:</label>
+    <select id="Provincia" v-model="provinciaSeleccionada">
+      <option disabled value="">Seleccione una provincia</option>
+      <option v-for="prov in listaProvinciaApi" :key="prov.PRO_ID" :value="prov.PRO_ID">
+        {{ prov.PRO_DESCRIPCION }}
       </option>
     </select>
   </div>
 
   <div class="campo">
     <label for="direccion">Dirección:</label>
-    <input id="direccion" v-model="direccion" type="text" placeholder="INGRESE DIRECCIÓN" />
+    <input id="direccion" v-model="direccion" type="text" placeholder="Ingrese dirección" />
   </div>
 </div>
 
 <!-- Agrupamos Ciudad / Comuna / Distrito en una fila de 3 columnas -->
 <transition name="desplegar">
-  <div v-if="regionSeleccionada" class="section-grid-3" :key="regionSeleccionada">
+  <div v-if="provinciaSeleccionada" class="section-grid-3" :key="provinciaSeleccionada">
     <div class="campo">
       <label for="ciudad">Ciudad:</label>
       <select id="ciudad" v-model="ciudadSeleccionada">
@@ -156,8 +191,8 @@
       <label for="comuna">Comuna:</label>
       <select id="comuna" v-model="comunaSeleccionada">
         <option disabled value="">Seleccione una comuna</option>
-        <option v-for="comuna in comunasDisponibles" :key="comuna" :value="comuna">
-          {{ comuna }}
+        <option v-for="comuna in listaComunaApi" :key="comuna.COM_ID" :value="comuna.COM_ID">
+          {{ comuna.COM_DESCRIPCION }}
         </option>
       </select>
     </div>
@@ -184,20 +219,15 @@
   </div>
 </transition>
 
-
-  <!-- (Dirección ahora está agrupada con Provincia en la sección superior) -->
-
-  <!-- :::::::::::::::::: SELECTOR DE ESTADO CIVIL ::::::::::::::::::::::::: -->
+<!-- :::::::::::::::::: SELECTOR DE ESTADO CIVIL Y APODO ::::::::::::::::::::::::: -->
       <div class="section-grid">
         <div class="campo">
           <label for="estadoCivil">Estado Civil:</label>
           <select id="estadoCivil" v-model="estadoCivil">
             <option disabled value="">Seleccione su estado civil</option>
-            <option value="soltero">Soltero/a</option>
-            <option value="casado">Casado/a</option>
-            <option value="divorciado">Divorciado/a</option>
-            <option value="viudo">Viudo/a</option>
-            <option value="conviviente_civil">Conviviente Civil</option>
+            <option v-for="item in listaEstadoCivilApi" :key="item.ESC_ID" :value="item.ESC_ID">
+              {{ item.ESC_DESCRIPCION }}
+            </option>
           </select>
         </div>
 
@@ -207,7 +237,7 @@
             id="apodoCredencial"
             v-model="apodoCredencial"
             type="text"
-            placeholder="INGRESE SU APODO O NOMBRE PARA CREDENCIAL"
+            placeholder="Ingrese su apodo o nombre para credencial"
             maxlength="50"
             @input="profesion = profesion.toUpperCase()"
           />
@@ -246,13 +276,13 @@
         
         <div class="campo">
           <label for="religion">Religión:</label>
-          <input id="religion" v-model="religion" type="text" placeholder="INGRESE SU RELIGIÓN" />
+          <input id="religion" v-model="religion" type="text" placeholder="Ingrese su religión" />
         </div>
       </div>
 
   <!-- ::::::::::::::::::::: FOTO (Selfie o Subida) ::::::::::::::::::::: -->
 <!-- Input para subir archivo oculto y botones de captura agrupados -->
-<div class="section-grid file-row">
+<div class="foto-section-centered">
   <div class="campo" style="display: none;">
     <input
       type="file"
@@ -296,6 +326,41 @@
       </button>
     </div>
   </div>
+
+<!-- ::::::::::::::::::: FORMADOR ::::::::::::::::::: -->
+<div class="bloque-formador">
+  <div class="campo">
+    <label for="formador">¿Eres Formador?</label>
+    <select id="formador" v-model="esFormador" class="selector-formador">
+      <option value="">Seleccione una opción</option>
+      <option value="si">Sí</option>
+      <option value="no">No</option>
+    </select>
+  </div>
+
+  <!-- ::::::::::::::::::: CAMPOS ADICIONALES ::::::::::::::::::: -->
+  <transition name="desplegar">
+    <div v-if="esFormador === 'si'" class="campos-formador">
+      <!-- Checkboxes en horizontal centrados -->
+      <div class="checkbox-list-horizontal">
+        <div>
+          <input id="habilitacion1" type="checkbox" class="custom-checkbox" v-model="habilidad1" true-value="si" false-value="no" />
+          <label for="habilitacion1">Habilitación 1</label>
+        </div>
+
+        <div>
+          <input id="habilitacion2" type="checkbox" class="custom-checkbox" v-model="habilidad2" true-value="si" false-value="no" />
+          <label for="habilitacion2">Habilitación 2</label>
+        </div>
+
+        <div>
+          <input id="verificado" type="checkbox" class="custom-checkbox" v-model="verificado" true-value="si" false-value="no" />
+          <label for="verificado">Verificado</label>
+        </div>
+      </div>
+    </div>
+  </transition>
+</div>
 </div>
 
 <!-- Vista previa -->
@@ -315,68 +380,6 @@
   </div>
 </div>
 
-<!-- ::::::::::::::::::::::::: RELIGIÓN ::::::::::::::::::::::::: -->
-<!-- (Religión eliminado según solicitud del usuario) -->
-
-<!-- ::::::::::::::::::: FORMADOR ::::::::::::::::::: -->
-<section class="bloque-formador">
-  <!-- Opción A: etiqueta tradicional arriba del select -->
-  <div class="campo">
-    <label for="formador">¿Eres Formador?</label>
-    <select id="formador" v-model="esFormador" class="selector-formador">
-      <option value="">Seleccione una opción</option>
-      <option value="si">Sí</option>
-      <option value="no">No</option>
-    </select>
-  </div>
-
-  <!-- ::::::::::::::::::: CAMPOS ADICIONALES ::::::::::::::::::: -->
-  <transition name="desplegar">
-    <div v-if="esFormador === 'si'" class="campos-formador">
-      <!-- Reorganizado: dos columnas dentro de formador -->
-      <div class="formador-grid">
-        <!-- Columna izquierda: label + textarea -->
-        <div class="campo columna-izquierda">
-          <label for="historialFormador">Historial de Formador:</label>
-          <textarea
-            id="historialFormador"
-            v-model="historialFormador"
-            placeholder="Describe tu experiencia o historial como formador"
-            rows="6"
-            maxlength="500"
-          ></textarea>
-        </div>
-
-        <!-- Columna derecha: habilitaciones 1 y 2 (apiladas) -->
-        <div class="campo columna-derecha">
-          <div class="habilitaciones-vertical">
-            <div class="checkbox-list">
-              <div>
-                <input id="habilitacion1" type="checkbox" class="custom-checkbox" v-model="habilidad1" true-value="si" false-value="no" />
-                <label for="habilitacion1">Habilitación 1</label>
-              </div>
-
-              <div>
-                <input id="habilitacion2" type="checkbox" class="custom-checkbox" v-model="habilidad2" true-value="si" false-value="no" />
-                <label for="habilitacion2">Habilitación 2</label>
-              </div>
-
-              <div>
-                <input id="verificado" type="checkbox" class="custom-checkbox" v-model="verificado" true-value="si" false-value="no" />
-                <label for="verificado">Verificado</label>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </transition>
-</section>
-
-
-
-
-
 </section>
 
 <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
@@ -384,6 +387,9 @@
 <!--:::::::::::::::::::::::::          INFORMACION ASOCIACION       ::::::::::::::::::::::::::::::::-->
 <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
 <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+  <div id="seccion-2" class="inicio-linea-verde">
+    <span class="numero-seccion">2</span>
+  </div>
   <section>
     <div class="datosScout"></div> <!-- TITULO iNFORMACVION ACOCIACION-->
           <div class="section-header">
@@ -391,36 +397,9 @@
             <div class="section-subtitle"></div>
           </div>
 
-
-  <!-- :::::::::::::::::: SELECTOR DE ROL EN EL CURSO ::::::::::::::::::::::::: -->
-      <label for="rol">Rol en el curso:</label>
-      <select id="rol" v-model="rolSeleccionado">
-        <option disabled value="">Seleccione su rol</option>
-        <option value="participante">Participante</option>
-        <option value="apoyo_formadores">Apoyo a formadores</option>
-        <option value="formador">Formador(a)</option>
-        <option value="equipo_servicio">Equipo de servicio</option>
-        <option value="equipo_organizador">Equipo organizador</option>
-        <option value="equipo_salud">Equipo de salud</option>
-        <option value="otro">Otro</option>
-      </select>
-
-  <!-- TEXTAREA BLOQUEADO POR DEFECTO, SE HABILITA SI ELIGE "OTRO" -->
-                    <Transition name="desplegar">
-                      <div v-if="rolSeleccionado === 'otro'" class="campo">
-                      <label for="rolOtro">Especifique su rol:</label>
-                      <textarea
-                        id="rolOtro"
-                        v-model="rolOtro"
-                        placeholder="INGRESE SU ROL AQUÍ..."
-                        rows="3"
-                        maxlength="100"
-                        :disabled="rolSeleccionado !== 'otro'"
-                      ></textarea>
-                      </div>
-                    </Transition>
-
+  <div class="section-grid">
   <!-- :::::::::::::::::: SELECTOR DE ZONA ::::::::::::::::::::::::: -->
+    <div class="campo">
         <label for="grupo">Zona al que pertenece:</label>
         <select id="grupo" v-model="zonaSeleccionada" @change="handleZonaChange">
           <option disabled value="">Seleccione su zona</option>
@@ -484,13 +463,16 @@
                             <textarea
                               id="otraZona"
                               v-model="otraZona"
-                              placeholder="ESCRIBA EL NOMBRE DE LA ZONA..."
+                              placeholder="Escriba el nombre de la zona..."
                               rows="3"
                               maxlength="100"
                             ></textarea>
                             </div>
                           </Transition>
+    </div>
+
       <!-- :::::::::::::::::: GRUPO AL QUE PERTENECE ::::::::::::::::::::::::: -->
+    <div class="campo">
       <label for="rama">Grupo al que pertenece:</label>
       <select id="rama" v-model="grupoPertenece">
         <option disabled value="">Seleccione su grupo</option>
@@ -501,50 +483,104 @@
         <option value="Pioneros">Pioneros</option>
         <option value="Caminantes">Caminantes</option>
       </select>
-    
-<!--::::::::::::::::::::::SELECTOR NIVEL:::::::::::::::::::::::::::::::::::::::::::::::-->
-    <label for="nivel">¿Qué nivel tienes?</label>
-    <select id="nivel" v-model="nivelSeleccionado" required>
-      <option disabled value="">Seleccione su nivel</option>
-      <option value="Inicial">Inicial</option>
-      <option value="Medio">Medio</option>
-      <option value="Avanzado">Avanzado</option>
-      <option value="Ninguno">Ninguno</option>
-    </select>
+    </div>
+  </div>
 
-<!--::::::::::::::::::::::SELECTOR RAMA PARA NIVEL MEDIO:::::::::::::::::::::::::::::::::::::::::::::::-->
-                      <transition name="desplegar">
-                        <div v-if="nivelSeleccionado === 'Medio'" class="campo">
-                          <label for="ramaMedio">¿En qué rama tienes ese nivel?</label>
-                          <select id="ramaMedio" v-model="ramaMedioSeleccionada">
-                            <option disabled value="">Seleccione la rama</option>
-                            <option value="Lobatos">Lobatos</option>
-                            <option value="Golondrinas">Golondrinas</option>
-                            <option value="Guías">Guías</option>
-                            <option value="Scouts">Scouts</option>
-                            <option value="Pioneros">Pioneros</option>
-                            <option value="Caminantes">Caminantes</option>
-                            <option value="Ninguno">Ninguno</option>
-                          </select>
-                        </div>
-                      </transition>
+  <div class="section-grid">
+  <!-- :::::::::::::::::: SELECTOR DE ROL EN EL CURSO ::::::::::::::::::::::::: -->
+    <div class="campo">
+      <label for="rol">Rol en el curso:</label>
+      <select id="rol" v-model="rolSeleccionado">
+        <option disabled value="">Seleccione su rol</option>
+        <option value="participante">Participante</option>
+        <option value="apoyo_formadores">Apoyo a formadores</option>
+        <option value="formador">Formador(a)</option>
+        <option value="equipo_servicio">Equipo de servicio</option>
+        <option value="equipo_organizador">Equipo organizador</option>
+        <option value="equipo_salud">Equipo de salud</option>
+        <option value="otro">Otro</option>
+      </select>
 
-  <!--::::::::::::::::::::::SELECTOR RAMA PARA NIVEL AVANZADO:::::::::::::::::::::::::::::::::::::::::::::::-->
-                      <transition name="desplegar">
-                        <div v-if="nivelSeleccionado === 'Avanzado'" class="campo">
-                          <label for="ramaAvanzado">¿En qué rama tienes ese nivel?</label>
-                          <select id="ramaAvanzado" v-model="ramaAvanzadoSeleccionada">
-                            <option disabled value="">Seleccione la rama</option>
-                            <option value="Lobatos">Lobatos</option>
-                            <option value="Golondrinas">Golondrinas</option>
-                            <option value="Guías">Guías</option>
-                            <option value="Scouts">Scouts</option>
-                            <option value="Pioneros">Pioneros</option>
-                            <option value="Caminantes">Caminantes</option>
-                            <option value="Ninguno">Ninguno</option>
-                          </select>
-                        </div>
-                      </transition>
+  <!-- TEXTAREA BLOQUEADO POR DEFECTO, SE HABILITA SI ELIGE "OTRO" -->
+                    <Transition name="desplegar">
+                      <div v-if="rolSeleccionado === 'otro'" class="campo">
+                      <label for="rolOtro">Especifique su rol:</label>
+                      <textarea
+                        id="rolOtro"
+                        v-model="rolOtro"
+                        placeholder="Ingrese su rol aquí..."
+                        rows="3"
+                        maxlength="100"
+                        :disabled="rolSeleccionado !== 'otro'"
+                      ></textarea>
+                      </div>
+                    </Transition>
+    </div>
+
+  <!-- :::::::::::::::::: SELECTOR DE NIVEL ::::::::::::::::::::::::: -->
+    <div class="campo">
+      <label for="nivelFormacion">Nivel de formación:</label>
+      <select id="nivelFormacion" v-model="nivelFormacion">
+        <option disabled value="">Seleccione su nivel</option>
+        <option value="inicial">Nivel inicial</option>
+        <option value="mayor">Mayor a inicial</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- :::::::::::::::::: CHECKBOXES DE NIVELES (Mayor a Inicial) ::::::::::::::::::::::::: -->
+  <transition name="desplegar">
+    <div v-if="nivelFormacion === 'mayor'" class="niveles-container">
+      <div class="section-grid">
+        <!-- Columna izquierda: Medio -->
+        <div class="nivel-column">
+          <h4 class="nivel-title">Medio</h4>
+          <div class="checkbox-list">
+            <div v-for="rama in ramasMedio" :key="rama.value">
+              <input 
+                :id="'medio-' + rama.value" 
+                type="checkbox" 
+                class="custom-checkbox" 
+                :value="rama.value"
+                v-model="ramasMedioSeleccionadas"
+              />
+              <label :for="'medio-' + rama.value">{{ rama.label }}</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Columna derecha: Avanzado -->
+        <div class="nivel-column">
+          <h4 class="nivel-title">Avanzado</h4>
+          <div class="checkbox-list">
+            <div v-for="rama in ramasAvanzado" :key="rama.value">
+              <input 
+                :id="'avanzado-' + rama.value" 
+                type="checkbox" 
+                class="custom-checkbox" 
+                :value="rama.value"
+                v-model="ramasAvanzadoSeleccionadas"
+              />
+              <label :for="'avanzado-' + rama.value">{{ rama.label }}</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input MMAA fuera del grid, debajo de las columnas -->
+      <div class="mmaa-input-container">
+        <label for="mmaaInput" class="mmaa-label">MMAA:</label>
+        <input 
+          id="mmaaInput" 
+          v-model="mmaaValor" 
+          type="text" 
+          placeholder="Ingrese MMAA"
+          maxlength="4"
+          class="mmaa-input"
+        />
+      </div>
+    </div>
+  </transition>
 
   </section>
 
@@ -553,6 +589,9 @@
   <!--:::::::::::::::::::::::::            Salud y Logistica        ::::::::::::::::::::::::::::::::::-->
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+  <div id="seccion-3" class="inicio-linea-verde">
+    <span class="numero-seccion">3</span>
+  </div>
   <section>
       <div class="saludLogistica"></div> <!-- Salud y Logistica-->
           <div class="section-header">
@@ -577,7 +616,7 @@
           <textarea
             id="detalleSalud"
             v-model="detalleAlergiaEnfermedad"
-            placeholder="INGRESE LA ALERGIAS,ENFERMEDAD O LIMITACION"
+            placeholder="Ingrese las alergias, enfermedad o limitación"
             rows="4"
             maxlength="255"
             :disabled="tieneAlergiaEnfermedad !== 'Si'"
@@ -602,7 +641,7 @@
           <textarea
             id="detalleLimitacion"
             v-model="detalleLimitacion"
-            placeholder="INGRESE LA LIMITACION"
+            placeholder="Ingrese la limitación"
             rows="4"
             maxlength="255"
             :disabled="tieneLimitacion !== 'Si'"
@@ -616,7 +655,7 @@
       <div class="section-grid">
         <div class="campo">
           <label for="nombreEmergencia">Nombre de contacto de emergencia:</label>
-          <input id="nombreEmergencia" v-model="nombreEmergencia" type="text" placeholder="Ej: ALAN DAVE" />
+          <input id="nombreEmergencia" v-model="nombreEmergencia" type="text" placeholder="Ej: Alan Dave" />
         </div>
 
         <div class="campo">
@@ -682,7 +721,7 @@
                         id="patentePropia"
                         v-model="patentePropia"
                         type="text"
-                        placeholder="Ej: ABCD12"
+                        placeholder="Ej: Abcd12"
                         maxlength="6"
                         @input="patentePropia = $event.target.value.toUpperCase()"
                       />
@@ -751,6 +790,9 @@
   <!--:::::::::::::::::::::::::          Informacion Adicional      ::::::::::::::::::::::::::::::::::-->
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
+  <div id="seccion-4" class="inicio-linea-verde">
+    <span class="numero-seccion">4</span>
+  </div>
   <section>
       <div class="informacionAdicional"></div> <!-- Titulo Informacion Adicional-->
           <div class="section-header">
@@ -765,7 +807,7 @@
         <textarea
           id="observacionesCurso"
           v-model="observacionesCurso"
-          placeholder="INGRESE CUALQUIER COMENTARIO O CONSIDERACIÓN"
+          placeholder="Ingrese cualquier comentario o consideración"
           rows="4"
           maxlength="200"
         ></textarea>
@@ -777,7 +819,7 @@
         <textarea
           id="consideraciones"
           v-model="consideraciones"
-          placeholder="INGRESE CUALQUIER COMENTARIO O CONSIDERACIÓN"
+          placeholder="Ingrese cualquier comentario o consideración"
           rows="4"
           maxlength="200"
         ></textarea>
@@ -866,7 +908,7 @@
         id="profesion"
         v-model="profesion"
         type="text"
-        placeholder="INGRESE SU PROFESIÓN"
+        placeholder="Ingrese su profesión"
         maxlength="50"
         @input="profesion = profesion.toUpperCase()"
       />
@@ -911,15 +953,85 @@
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
 
 <script setup>
+import { regionApi } from '../services/regionService';
+const listaRegionApi = ref([]);
+import { watch } from 'vue';
 // :::::::::::::::::: IMPORTS Y WEAS :::::::::::::::::::::::::
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { cursos as cursosApi, secciones as seccionesApi } from '../services/cursosService';
+import { estadoCivilApi } from '../services/estadoCivilService';
+import { provinciaApi } from '../services/provinciaService';
 
 // :::::::::::::::::: MANEJO DE SELECCIÓN DE CURSO Y SECCIÓN :::::::::::::::::::::::::
-const handleCursoChange = () => {
+// :::::::::::::::::: CURSOS DESDE API :::::::::::::::::::::::::
+const listaCursosApi = ref([]);
+// Lista vacía para secciones, igual que cursos
+const listaSeccionesApi = ref([]);
+// Estado civil desde API
+const listaEstadoCivilApi = ref([]);
+const listaProvinciaApi = ref([]);
+
+onMounted(async () => {
+      // Región
+      try {
+        const regionResp = await regionApi.list();
+        listaRegionApi.value = regionResp.results || regionResp || [];
+      } catch (error) {
+        listaRegionApi.value = [];
+      }
+    // Cargar comunas cuando cambia la provincia seleccionada
+    watch(provinciaSeleccionada, async (newVal) => {
+      if (newVal) {
+        try {
+          const comunaResp = await comunaApi.list({ provincia: newVal });
+          listaComunaApi.value = comunaResp.results || comunaResp || [];
+        } catch (error) {
+          listaComunaApi.value = [];
+        }
+      } else {
+        listaComunaApi.value = [];
+      }
+    });
+  try {
+    const respuesta = await cursosApi.list();
+    // Captura todos los valores de la API en la lista vacía (DRF paginado)
+    listaCursosApi.value = (respuesta.results || []).map(curso => ({ ...curso }));
+  } catch (error) {
+    console.error('Error al obtener cursos:', error);
+  }
+  // Estado civil
+  try {
+    const estadoCivilResp = await estadoCivilApi.list();
+    listaEstadoCivilApi.value = estadoCivilResp.results || estadoCivilResp || [];
+  } catch (error) {
+    listaEstadoCivilApi.value = [];
+  }
+  // Provincia
+  try {
+    const provinciaResp = await provinciaApi.list();
+    listaProvinciaApi.value = provinciaResp.results || provinciaResp || [];
+  } catch (error) {
+    listaProvinciaApi.value = [];
+  }
+});
+
+const handleCursoChange = async () => {
+  seccionCurso.value = "";
+  listaSeccionesApi.value = [];
+
   if (!cursoSeleccionado.value) {
-    // Cuando se selecciona "Seleccione un curso", limpiamos el formulario
-    limpiarFormulario();
-    seccionCurso.value = ""; // Reset sección when course changes
+    return;
+  }
+
+  try {
+    // La API espera el parámetro curso_id
+    const respuestaSecciones = await seccionesApi.list({ curso_id: cursoSeleccionado.value });
+    // Si la respuesta está paginada, usa .results, si no, usa el array directo
+    listaSeccionesApi.value = respuestaSecciones.results || respuestaSecciones || [];
+    console.log('Secciones obtenidas para el curso:', listaSeccionesApi.value);
+  } catch (error) {
+    console.error('Error al obtener las secciones del curso:', error);
+    listaSeccionesApi.value = [];
   }
 };
 
@@ -937,7 +1049,89 @@ const handleZonaChange = () => {
   }
 };
 
+// :::::::::::::::::: FUNCIÓN DE NAVEGACIÓN FLOTANTE :::::::::::::::::::::::::
+const scrollToSection = (sectionNumber) => {
+  const element = document.getElementById(`seccion-${sectionNumber}`);
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    updateActiveNavItem(sectionNumber);
+  }
+};
+
+// Scroll al h1 del formulario
+const scrollToTop = () => {
+  const h1 = document.querySelector('.titulo-pre-registro');
+  if (h1) {
+    h1.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+};
+
+// Actualizar el botón activo
+const updateActiveNavItem = (sectionNumber) => {
+  document.querySelectorAll('.nav-item').forEach((item, index) => {
+    item.classList.toggle('active', index === sectionNumber - 1);
+  });
+};
+
+// Detectar scroll y actualizar navegación automáticamente
+let intersectionObserver = null;
+
+onMounted(() => {
+  // Función para detectar qué sección está en el centro de la pantalla
+  const checkActiveSection = () => {
+    const sections = [1, 2, 3, 4];
+    const viewportCenter = window.innerHeight / 2;
+    
+    let closestSection = 1;
+    let minDistance = Infinity;
+    
+    sections.forEach((num) => {
+      const section = document.getElementById(`seccion-${num}`);
+      if (section) {
+        const rect = section.getBoundingClientRect();
+        const sectionCenter = rect.top + rect.height / 2;
+        const distance = Math.abs(sectionCenter - viewportCenter);
+        
+        // Si esta sección está más cerca del centro de la pantalla
+        if (distance < minDistance && rect.top < viewportCenter && rect.bottom > 0) {
+          minDistance = distance;
+          closestSection = num;
+        }
+      }
+    });
+    
+    updateActiveNavItem(closestSection);
+  };
+  
+  // Listener de scroll con throttle
+  let scrollTimeout;
+  const handleScroll = () => {
+    if (scrollTimeout) {
+      clearTimeout(scrollTimeout);
+    }
+    scrollTimeout = setTimeout(() => {
+      checkActiveSection();
+    }, 100);
+  };
+  
+  window.addEventListener('scroll', handleScroll);
+  
+  // Verificar sección activa al cargar
+  setTimeout(() => {
+    checkActiveSection();
+  }, 500);
+  
+  // Limpiar listener al desmontar
+  onBeforeUnmount(() => {
+    window.removeEventListener('scroll', handleScroll);
+    if (scrollTimeout) {
+      clearTimeout(scrollTimeout);
+    }
+  });
+});
+
 // :::::::::::::::::: VARIABLES PARA CAPTURAR VALORES :::::::::::::::::::::::::
+const observacionesCurso = ref("");
 const tieneLimitacion = ref("");
 const detalleLimitacion = ref("");
 const zonaSeleccionada = ref("");
@@ -964,9 +1158,32 @@ const detalleAlergiaEnfermedad = ref("");
 const tipoAlimentacion = ref("");
 const rolSeleccionado = ref("");
 const rolOtro = ref("");
+const nivelFormacion = ref("");
+const ramasMedioSeleccionadas = ref([]);
+const ramasAvanzadoSeleccionadas = ref([]);
+const mmaaValor = ref("");
 const grupoSeleccionado = ref("");
 const grupoOtro = ref("");
 const ramaSeleccionada = ref("");
+
+// Datos para los checkboxes de ramas (se pueden conectar a una API)
+const ramasMedio = ref([
+  { value: "rama1", label: "Rama 1" },
+  { value: "rama2", label: "Rama 2" },
+  { value: "rama3", label: "Rama 3" },
+  { value: "rama4", label: "Rama 4" },
+  { value: "rama5", label: "Rama 5" },
+  { value: "rama6", label: "Rama 6" }
+]);
+
+const ramasAvanzado = ref([
+  { value: "rama1", label: "Rama 1" },
+  { value: "rama2", label: "Rama 2" },
+  { value: "rama3", label: "Rama 3" },
+  { value: "rama4", label: "Rama 4" },
+  { value: "rama5", label: "Rama 5" },
+  { value: "rama6", label: "Rama 6" }
+]);
 const opcionCargo = ref("");
 const cargoTexto = ref("");
 const añosUnidad = ref("");
@@ -997,6 +1214,10 @@ const añosTiempoBeneficiario = ref("");
 const mesesTiempoBeneficiario = ref("");
 
 const regionSeleccionada = ref("");
+const provinciaSeleccionada = ref("");
+const provinciaSeleccionadaValor = computed(() => {
+  return listaProvinciaApi.value.find(p => p.PRO_ID === provinciaSeleccionada.value) || null;
+});
 const ciudadSeleccionada = ref("");
 const comunaSeleccionada = ref("");
 
@@ -1004,6 +1225,7 @@ const comunaSeleccionada = ref("");
 
 // Handler para el select de Dirección: si escoge una opción distinta de 'Otra',
 // copiamos el valor a `direccion` (para que el payload siga usando `direccion`).
+//
 // onDireccionSelect removed — la dirección ahora se ingresa directamente en el campo `direccion`
 
 // Variables para el formador
@@ -1196,11 +1418,7 @@ const comunasPorRegion = {
   },
   "Atacama": {
     "Copiapó": ["Copiapó", "Caldera", "Tierra Amarilla"],
-    "Chañaral": ["Chañaral", "Diego de Almagro"],
-    "Huasco": ["Vallenar", "Alto del Carmen", "Freirina", "Huasco"]
-  },
-  "Coquimbo": {
-    "Elqui": ["La Serena", "Coquimbo", "Andacollo", "La Higuera", "Paihuano", "Vicuña"],
+    "Chañaral": [],
     "Limarí": ["Ovalle", "Combarbalá", "Monte Patria", "Punitaqui", "Río Hurtado"],
     "Choapa": ["Illapel", "Canela", "Los Vilos", "Salamanca"]
   },
@@ -1294,7 +1512,61 @@ const comunasDisponibles = computed(() => {
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;600;700&family=Montserrat:wght@700&family=Poppins:wght@400&display=swap');
 
+/* :::::::::::::::::::: H1 PRE-REGISTRO :::::::::::::::::::: */
+@keyframes slideInScale {
+  0% {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.9);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(0) scale(1.05);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes expandLine {
+  0% {
+    width: 0;
+  }
+  100% {
+    width: 400px;
+  }
+}
+
+.titulo-pre-registro {
+  font-family: 'Poppins', 'Montserrat', Arial, sans-serif !important;
+  font-weight: 400 !important;
+  font-size: 2.5rem !important;
+  color: #2563eb !important;
+  text-align: center !important;
+  margin-bottom: 1.5rem !important;
+  letter-spacing: 1px !important;
+  line-height: 1.1 !important;
+  width: 100% !important;
+  position: relative !important;
+  animation: slideInScale 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  padding-top: 15px !important;
+  text-transform: none !important;
+}
+
+.titulo-pre-registro::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 4px;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6, #3b82f6);
+  border-radius: 2px;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+  animation: expandLine 1s ease-out 0.3s forwards;
+  width: 0;
+}
 
 /* :::::::::: ANIMACIÓN DESPLEGABLE :::::::::: */
 .desplegar-enter-active, .desplegar-leave-active {
@@ -1353,6 +1625,7 @@ const comunasDisponibles = computed(() => {
   display: flex;
   flex-direction: column;
   gap: 6px;              /* label to control spacing */
+  position: relative;    /* For custom arrow positioning */
 }
 
 .campo label {
@@ -1372,16 +1645,36 @@ select,
 textarea,
 .selector-formador {
   width: 100%;
-  padding: 12px 16px !important;
+  padding: 8px 12px !important;
   border: 2px solid #e8e8e8 !important;
-  border-radius: 10px !important;
+  border-radius: 8px !important;
   background: #fff !important;
   box-sizing: border-box;
-  font-size: 15px !important;
-  color: #0d0c22 !important;
+  font-size: 14px !important;
+  color: #333 !important;
   font-weight: 500 !important;
   transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1) !important;
   box-shadow: 0px 0px 20px -18px !important;
+}
+
+/* Hide default select arrow */
+select,
+.selector-formador {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  padding-right: 40px !important;
+ 
+  cursor: pointer;
+}
+
+/* Placeholder color for unselected state */
+select:invalid {
+  color: #999 !important;
+}
+
+select option {
+  color: #333 !important;
 }
 
 input:hover,
@@ -1397,8 +1690,8 @@ select:focus,
 textarea:focus,
 .selector-formador:focus {
   outline: none !important;
-  border: 2px solid #2f2c45 !important;
-  box-shadow: 0px 0px 20px -17px !important;
+  border: 2px solid #007bff !important;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
 }
 
 input:active,
@@ -1407,16 +1700,33 @@ textarea:active {
   transform: scale(0.995);
 }
 
-/* Make select arrows visually consistent and leave space for them */
-select.selector-formador {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  padding-right: 40px;
-  background-image: linear-gradient(45deg,#0000 50%,#000 50%), linear-gradient(135deg,#0000 50%,#000 50%);
-  background-position: calc(100% - 18px) calc(1em + 2px), calc(100% - 13px) calc(1em + 2px);
-  background-size: 6px 6px, 6px 6px;
-  background-repeat: no-repeat;
+/* Custom arrow for select elements */
+.campo:has(select)::after,
+.campo:has(.selector-formador)::after {
+  content: '';
+  position: absolute;
+  top: calc(50% + 12px);
+  right: 15px;
+  transform: translateY(-50%) rotate(45deg);
+  width: 8px;
+  height: 8px;
+  border-bottom: 2px solid #888;
+  border-right: 2px solid #888;
+  pointer-events: none;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+/* Arrow color change on hover */
+.campo:has(select:hover)::after,
+.campo:has(.selector-formador:hover)::after {
+  border-color: #007bff;
+}
+
+/* Arrow color and rotation on focus */
+.campo:has(select:focus)::after,
+.campo:has(.selector-formador:focus)::after {
+  border-color: #007bff;
+  transform: translateY(-50%) rotate(225deg);
 }
 
 /* Phone row: keep phone type select fixed size and input flexible */
@@ -1463,63 +1773,42 @@ select.selector-formador {
   font-weight: 600;
 }
 
-/* Asegura que el textarea del formador ocupe el ancho disponible y quede alineado a la izquierda */
-.bloque-formador .campo textarea {
-  width: 100%;
-  max-width: 700px; /* conserva un límite razonable */
-  box-sizing: border-box;
-  margin: 0; /* elimina centrado por márgenes previos */
+/* Checkboxes en horizontal centrados */
+.checkbox-list-horizontal {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  margin-top: 0.5rem;
 }
 
-/* Grid específico para la sección de formador: textarea a la izquierda, habilitaciones a la derecha */
-.formador-grid {
-  display: grid;
-  grid-template-columns: 1fr 320px; /* izquierda flexible, derecha columna fija más estrecha */
-  gap: 18px;
-  align-items: start;
-}
-
-.bloque-formador .columna-izquierda label {
-  display: block;
-  text-align: left;
-  width: 100%;
-  margin-bottom: 8px;
-  color: #333;
-  font-weight: 600;
-}
-
-.bloque-formador .columna-izquierda textarea {
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  padding: 10px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-}
-
-.habilitaciones-vertical .campo { margin-bottom: 12px; }
-
-/* Ajuste vertical: bajar la columna derecha para alinear con el inicio del textarea */
-.bloque-formador .columna-derecha {
-  margin-top: 26px; /* baja la columna para que los checkboxes queden alineados con el textarea */
+.checkbox-list-horizontal > div {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
 }
 
 /* Custom checkbox based on uiverse example (calm-wasp-75) */
 .bloque-formador {
   --_clr-primary: #333;
   --_clr-checked: #127acf;
-}
-.bloque-formador .checkbox-list > div {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.6rem;
-  margin-block-start: 0.4rem;
+  justify-content: center;
+  width: 100%;
+  max-width: 900px;
+  margin: 50 auto;
+  padding: 15px 15px 15px 0;
+  box-sizing: border-box;
 }
+
 .bloque-formador label[for] {
   cursor: pointer;
   color: var(--_clr-primary);
   user-select: none;
 }
+
 .bloque-formador input[type="checkbox"].custom-checkbox {
   appearance: none;
   -webkit-appearance: none;
@@ -1536,6 +1825,7 @@ select.selector-formador {
   cursor: pointer;
   transition: all 140ms ease-in-out;
 }
+
 .bloque-formador input[type="checkbox"].custom-checkbox::after {
   content: '';
   color: #fff;
@@ -1543,10 +1833,12 @@ select.selector-formador {
   transform: scale(0);
   transition: transform 120ms ease-in-out;
 }
+
 .bloque-formador input[type="checkbox"].custom-checkbox:checked {
   background: var(--_clr-checked);
   border-color: var(--_clr-checked);
 }
+
 .bloque-formador input[type="checkbox"].custom-checkbox:checked::after {
   content: '✓';
   transform: scale(1);
@@ -1554,12 +1846,10 @@ select.selector-formador {
 }
 
 @media (max-width: 900px) {
-  .formador-grid { grid-template-columns: 1fr; }
-}
-
-@media (max-width: 900px) {
-  /* En pantallas pequeñas volvemos a la normalidad y removemos el offset */
-  .bloque-formador .columna-derecha { margin-top: 12px; }
+  .checkbox-list-horizontal {
+    flex-direction: column;
+    gap: 1rem;
+  }
 }
 
 @media (max-width: 900px) {
@@ -1601,6 +1891,91 @@ input[type="checkbox"].custom-checkbox:checked::after {
   content: '✓';
   transform: scale(1);
   font-size: 0.95rem;
+}
+
+/* Estilos para las columnas de nivel */
+.niveles-container {
+  margin-top: 20px;
+  width: 100%;
+}
+
+.nivel-column {
+  background: #f9fafb;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+}
+
+.nivel-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 15px 0;
+  text-align: center;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #10b981;
+}
+
+.nivel-column .checkbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-grow: 0;
+}
+
+.nivel-column .checkbox-list > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nivel-column .checkbox-list label {
+  cursor: pointer;
+  color: #333;
+  user-select: none;
+  font-size: 14px;
+}
+
+/* Input MMAA minimalista - posicionado debajo de ambas columnas */
+.mmaa-input-container {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  justify-content: flex-start;
+  padding-left: 0;
+}
+
+.mmaa-label {
+  font-size: 12px !important;
+  font-weight: 600;
+  color: #374151;
+  margin: 0;
+}
+
+.mmaa-input {
+  width: 130px !important;
+  padding: 4px 8px !important;
+  font-size: 12px !important;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.mmaa-input:focus {
+  border-color: #10b981;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
+}
+
+.mmaa-input::placeholder {
+  color: #9ca3af;
+  font-size: 12px;
 }
 
 .titulo-bloque {
@@ -1671,18 +2046,26 @@ input[type="checkbox"].custom-checkbox:checked::after {
   max-width: 300px;
 }
 
-/* Centrar la etiqueta y el select del campo '¿Eres Formador?' */
+/* Centrar la sección completa de '¿Eres Formador?' */
+.bloque-formador .campo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
 .bloque-formador .campo label[for="formador"] {
   text-align: center;
   display: block;
-  width: 100%;
   margin-bottom: 8px;
+  font-weight: 600;
+  color: #333;
 }
+
 .bloque-formador .campo select#formador,
 .bloque-formador .selector-formador {
-  margin-left: auto;
-  margin-right: auto;
-  display: block;
+  max-width: 400px;
+  width: 100%;
 }
 
 /* Estilos para el selector de tipo de teléfono (botones segmentados) */
@@ -1793,7 +2176,8 @@ textarea:focus {
   background-color: #f9f9f9;    /* Fondo suave */
   padding: 10px 20px;           /* Padding interno */
   border-radius: 8px;
-  box-shadow: 0 0 5px rgba(0, 0, 0, 0.1); /* Suaviza el bloque */
+  border: 2px solid #e2e8f0;
+  cursor: pointer;
   transition: all 0.3s ease;
 }
 
@@ -1802,21 +2186,40 @@ textarea:focus {
   transform: translateY(-2px);
 }
 
-.campo-checkbox input[type="checkbox"] {
-  accent-color: #2196f3;        /* Azul moderno */
-  width: 20px;
-  height: 20px;
+.campo-checkbox input[type="checkbox"].custom-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  outline: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  aspect-ratio: 1;
+  padding: 0.12rem;
+  background: transparent;
+  border: 1px solid #333;
+  border-radius: 4px;
+  display: grid;
+  place-content: center;
   cursor: pointer;
-  transition: transform 0.2s ease;
+  transition: all 140ms ease-in-out;
 }
 
-.campo-checkbox input[type="checkbox"]:hover {
-  transform: scale(1.1);
+.campo-checkbox input[type="checkbox"].custom-checkbox::after {
+  content: '';
+  color: #fff;
+  font-weight: 700;
+  transform: scale(0);
+  transition: transform 120ms ease-in-out;
 }
 
+.campo-checkbox input[type="checkbox"].custom-checkbox:checked {
+  background: #127acf;
+  border-color: #127acf;
+}
 
-.invalido {
-  border: 2px solid #e74c3c; /* rojo para indicar error */
+.campo-checkbox input[type="checkbox"].custom-checkbox:checked::after {
+  content: '✓';
+  transform: scale(1);
+  font-size: 0.95rem;
 }
 
 /* Estilos para la transición del formulario */
@@ -1882,14 +2285,6 @@ textarea:focus {
 
 .btn-subir-foto:hover {
   background-color: #218838;
-}
-
-.label-foto {
-  font-weight: 600;
-  font-size: 14px;
-  color: #333;
-  margin-right: 15px;
-  white-space: nowrap;
 }
 
 .btn-capturar {
@@ -2049,8 +2444,8 @@ button:disabled {
     justify-content: flex-start; /* Cambiado a flex-start para alinear al inicio */ 
     align-items: center; /* Centra horizontalmente */ 
     min-height: 100vh; /* Ocupa todo el alto de la ventana */
-    padding-top: 30px; /* Ajusta este valor para mover el formulario más arriba o abajo */
-    background: linear-gradient(135deg, #2c5cdd, #2563eb, #3b82f6);
+    padding-top: 10px; /* Ajusta este valor para mover el formulario más arriba o abajo */
+    background: linear-gradient(to bottom, #E0F2F7, #F0F8FF);
 } 
 
 textarea { 
@@ -2061,14 +2456,15 @@ textarea {
 } 
 
 h2 { 
-    font-size: 20px; /* tamaño de los sub titulos */ 
-    color: #333; 
-    font-weight: 600; 
-    text-align: center; 
+    font-size: 1.8rem; /* tamaño de los sub titulos aumentado */ 
+    color: #1e293b; 
+    font-weight: 700; 
+    text-align: left; 
     margin: 1.5rem 0 1rem 0; 
-    border-bottom: 2px solid #428ce1; 
-    padding-bottom: 6px; 
-} 
+    padding-bottom: 10px;
+    padding-left: 40px;
+    position: relative;
+}
 
 section {
   background-color: #ffffff;
@@ -2104,9 +2500,10 @@ section {
 /* OUTER FORM LAYOUT: central card that fills the red-box area in the mockup */
 .form-outer {
   width: 100%;
+  max-width: 1100px;
   display: flex;
   justify-content: center;
-  padding: 32px 24px;
+  padding: 0 24px 32px 24px;
   box-sizing: border-box;
 }
 
@@ -2115,8 +2512,8 @@ section {
   max-width: 1100px; /* occupy central wide area */
   background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.98));
   padding: 34px;
-  border-radius: 14px;
-  box-shadow: 0 18px 40px rgba(16, 24, 40, 0.12);
+  border-radius: 25px;
+  box-shadow: 0px 15px 40px rgba(0, 0, 0, 0.1);
   box-sizing: border-box;
 }
 
@@ -2128,6 +2525,41 @@ section {
   margin-bottom: 18px;
   box-shadow: 0 6px 18px rgba(11, 34, 92, 0.04);
   border: 1px solid rgba(15, 23, 42, 0.04);
+  position: relative;
+  margin-left: 50px;
+}
+
+/* Línea vertical verde conectando las secciones (solo dentro de resto-formulario) */
+.resto-formulario section::before {
+  content: '';
+  position: absolute;
+  left: -34px;
+  top: 48px;
+  bottom: -18px;
+  width: 3px;
+  background: #2563eb;
+  z-index: 1;
+}
+
+/* Eliminar línea verde de la sección "¿Eres Formador?" */
+.resto-formulario section.bloque-formador::before {
+  display: none;
+}
+
+.resto-formulario section:first-of-type::before {
+  top: 16px;
+}
+
+.resto-formulario section:last-of-type::before {
+  content: '';
+  position: absolute;
+  left: -34px;
+  top: 48px;
+  bottom: -18px;
+  width: 3px;
+  background: #2563eb;
+  z-index: 1;
+  display: block;
 }
 
 .section-header {
@@ -2135,13 +2567,65 @@ section {
   flex-direction: column;
   gap: 8px;
   margin-bottom: 14px;
+  margin-top: -50px;
 }
 
 .section-header h2 {
   font-size: 18px;
   margin: 0;
+  margin-left: -10px;
+  padding-left: 10px;
+  padding-right: 80px;
   color: #1f2937; /* darker heading */
   font-weight: 700;
+  font-family: 'Poppins', 'Montserrat', 'Roboto', sans-serif;
+  font-weight: 400;
+  display: inline-block;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 6px;
+  border-bottom: 3px solid #2563eb;
+  max-width: 100%;
+}
+
+.numero-seccion {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: #2563eb;
+  color: #ffffff;
+  border-radius: 50%;
+  font-size: 20px;
+  font-weight: 700;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 0 0 4px #ffffff;
+}
+
+/* Círculo inicial en el extremo superior de la línea verde */
+.inicio-linea-verde {
+  position: relative;
+  margin-left: -4px;
+  padding-left: 0px;
+  z-index: 3;
+}
+
+/* Primer círculo (número 1) mantiene posición original */
+.inicio-linea-verde:first-of-type {
+  margin-bottom: -16px;
+}
+
+/* Círculos 2, 3, 4 - posición ajustada más abajo */
+.inicio-linea-verde:not(:first-of-type) {
+  margin-top: -10px;
+  margin-bottom: -8px;
+}
+
+.inicio-linea-verde .numero-seccion {
+  display: inline-flex;
 }
 
 .section-subtitle {
@@ -2186,36 +2670,36 @@ section {
 /* Override: for rows that also have .file-row we need flex layout (overrides .section-grid)
 This forces the file input and the buttons to sit side-by-side and allows shifting
    the botones-inline block left so the blue button sits inside the empty area. */
-.section-grid.file-row {
-  display: flex !important;
-  gap: 12px !important;
-  align-items: center !important;
-}
-.section-grid.file-row .botones-inline {
-  /* reduce left shift to move buttons to the right */
-  margin-left: -1px !important;
+/* Centrar toda la sección de foto */
+.foto-section-centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin: 20px 0;
 }
 
-h1 {
-  font-family: "Segoe UI", "Calibri", sans-serif;
-  font-weight: 700;
-  font-size: 2.2rem;
+.foto-section-centered .botones-inline {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.foto-section-centered .label-foto {
   text-align: center;
-  color: #ffffff;
-  background-color: #1e3b728c; /* azul profundo */
-  background-image: linear-gradient(135deg, #2a5298, #1e3c72);
-  opacity: 70%;
-  padding: 20px;
-  border-radius: 10px 10px 0 0; /* redondea solo arriba */
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
-  letter-spacing: 8px;
-  text-transform: capitalize;
-  width: 70%; /* Aumentado para coincidir con el nuevo ancho del formulario */
-  margin-bottom: 20px;
-  box-sizing: border-box;
+  display: block;
+  margin-bottom: 10px;
+  font-weight: 600;
+  color: #333;
 }
 
-
+.foto-section-centered .botones-grupo {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
 
 input, select, textarea { 
     padding: 10px; 
@@ -2254,8 +2738,23 @@ input:focus, select:focus, textarea:focus {
 /* :::::::::::::::::::: CAMPO :::::::::::::::::::: */ 
 .campo { 
     width: 100%; 
-    transition: all 0.3s ease; 
+    transition: all 0.3s ease;
 } 
+
+/* :::::::::::::::::::: TÍTULO SELECCIONE CURSO :::::::::::::::::::: */
+.titulo-seleccion-curso {
+  font-size: 2.2em;
+  font-weight: 700;
+  font-family: 'Roboto', 'Segoe UI', sans-serif;
+  text-align: center;
+  color: #1e3a8a;
+  margin: 30px auto 15px auto;
+  padding: 0;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  display: inline-block;
+  width: 100%;
+}
 
 /* :::::::::::::::::::: CONTENEDOR CURSO + BOTÓN DESCARGA :::::::::::::::::::: */
 .curso-container {
@@ -2263,9 +2762,17 @@ input:focus, select:focus, textarea:focus {
   grid-template-columns: auto auto;
   gap: 50px;
   align-items: start;
-  margin-bottom: 10px;
-  justify-content: start;
-  margin-left: 140px;
+  margin-bottom: 20px;
+  margin-top: 15px;
+  justify-content: center;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: fit-content;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 2px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 30px 40px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .campos-curso-seccion {
@@ -2274,34 +2781,121 @@ input:focus, select:focus, textarea:focus {
   flex-direction: column;
   gap: 15px;
   align-items: flex-start;
-  margin-left: 20px;
-  margin-top: 30px;
+  margin-left: 0;
+  margin-top: 20px;
 }
 
 .campo-curso {
+  position: relative;
+  margin: 20px 0 40px;
   width: 100%;
   max-width: 400px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+}
+
+.campo-curso select {
+  width: 100%;
+  min-width: 350px;
+  max-width: 500px;
+}
+
+.campo-curso select:invalid {
+  color: transparent;
+}
+
+.campo-curso select:focus,
+.campo-curso select:valid {
+  outline: 0;
+  border-bottom-color: #3b82f6;
 }
 
 .campo-curso label {
-  text-align: left;
-  width: 100%;
+  position: absolute !important;
+  top: 8px !important;
+  left: 50% !important;
+  transform: translateX(-50%);
+  pointer-events: none !important;
+  width: max-content;
+  text-align: center;
+}
+
+.campo-curso label span {
+  display: inline-block;
+  font-size: 18px;
+  min-width: 5px;
+  color: #94a3b8;
+  transition: 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.campo-curso select:focus + label span,
+.campo-curso select:valid + label span {
+  color: #3b82f6;
+  transform: translateY(-38px);
 }
 
 .campo-seccion {
+  position: relative;
+  margin: 20px 0 40px;
   width: 100%;
   max-width: 400px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  animation: slideIn 0.4s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.campo-seccion select {
+  background-color: transparent !important;
+  border: 0 !important;
+  border-bottom: 2px #cbd5e1 solid !important;
+  display: block !important;
+  width: 100% !important;
+  padding: 8px 0 6px 0 !important;
+  font-size: 18px !important;
+  color: #1e293b !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  cursor: pointer !important;
+  line-height: 1.2 !important;
+}
+
+.campo-seccion select:invalid {
+  color: transparent;
+}
+
+.campo-seccion select:focus,
+.campo-seccion select:valid {
+  outline: 0;
+  border-bottom-color: #f59e0b;
 }
 
 .campo-seccion label {
-  text-align: left;
-  width: 100%;
+  position: absolute !important;
+  top: 8px !important;
+  left: 0 !important;
+  pointer-events: none !important;
+}
+
+.campo-seccion label span {
+  display: inline-block;
+  font-size: 18px;
+  min-width: 5px;
+  color: #94a3b8;
+  transition: 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.campo-seccion select:focus + label span,
+.campo-seccion select:valid + label span {
+  color: #3b82f6;
+  transform: translateY(-38px);
 }
 
 .boton-descarga-container {
@@ -2319,12 +2913,33 @@ input:focus, select:focus, textarea:focus {
 }
 
 .label-descarga {
-  font-size: 13px;
-  color: #64748b;
-  font-weight: 500;
+  font-family: 'Segoe UI', 'Roboto', 'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   text-align: center;
-  line-height: 1.4;
-  max-width: 200px;
+  max-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label-descarga p {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.4 !important;
+}
+
+.label-principal {
+  font-size: 14px !important;
+  color: #334155 !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.3px !important;
+}
+
+.label-secundario {
+  font-size: 13px !important;
+  color: #64748b !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.2px !important;
+  font-style: italic !important;
 }
 
 /* :::::::::::::::::::: BOTÓN DE DESCARGA (uiverse.io) :::::::::::::::::::: */
@@ -2479,103 +3094,223 @@ input:focus, select:focus, textarea:focus {
     display: inline-flex;
     justify-content: center;
     align-items: center;
-    min-width: 140px;
-    padding: 15px 30px;
-    font-size: 1rem;
+    min-width: 160px;
+    padding: 16px 40px;
+    font-size: 1.1rem;
     font-weight: 700;
     line-height: 1;
     color: #fff;
     text-decoration: none;
-    background-color: #4facfe;
+    background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
     border: none;
-    border-radius: 50px;
+    border-radius: 12px;
     cursor: pointer;
     overflow: hidden;
-    transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
-    box-shadow: 0 10px 20px rgba(79, 172, 254, 0.4);
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+    letter-spacing: 1px;
   }
 
   .btn-enviar::before {
     content: "";
     position: absolute;
-    inset: 0;
-    border-radius: 50px;
-    padding: 3px;
-    background: linear-gradient(135deg, #00f5ff, #4facfe, #00a4ff);
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask-composite: exclude;
-    opacity: 0;
-    transition: opacity 0.3s;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.6s;
   }
 
   .btn-enviar:hover {
-    transform: translateY(-5px) scale(1.05);
-    box-shadow: 0 15px 35px rgba(79, 172, 254, 0.6);
-    background-color: #00a4ff;
+    transform: translateY(-6px) scale(1.05);
+    box-shadow: 0 20px 40px rgba(59, 130, 246, 0.6);
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
   }
 
   .btn-enviar:hover::before {
-    opacity: 1;
+    left: 100%;
   }
 
   .btn-enviar:active {
     transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 5px 15px rgba(79, 172, 254, 0.5);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.5);
   } 
 /*:::::::::::::::::::::::::::::::::::::::::::::::::::::::*/
   .btn-vaciar {
     margin-top: 20px;
+    margin-right: 15px;
     position: relative;
     display: inline-flex;
     justify-content: center;
     align-items: center;
-    min-width: 140px;
-    padding: 15px 30px;
-    font-size: 1rem;
+    min-width: 160px;
+    padding: 16px 40px;
+    font-size: 1.1rem;
     font-weight: 700;
     line-height: 1;
-    color: #fff;
+    color: #10b981;
     text-decoration: none;
-    background-color: #10b981;
-    border: none;
-    border-radius: 50px;
+    background-color: transparent;
+    border: 3px solid #10b981;
+    border-radius: 12px;
     cursor: pointer;
     overflow: hidden;
-    transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
-    box-shadow: 0 10px 20px rgba(16, 185, 129, 0.4);
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
+    letter-spacing: 1px;
   }
 
   .btn-vaciar::before {
     content: "";
     position: absolute;
-    inset: 0;
-    border-radius: 50px;
-    padding: 3px;
-    background: linear-gradient(135deg, #34d399, #10b981, #059669);
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask-composite: exclude;
-    opacity: 0;
-    transition: opacity 0.3s;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(16, 185, 129, 0.1);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
   }
 
   .btn-vaciar:hover {
-    transform: translateY(-5px) scale(1.05);
-    box-shadow: 0 15px 35px rgba(16, 185, 129, 0.6);
-    background-color: #059669;
+    transform: translateY(-6px) scale(1.05);
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #fff;
+    border-color: #059669;
+    box-shadow: 0 15px 30px rgba(16, 185, 129, 0.4);
   }
 
   .btn-vaciar:hover::before {
-    opacity: 1;
+    width: 300px;
+    height: 300px;
   }
 
   .btn-vaciar:active {
     transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 5px 15px rgba(16, 185, 129, 0.5);
+    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);
   }
+
+/* :::::::::::::::::::: NAVEGACIÓN FLOTANTE :::::::::::::::::::: */
+.nav-flotante {
+  position: fixed;
+  right: 60px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  z-index: 1000;
+  animation: slideInRight 0.6s ease-out;
+}
+
+.nav-item.nav-logo {
+  background: linear-gradient(135deg, #fff 0%, #e0f2f1 100%);
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.12);
+  border: 2px solid #10b981;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin-bottom: 0;
+  margin-top: 0;
+}
+.nav-logo-img {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.18);
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(50px) translateY(-50%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) translateY(-50%);
+  }
+}
+
+.nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  border-radius: 50%;
+  text-decoration: none;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+  cursor: pointer;
+}
+
+.nav-item::before {
+  content: '';
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 20px;
+  background: linear-gradient(to bottom, #10b981, transparent);
+}
+
+.nav-item:last-child::before {
+  display: none;
+}
+
+.nav-numero {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #ffffff;
+  position: relative;
+  z-index: 1;
+}
+
+.nav-item:hover {
+  transform: scale(1.15);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5);
+}
+
+.nav-item.active {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  box-shadow: 0 8px 30px rgba(5, 150, 105, 0.6);
+  transform: scale(1.2);
+}
+
+.nav-item.active::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2px solid #10b981;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.1);
+  }
+}
+
+/* Responsive: ocultar en pantallas pequeñas */
+@media (max-width: 768px) {
+  .nav-flotante {
+    display: none;
+  }
+}
 
 /* Religión styles removed */
 

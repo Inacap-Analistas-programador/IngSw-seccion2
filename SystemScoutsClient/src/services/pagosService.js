@@ -9,10 +9,10 @@ const makeCrud = base => ({
   remove: (id) => request(`${base}${id}/`, { method: 'DELETE' }),
 })
 
-export const proveedor = makeCrud('proveedor')
-export const comprobantePago = makeCrud('comprobante-pago')
-export const pagoComprobante = makeCrud('pago-comprobante')
-export const pagoPersona = makeCrud('pago-persona')
-export const prepago = makeCrud('prepago')
+export const proveedor = makeCrud('pagos/proveedor')
+export const comprobantePago = makeCrud('pagos/comprobante-pago')
+export const pagoComprobante = makeCrud('pagos/pago-comprobante')
+export const pagoPersona = makeCrud('pagos/pago-persona')
+export const prepago = makeCrud('pagos/prepago')
 
 export default { proveedor, comprobantePago, pagoComprobante, pagoPersona, prepago }
