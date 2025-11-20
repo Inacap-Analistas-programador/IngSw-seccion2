@@ -239,8 +239,9 @@ import { useRouter } from 'vue-router'
 import BaseAlert from '@/components/BaseAlert.vue'
 import DataCard from '@/components/DataCard.vue'
 
-// Services para conectar con la API
-import { cursosService, personasService, pagosService } from '@/services'
+// CORREGIDO: Importación correcta de servicios
+import cursosService from '@/services/cursosService'
+import { personasService, pagosService } from '@/services'
 
 export default {
   name: 'DashboardScout',
@@ -442,21 +443,24 @@ export default {
       router.push(`/cursos/editar/${curso.CUR_ID}`)
     }
 
-    // Función para cargar datos desde la API
+    // CORREGIDO: Mejor manejo de errores en la carga de datos
     const cargarDatosDesdeAPI = async () => {
       try {
-        console.log('Cargando datos desde API para base de datos SSB...')
+        console.log('Cargando datos desde API...')
         
-        // Cargar cursos
+        // Cargar cursos con manejo de error específico
         try {
           const cursosData = await cursosService.cursos.list()
           if (cursosData && Array.isArray(cursosData)) {
             cursos.value = cursosData
-            console.log(`✓ Cursos cargados desde SSB: ${cursosData.length}`)
+            console.log(`✓ Cursos cargados: ${cursosData.length}`)
+          } else {
+            console.warn('Respuesta de cursos no es un array:', cursosData)
+            cursos.value = []
           }
         } catch (e) {
-          console.warn('Error cargando cursos desde SSB:', e.message)
-          throw new Error(`No se pudieron cargar los cursos: ${e.message}`)
+          console.error('Error cargando cursos:', e.message)
+          // No lanzar error aquí, continuar con otros datos
         }
         
         // Cargar personas
@@ -464,10 +468,10 @@ export default {
           const personasData = await personasService.personas.list()
           if (personasData && Array.isArray(personasData)) {
             personas.value = personasData
-            console.log(`✓ Personas cargadas desde SSB: ${personasData.length}`)
+            console.log(`✓ Personas cargadas: ${personasData.length}`)
           }
         } catch (e) {
-          console.warn('Error cargando personas desde SSB:', e.message)
+          console.warn('Error cargando personas:', e.message)
         }
         
         // Cargar inscripciones
@@ -475,21 +479,23 @@ export default {
           const personasCursoData = await personasService.personaCursos.list()
           if (personasCursoData && Array.isArray(personasCursoData)) {
             personasCurso.value = personasCursoData
-            console.log(`✓ Inscripciones cargadas desde SSB: ${personasCursoData.length}`)
+            console.log(`✓ Inscripciones cargadas: ${personasCursoData.length}`)
           }
         } catch (e) {
-          console.warn('Error cargando inscripciones desde SSB:', e.message)
+          console.warn('Error cargando inscripciones:', e.message)
         }
         
-        // Cargar pagos
+        // Cargar pagos con manejo de error 404
         try {
           const pagosData = await pagosService.pagoPersona.list()
           if (pagosData && Array.isArray(pagosData)) {
             pagosPersona.value = pagosData
-            console.log(`✓ Pagos cargados desde SSB: ${pagosData.length}`)
+            console.log(`✓ Pagos cargados: ${pagosData.length}`)
           }
         } catch (e) {
-          console.warn('Error cargando pagos desde SSB:', e.message)
+          console.warn('Error cargando pagos (puede ser ruta no implementada):', e.message)
+          // Inicializar array vacío para evitar errores
+          pagosPersona.value = []
         }
         
         // Cargar coordinadores
@@ -497,10 +503,10 @@ export default {
           const coordinadoresData = await cursosService.coordinadores.list()
           if (coordinadoresData && Array.isArray(coordinadoresData)) {
             cursoCoordinadores.value = coordinadoresData
-            console.log(`✓ Coordinadores cargados desde SSB: ${coordinadoresData.length}`)
+            console.log(`✓ Coordinadores cargados: ${coordinadoresData.length}`)
           }
         } catch (e) {
-          console.warn('Error cargando coordinadores desde SSB:', e.message)
+          console.warn('Error cargando coordinadores:', e.message)
         }
         
         // Cargar formadores
@@ -508,15 +514,15 @@ export default {
           const formadoresData = await cursosService.formadores.list()
           if (formadoresData && Array.isArray(formadoresData)) {
             cursoFormadores.value = formadoresData
-            console.log(`✓ Formadores cargados desde SSB: ${formadoresData.length}`)
+            console.log(`✓ Formadores cargados: ${formadoresData.length}`)
           }
         } catch (e) {
-          console.warn('Error cargando formadores desde SSB:', e.message)
+          console.warn('Error cargando formadores:', e.message)
         }
         
-        console.log('✓ Carga de datos desde SSB completada')
+        console.log('✓ Carga de datos completada')
       } catch (error) {
-        console.error('Error general cargando datos desde SSB:', error)
+        console.error('Error general cargando datos:', error)
         throw error
       }
     }
@@ -529,16 +535,16 @@ export default {
         alertas.value.push({
           id: Date.now(),
           type: 'success',
-          title: 'Datos Actualizados desde SSB',
-          message: 'La información se actualizó correctamente desde la base de datos SSB.'
+          title: 'Datos Actualizados',
+          message: 'La información se actualizó correctamente.'
         })
       } catch (error) {
-        console.error('Error actualizando datos desde SSB:', error.message)
+        console.error('Error actualizando datos:', error.message)
         alertas.value.push({
           id: Date.now(),
           type: 'error',
-          title: 'Error al Actualizar desde SSB',
-          message: `No se pudieron actualizar los datos desde la base de datos SSB: ${error.message}`
+          title: 'Error al Actualizar',
+          message: `No se pudieron actualizar los datos: ${error.message}`
         })
       } finally {
         loading.value = false
@@ -554,14 +560,14 @@ export default {
       loading.value = true
       try {
         await cargarDatosDesdeAPI()
-        console.log('✓ Dashboard cargado correctamente desde SSB')
+        console.log('✓ Dashboard cargado correctamente')
       } catch (error) {
-        console.error('Error cargando dashboard desde SSB:', error)
+        console.error('Error cargando dashboard:', error)
         alertas.value.push({
           id: Date.now(),
           type: 'warning',
-          title: 'Datos No Disponibles desde SSB',
-          message: 'No se pudieron cargar los datos desde la base de datos SSB. Verifique la conexión.'
+          title: 'Datos No Disponibles',
+          message: 'No se pudieron cargar los datos. Verifique la conexión.'
         })
       } finally {
         loading.value = false
@@ -1052,7 +1058,7 @@ export default {
 .tab-content {
   padding: 20px;
   background: var(--color-surface);
-.}
+}
 
 /* Responsive */
 @media (max-width: 768px) {

@@ -59,7 +59,7 @@
           <span class="nav-text">Verificador QR</span>
         </router-link>
 
-  <!-- Apartado desplegable: Pantallas 2 -->
+        <!-- Apartado desplegable: Pantallas 2 CORREGIDO -->
         <div class="nav-item nav-collapsible" @click="togglePantallas2" :class="{ 'router-link-exact-active': showPantallas2 }">
           <span class="nav-icon"><AppIcons name="chart-bar" :size="20" /></span>
           <span class="nav-collapsible-title">Pantallas 2</span>
@@ -108,11 +108,17 @@ const isLoggedIn = ref(hasToken())
 
 // Escuchar cambios en localStorage (otras pestañas o logout/login) para mantener sincronizado
 function onStorage(e) {
+  // `storage` events include a `key`; custom events may call this handler
   if (!e) return
-  if (STORAGE_TOKEN_KEYS.includes(e.key)) {
+  if (e.key && STORAGE_TOKEN_KEYS.includes(e.key)) {
     // Recalcular por si cambia una u otra clave
     isLoggedIn.value = hasToken()
   }
+}
+
+// Handler para cambios de auth dentro de la MISMA pestaña (evento custom)
+function handleAuthChanged() {
+  isLoggedIn.value = hasToken()
 }
 
 // Desplegable de Mantenedores
@@ -212,6 +218,8 @@ onMounted(() => {
     
     // Registrar listener de storage para detectar login/logout en otras pestañas
     window.addEventListener('storage', onStorage)
+    // También escuchar un evento custom para cambios de auth en la MISMA pestaña
+    window.addEventListener('auth-changed', handleAuthChanged)
     // Registrar listener para abrir sidebar en móviles
     window.addEventListener('open-sidebar-mobile', openMobileHandler)
   }
@@ -219,6 +227,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('storage', onStorage)
+  window.removeEventListener('auth-changed', handleAuthChanged)
   window.removeEventListener('open-sidebar-mobile', openMobileHandler)
 })
 

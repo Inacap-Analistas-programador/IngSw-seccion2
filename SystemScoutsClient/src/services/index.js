@@ -11,9 +11,9 @@ import * as cursosService from './cursosService'
 import * as mantenedoresService from './mantenedoresService'
 import * as pagosService from './pagosService'
 import * as archivosService from './archivosService'
-import * as reportesService from './reportesService'
+import dashboardService from './dashboardService'
+import dashboard2Service from './dashboard_2'
 // usuariosRolesService and CorreosService are legacy files removed after migration
-// dashboardService removed — functionality split into per-section services (cursos, pagos, personas, etc.)
 
 // Export everything as named exports. Prefer importing from '@/services' in views.
 export {
@@ -28,13 +28,14 @@ export {
   pagosService,
   archivosService,
   reportesService,
+  dashboardService,
+  dashboard2Service,
   // Removed legacy CorreosService,
 }
 
 // Backwards-compat aliases (safe to import old names from this barrel):
 export const personas = personasService.personas || personasService
 export const usuarios = usuariosService.usuarios || usuariosService
-export const reportes = reportesService
 
 // NOTE: Once views are migrated to import from specific new services
 // you can safely remove legacy files like `CorreosService.js` or `usuariosRolesService.js`.

@@ -93,6 +93,17 @@ DEBUG_API=True
 ## Crear SECRET_KEY
 si no tienes una secret_key o te da problemas, intenta crear una nueva
 ```bash
+<<<<<<< HEAD
+from django.core.management.utils import get_random_secret_key
+print(get_random_secret_key())
+
+<<<<<<< HEAD
+o:
+
+=======
+>>>>>>> 7d2932d2f785da8bc0444f20a0b8b9f0563f914c
+=======
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
 python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 ```
 esto te devolverá una clave, que deberás copiar y pegar en la variable **SECRET_KEY**
