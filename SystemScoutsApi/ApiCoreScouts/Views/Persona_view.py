@@ -15,7 +15,7 @@ class StandardResultsSetPagination(PageNumberPagination):
 
 class PersonaViewSet(viewsets.ModelViewSet):
     queryset = Persona.objects.all()
-    serializer_class = MU_S.PersonaCompletaSerializer  # Usar el serializer con datos relacionados
+    serializer_class = MU_S.PersonaCompletaSerializer
 
     filter_backends = [DjangoFilterBackend]
     filterset_class = PersonaFilter

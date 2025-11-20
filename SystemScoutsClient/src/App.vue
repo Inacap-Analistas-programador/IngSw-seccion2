@@ -38,7 +38,8 @@ function toggleCollapsed() {
 
 body, html {
 	height: 100%;
-	overflow: hidden;
+	/* Allow page scrolling; the app layout handles internal scrolls via .main-content */
+	overflow: auto;
 }
 
 .app-root {
@@ -50,6 +51,8 @@ body, html {
 .app-layout {
 	display: flex;
 	flex: 1;
+	/* Offset layout so fixed navbar does not cover content */
+	margin-top: var(--navbar-height, 64px);
 }
 
 .main-content {

@@ -1,5 +1,7 @@
 <template>
-  <aside id="app-sidebar" :class="['sidebar', { collapsed }]">
+  <div class="mobile-sidebar-wrapper" :class="{ open: !collapsed }">
+    <div class="mobile-backdrop" v-if="!collapsed" @click="toggleCollapse" aria-hidden="true"></div>
+    <aside id="app-sidebar" :class="['sidebar', { collapsed }]">
     <nav class="sidebar-nav">
       
       <!-- Sin sesión iniciada: solo mostrar Formulario -->
@@ -77,7 +79,8 @@
         <span v-if="!collapsed" class="collapse-text">Contraer</span>
       </button>
     </div>
-  </aside>
+    </aside>
+  </div>
 </template>
 
 <script setup>
@@ -159,6 +162,9 @@ const mantenedoresTabs = [
   { id: 'tipos-archivo', label: 'Tipos de Archivo' }
 ]
 
+// Referencia al listener de resize para poder quitarlo en onBeforeUnmount
+let onResizeForSidebar = null
+
 function toggleUsuarios() {
   showUsuarios.value = !showUsuarios.value
 }
@@ -207,11 +213,47 @@ onMounted(() => {
     
     // Registrar listener de storage para detectar login/logout en otras pestañas
     window.addEventListener('storage', onStorage)
+
+    // Mantener la variable CSS `--sidebar-width` sincronizada con el estado
+    // del sidebar en escritorio para que el contenido principal se adapte.
+    function applySidebarWidth() {
+      try {
+        // No sobreescribir la variable definida por media queries en móviles
+        if (typeof window !== 'undefined' && window.innerWidth > 768) {
+          // Valores por defecto si no están en :root
+          const expandedWidth = '250px';
+          const collapsedWidth = '70px';
+          // Cuando `collapsed` es true usamos collapsedWidth, si no usamos expandedWidth
+          const toSet = collapsed.value ? collapsedWidth : expandedWidth;
+          document.documentElement.style.setProperty('--sidebar-width', toSet);
+        } else {
+          // En móvil dejamos que las media queries manejen --sidebar-width
+          document.documentElement.style.removeProperty('--sidebar-width');
+        }
+      } catch (e) {
+        // no bloquear la app por errores de estilos
+      }
+    }
+
+    // Aplicar inicialmente
+    applySidebarWidth()
+
+    // Reactivar al cambiar collapsed
+    watch(collapsed, () => {
+      applySidebarWidth()
+    })
+
+    // Reaplicar al redimensionar (para cambios entre móvil/escritorio)
+    onResizeForSidebar = () => applySidebarWidth()
+    window.addEventListener('resize', onResizeForSidebar)
   }
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('storage', onStorage)
+  try {
+    if (onResizeForSidebar) window.removeEventListener('resize', onResizeForSidebar)
+  } catch (e) { /* ignore */ }
 })
 </script>
 
@@ -547,10 +589,46 @@ onBeforeUnmount(() => {
   color: #fff;
 }
 
-/* Responsive: ocultar sidebar en móviles */
+/* Mobile behaviour: sidebar is hidden by default but should overlay full screen when opened */
+.mobile-backdrop { display: none; }
+
 @media (max-width: 768px) {
-  .sidebar {
+  /* hide sidebar by default on mobile */
+  .mobile-sidebar-wrapper .sidebar {
     display: none;
+  }
+
+  /* when wrapper has .open (i.e. !collapsed), show the sidebar as a full-screen overlay */
+  .mobile-sidebar-wrapper.open .sidebar {
+    display: flex;
+    position: fixed;
+    top: var(--navbar-height, 64px);
+    left: 0;
+    width: 100vw;
+    height: calc(100vh - var(--navbar-height, 64px));
+    z-index: 1200; /* above main layout but below any absolute modals */
+    box-shadow: none;
+    border-radius: 0;
+    transition: transform 0.22s ease;
+    transform: translateX(0);
+    overflow-y: auto;
+  }
+
+  /* backdrop shown under the sidebar for dismissing */
+  .mobile-backdrop {
+    display: block;
+    position: fixed;
+    top: var(--navbar-height, 64px);
+    left: 0;
+    width: 100vw;
+    height: calc(100vh - var(--navbar-height, 64px));
+    background: rgba(0,0,0,0.45);
+    z-index: 1150;
+  }
+
+  /* ensure main content doesn't keep left margin on small screens */
+  :root {
+    --sidebar-width: 0px;
   }
 }
 </style>
