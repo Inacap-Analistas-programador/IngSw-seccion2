@@ -48,16 +48,37 @@ export default {
   // TODO: reemplazar con llamada real al backend cuando esté disponible
   async getCurrentUser() {
     const token = this.getAccessToken();
-    if (!token) {
+    if (!token) return null;
+
+    try {
+      // Decodificar payload JWT (base64url)
+      const parts = token.split('.');
+      if (parts.length < 2) return null;
+      const payloadB64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const padded = payloadB64.padEnd(payloadB64.length + (4 - (payloadB64.length % 4)) % 4, '=');
+      const json = atob(padded);
+      const payload = JSON.parse(json);
+
+      // Preferir claims personalizados del backend (USU_ID, USU_USERNAME)
+      const id = payload.USU_ID || payload.user_id || payload.id || null;
+      const username = payload.USU_USERNAME || payload.username || payload.sub || null;
+      const name = payload.name || username || 'Usuario';
+      // Map role from token payload if backend includes 'perfil'
+      const role = (payload.perfil && payload.perfil.PEL_DESCRIPCION) ? payload.perfil.PEL_DESCRIPCION : (payload.perfil && payload.perfil.PEL_DESCRIPCION) || null;
+      // avatar may not be included in token; prefer USU_RUTA_FOTO if present
+      const avatarUrl = payload.USU_RUTA_FOTO || payload.avatarUrl || null;
+
+      return {
+        id,
+        username,
+        name,
+        role,
+        avatarUrl,
+        payload
+      };
+    } catch (e) {
+      console.warn('No se pudo decodificar token JWT en getCurrentUser:', e);
       return null;
     }
-    
-    // Por ahora devolver usuario por defecto
-    // En producción, hacer fetch a /api/user/ o similar
-    return {
-      name: 'Admin',
-      role: 'Administrador',
-      avatarUrl: null
-    };
   }
 };

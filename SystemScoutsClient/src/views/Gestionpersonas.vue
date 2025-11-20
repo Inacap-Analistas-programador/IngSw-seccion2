@@ -3,19 +3,44 @@
   <!-- Vista: la NavBar se renderiza globalmente en App.vue, no incluirla aquí -->
 
     <!-- Barra de búsqueda y filtros -->
-    <div class="filtros">
-      <div class="filtros-left">
+    <div :class="['filtros', (isMobile && filtrosColapsados) ? 'filtros-collapsed' : '']">
+      <div class="filtros-toggle-mobile" v-if="isMobile">
+        <!-- Usar las mismas clases estándar que otros botones para mantener diseño consistente -->
+        <button type="button" class="btn-standard btn-toggle-filtros" @click="toggleFiltros">
+          <AppIcons :name="filtrosColapsados ? 'chevron-down' : 'chevron-up'" :size="18" />
+          {{ filtrosColapsados ? 'Mostrar filtros' : 'Ocultar filtros' }}
+        </button>
+      </div>
+      <div class="filtros-left" v-if="!isMobile || !filtrosColapsados">
         <InputBase v-model="searchQuery" placeholder="Buscar por nombre, RUT, email..." @keydown.enter.prevent="filtrar" />
         <BaseSelect v-model="selectedRole" :options="roleOptions" placeholder="Todos los roles" />
         <BaseSelect v-model="selectedCourse" :options="courseOptions" placeholder="Todos los grupos" />
         <BaseSelect v-model="selectedRama" :options="ramaOptions" placeholder="Todas las ramas" />
         <BaseButton class="btn-search btn-standard" variant="primary" @click="filtrar"><AppIcons name="search" :size="16" /> Buscar</BaseButton>
       </div>
-      <div class="filtros-right">
-        <BaseButton v-if="canCreate" class="btn-add btn-standard" variant="primary" @click="abrirModalCrear"><AppIcons name="plus" :size="16" /> Nueva Persona</BaseButton>
-        <BaseButton v-if="canCreate" class="btn-import btn-standard" variant="secondary" @click="abrirModalImportar"><AppIcons name="download" :size="16" /> Importar Excel</BaseButton>
-        <BaseButton class="btn-export btn-standard" variant="secondary" @click="exportarExcel"><AppIcons name="upload" :size="16" /> Exportar</BaseButton>
+      <div class="filtros-right" v-if="!isMobile || !filtrosColapsados">
+        <!-- Right area for filters. Desktop actions are rendered here so they
+             align with the filters row without overlapping. Kept inside this
+             block only for desktop (v-if on the buttons) so mobile collapse
+             still hides filter controls. -->
+        <div class="acciones-top-desktop" v-if="!isMobile">
+          <BaseButton v-if="canCreate" class="btn-add btn-standard" variant="primary" @click="abrirModalCrear"><AppIcons name="plus" :size="16" /> Nueva Persona</BaseButton>
+          <BaseButton v-if="canCreate" class="btn-import btn-standard" variant="secondary" @click="abrirModalImportar"><AppIcons name="download" :size="16" /> Importar Excel</BaseButton>
+          <BaseButton class="btn-export btn-standard" variant="secondary" @click="exportarExcel"><AppIcons name="upload" :size="16" /> Exportar</BaseButton>
+
+          <!-- Pagination removed (not used) -->
+        </div>
       </div>
+    </div>
+
+    <!-- Desktop actions are now rendered inside the filters right area so they
+         align properly with filter controls and don't overlap. -->
+
+    <!-- Acciones principales para mobile: se muestran debajo de los filtros cuando están visibles o colapsadas -->
+    <div class="acciones-top" v-if="isMobile">
+      <BaseButton v-if="canCreate" class="btn-add btn-standard" variant="primary" @click="abrirModalCrear"><AppIcons name="plus" :size="16" /> Nueva Persona</BaseButton>
+      <BaseButton v-if="canCreate" class="btn-import btn-standard" variant="secondary" @click="abrirModalImportar"><AppIcons name="download" :size="16" /> Importar Excel</BaseButton>
+      <BaseButton class="btn-export btn-standard" variant="secondary" @click="exportarExcel"><AppIcons name="upload" :size="16" /> Exportar</BaseButton>
     </div>
 
     <!-- Mensaje informativo de permisos limitados -->
@@ -58,11 +83,15 @@
       <tbody>
         <tr v-for="p in personasFiltradas" :key="p.PER_RUN" :class="{ 'persona-anulada': !p.PER_VIGENTE }">
           <td data-label="Nombre" :title="`${p.PER_NOMBRES || ''} ${p.PER_APELPTA || ''} ${p.PER_APELMAT || ''}`.trim()">
-            {{ `${p.PER_NOMBRES || ''} ${p.PER_APELPTA || ''} ${p.PER_APELMAT || ''}`.trim() }}
+            <span class="truncate">{{ `${p.PER_NOMBRES || ''} ${p.PER_APELPTA || ''} ${p.PER_APELMAT || ''}`.trim() }}</span>
           </td>
           <td data-label="RUT">{{ p.PER_RUN }}-{{ p.PER_DV }}</td>
-          <td data-label="Email">{{ p.PER_MAIL }}</td>
-          <td data-label="Rol">{{ p.PER_ROL || 'Sin rol' }}</td>
+          <td data-label="Email" :title="p.PER_MAIL || 'Sin email'">
+            <span class="truncate">{{ p.PER_MAIL }}</span>
+          </td>
+          <td data-label="Rol" :title="p.PER_ROL || 'Sin rol'">
+            <span class="truncate">{{ (p.PER_ROL || 'Sin rol').trim() }}</span>
+          </td>
           <td data-label="Teléfono/Celular">{{ p.PER_FONO || p.PER_CEL || 'Sin teléfono' }}</td>
           <td data-label="Estado">
             <span
@@ -73,30 +102,33 @@
           </td>
           <td>
             <div class="acciones-buttons">
-              <BaseButton class="btn-ver btn-action" variant="secondary" @click="abrirModalVer(p)"><AppIcons name="eye" :size="14" /> Ver</BaseButton>
+              <BaseButton class="btn-ver btn-action" variant="secondary" @click="abrirModalVer(p)" title="Ver"><AppIcons name="eye" :size="14" /><span class="btn-label">Ver</span></BaseButton>
               <BaseButton 
                 v-if="canEdit" 
                 class="btn-editar btn-action" 
                 variant="primary" 
                 @click="abrirModalEditar(p)"
+                title="Editar"
               >
-                <AppIcons name="edit" :size="14" /> Editar
+                <AppIcons name="edit" :size="14" /><span class="btn-label">Editar</span>
               </BaseButton>
               <BaseButton 
                 v-if="canDelete && p.PER_VIGENTE" 
                 class="btn-anular btn-action" 
                 variant="secondary" 
                 @click="anularPersona(p)"
+                title="Anular"
               >
-                <AppIcons name="x" :size="14" /> Anular
+                <AppIcons name="x" :size="14" /><span class="btn-label">Anular</span>
               </BaseButton>
               <BaseButton 
                 v-if="canDelete && !p.PER_VIGENTE" 
                 class="btn-reactivar btn-action" 
                 variant="primary" 
                 @click="reactivarPersona(p)"
+                title="Reactivar"
               >
-                <AppIcons name="check" :size="14" /> Reactivar
+                <AppIcons name="check" :size="14" /><span class="btn-label">Reactivar</span>
               </BaseButton>
             </div>
           </td>
@@ -108,8 +140,8 @@
       </table>
     </div>
 
-      <!-- Si aún no se filtra, mostrar mensaje instructivo -->
-      <div v-else class="no-filtro" style="padding:32px; text-align:center; color:#666;">
+      <!-- Si no hay personas cargadas, mostrar mensaje instructivo -->
+      <div v-if="!personas || personas.length === 0" class="no-filtro" style="padding:32px; text-align:center; color:#666;">
         Aplica filtros y presiona "Buscar" para ver la lista de personas.
       </div>
 
@@ -223,7 +255,7 @@
                         <InputBase v-model="personaEditada.PER_NOMBRES" :readonly="modoSoloLectura" required placeholder="Ingrese nombres" />
                       </div>
                       <div class="form-field">
-                        <label>Apellido Paterno</label>
+                        <label>Apellido Paterno *</label>
                         <InputBase v-model="personaEditada.PER_APELPTA" :readonly="modoSoloLectura" placeholder="Ingrese apellido paterno" />
                       </div>
                       <div class="form-field">
@@ -231,7 +263,7 @@
                         <InputBase v-model="personaEditada.PER_APELMAT" :readonly="modoSoloLectura" placeholder="Ingrese apellido materno" />
                       </div>
                       <div class="form-field">
-                        <label>RUT</label>
+                        <label>RUT *</label>
                         <div class="rut-container">
                           <InputBase v-model="personaEditada.PER_RUN" :readonly="modoSoloLectura" @input="calcularDvEditada" placeholder="12345678" />
                           <span class="rut-separator">-</span>
@@ -239,15 +271,15 @@
                         </div>
                       </div>
                       <div class="form-field">
-                        <label>Fecha de Nacimiento</label>
+                        <label>Fecha de Nacimiento *</label>
                         <InputBase v-model="personaEditada.PER_FECHA_NAC" :readonly="modoSoloLectura" type="date" />
                       </div>
                       <div class="form-field">
-                        <label>Estado Civil</label>
+                        <label>Estado Civil *</label>
                         <BaseSelect v-model="personaEditada.ESC_ID" :options="estadoCivilOptions" :disabled="modoSoloLectura" />
                       </div>
                       <div class="form-field">
-                        <label>Apodo</label>
+                        <label>Apodo *</label>
                         <InputBase v-model="personaEditada.PER_APODO" :readonly="modoSoloLectura" placeholder="Ingrese apodo" />
                       </div>
                       <div class="form-field">
@@ -265,18 +297,18 @@
                     </h3>
                     <div class="form-grid">
                       <div class="form-field">
-                        <label>Email</label>
+                        <label>Email *</label>
                         <InputBase v-model="personaEditada.PER_MAIL" :readonly="modoSoloLectura" type="email" placeholder="correo@ejemplo.com" />
                       </div>
                       <div class="form-field">
-                        <label>Teléfono</label>
+                        <label>Teléfono *</label>
                         <div class="phone-input-wrapper">
                           <span class="phone-prefix">+56</span>
                           <InputBase v-model="personaEditada.PER_FONO" :readonly="modoSoloLectura" placeholder="912345678" class="phone-input" />
                         </div>
                       </div>
                       <div class="form-field full-width">
-                        <label>Dirección</label>
+                        <label>Dirección *</label>
                         <InputBase v-model="personaEditada.PER_DIRECCION" :readonly="modoSoloLectura" placeholder="Ingrese dirección completa" />
                       </div>
                       <div class="form-field">
@@ -288,40 +320,13 @@
                         <BaseSelect v-model="personaEditada.PRO_ID" :options="provinciaOptionsEditar" :disabled="modoSoloLectura || !personaEditada.REG_ID" @change="cargarComunasPorProvinciaEditar" />
                       </div>
                       <div class="form-field">
-                        <label>Comuna</label>
+                        <label>Comuna *</label>
                         <BaseSelect v-model="personaEditada.COM_ID" :options="comunaOptionsEditar" :disabled="modoSoloLectura || !personaEditada.PRO_ID" />
                       </div>
                     </div>
                   </div>
 
-                  <!-- Información de Emergencia -->
-                  <div class="form-section">
-                    <h3 class="section-title">
-                      <AppIcons name="alert" :size="18" />
-                      Información de Emergencia
-                    </h3>
-                    <div class="form-grid">
-                      <div class="form-field">
-                        <label>Contacto de Emergencia</label>
-                        <InputBase v-model="personaEditada.PER_NOM_EMERGENCIA" :readonly="modoSoloLectura" placeholder="Nombre del contacto" />
-                      </div>
-                      <div class="form-field">
-                        <label>Teléfono de Emergencia</label>
-                        <div class="phone-input-wrapper">
-                          <span class="phone-prefix">+56</span>
-                          <InputBase v-model="personaEditada.PER_FONO_EMERGENCIA" :readonly="modoSoloLectura" placeholder="912345678" class="phone-input" />
-                        </div>
-                      </div>
-                      <div class="form-field full-width">
-                        <label>Alergias / Enfermedades</label>
-                        <InputBase v-model="personaEditada.PER_ALERGIA_ENFERMEDAD" :readonly="modoSoloLectura" placeholder="Describa alergias o enfermedades" />
-                      </div>
-                      <div class="form-field full-width">
-                        <label>Limitaciones</label>
-                        <InputBase v-model="personaEditada.PER_LIMITACION" :readonly="modoSoloLectura" placeholder="Describa limitaciones físicas o médicas" />
-                      </div>
-                    </div>
-                  </div>
+                  
 
                   <!-- Información -->
                   <div class="form-section">
@@ -334,10 +339,7 @@
                         <label>Rol</label>
                         <BaseSelect v-model="personaEditada.PER_ROL" :options="roleOptions" :disabled="modoSoloLectura" />
                       </div>
-                      <div class="form-field">
-                        <label>Rama</label>
-                        <BaseSelect v-model="personaEditada.PER_RAMA" :options="ramaOptions" :disabled="modoSoloLectura" />
-                      </div>
+                      <!-- Rama seleccionado desde Nivel y Rama (evitar duplicado) -->
                       <div class="form-field">
                         <label>Profesión</label>
                         <InputBase v-model="personaEditada.PER_PROFESION" :readonly="modoSoloLectura" placeholder="Ingrese profesión" />
@@ -468,20 +470,47 @@
                         <label>Modelo</label>
                         <InputBase v-model="personaEditada.PEV_MODELO" :readonly="modoSoloLectura" placeholder="Corolla" />
                       </div>
+                      <!-- Año/Color/Capacidad removidos: la BD no los almacena actualmente -->
+                    </div>
+                  </div>
+              
+                  <!-- Salud y Alimentación (Formulario 2) -->
+                  <div class="form-section">
+                    <h3 class="section-title">
+                      <AppIcons name="heart" :size="18" />
+                      Salud y Alimentación
+                    </h3>
+                    <div class="form-grid">
                       <div class="form-field">
-                        <label>Año</label>
-                        <InputBase v-model="personaEditada.PEV_ANIO" :readonly="modoSoloLectura" type="number" placeholder="2020" />
+                        <label>Tipo de Alimentación</label>
+                        <BaseSelect v-model="personaEditada.ALI_ID" :options="alimentacionOptions" :disabled="modoSoloLectura" />
+                      </div>
+
+                      <div class="form-field full-width">
+                        <label>Alergias / Enfermedades</label>
+                        <InputBase v-model="personaEditada.PER_ALERGIA_ENFERMEDAD" :readonly="modoSoloLectura" />
+                      </div>
+
+                      <div class="form-field full-width">
+                        <label>Limitaciones</label>
+                        <InputBase v-model="personaEditada.PER_LIMITACION" :readonly="modoSoloLectura" />
+                      </div>
+
+                      <div class="form-field">
+                        <label>Contacto Emergencia</label>
+                        <InputBase v-model="personaEditada.PER_NOM_EMERGENCIA" :readonly="modoSoloLectura" placeholder="Nombre del contacto" />
                       </div>
                       <div class="form-field">
-                        <label>Color</label>
-                        <InputBase v-model="personaEditada.PEV_COLOR" :readonly="modoSoloLectura" placeholder="Blanco" />
-                      </div>
-                      <div class="form-field">
-                        <label>Capacidad</label>
-                        <InputBase v-model="personaEditada.PEV_CAPACIDAD" :readonly="modoSoloLectura" type="number" placeholder="5" />
+                        <label>Tel. Emergencia</label>
+                        <div class="phone-input-wrapper">
+                          <span class="phone-prefix">+56</span>
+                          <InputBase v-model="personaEditada.PER_FONO_EMERGENCIA" :readonly="modoSoloLectura" placeholder="912345678" class="phone-input" />
+                        </div>
                       </div>
                     </div>
                   </div>
+
+                  
                 </form>
 
                 <div v-else class="historial-panel" :class="{ 'historial-anulado': personaEditada.estado === 'Anulado' }">
@@ -732,7 +761,7 @@
                   </div>
 
                   <div class="form-field">
-                    <label>Estado Civil</label>
+                    <label>Estado Civil *</label>
                     <BaseSelect 
                       v-model="personaNueva.ESC_ID" 
                       :options="estadoCivilOptions"
@@ -741,7 +770,7 @@
                   </div>
 
                   <div class="form-field">
-                    <label>Apodo</label>
+                    <label>Apodo *</label>
                     <InputBase 
                       v-model="personaNueva.PER_APODO" 
                       placeholder="Ej: Juanito" 
@@ -779,7 +808,7 @@
                   </div>
 
                   <div class="form-field">
-                    <label>Teléfono</label>
+                    <label>Teléfono *</label>
                     <div class="phone-input-wrapper">
                       <span class="phone-prefix">+56</span>
                       <InputBase 
@@ -792,7 +821,7 @@
                   </div>
 
                   <div class="form-field">
-                    <label>Tipo de Teléfono</label>
+                    <label>Tipo de Teléfono *</label>
                     <BaseSelect 
                       v-model="personaNueva.PER_TIPO_FONO" 
                       :options="[
@@ -804,7 +833,7 @@
                   </div>
 
                   <div class="form-field full-width">
-                    <label>Dirección</label>
+                    <label>Dirección *</label>
                     <InputBase 
                       v-model="personaNueva.PER_DIRECCION" 
                       placeholder="Calle Los Pinos #123" 
@@ -833,7 +862,7 @@
                   </div>
 
                   <div class="form-field">
-                    <label>Comuna</label>
+                    <label>Comuna *</label>
                     <BaseSelect 
                       v-model="personaNueva.COM_ID" 
                       :options="comunaOptions"
@@ -843,54 +872,7 @@
                 </div>
               </div>
 
-              <!-- Información de Emergencia -->
-              <div class="form-section">
-                <h3 class="section-title">
-                  <AppIcons name="alert" :size="18" />
-                  Información de Emergencia
-                </h3>
-                <div class="form-grid">
-                  <div class="form-field">
-                    <label>Contacto Emergencia</label>
-                    <InputBase 
-                      v-model="personaNueva.PER_NOM_EMERGENCIA" 
-                      placeholder="María González" 
-                      :disabled="guardandoPersona"
-                    />
-                  </div>
-
-                  <div class="form-field">
-                    <label>Tel. Emergencia</label>
-                    <div class="phone-input-wrapper">
-                      <span class="phone-prefix">+56</span>
-                      <InputBase 
-                        v-model="personaNueva.PER_FONO_EMERGENCIA" 
-                        placeholder="912345678" 
-                        :disabled="guardandoPersona"
-                        class="phone-input"
-                      />
-                    </div>
-                  </div>
-
-                  <div class="form-field full-width">
-                    <label>Alergias / Enfermedades</label>
-                    <InputBase 
-                      v-model="personaNueva.PER_ALERGIA_ENFERMEDAD" 
-                      placeholder="Ninguna conocida" 
-                      :disabled="guardandoPersona"
-                    />
-                  </div>
-
-                  <div class="form-field full-width">
-                    <label>Limitación</label>
-                    <InputBase 
-                      v-model="personaNueva.PER_LIMITACION" 
-                      placeholder="Ninguna" 
-                      :disabled="guardandoPersona"
-                    />
-                  </div>
-                </div>
-              </div>
+              
 
               <!-- Información -->
               <div class="form-section">
@@ -908,14 +890,7 @@
                     />
                   </div>
 
-                  <div class="form-field">
-                    <label>Rama</label>
-                    <BaseSelect 
-                      v-model="personaNueva.PER_RAMA" 
-                      :options="ramaOptions"
-                      :disabled="guardandoPersona"
-                    />
-                  </div>
+                  <!-- Rama seleccionado desde Nivel y Rama (evitar duplicado) -->
 
                   <div class="form-field">
                     <label>Profesión</label>
@@ -972,6 +947,15 @@
                     />
                   </div>
 
+                    <div class="form-field">
+                      <label>Curso / Sección (requerido para registrar vehículo)</label>
+                      <BaseSelect
+                        v-model="personaNueva.CUS_ID"
+                        :options="cursosOptions"
+                        :disabled="guardandoPersona"
+                      />
+                    </div>
+
                   <div class="form-field">
                     <label>Vigente</label>
                     <BaseSelect 
@@ -995,18 +979,18 @@
                 <div class="form-grid">
                   <div class="form-field">
                     <label>Habilitación 1</label>
-                    <InputBase 
-                      v-model="personaNueva.PEF_HAB_1" 
-                      placeholder="Primera habilitación" 
+                    <BaseSelect
+                      v-model="personaNueva.PEF_HAB_1"
+                      :options="[{ value: true, label: 'Sí' }, { value: false, label: 'No' }]"
                       :disabled="guardandoPersona"
                     />
                   </div>
 
                   <div class="form-field">
                     <label>Habilitación 2</label>
-                    <InputBase 
-                      v-model="personaNueva.PEF_HAB_2" 
-                      placeholder="Segunda habilitación" 
+                    <BaseSelect
+                      v-model="personaNueva.PEF_HAB_2"
+                      :options="[{ value: true, label: 'Sí' }, { value: false, label: 'No' }]"
                       :disabled="guardandoPersona"
                     />
                   </div>
@@ -1143,49 +1127,54 @@
                     />
                   </div>
 
-                  <div class="form-field">
-                    <label>Año</label>
-                    <InputBase 
-                      v-model="personaNueva.PEV_ANIO" 
-                      type="number"
-                      placeholder="2024" 
-                      :disabled="guardandoPersona"
-                    />
-                  </div>
-
-                  <div class="form-field">
-                    <label>Color</label>
-                    <InputBase 
-                      v-model="personaNueva.PEV_COLOR" 
-                      placeholder="Blanco, Negro, etc." 
-                      :disabled="guardandoPersona"
-                    />
-                  </div>
-
-                  <div class="form-field">
-                    <label>Capacidad</label>
-                    <InputBase 
-                      v-model="personaNueva.PEV_CAPACIDAD" 
-                      type="number"
-                      placeholder="5" 
-                      :disabled="guardandoPersona"
-                    />
-                  </div>
+                  <!-- Año/Color/Capacidad removidos: la BD no los almacena actualmente -->
                 </div>
               </div>
               
-              <!-- Botón de cancelar al final del formulario -->
-              <div class="form-actions-bottom">
-                <BaseButton 
-                  type="button" 
-                  variant="secondary" 
-                  class="btn-cancelar-grande"
-                  @click="cerrarModalCrear"
-                  :disabled="guardandoPersona"
-                >
-                  <AppIcons name="x" :size="16" /> Cancelar
-                </BaseButton>
-              </div>
+                <!-- Salud y Alimentación (agregado desde Formulario 2.vue) -->
+                <div class="form-section">
+                  <h3 class="section-title">
+                    <AppIcons name="heart" :size="18" />
+                    Salud y Alimentación
+                  </h3>
+                  <div class="form-grid">
+                    <div class="form-field">
+                      <label>Tipo de Alimentación</label>
+                      <BaseSelect v-model="personaNueva.ALI_ID" :options="alimentacionOptions" :disabled="guardandoPersona" />
+                    </div>
+
+                    <div class="form-field full-width">
+                      <label>Alergias / Enfermedades</label>
+                      <InputBase v-model="personaNueva.PER_ALERGIA_ENFERMEDAD" :disabled="guardandoPersona" />
+                    </div>
+
+                    <div class="form-field full-width">
+                      <label>Limitaciones</label>
+                      <InputBase v-model="personaNueva.PER_LIMITACION" :disabled="guardandoPersona" />
+                    </div>
+                    
+                    <div class="form-field">
+                      <label>Contacto Emergencia</label>
+                      <InputBase v-model="personaNueva.PER_NOM_EMERGENCIA" :disabled="guardandoPersona" placeholder="María González" />
+                    </div>
+                    <div class="form-field">
+                      <label>Tel. Emergencia</label>
+                      <div class="phone-input-wrapper">
+                        <span class="phone-prefix">+56</span>
+                        <InputBase v-model="personaNueva.PER_FONO_EMERGENCIA" :disabled="guardandoPersona" placeholder="912345678" class="phone-input" />
+                      </div>
+                    </div>
+
+                    <div class="form-field full-width">
+                      <label>Ficha Médica (opcional)</label>
+                      <InputBase v-model="personaNueva.FICHA_MEDICA" placeholder="Url o identificador de ficha" :disabled="guardandoPersona" />
+                    </div>
+                  </div>
+                </div>
+
+                
+
+                <!-- Botón cancelar al final del formulario eliminado según request -->
             </form>
           </div>
         </template>
@@ -1315,17 +1304,7 @@
                 </div>
               </div>
 
-              <!-- Botón cancelar al final -->
-              <div class="form-actions-bottom">
-                <BaseButton 
-                  @click="cerrarModalImportar"
-                  variant="secondary"
-                  class="btn-cancelar-grande"
-                  :disabled="importandoPersonas"
-                >
-                  <AppIcons name="x" :size="16" /> Cancelar
-                </BaseButton>
-              </div>
+              <!-- Botón cancelar al final eliminado según request -->
             </div>
           </div>
         </template>
@@ -1344,21 +1323,69 @@ import BaseModal from '@/components/BaseModal.vue'
 import AppIcons from '@/components/icons/AppIcons.vue'
 import personasService from '@/services/personasService.js'
 import mantenedoresService from '@/services/mantenedoresService.js'
+import cursosService from '@/services/cursosService.js'
 import authService from '@/services/authService.js'
 import * as XLSX from 'xlsx'
 import { usePermissions } from '@/composables/usePermissions'
+import { ref, onMounted, nextTick } from 'vue'
 
 export default {
   name: 'GestionPersonas',
   components: { InputBase, BaseSelect, BaseButton, BaseAlert, BaseModal, AppIcons },
   setup() {
     const { isAdmin, canCreate, canEdit, canDelete, isReadOnly } = usePermissions()
+    const filtrosColapsados = ref(false)
+    const isMobile = ref(false)
+    const toggleFiltros = async () => {
+      filtrosColapsados.value = !filtrosColapsados.value
+      // Recalcular altura disponible cuando se colapsan/expanden filtros.
+      // Use nextTick and a short timeout to ensure DOM layout has settled
+      // (sticky headers / scrollbars can change positions asynchronously).
+      try {
+        await nextTick()
+        if (window.__updateCardsViewportHeight) window.__updateCardsViewportHeight()
+        // Additional small delay to handle browser reflow in some devices
+        setTimeout(() => {
+          try { if (window.__updateCardsViewportHeight) window.__updateCardsViewportHeight() } catch(e) {}
+        }, 80)
+      } catch (e) {
+        /* ignore */
+      }
+    }
+    const checkMobile = () => {
+      isMobile.value = window.innerWidth <= 768
+    }
+    // Calcula la altura disponible para las tarjetas (debajo del .table-wrapper)
+    const updateCardsViewportHeight = () => {
+      try {
+        const tw = document.querySelector('.table-wrapper')
+        if (!tw) return
+        const top = tw.getBoundingClientRect().top
+        const available = Math.max(120, window.innerHeight - top - 16) // mínimo 120px
+        // setear variable CSS en el elemento .table-wrapper (o en root)
+        tw.style.setProperty('--cards-viewport-height', `${available}px`)
+      } catch (e) {
+        // noop
+      }
+    }
+    // Exponerla globalmente para que métodos del Options API la invoquen fácilmente
+    window.__updateCardsViewportHeight = updateCardsViewportHeight
+    onMounted(() => {
+      checkMobile()
+      window.addEventListener('resize', checkMobile)
+      window.addEventListener('resize', updateCardsViewportHeight)
+      // run once to initialize sizes
+      updateCardsViewportHeight()
+    })
     return {
       isAdmin,
       canCreate,
       canEdit,
       canDelete,
-      isReadOnly
+      isReadOnly,
+      filtrosColapsados,
+      isMobile,
+      toggleFiltros
     }
   },
   data() {
@@ -1373,14 +1400,17 @@ export default {
       ramaOptions: [
         { value: '', label: 'Todas las ramas' }
       ],
+      ramasOptions: [],
       courseOptions: [
         { value: '', label: 'Todos los grupos' }
       ],
       gruposOptions: [],
       cargosOptions: [],
+      alimentacionOptions: [],
       distritosOptions: [],
       zonasOptions: [],
       nivelesOptions: [],
+      cursosOptions: [],
       estadoCivilOptions: [
         { value: '', label: 'Seleccione Estado Civil' }
       ],
@@ -1421,7 +1451,12 @@ export default {
     filtrandoEnProceso: false,
     cargandoPersonas: false,
     errorCarga: null,
-    personas: []
+    personas: [],
+    loadingMore: false,
+    // Filter cache metadata (to avoid repeated slow requests)
+    filtersCachedAt: null,
+    filtersCacheTTL: 1000 * 60 * 60 * 24 // 24 hours
+    ,_cargandoPersonasInFlight: false
     };
   },
   computed: {
@@ -1497,6 +1532,24 @@ export default {
       }
       
       if (!this.personaEditada.historial) this.personaEditada.historial = [];
+      // Asegurar propiedades nuevas del formulario (compatibilidad)
+      const defaults = {
+        ALI_ID: this.personaEditada.ALI_ID || '',
+        FICHA_MEDICA: this.personaEditada.FICHA_MEDICA || null,
+        TIENE_VEHICULO: this.personaEditada.TIENE_VEHICULO !== undefined ? this.personaEditada.TIENE_VEHICULO : false,
+        REQUIERE_ALOJAMIENTO: this.personaEditada.REQUIERE_ALOJAMIENTO !== undefined ? this.personaEditada.REQUIERE_ALOJAMIENTO : false,
+        TRABAJA_CON_NNAJ: this.personaEditada.TRABAJA_CON_NNAJ !== undefined ? this.personaEditada.TRABAJA_CON_NNAJ : false,
+        BENEFICIARIO: this.personaEditada.BENEFICIARIO !== undefined ? this.personaEditada.BENEFICIARIO : false,
+        RANGO_EDAD_NNAJ: this.personaEditada.RANGO_EDAD_NNAJ || ''
+      };
+      // Ensure vehicle keys exist to avoid undefined during edits
+      Object.assign(defaults, {
+        PEV_PATENTE: this.personaEditada.PEV_PATENTE || '',
+        PEV_MARCA: this.personaEditada.PEV_MARCA || '',
+        PEV_MODELO: this.personaEditada.PEV_MODELO || '',
+        // Vehicle fields: only keep those stored in DB (patente, marca, modelo)
+      });
+      this.personaEditada = Object.assign({}, this.personaEditada, defaults);
       this.newHistEntry = { fecha: '', descripcion: '' };
       this.modalTab = 'info';
       this.modoSoloLectura = soloLectura;
@@ -1566,6 +1619,17 @@ export default {
       
       setTimeout(() => {
         this.ejecutarFiltrado();
+        // En móviles, al buscar colapsamos automáticamente los filtros para ahorrar espacio
+        try {
+          if (this.isMobile) {
+            this.filtrosColapsados = true
+          }
+        } catch (e) {
+          // si por alguna razón las refs no están disponibles, ignoramos
+          console.warn('No fue posible colapsar filtros automáticamente:', e)
+        }
+        // Recalcular altura disponible tras filtrar (si la función está expuesta)
+        try { if (window.__updateCardsViewportHeight) window.__updateCardsViewportHeight() } catch(e){}
         this.filtrandoEnProceso = false;
       }, 10);
     },
@@ -1832,7 +1896,8 @@ export default {
           PER_FOTO: this.personaEditada.foto || null,
           ESC_ID: this.personaEditada.ESC_ID && this.personaEditada.ESC_ID !== '' ? Number(this.personaEditada.ESC_ID) : 1,
           COM_ID: this.personaEditada.COM_ID && this.personaEditada.COM_ID !== '' ? Number(this.personaEditada.COM_ID) : 1,
-          PER_VIGENTE: this.personaEditada.PER_VIGENTE !== undefined ? this.personaEditada.PER_VIGENTE : true
+          PER_VIGENTE: this.personaEditada.PER_VIGENTE !== undefined ? this.personaEditada.PER_VIGENTE : true,
+          TIENE_VEHICULO: this.personaEditada.TIENE_VEHICULO !== undefined ? this.personaEditada.TIENE_VEHICULO : false
         };
         
         console.log('📤 Datos a enviar:', datosActualizados);
@@ -1874,7 +1939,7 @@ export default {
         }
         
         // Actualizar/Crear Datos de Formador
-        if (this.personaEditada.PEF_HAB_1 || this.personaEditada.PEF_HAB_2 || this.personaEditada.PER_ROL) {
+        if (this.personaEditada.PEF_HAB_1 !== '' || this.personaEditada.PEF_HAB_2 !== '' || this.personaEditada.PER_ROL) {
           try {
             const formadoresActuales = await personasService.formadores.list();
             const formadorPersona = formadoresActuales.find(f => f.PER_ID === personaId);
@@ -1968,31 +2033,114 @@ export default {
             console.warn('⚠️ No se pudo actualizar nivel y rama:', error);
           }
         }
+
+        // Actualizar/Crear Persona_Curso para persistir ALI_ID (Tipo de Alimentación)
+        try {
+          const personaCursosActuales = await personasService.personaCursos.list();
+          const cursoPersona = personaCursosActuales.find(c => Number(c.PER_ID) === Number(personaId));
+
+          const aliIdToSet = this.personaEditada.ALI_ID && this.personaEditada.ALI_ID !== '' ? Number(this.personaEditada.ALI_ID) : null;
+
+          if (cursoPersona) {
+            if (aliIdToSet !== null && Number(cursoPersona.ALI_ID) !== aliIdToSet) {
+              await personasService.personaCursos.partialUpdate(cursoPersona.PEC_ID, { ALI_ID: aliIdToSet });
+              console.log('✅ ALI_ID actualizado en Persona_Curso');
+            }
+          } else if (aliIdToSet !== null) {
+            // Intentar crear Persona_Curso si existe CUS_ID o PER tiene CUS_ID asignado
+            const cusIdToUse = this.personaEditada.CUS_ID && this.personaEditada.CUS_ID !== '' ? Number(this.personaEditada.CUS_ID) : null;
+            let rolIdToUse = null;
+            if (this.personaEditada.PER_ROL) {
+              try {
+                const rolesList = await mantenedoresService.rol.list();
+                const rolFound = rolesList.find(r => r.ROL_DESCRIPCION === this.personaEditada.PER_ROL || String(r.ROL_ID) === String(this.personaEditada.PER_ROL));
+                if (rolFound) rolIdToUse = rolFound.ROL_ID;
+              } catch (e) {
+                console.warn('No se pudo resolver ROL_ID desde mantenedores al actualizar ALI_ID:', e);
+              }
+            }
+
+            if (cusIdToUse && rolIdToUse) {
+              try {
+                await personasService.personaCursos.create({ PER_ID: personaId, CUS_ID: cusIdToUse, ROL_ID: rolIdToUse, ALI_ID: aliIdToSet });
+                console.log('✅ Persona_Curso creado para almacenar ALI_ID');
+              } catch (e) {
+                console.warn('No se pudo crear Persona_Curso para ALI_ID:', e);
+              }
+            }
+          }
+        } catch (error) {
+          console.warn('⚠️ No se pudo actualizar/crear Persona_Curso para ALI_ID:', error);
+        }
         
-        // Actualizar/Crear Vehículo
+        // Actualizar/Crear Vehículo (ahora requiere PEC_ID desde Persona_Curso)
         if (this.personaEditada.PEV_PATENTE && this.personaEditada.PEV_PATENTE !== '') {
           try {
-            const vehiculosActuales = await personasService.vehiculos.list();
-            const vehiculoPersona = vehiculosActuales.find(v => v.PER_ID === personaId);
-            
-            const vehiculoData = {
-              PEV_PATENTE: this.personaEditada.PEV_PATENTE,
-              PEV_MARCA: this.personaEditada.PEV_MARCA || null,
-              PEV_MODELO: this.personaEditada.PEV_MODELO || null,
-              PEV_ANIO: this.personaEditada.PEV_ANIO || null,
-              PEV_COLOR: this.personaEditada.PEV_COLOR || null,
-              PEV_CAPACIDAD: this.personaEditada.PEV_CAPACIDAD || null
-            };
-            
-            if (vehiculoPersona) {
-              await personasService.vehiculos.partialUpdate(vehiculoPersona.PEV_ID, vehiculoData);
-              console.log('✅ Vehículo actualizado');
-            } else {
-              await personasService.vehiculos.create({
-                PER_ID: personaId,
-                ...vehiculoData
-              });
-              console.log('✅ Vehículo creado');
+            // Buscar curso asociado a la persona (Persona_Curso)
+            const cursosActuales = await personasService.personaCursos.list();
+            const cursoPersona = cursosActuales.find(c => Number(c.PER_ID) === Number(personaId));
+
+            let pecId = cursoPersona ? cursoPersona.PEC_ID : null;
+
+            // Si no existe curso y hay información de rol/curso, intentar crear Persona_Curso
+            if (!pecId) {
+              const cusIdToUse = this.personaEditada.CUS_ID && this.personaEditada.CUS_ID !== '' ? Number(this.personaEditada.CUS_ID) : null;
+              // intentar resolver ROL_ID desde descripción PER_ROL
+              let rolIdToUse = null;
+              if (this.personaEditada.PER_ROL) {
+                try {
+                  const rolesList = await mantenedoresService.rol.list();
+                  const rolFound = rolesList.find(r => r.ROL_DESCRIPCION === this.personaEditada.PER_ROL || String(r.ROL_ID) === String(this.personaEditada.PER_ROL));
+                  if (rolFound) rolIdToUse = rolFound.ROL_ID;
+                } catch (e) {
+                  console.warn('No se pudo obtener lista de roles para resolver ROL_ID:', e);
+                }
+              }
+              // fallback a primer rol disponible
+              if (!rolIdToUse) {
+                try {
+                  const rolesList = await mantenedoresService.rol.list();
+                  if (rolesList && rolesList.length) rolIdToUse = rolesList[0].ROL_ID;
+                } catch (e) {
+                  // dejar rolIdToUse nulo si fallo
+                }
+              }
+
+              if (cusIdToUse && rolIdToUse) {
+                const nuevoCurso = await personasService.personaCursos.create({ PER_ID: personaId, CUS_ID: cusIdToUse, ROL_ID: rolIdToUse });
+                pecId = nuevoCurso.PEC_ID;
+                console.log('✅ Persona_Curso creado para vehículo, PEC_ID:', pecId);
+              } else {
+                console.warn('No se pudo determinar CUS_ID o ROL_ID para crear Persona_Curso; vehículo no creado. CUS_ID:', cusIdToUse, 'ROL_ID:', rolIdToUse);
+              }
+            }
+
+            if (pecId) {
+              // Buscar vehículo por PEC_ID
+              const vehiculosActuales = await personasService.vehiculos.list();
+              const vehiculoPersona = vehiculosActuales.find(v => Number(v.PEC_ID) === Number(pecId));
+
+              // Construir payload con los campos que existen en el backend
+              const vehPayload = {
+                PEC_ID: pecId,
+                PEV_PATENTE: this.personaEditada.PEV_PATENTE || '',
+                PEV_MARCA: this.personaEditada.PEV_MARCA || '',
+                PEV_MODELO: this.personaEditada.PEV_MODELO || ''
+              };
+
+              if (vehiculoPersona) {
+                // En update no enviamos PEC_ID en el body (se usa en la URL)
+                const updatePayload = {
+                  PEV_PATENTE: vehPayload.PEV_PATENTE,
+                  PEV_MARCA: vehPayload.PEV_MARCA,
+                  PEV_MODELO: vehPayload.PEV_MODELO
+                };
+                await personasService.vehiculos.partialUpdate(vehiculoPersona.PEV_ID, updatePayload);
+                console.log('✅ Vehículo actualizado');
+              } else {
+                await personasService.vehiculos.create(vehPayload);
+                console.log('✅ Vehículo creado');
+              }
             }
           } catch (error) {
             console.warn('⚠️ No se pudo actualizar el vehículo:', error);
@@ -2001,6 +2149,8 @@ export default {
         
         console.log('🔄 Recargando lista de personas...');
         await this.cargarPersonas();
+        // Forzar recarga de filtros para actualizar cache inmediatamente
+        try { await this.cargarOpcionesFiltros(true); } catch(e){ console.warn('No se pudo forzar recarga de filtros tras actualización:', e); }
         
         if (this.filtroAplicado) {
           console.log('🔍 Reaplicando filtros...');
@@ -2291,6 +2441,11 @@ export default {
     },
 
     async cargarPersonas() {
+      if (this._cargandoPersonasInFlight) {
+        console.log('Carga de personas ya en curso — omitiendo llamada duplicada');
+        return;
+      }
+      this._cargandoPersonasInFlight = true;
       try {
         this.cargandoPersonas = true;
         this.errorCarga = null;
@@ -2298,16 +2453,19 @@ export default {
         console.log('🔄 Intentando cargar personas con relaciones desde API...');
         const response = await personasService.personasCompletas.list();
         console.log('📡 Respuesta de la API:', response);
-        
+
         if (Array.isArray(response)) {
+          // Backend returned flat array
           this.personas = response;
         } else if (response && response.results && Array.isArray(response.results)) {
           this.personas = response.results;
         } else {
           this.personas = [];
         }
-        
+
         console.log('✅ Personas cargadas:', this.personas.length);
+        // Cargar opciones de filtros (desde mantenedores). No derivamos filtros desde personas paginadas.
+        await this.cargarOpcionesFiltros();
         
       } catch (error) {
         console.error('❌ Error cargando personas:', error);
@@ -2315,51 +2473,86 @@ export default {
         this.personas = [];
       } finally {
         this.cargandoPersonas = false;
+        this._cargandoPersonasInFlight = false;
       }
     },
 
-    async cargarOpcionesFiltros() {
+    async cargarOpcionesFiltros(forceReload = false) {
+      // Use localStorage cache to avoid repeated slow requests for filter options
+      try {
+        const cacheKey = 'gs_filters_v1';
+        if (!forceReload) {
+          const raw = localStorage.getItem(cacheKey);
+          if (raw) {
+            try {
+              const parsed = JSON.parse(raw);
+              const now = Date.now();
+              if (parsed.timestamp && (now - parsed.timestamp) < this.filtersCacheTTL) {
+                // Validate that critical filter lists exist in cache; if some are missing, skip cache
+                const hasCritical = parsed.alimentacionOptions && parsed.nivelesOptions && parsed.cursosOptions;
+                if (!hasCritical) {
+                  console.log('Cache encontrada pero incompleta, ignorando y recargando desde servidor');
+                } else {
+                  // Restore cached options (all saved keys)
+                  this.roleOptions = parsed.roleOptions || this.roleOptions;
+                  this.ramaOptions = parsed.ramaOptions || this.ramaOptions;
+                  this.ramasOptions = this.ramaOptions;
+                  this.courseOptions = parsed.courseOptions || this.courseOptions;
+                  this.estadoCivilOptions = parsed.estadoCivilOptions || this.estadoCivilOptions;
+                  this.regionOptions = parsed.regionOptions || this.regionOptions;
+                  this.cargosOptions = parsed.cargosOptions || this.cargosOptions;
+                  this.distritosOptions = parsed.distritosOptions || this.distritosOptions;
+                  this.zonasOptions = parsed.zonasOptions || this.zonasOptions;
+                  this.nivelesOptions = parsed.nivelesOptions || this.nivelesOptions;
+                  this.cursosOptions = parsed.cursosOptions || this.cursosOptions;
+                  this.alimentacionOptions = parsed.alimentacionOptions || this.alimentacionOptions;
+                  this.gruposOptions = parsed.gruposOptions || this.gruposOptions;
+                  this.filtersCachedAt = parsed.timestamp;
+                  console.log('Usando filtros completos desde cache (localStorage)');
+                  return;
+                }
+              }
+            } catch (e) {
+              console.warn('Cache de filtros inválida, se ignora:', e);
+            }
+          }
+        } else {
+          console.log('Forzando recarga de opciones de filtros (forceReload=true)');
+        }
+      } catch (e) {
+        console.warn('No se pudo acceder a localStorage para filtros:', e);
+      }
       try {
         console.log('Cargando opciones de filtros desde Base de Datos...');
+        // Parallelizar requests a mantenedores para reducir latencia
+        const mantenedorPromises = [
+          mantenedoresService.rol.list().catch(e => { console.warn('rol list failed', e); return []; }),
+          mantenedoresService.rama.list().catch(e => { console.warn('rama list failed', e); return []; }),
+          mantenedoresService.grupo.list().catch(e => { console.warn('grupo list failed', e); return []; })
+        ];
+
+        const [rolesData, ramasData, gruposData] = await Promise.all(mantenedorPromises);
+
+        const rolesMantenedor = (rolesData || [])
+          .filter(rol => rol.ROL_VIGENTE !== false)
+          .map(rol => ({ value: rol.ROL_DESCRIPCION, label: rol.ROL_DESCRIPCION, id: rol.ROL_ID }));
+
+        const ramasMantenedor = (ramasData || [])
+          .filter(rama => rama.RAM_VIGENTE !== false)
+          .map(rama => ({ value: rama.RAM_DESCRIPCION, label: rama.RAM_DESCRIPCION, id: rama.RAM_ID }));
+
+        const gruposMantenedor = (gruposData || [])
+          .filter(grupo => grupo.GRU_VIGENTE !== false)
+          .map(grupo => ({ value: grupo.GRU_DESCRIPCION, label: grupo.GRU_DESCRIPCION, id: grupo.GRU_ID }));
+
+        // Obtener opciones derivadas desde mantenedores y (siempre) desde endpoints específicos
+        // No derivamos filtros desde la lista paginada de personas porque sería incompleto.
+        const rolesPersonas = await personasService.obtenerRoles().catch(e => { console.warn('obtenerRoles failed', e); return []; });
+        const ramasPersonas = await personasService.obtenerRamas().catch(e => { console.warn('obtenerRamas failed', e); return []; });
+        const gruposPersonas = await personasService.obtenerGrupos().catch(e => { console.warn('obtenerGrupos failed', e); return []; });
+        console.log('Valores de personas (fetched) - Roles:', rolesPersonas.length, 'Ramas:', ramasPersonas.length, 'Grupos:', gruposPersonas.length);
         
-        let rolesMantenedor = [];
-        let ramasMantenedor = [];
-        let gruposMantenedor = [];
-        
-        try {
-          const rolesData = await mantenedoresService.rol.list();
-          rolesMantenedor = rolesData
-            .filter(rol => rol.ROL_VIGENTE !== false)
-            .map(rol => ({ value: rol.ROL_DESCRIPCION, label: rol.ROL_DESCRIPCION, id: rol.ROL_ID }));
-          console.log('Roles de mantenedores:', rolesMantenedor.length);
-        } catch (error) {
-          console.warn('No se pudieron cargar roles desde mantenedores:', error.message);
-        }
-        
-        try {
-          const ramasData = await mantenedoresService.rama.list();
-          ramasMantenedor = ramasData
-            .filter(rama => rama.RAM_VIGENTE !== false)
-            .map(rama => ({ value: rama.RAM_DESCRIPCION, label: rama.RAM_DESCRIPCION, id: rama.RAM_ID }));
-          console.log('Ramas de mantenedores:', ramasMantenedor.length);
-        } catch (error) {
-          console.warn('No se pudieron cargar ramas desde mantenedores:', error.message);
-        }
-        
-        try {
-          const gruposData = await mantenedoresService.grupo.list();
-          gruposMantenedor = gruposData
-            .filter(grupo => grupo.GRU_VIGENTE !== false)
-            .map(grupo => ({ value: grupo.GRU_DESCRIPCION, label: grupo.GRU_DESCRIPCION, id: grupo.GRU_ID }));
-          console.log('Grupos de mantenedores:', gruposMantenedor.length);
-        } catch (error) {
-          console.warn('No se pudieron cargar grupos desde mantenedores:', error.message);
-        }
-        
-        const rolesPersonas = await personasService.obtenerRoles();
-        const ramasPersonas = await personasService.obtenerRamas();
-        const gruposPersonas = await personasService.obtenerGrupos();
-        console.log('Valores de personas - Roles:', rolesPersonas.length, 'Ramas:', ramasPersonas.length, 'Grupos:', gruposPersonas.length);
+
         
         const combinarOpciones = (mantenedor, personas) => {
           const mapa = new Map();
@@ -2370,7 +2563,13 @@ export default {
         };
         
         this.roleOptions = [{ value: '', label: 'Todos los roles' }, ...combinarOpciones(rolesMantenedor, rolesPersonas)];
+        // `ramaOptions` (filtros) usa descripciones como value/label for free-text filtering
         this.ramaOptions = [{ value: '', label: 'Todas las ramas' }, ...combinarOpciones(ramasMantenedor, ramasPersonas)];
+        // `ramasOptions` (selects en formularios de Nivel/Rama) debe usar el ID como value
+        const ramasMantenedorForSelect = (ramasData || [])
+          .filter(rama => rama.RAM_VIGENTE !== false)
+          .map(rama => ({ value: rama.RAM_ID, label: rama.RAM_DESCRIPCION }));
+        this.ramasOptions = [{ value: '', label: 'Seleccione Rama' }, ...ramasMantenedorForSelect];
         this.courseOptions = [{ value: '', label: 'Todos los grupos' }, ...combinarOpciones(gruposMantenedor, gruposPersonas)];
         
         try {
@@ -2450,6 +2649,43 @@ export default {
         } catch (error) {
           console.warn('No se pudieron cargar niveles:', error.message);
         }
+        try {
+          const cursos = await cursosService.cursos.list();
+          // Manejar respuesta paginada (DRF) o lista simple
+          const cursosArray = Array.isArray(cursos) ? cursos : (cursos && Array.isArray(cursos.results) ? cursos.results : []);
+          this.cursosOptions = [
+            { value: '', label: 'Seleccione Curso' },
+            ...cursosArray.map(c => ({
+              value: c.CUS_ID || c.CUR_ID || c.id,
+              label: c.CUR_DESCRIPCION || c.CUR_NOMBRE || c.CUS_SECCION || (`Curso ${c.CUS_ID || c.CUR_ID || c.id}`)
+            }))
+          ];
+          console.log('Cursos cargados para formulario:', this.cursosOptions.length - 1);
+        } catch (error) {
+          console.warn('No se pudieron cargar cursos:', error.message);
+        }
+        
+        // Cargar opciones de Alimentación (mantenedor)
+        try {
+          const alimentaciones = await mantenedoresService.alimentacion.list();
+          this.alimentacionOptions = [
+            { value: '', label: 'Seleccione' },
+            ...alimentaciones
+              .filter(a => a.ALI_VIGENTE !== false)
+              .map(a => ({ value: a.ALI_ID, label: a.ALI_DESCRIPCION }))
+          ];
+          console.log('Opciones de alimentación cargadas:', this.alimentacionOptions.length - 1);
+        } catch (error) {
+          console.warn('No se pudo cargar alimentacion desde mantenedores:', error.message);
+          // Fallback a opciones básicas si el endpoint falla
+          this.alimentacionOptions = [
+            { value: '', label: 'Seleccione' },
+            { value: 'omnivoro', label: 'Omnívoro' },
+            { value: 'vegetariano', label: 'Vegetariano' },
+            { value: 'vegano', label: 'Vegano' },
+            { value: 'otra', label: 'Otra' }
+          ];
+        }
         
         // También cargar grupos para el formulario
         try {
@@ -2466,6 +2702,30 @@ export default {
         }
         
         console.log('Filtros cargados: Roles:', this.roleOptions.length - 1, 'Ramas:', this.ramaOptions.length - 1, 'Grupos:', this.courseOptions.length - 1);
+        // Guardar en cache local para evitar recargas frecuentes
+        try {
+          const cacheKey = 'gs_filters_v1';
+          const payload = {
+            timestamp: Date.now(),
+            roleOptions: this.roleOptions,
+            ramaOptions: this.ramaOptions,
+            courseOptions: this.courseOptions,
+            estadoCivilOptions: this.estadoCivilOptions,
+            regionOptions: this.regionOptions,
+            cargosOptions: this.cargosOptions,
+            distritosOptions: this.distritosOptions,
+            zonasOptions: this.zonasOptions,
+            nivelesOptions: this.nivelesOptions,
+            cursosOptions: this.cursosOptions,
+            alimentacionOptions: this.alimentacionOptions,
+            gruposOptions: this.gruposOptions
+          };
+          localStorage.setItem(cacheKey, JSON.stringify(payload));
+          this.filtersCachedAt = payload.timestamp;
+          console.log('Filtros guardados en cache.');
+        } catch (e) {
+          console.warn('No se pudo guardar cache de filtros:', e);
+        }
         
       } catch (error) {
         console.error('Error cargando opciones de filtros:', error);
@@ -2574,6 +2834,11 @@ export default {
         PER_FONO: '',
         PER_APODO: '',
         PER_PROFESION: '',
+        // Campos sincronizados con Formulario 2.vue
+        CURSO_ID: '',
+        CUS_ID: '',
+        // religion ya existe como PER_RELIGION
+        PER_RELIGION: '',
         PER_NOM_EMERGENCIA: '',
         PER_FONO_EMERGENCIA: '',
         PER_ALERGIA_ENFERMEDAD: '',
@@ -2589,7 +2854,6 @@ export default {
         COM_ID: '',
         PER_VIGENTE: true,
         PER_ROL: '',
-        PER_RAMA: '',
         // Grupo Scout
         GRU_ID: '',
         PEG_VIGENTE: true,
@@ -2606,13 +2870,20 @@ export default {
         // Nivel y Rama
         NIV_ID: '',
         RAM_ID_NIVEL: '',
+        // Salud / Alimentación (Formulario 2)
+        ALI_ID: '',
+        FICHA_MEDICA: null,
+        // Adicionales (Formulario 2)
+        TIENE_VEHICULO: false,
+        RANGO_EDAD_NNAJ: '',
+        REQUIERE_ALOJAMIENTO: false,
+        TRABAJA_CON_NNAJ: false,
+        BENEFICIARIO: false,
         // Vehículo
         PEV_PATENTE: '',
         PEV_MARCA: '',
         PEV_MODELO: '',
-        PEV_ANIO: null,
-        PEV_COLOR: '',
-        PEV_CAPACIDAD: null
+        // only store patente/marca/modelo per DB
       };
       this.crearModalVisible = true;
     },
@@ -3214,7 +3485,8 @@ export default {
         console.log('⚠️ Ya se está guardando, ignorando click duplicado');
         return;
       }
-      
+      let datosPersona = null;
+
       try {
         this.guardandoPersona = true;
         
@@ -3257,19 +3529,39 @@ export default {
           this.guardandoPersona = false;
           return;
         }
+
+        // Validación: si el usuario seleccionó Tipo de Alimentación (ALI_ID)
+        // pero no seleccionó Curso/Sección, no podremos persistir ALI_ID porque
+        // la tabla Persona_Curso requiere un CUS_ID. Informar al usuario.
+        const cusCandidateCheck = this.personaNueva.CUS_ID || this.personaNueva.CURSO_ID || '';
+        if (this.personaNueva.ALI_ID && (!cusCandidateCheck || cusCandidateCheck === '')) {
+          alert('Has seleccionado un Tipo de Alimentación pero no seleccionaste Curso/Sección.\n\nNota: el Tipo de Alimentación se guarda por curso (Persona_Curso). Por favor selecciona un Curso/Sección para que la alimentación se almacene.');
+          this.guardandoPersona = false;
+          return;
+        }
         
-        const datosPersona = {
+        // Intentar obtener el usuario actual para asignar USU_ID correctamente
+        let currentUser = null;
+        try {
+          currentUser = await authService.getCurrentUser();
+        } catch (e) {
+          console.warn('No se pudo resolver usuario actual desde authService:', e);
+        }
+
+        datosPersona = {
           PER_NOMBRES: this.personaNueva.PER_NOMBRES,
           PER_APELPTA: this.personaNueva.PER_APELPTA,
-          PER_APELMAT: this.personaNueva.PER_APELMAT || '',
+          // El backend exige PER_APELMAT no vacío en algunos casos; usar '-' si está ausente
+          PER_APELMAT: this.personaNueva.PER_APELMAT && String(this.personaNueva.PER_APELMAT).trim() !== '' ? this.personaNueva.PER_APELMAT : '-',
           PER_RUN: this.personaNueva.PER_RUN,
           PER_DV: this.personaNueva.PER_DV,
           PER_MAIL: this.personaNueva.PER_MAIL,
           PER_FECHA_NAC: this.personaNueva.PER_FECHA_NAC,
-          PER_DIRECCION: this.personaNueva.PER_DIRECCION || null,
+          // Campos que en el modelo son NOT NULL: enviar cadenas vacías en vez de null
+          PER_DIRECCION: this.personaNueva.PER_DIRECCION || '',
           PER_TIPO_FONO: this.personaNueva.PER_TIPO_FONO || 2,
-          PER_FONO: this.personaNueva.PER_FONO ? '+56' + this.personaNueva.PER_FONO.replace(/^\+56/, '') : null,
-          PER_APODO: this.personaNueva.PER_APODO || null,
+          PER_FONO: this.personaNueva.PER_FONO ? '+56' + this.personaNueva.PER_FONO.replace(/^\+56/, '') : '',
+          PER_APODO: this.personaNueva.PER_APODO || '',
           PER_PROFESION: this.personaNueva.PER_PROFESION || null,
           PER_NOM_EMERGENCIA: this.personaNueva.PER_NOM_EMERGENCIA || null,
           PER_FONO_EMERGENCIA: this.personaNueva.PER_FONO_EMERGENCIA ? '+56' + this.personaNueva.PER_FONO_EMERGENCIA.replace(/^\+56/, '') : null,
@@ -3282,17 +3574,196 @@ export default {
           PER_OTROS: this.personaNueva.PER_OTROS || null,
           PER_FOTO: this.personaNueva.foto || null,
           PER_VIGENTE: this.personaNueva.PER_VIGENTE !== undefined ? this.personaNueva.PER_VIGENTE : true,
+          TIENE_VEHICULO: this.personaNueva.TIENE_VEHICULO !== undefined ? this.personaNueva.TIENE_VEHICULO : false,
           ESC_ID: this.personaNueva.ESC_ID && this.personaNueva.ESC_ID !== '' ? Number(this.personaNueva.ESC_ID) : 1,
-          COM_ID: this.personaNueva.COM_ID && this.personaNueva.COM_ID !== '' ? Number(this.personaNueva.COM_ID) : 1,
-          USU_ID: 1
+          COM_ID: this.personaNueva.COM_ID && this.personaNueva.COM_ID !== '' ? Number(this.personaNueva.COM_ID) : 1
         };
+
+        // Añadir USU_ID solo si podemos resolverlo desde authService
+        try {
+          const resolvedId = currentUser && (currentUser.id || currentUser.USU_ID || currentUser.usuario || currentUser.user_id);
+          if (resolvedId) {
+            // Verificar que ese usuario realmente existe en el backend para evitar FK error
+            try {
+              const token = authService.getAccessToken();
+              const apiBase = import.meta.env?.VITE_API_BASE || 'http://localhost:8000/api';
+              const baseNoSlash = apiBase.replace(/\/$/, '')
+              // Algunos despliegues incluyen los routers bajo 'api/usuarios/' lo
+              // que provoca rutas duplicadas como '/api/usuarios/usuarios/{id}/'.
+              // Probamos ambas variantes para ser robustos frente a la config del
+              // backend sin tocarlo aquí.
+              const tryUrls = [
+                `${baseNoSlash}/usuarios/usuarios/${Number(resolvedId)}/`,
+                `${baseNoSlash}/usuarios/${Number(resolvedId)}/`
+              ];
+              let okUser = false
+              for (const u of tryUrls) {
+                try {
+                  const resp = await fetch(u, { method: 'GET', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } })
+                  if (resp.ok) { okUser = true; break }
+                } catch (e) {
+                  // ignore and try next
+                }
+              }
+              if (!okUser) {
+                alert('El usuario autenticado no existe en el servidor. Por favor inicia sesión con un usuario válido.');
+                this.guardandoPersona = false;
+                return;
+              }
+              datosPersona.USU_ID = Number(resolvedId);
+            } catch (e) {
+              console.warn('Error comprobando existencia de usuario en backend:', e);
+              alert('No se pudo verificar el usuario en el servidor. Revisa tu conexión e intenta nuevamente.');
+              this.guardandoPersona = false;
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn('No se pudo asignar USU_ID al payload de persona:', e);
+        }
+
+        // Validaciones adicionales antes de enviar: asegurar que USU_ID y FKs exist en opciones cargadas
+        // USU_ID: debe existir (backend lo requiere)
+        if (!datosPersona.USU_ID) {
+          alert('No se pudo resolver el usuario actual. Por favor inicia sesión antes de crear personas.');
+          this.guardandoPersona = false;
+          return;
+        }
+
+        // ESC_ID debe existir en estadoCivilOptions
+        // Si las opciones de mantenedores no están cargadas, bloquear creación
+        if (!this.estadoCivilOptions || this.estadoCivilOptions.length <= 1) {
+          alert('No hay Estados Civiles cargados en el sistema. Por favor carga los mantenedores antes de crear personas.');
+          this.guardandoPersona = false;
+          return;
+        }
+
+        const escExists = this.estadoCivilOptions && this.estadoCivilOptions.some(opt => String(opt.value) === String(datosPersona.ESC_ID));
+        if (!escExists) {
+          alert('Estado civil inválido o no cargado. Selecciona un Estado Civil válido.');
+          this.guardandoPersona = false;
+          return;
+        }
+
+        // COM_ID debe existir en comunaOptions
+        if (!this.comunaOptions || this.comunaOptions.length <= 1) {
+          alert('No hay Comunas cargadas en el sistema. Por favor carga los mantenedores antes de crear personas.');
+          this.guardandoPersona = false;
+          return;
+        }
+
+        const comExists = this.comunaOptions && this.comunaOptions.some(opt => String(opt.value) === String(datosPersona.COM_ID));
+        if (!comExists) {
+          alert('Comuna inválida o no cargada. Selecciona una Comuna válida.');
+          this.guardandoPersona = false;
+          return;
+        }
+
+        // Coerciones de tipos: PER_NUM_MMA a número o null
+        if (this.personaNueva.PER_NUM_MMA !== undefined && this.personaNueva.PER_NUM_MMA !== null && this.personaNueva.PER_NUM_MMA !== '') {
+          const parsedMMA = Number(String(this.personaNueva.PER_NUM_MMA).replace(/[^0-9\-]/g, ''));
+          datosPersona.PER_NUM_MMA = Number.isFinite(parsedMMA) ? parsedMMA : null;
+        } else {
+          datosPersona.PER_NUM_MMA = null;
+        }
+
+        // Asegurar que campos NOT NULL no contengan null
+        datosPersona.PER_DIRECCION = datosPersona.PER_DIRECCION || '';
+        datosPersona.PER_FONO = datosPersona.PER_FONO || '';
+        datosPersona.PER_APODO = datosPersona.PER_APODO || '';
         
-        console.log('💾 Guardando nueva persona:', datosPersona);
+        try {
+          console.log('💾 Guardando nueva persona (orquestador):', JSON.stringify(datosPersona, null, 2));
+        } catch (e) {
+          console.log('💾 Guardando nueva persona (orquestador):', datosPersona);
+        }
+
+        // Preparar datos opcionales para curso y vehículo
+        let cursoData = null;
+        let vehiculoData = null;
+
+        // Determinar CUS_ID (puede venir en CURSO_ID o CUS_ID)
+        const cusCandidate = this.personaNueva.CUS_ID || this.personaNueva.CURSO_ID || '';
+        // Resolver ROL_ID si se proporcionó PER_ROL (buscar en mantenedores)
+        let rolIdToUse = null;
+        if (this.personaNueva.PER_ROL) {
+          try {
+            const rolesList = await mantenedoresService.rol.list();
+            const rolFound = rolesList.find(r => r.ROL_DESCRIPCION === this.personaNueva.PER_ROL || String(r.ROL_ID) === String(this.personaNueva.PER_ROL));
+            if (rolFound) rolIdToUse = rolFound.ROL_ID;
+          } catch (e) {
+            console.warn('No se pudo resolver ROL_ID desde mantenedores:', e);
+          }
+        }
+
+        if (cusCandidate && cusCandidate !== '') {
+          cursoData = { CUS_ID: Number(cusCandidate), ROL_ID: rolIdToUse, ALI_ID: this.personaNueva.ALI_ID && this.personaNueva.ALI_ID !== '' ? Number(this.personaNueva.ALI_ID) : null };
+        } else if (rolIdToUse) {
+          // Si solo hay rol, podemos crear Persona_Curso sin CUS_ID? Preferimos no hacerlo.
+          cursoData = null;
+        }
+
+        if (this.personaNueva.PEV_PATENTE && this.personaNueva.PEV_PATENTE !== '') {
+          vehiculoData = {
+            PEV_PATENTE: this.personaNueva.PEV_PATENTE,
+            // Backend espera columnas NOT NULL para marca/modelo; enviar cadena vacía si no hay valor
+            PEV_MARCA: this.personaNueva.PEV_MARCA || '',
+            PEV_MODELO: this.personaNueva.PEV_MODELO || ''
+          };
+        }
+
+        // Crear persona paso a paso (persona -> persona_curso -> vehiculo) para aislar errores
+        let personaCreada = null;
+        let personaId = null;
+        try {
+          personaCreada = await personasService.personas.create(datosPersona);
+          personaId = personaCreada.PER_ID;
+          console.log('✅ Persona creada:', personaCreada);
         
-        const personaCreada = await personasService.personas.create(datosPersona);
-        console.log('✅ Persona creada:', personaCreada);
-        
-        const personaId = personaCreada.PER_ID;
+        // Si corresponde, crear Persona_Curso para almacenar ALI_ID y obtener PEC_ID
+        let personaCursoCreado = null;
+        try {
+          if (cursoData && cursoData.CUS_ID && cursoData.ROL_ID) {
+            const cursoPayload = {
+              PER_ID: personaId,
+              CUS_ID: Number(cursoData.CUS_ID),
+              ROL_ID: Number(cursoData.ROL_ID)
+            };
+            if (cursoData.ALI_ID !== undefined && cursoData.ALI_ID !== null && cursoData.ALI_ID !== '') {
+              cursoPayload.ALI_ID = Number(cursoData.ALI_ID);
+            }
+            personaCursoCreado = await personasService.personaCursos.create(cursoPayload);
+            console.log('✅ Persona_Curso creado tras creación de persona:', personaCursoCreado);
+          }
+        } catch (err) {
+          console.warn('⚠️ Error creando Persona_Curso tras creación de persona:', err);
+        }
+
+        // Crear vehículo si se proporcionó y tenemos PEC_ID
+        try {
+          if (vehiculoData) {
+            const pecId = vehiculoData.PEC_ID || (personaCursoCreado && personaCursoCreado.PEC_ID) || null;
+            if (!pecId) {
+              console.warn('No se dispone de PEC_ID para crear vehículo; omitiendo creación de vehículo.');
+            } else {
+              const vehPayload = {
+                PEC_ID: pecId,
+                PEV_PATENTE: vehiculoData.PEV_PATENTE,
+                PEV_MARCA: vehiculoData.PEV_MARCA || '',
+                PEV_MODELO: vehiculoData.PEV_MODELO || ''
+              };
+              const vehCreado = await personasService.vehiculos.create(vehPayload);
+              console.log('✅ Vehículo creado tras creación de persona:', vehCreado);
+            }
+          }
+        } catch (err) {
+          console.warn('⚠️ Error creando vehículo tras creación de persona:', err);
+        }
+        } catch (err) {
+          console.error('❌ Error creando persona (primer paso):', err);
+          if (err && err.response) console.error('Detalle servidor:', err.response);
+          throw err;
+        }
         
         // Guardar Grupo Scout
         if (this.personaNueva.GRU_ID && this.personaNueva.GRU_ID !== '') {
@@ -3309,7 +3780,7 @@ export default {
         }
         
         // Guardar Datos de Formador
-        if (this.personaNueva.PEF_HAB_1 || this.personaNueva.PEF_HAB_2 || this.personaNueva.PER_ROL) {
+        if (this.personaNueva.PEF_HAB_1 !== '' || this.personaNueva.PEF_HAB_2 !== '' || this.personaNueva.PER_ROL) {
           try {
             await personasService.formadores.create({
               PER_ID: personaId,
@@ -3370,19 +3841,48 @@ export default {
           }
         }
         
-        // Guardar Vehículo
+        // Guardar Vehículo (crear Persona_Curso antes si es necesario)
         if (this.personaNueva.PEV_PATENTE && this.personaNueva.PEV_PATENTE !== '') {
           try {
-            await personasService.vehiculos.create({
-              PER_ID: personaId,
-              PEV_PATENTE: this.personaNueva.PEV_PATENTE,
-              PEV_MARCA: this.personaNueva.PEV_MARCA || null,
-              PEV_MODELO: this.personaNueva.PEV_MODELO || null,
-              PEV_ANIO: this.personaNueva.PEV_ANIO || null,
-              PEV_COLOR: this.personaNueva.PEV_COLOR || null,
-              PEV_CAPACIDAD: this.personaNueva.PEV_CAPACIDAD || null
-            });
-            console.log('✅ Vehículo guardado');
+            // Determinar CUS_ID y ROL_ID necesarios para crear Persona_Curso
+            const cusIdToUse = this.personaNueva.CUS_ID && this.personaNueva.CUS_ID !== '' ? Number(this.personaNueva.CUS_ID) : null;
+            let rolIdToUse = null;
+            if (this.personaNueva.PER_ROL) {
+              try {
+                const rolesList = await mantenedoresService.rol.list();
+                const rolFound = rolesList.find(r => r.ROL_DESCRIPCION === this.personaNueva.PER_ROL || String(r.ROL_ID) === String(this.personaNueva.PER_ROL));
+                if (rolFound) rolIdToUse = rolFound.ROL_ID;
+              } catch (e) {
+                console.warn('No se pudo obtener lista de roles para resolver ROL_ID:', e);
+              }
+            }
+            if (!rolIdToUse) {
+              try {
+                const rolesList = await mantenedoresService.rol.list();
+                if (rolesList && rolesList.length) rolIdToUse = rolesList[0].ROL_ID;
+              } catch (e) {
+                // ignore
+              }
+            }
+
+            let pecId = null;
+            if (cusIdToUse && rolIdToUse) {
+              const cursoCreado = await personasService.personaCursos.create({ PER_ID: personaId, CUS_ID: cusIdToUse, ROL_ID: rolIdToUse });
+              pecId = cursoCreado.PEC_ID;
+              console.log('✅ Persona_Curso creado para nueva persona, PEC_ID:', pecId);
+            } else {
+              console.warn('No se pudo determinar CUS_ID o ROL_ID; no se creó Persona_Curso ni Vehículo. CUS_ID:', cusIdToUse, 'ROL_ID:', rolIdToUse);
+            }
+
+            if (pecId) {
+              await personasService.vehiculos.create({
+                PEC_ID: pecId,
+                PEV_PATENTE: this.personaNueva.PEV_PATENTE,
+                PEV_MARCA: this.personaNueva.PEV_MARCA || '',
+                PEV_MODELO: this.personaNueva.PEV_MODELO || ''
+              });
+              console.log('✅ Vehículo guardado');
+            }
           } catch (error) {
             console.warn('⚠️ No se pudo guardar el vehículo:', error);
           }
@@ -3390,6 +3890,8 @@ export default {
         
         console.log('🔄 Recargando lista de personas...');
         await this.cargarPersonas();
+        // Forzar recarga de filtros para actualizar cache inmediatamente
+        try { await this.cargarOpcionesFiltros(true); } catch(e){ console.warn('No se pudo forzar recarga de filtros tras creación:', e); }
         
         if (this.filtroAplicado) {
           console.log('🔍 Reaplicando filtros...');
@@ -3420,12 +3922,18 @@ export default {
           mensajeError += error.message || 'Verifica los datos e intenta nuevamente.';
         }
         
-        console.error('🔍 Datos que se intentaron enviar:', datosPersona);
+        try {
+          console.error('🔍 Datos que se intentaron enviar:', datosPersona ? JSON.stringify(datosPersona, null, 2) : datosPersona);
+        } catch (e) {
+          console.error('🔍 Datos que se intentaron enviar (no serializable):', datosPersona);
+        }
         alert(mensajeError);
       } finally {
         this.guardandoPersona = false;
       }
     }
+    ,
+    
   },
   
   watch: {
@@ -3459,12 +3967,6 @@ export default {
   
   async mounted() {
     await this.cargarPersonas();
-    await this.cargarOpcionesFiltros();
-    
-    console.log('🎯 ESTADO FINAL DE FILTROS:');
-    console.log('📋 Roles disponibles:', this.roleOptions);
-    console.log('🌿 Ramas disponibles:', this.ramaOptions);
-    console.log('🏢 Grupos disponibles:', this.courseOptions);
   }
 };
 </script>
@@ -3529,6 +4031,193 @@ export default {
 
 .filtros-left { display:flex; gap:12px; align-items:center; flex: 1 1 auto; min-width: 0 }
 .filtros-right { display:flex; gap:10px; align-items:center; justify-content:flex-end; flex: 0 0 auto }
+
+/* Acciones principales (siempre visibles) */
+.acciones-top {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 12px 40px;
+  box-sizing: border-box;
+}
+
+/* Desktop placement: actions inside the filters right area (do not overlap content) */
+.acciones-top-desktop {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* Ensure the filters right area keeps its content aligned correctly */
+.filtros-right { display:flex; gap:10px; align-items:center; justify-content:flex-end; flex: 0 0 auto }
+
+@media (max-width: 768px) {
+  .acciones-top { padding-left: 16px; padding-right: 16px; gap: 10px; justify-content: space-between; }
+}
+
+/* Very narrow mobile screens (tall 21:9 phones): stack buttons vertically for usability */
+@media (max-width: 420px), (max-aspect-ratio: 9/21) {
+  .acciones-top {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    align-items: stretch !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    overflow-x: visible !important;
+    white-space: normal !important;
+  }
+
+  .acciones-top .btn-standard {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 12px 14px !important;
+    font-size: 15px !important;
+  }
+
+  /* Ensure labels are visible */
+  .acciones-top .btn-label { display: inline !important; }
+}
+
+/* Mobile: compact action buttons — prefer a single row that wraps when needed.
+   This avoids creating extra vertical space which caused the scrollbar in the
+   user's screenshot. Buttons will center and shrink as required on narrow
+   viewports while keeping labels visible. */
+@media (max-width: 480px) {
+  .acciones-top {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+    padding-left: 12px;
+    padding-right: 12px;
+    box-sizing: border-box;
+    overflow-x: hidden; /* prevent horizontal scrolling */
+    -webkit-overflow-scrolling: touch;
+    max-height: none !important;
+  }
+
+  .acciones-top .btn-standard {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 0 !important;        /* allow shrink */
+    flex: 0 1 auto !important;      /* shrink when needed */
+    padding: 10px 12px !important;
+    font-size: 14px !important;
+    border-radius: 10px !important;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.06) !important;
+    white-space: nowrap !important;
+  }
+
+  .acciones-top .btn-add {
+    background: linear-gradient(180deg,#1e40af,#1e3a8a) !important;
+    color: #fff !important;
+    border: none !important;
+  }
+
+  .acciones-top .btn-import,
+  .acciones-top .btn-export {
+    background: linear-gradient(180deg,#6b7280,#4b5563) !important;
+    color: #fff !important;
+    border: none !important;
+  }
+
+  /* Keep icons tidy */
+  .acciones-top .btn-standard svg,
+  .acciones-top .btn-standard .icon {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* Reinforce mobile behavior up to 768px: keep top action buttons stacked and
+   fully labeled (do not collapse to icons). This ensures older mobile styles
+   are preserved even after other responsive tweaks. */
+@media (max-width: 768px) {
+  /* Keep top action buttons on a single horizontal line on mobile; allow
+     horizontal scroll if needed. Maintain mobile sizing but prevent collapse
+     into stacked layout. */
+  .acciones-top {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 10px !important;
+    align-items: center !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    white-space: nowrap !important;
+  }
+
+  .acciones-top .btn-standard {
+    flex: 0 0 auto !important;
+    min-width: 120px !important;
+    padding: 10px 12px !important;
+    font-size: 15px !important;
+    border-radius: 10px !important;
+    box-shadow: 0 6px 18px rgba(16,24,40,0.06) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+  }
+
+  .acciones-top .btn-add {
+    background: linear-gradient(180deg,#1e40af,#1e3a8a) !important;
+    color: #fff !important;
+    border: none !important;
+  }
+
+  .acciones-top .btn-import,
+  .acciones-top .btn-export {
+    background: linear-gradient(180deg,#6b7280,#4b5563) !important;
+    color: #fff !important;
+    border: none !important;
+  }
+
+  .acciones-top .btn-standard svg,
+  .acciones-top .btn-standard .icon {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  /* Ensure top actions always show labels on mobile */
+  .acciones-top .btn-label { display: inline !important; }
+}
+
+/* Medium-small screens: allow wrapping so buttons always quepan on screen */
+@media (max-width: 768px) and (min-width: 481px) {
+  .acciones-top {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-left: 16px;
+    padding-right: 16px;
+    justify-content: center;
+  }
+
+  /* Make buttons share the row but allow them to shrink and wrap */
+  .acciones-top .btn-standard {
+    flex: 1 1 calc(33.333% - 12px);
+    min-width: 0;
+    padding: 10px 12px;
+    font-size: 15px;
+    border-radius: 8px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+  }
+
+  /* If space is too narrow, two per row is fine — the calc will wrap */
+  .acciones-top .btn-add { order: 0; }
+  .acciones-top .btn-import { order: 1; }
+  .acciones-top .btn-export { order: 2; }
+}
+
+/* Small tweak to avoid large horizontal shadows causing overflow */
+.acciones-top .btn-standard { overflow: hidden; }
 
 .filtros input,
 .filtros select {
@@ -3655,18 +4344,59 @@ export default {
 
 .acciones-buttons {
   display: flex;
-  gap: 3px;
-  flex-wrap: nowrap;
+  gap: 6px;
+  flex-wrap: wrap;
   justify-content: flex-end;
   align-items: center;
   padding-right: 12px;
 }
 
 .acciones-buttons .base-button {
-  font-size: 11px;
-  padding: 3px 6px;
-  min-width: auto;
+  font-size: 12px;
+  padding: 6px 10px;
+  min-width: 0;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* When horizontal space is constrained (e.g. sidebar expanded), show icon-only
+  buttons in the actions column to avoid horizontal overflow. Apply this only
+  to intermediate desktop widths (769px - 1200px) so mobile behavior stays
+  intact (<=768px). */
+@media (min-width: 769px) and (max-width: 1200px) {
+  .acciones-buttons {
+    gap: 6px;
+  }
+
+  .acciones-buttons .btn-label {
+    display: none !important;
+  }
+
+  .acciones-buttons .base-button,
+  .acciones-buttons .btn-action {
+    padding: 6px !important;
+    min-width: 40px !important;
+    font-size: 0 !important; /* hide any stray text; icons are sized separately */
+  }
+
+  .acciones-buttons .base-button svg,
+  .acciones-buttons .btn-action svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  .acciones-buttons .base-button::after { content: none; }
+
+  /* When sidebar is expanded (narrower content area), reduce width given to
+     Rol and Email columns so action buttons remain on-screen. */
+  tbody td[data-label="Rol"],
+  tbody td[data-label="Email"] {
+    max-width: 120px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
 }
 
 .editar { padding: 6px 10px; }
@@ -3695,7 +4425,7 @@ export default {
   overflow: hidden;
   min-height: 0;
   height: 100%;
-  padding: 16px 40px;
+  padding: 12px 24px;
   gap: 16px;
 }
 
@@ -3955,6 +4685,48 @@ th {
     font-size: 12px;
     padding: 6px 12px;
   }
+  /* Botón toggle de filtros en móvil */
+  .filtros-toggle-mobile {
+    display: block;
+    text-align: right;
+    padding: 0 16px;
+    z-index: 120; /* keep toggle above other elements */
+    position: relative;
+  }
+  .btn-toggle-filtros {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    font-size: 14px;
+    border-radius: 8px;
+    /* No sobrescribir colores/box-shadow: usar las reglas de `.btn-standard` para mantener diseño consistente */
+  }
+
+  /* Cuando está colapsado en móvil, minimizar visualmente la barra */
+  .filtros.filtros-collapsed {
+    background: transparent !important;
+    border-bottom: none !important;
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+    min-height: 0 !important;
+  }
+  .filtros.filtros-collapsed .filtros-left,
+  .filtros.filtros-collapsed .filtros-right {
+    display: none !important;
+  }
+  /* Fuerza ocultamiento de componentes internos (InputBase, BaseSelect, botón Buscar) */
+  .filtros.filtros-collapsed .base-input,
+  .filtros.filtros-collapsed .base-select,
+  .filtros.filtros-collapsed .btn-search,
+  .filtros.filtros-collapsed .base-button:not(.btn-toggle-filtros) {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+  }
   
   /* Ajustar detalle en móviles */
   .detalle {
@@ -3980,12 +4752,174 @@ th {
   }
   
   tbody tr {
-    margin-bottom: 12px;
+    margin-bottom: 8px;
   }
   
+
+  /* Mejorar presentación de las filas (tarjetas) en móvil: etiquetas arriba, valores legibles */
+  tbody tr {
+    padding: 8px 10px;
+    border-radius: 8px;
+  }
+
+  /* Compact inline mobile layout: labels and values on the same line */
   tbody td {
-    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 4px 8px; /* further reduced padding */
+    border-bottom: 1px solid rgba(240,240,240,0.9);
+    line-height: 1.05;
+    white-space: normal;
+    overflow: visible;
+  }
+
+  td[data-label]::before {
+    display: inline-block;
+    margin-right: 8px;
+    color: #6b7280;
+    font-size: 11px; /* smaller label */
+    font-weight: 600;
+    text-transform: none;
+    flex: 0 0 70px; /* slightly narrower label column to give more space to values */
+    max-width: 70px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* value area */
+  td[data-label] {
+    color: #111;
+    font-size: 12px;
+    flex: 1 1 auto;
+    min-width: 0; /* allow flex children to shrink */
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Name: allow wrapping across 1-2 lines and keep it prominent */
+  td[data-label="Nombre"] {
     font-size: 14px;
+    font-weight: 700;
+    /* default: allow wrapping on mobile — overridden in desktop rules */
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+  }
+
+  /* Rol: allow wrapping and align to top so the role value can occupy more space and wrap nicely */
+  td[data-label="Rol"] {
+    font-size: 12px;
+    white-space: normal;
+    overflow: visible;
+    align-items: flex-start;
+  }
+
+  /* Email: behave like Nombre/Rol on mobile — allow up to 2 lines, then ellipsis */
+  td[data-label="Email"] {
+    font-size: 12px;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+  }
+
+  /* On mobile we allow the truncate span to expand to 2 lines; override display */
+  @media (max-width: 768px) {
+    td[data-label] .truncate {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: normal;
+      max-width: 100%;
+    }
+  }
+
+  /* Ensure mobile forces wrapping for role even if other rules exist */
+  td[data-label="Rol"] * { white-space: normal !important; }
+  td[data-label="Rol"] { white-space: normal !important; align-items: flex-start !important; }
+
+  /* Estado: compact badge */
+  td[data-label="Estado"] { display: flex; align-items: center; justify-content: space-between; }
+  .estado { padding: 4px 8px; font-size: 12px; border-radius: 10px; }
+
+  /* Actions: smaller, tighter, wrap */
+  .acciones-buttons {
+    justify-content: flex-start;
+    gap: 6px;
+    padding: 8px 12px 12px 12px;
+    flex-wrap: wrap;
+  }
+
+  .acciones-buttons .base-button {
+    font-size: 12px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    min-width: auto;
+  }
+
+  /* Reduce card margins to fit more on screen */
+  tbody tr { margin-bottom: 6px; }
+
+  /* Hide less important fields on very narrow/wide-tall screens to save space */
+  @media (max-width: 420px) {
+    td[data-label="Email"],
+    td[data-label="Teléfono/Celular"] {
+      display: none;
+    }
+    /* further compact the name */
+    td[data-label="Nombre"] { font-size: 14px; }
+  }
+  tbody td {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+  /* Force the list of cards to fit the viewport so ~3 items are visible on mobile.
+     Adjust the `160px` value if your header/filters area height differs. */
+  .table-wrapper {
+    max-height: calc(100vh - 160px);
+    /* Fallback using viewport units to ensure consistent behaviour across layouts */
+    max-height: var(--cards-viewport-height, 62vh) !important;
+  }
+
+  /* When filters are collapsed on mobile, make sure the table-wrapper uses
+     the full available viewport height below the action buttons by using the
+     precomputed CSS variable. This prevents leaving unused white space and
+     lets the list fill the remaining area. */
+  .filtros.filtros-collapsed ~ .main-area .table-wrapper {
+    max-height: var(--cards-viewport-height, 62vh) !important;
+    height: var(--cards-viewport-height, 62vh) !important;
+    overflow-y: auto !important;
+  }
+
+  tbody {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  tbody tr {
+    flex: 0 0 calc((100% - 16px) / 3);
+    /* Explicit fallback: approximately one third of viewport height */
+    height: calc((var(--cards-viewport-height, 62vh) - 16px) / 3) !important;
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+
+  tbody td {
+    padding: 6px 8px;
   }
   
   /* Ajustar modales para móviles */
@@ -4068,6 +5002,157 @@ th {
   .detail-panel .detalle { padding: 20px; }
 }
 
+/* Desktop / tablet: restore table layout and clamp long fields so roles don't stretch the list */
+@media (min-width: 769px) {
+  /* Ensure header/table are visible (desktop layout) */
+  thead { display: table-header-group !important; }
+
+  /* Reset mobile card styles to table behaviour */
+  tbody td,
+  tbody td[data-label="Nombre"],
+  tbody td[data-label="Rol"],
+  tbody td[data-label="Email"] {
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Ensure the actions column is always visible on desktop: prevent clipping
+     and keep action buttons in a single non-wrapping row. */
+  tbody td:last-child,
+  thead th:last-child {
+    white-space: nowrap !important;
+    overflow: visible !important;
+    text-overflow: initial !important;
+    min-width: 180px !important;
+    width: auto !important;
+  }
+
+  .acciones-top,
+  .acciones-buttons {
+    justify-content: flex-end;
+  }
+
+  .acciones-buttons .base-button,
+  .acciones-buttons button {
+    display: inline-flex !important;
+
+  /* Desktop action placement: style buttons to match original desktop look */
+  .acciones-top-desktop .btn-standard {
+    min-width: auto !important;
+    padding: 10px 16px !important;
+    font-size: 15px !important;
+    border-radius: 10px !important;
+    box-shadow: 0 6px 18px rgba(16,24,40,0.06) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+  }
+
+  .acciones-top-desktop .btn-add {
+    background: linear-gradient(180deg,#1e40af,#1e3a8a) !important;
+    color: #fff !important;
+    border: none !important;
+  }
+  .acciones-top-desktop .btn-import,
+  .acciones-top-desktop .btn-export {
+    background: linear-gradient(180deg,#6b7280,#4b5563) !important;
+    color: #fff !important;
+    border: none !important;
+  }
+
+  /* Ensure top actions outside the collapsible filters keep their labels */
+  .acciones-top-desktop .btn-label { display: inline !important; }
+    vertical-align: middle;
+  }
+
+  /* Position desktop actions to the right of the filters visually. We keep
+     the markup outside the filters (so mobile collapse won't hide them),
+     but visually pin them to the right edge of the filters area. */
+  .acciones-top-desktop {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  /* Keep action buttons in a single row on desktop */
+  .acciones-buttons {
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
+  }
+
+  .acciones-buttons .base-button {
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+
+  /* Prevent very long values from changing column widths */
+  td[data-label="Rol"],
+  td[data-label="Nombre"],
+  td[data-label="Email"] {
+    max-width: 220px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  /* Improve horizontal use of space: fixed table layout + explicit column widths */
+  .table-wrapper table {
+    table-layout: fixed;
+    width: 100%;
+  }
+  .table-wrapper table th:nth-child(7),
+  .table-wrapper table td:nth-child(7) {
+    /* Fixed width for actions column so buttons always fit */
+    width: 180px !important;
+  }
+
+  /* Distribute remaining width among other columns proportionally using calc
+     subtracting the fixed actions width so layout doesn't overflow when sidebar
+     is expanded. Ratios sum to 1 (28%+10%+26%+18%+10%+8% = 100% of remaining). */
+  .table-wrapper table th:nth-child(1), .table-wrapper table td:nth-child(1) { width: calc((100% - 180px) * 0.28); } /* Nombre */
+  .table-wrapper table th:nth-child(2), .table-wrapper table td:nth-child(2) { width: calc((100% - 180px) * 0.10); } /* RUT */
+  .table-wrapper table th:nth-child(3), .table-wrapper table td:nth-child(3) { width: calc((100% - 180px) * 0.26); } /* Email */
+  .table-wrapper table th:nth-child(4), .table-wrapper table td:nth-child(4) { width: calc((100% - 180px) * 0.18); } /* Rol */
+  .table-wrapper table th:nth-child(5), .table-wrapper table td:nth-child(5) { width: calc((100% - 180px) * 0.10); } /* Tel */
+  .table-wrapper table th:nth-child(6), .table-wrapper table td:nth-child(6) { width: calc((100% - 180px) * 0.08); }  /* Estado */
+
+  /* Allow the inner truncate span to expand to the full column width on desktop */
+  td[data-label] .truncate { max-width: 100%; display: inline-block; }
+
+  td[data-label="Rol"], td[data-label="Nombre"] { white-space: nowrap !important; }
+  /* Desktop: force uppercase and truncation for Nombre */
+  td[data-label="Nombre"] {
+    text-transform: uppercase !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 220px !important;
+  }
+
+  /* Desktop: make Email uppercase as well to match Nombre/Rol */
+  td[data-label="Email"] {
+    text-transform: uppercase !important;
+    font-weight: 500 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 220px !important;
+  }
+  /* Ensure the inner truncate span enforces single-line ellipsis in desktop */
+  td[data-label] .truncate {
+    display: inline-block;
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+}
+
 .detail-panel .detalle {
   background: #f2f5f9; 
   border-radius: 6px;
@@ -4144,14 +5229,7 @@ th {
 .detalle strong { display: inline-block; min-width: 110px; font-weight: 700; color: #111; }
 
 
-td[data-label="Nombre"] { 
-  text-transform: uppercase; 
-  font-weight:600; 
-  white-space: nowrap; 
-  overflow: hidden; 
-  text-overflow: ellipsis; 
-  max-width: 180px; 
-}
+/* desktop-specific name styling moved into the desktop media query to avoid overriding mobile rules */
 
 td[data-label="RUT"] { 
   white-space: nowrap; 
@@ -5679,6 +6757,32 @@ td[data-label="RUT"] {
   }
 }
 
+/* Force stacking for ultra-narrow/tall phones so mobile UX is usable */
+@media (max-width: 420px), (max-aspect-ratio: 9/21) {
+  .acciones-top {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    overflow-x: visible !important;
+    white-space: normal !important;
+  }
+
+  .acciones-top .btn-standard {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 12px 14px !important;
+    font-size: 15px !important;
+    border-radius: 10px !important;
+  }
+
+  /* Ensure labels remain visible when stacked */
+  .acciones-top .btn-label { display: inline !important; }
+}
+
 /* Adaptación para pantallas 21:9 en orientación horizontal */
 @media (min-aspect-ratio: 21/9) and (max-height: 480px) {
   .gestion-personas {
@@ -5715,6 +6819,37 @@ td[data-label="RUT"] {
 .modal-edit,
 .modal-crear {
   transition: all 0.3s ease;
+}
+
+/* Override ordering: ensure on small mobile widths the three main action
+   buttons try to stay on the same line by shrinking equally and aligning
+   to the start (avoid centering wrapped rows). This rule is placed late
+   so it overrides earlier, broader media queries. */
+@media (max-width: 520px) {
+  .acciones-top {
+    justify-content: flex-start !important;
+    gap: 8px !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  .acciones-top .btn-standard {
+    flex: 1 1 calc((100% - 16px) / 3) !important; /* three equal buttons */
+    min-width: 0 !important;
+    max-width: calc((100% - 16px) / 3) !important;
+    box-sizing: border-box !important;
+    padding: 8px 10px !important;
+    font-size: 13px !important;
+  }
+
+  /* If labels are too long, allow them to truncate but keep icons visible */
+  .acciones-top .btn-standard .btn-label {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    display: inline-block !important;
+    max-width: 70% !important;
+  }
 }
 </style>
 
