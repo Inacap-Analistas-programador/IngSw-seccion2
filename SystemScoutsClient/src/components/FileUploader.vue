@@ -1,3 +1,5 @@
+[file name]: FileUploader.vue
+[file content begin]
 <template>
   <div class="file-uploader">
     <label v-if="label" class="upload-label">{{ label }}</label>
@@ -15,15 +17,15 @@
       @drop="handleDrop"
     >
       <div class="upload-content">
-        <div class="upload-icon">📷</div>
+        <div class="upload-icon">{{ uploadIcon }}</div>
         
         <div v-if="!modelValue" class="upload-placeholder">
-          <p class="upload-text">Haga clic o arrastre una foto aquí</p>
+          <p class="upload-text">{{ uploadText }}</p>
           <p class="upload-formats">Formatos aceptados: {{ acceptFormats }}</p>
         </div>
         
         <div v-else class="file-info">
-          <div class="file-preview" v-if="isImage">
+          <div class="file-preview" v-if="isImage && uploadType === 'image'">
             <img :src="previewUrl" alt="Vista previa" class="preview-image" />
           </div>
           <div class="file-details">
@@ -39,7 +41,7 @@
       <input
         ref="fileInput"
         type="file"
-        :accept="accept"
+        :accept="effectiveAccept"
         :required="required"
         @change="handleFileSelect"
         class="file-input"
@@ -68,7 +70,7 @@ export default {
     },
     accept: {
       type: String,
-      default: 'image/jpeg,image/png,image/jpg'
+      default: ''
     },
     required: {
       type: Boolean,
@@ -77,6 +79,11 @@ export default {
     maxSize: {
       type: Number,
       default: 5 * 1024 * 1024 // 5MB por defecto
+    },
+    uploadType: {
+      type: String,
+      default: 'image', // 'image' o 'document'
+      validator: (value) => ['image', 'document'].includes(value)
     }
   },
   emits: ['update:modelValue', 'upload'],
@@ -88,13 +95,37 @@ export default {
     const errorMessage = ref('')
 
     // Computed properties
+    const effectiveAccept = computed(() => {
+      if (props.accept) {
+        return props.accept
+      }
+      return props.uploadType === 'image' 
+        ? 'image/jpeg,image/png,image/jpg'
+        : '.pdf,.doc,.docx,.txt'
+    })
+
     const acceptFormats = computed(() => {
-      return props.accept.split(',').map(format => {
+      const formats = effectiveAccept.value.split(',').map(format => {
         if (format === 'image/jpeg') return 'JPEG'
         if (format === 'image/png') return 'PNG'
         if (format === 'image/jpg') return 'JPG'
+        if (format === '.pdf') return 'PDF'
+        if (format === '.doc') return 'DOC'
+        if (format === '.docx') return 'DOCX'
+        if (format === '.txt') return 'TXT'
         return format
-      }).join(', ')
+      })
+      return formats.join(', ')
+    })
+
+    const uploadIcon = computed(() => {
+      return props.uploadType === 'image' ? '📷' : '📄'
+    })
+
+    const uploadText = computed(() => {
+      return props.uploadType === 'image' 
+        ? 'Haga clic o arrastre una foto aquí'
+        : 'Haga clic o arrastre su documento aquí'
     })
 
     const fileName = computed(() => {
@@ -150,8 +181,28 @@ export default {
       errorMessage.value = ''
 
       // Validar tipo de archivo
-      const acceptedTypes = props.accept.split(',')
-      if (!acceptedTypes.includes(file.type)) {
+      const acceptedTypes = effectiveAccept.value.split(',').map(type => type.trim())
+      let isValidType = false
+
+      // Para los tipos que son extensiones (comienzan con punto), verificamos la extensión del archivo.
+      // Para los tipos MIME, verificamos el type del archivo.
+      for (const acceptedType of acceptedTypes) {
+        if (acceptedType.startsWith('.')) {
+          // Es una extensión
+          if (file.name.toLowerCase().endsWith(acceptedType.toLowerCase())) {
+            isValidType = true
+            break
+          }
+        } else {
+          // Es un MIME type
+          if (file.type === acceptedType) {
+            isValidType = true
+            break
+          }
+        }
+      }
+
+      if (!isValidType) {
         hasError.value = true
         errorMessage.value = `Formato no válido. Formatos aceptados: ${acceptFormats.value}`
         return
@@ -170,6 +221,12 @@ export default {
           URL.revokeObjectURL(previewUrl.value)
         }
         previewUrl.value = URL.createObjectURL(file)
+      } else {
+        // Si no es imagen, asegurarse de limpiar la previewUrl si había una anterior
+        if (previewUrl.value) {
+          URL.revokeObjectURL(previewUrl.value)
+          previewUrl.value = ''
+        }
       }
 
       // Emitir el archivo
@@ -204,7 +261,10 @@ export default {
       previewUrl,
       hasError,
       errorMessage,
+      effectiveAccept,
       acceptFormats,
+      uploadIcon,
+      uploadText,
       fileName,
       fileSize,
       isImage,
@@ -365,3 +425,4 @@ export default {
   }
 }
 </style>
+[file content end]

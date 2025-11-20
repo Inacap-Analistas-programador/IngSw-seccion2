@@ -29,13 +29,14 @@
         <router-link to="/manual-acreditacion" class="nav-item">Acreditación Manual</router-link>
         <router-link to="/verificador-qr" class="nav-item">Verificador QR</router-link>
 
-  <!-- Apartado desplegable: Pantallas 2 -->
+        <!-- Apartado desplegable: Pantallas 2 CORREGIDO -->
         <div class="nav-item nav-collapsible" @click="togglePantallas2" :class="{ 'router-link-exact-active': showPantallas2 }">
           <span class="nav-collapsible-title">Pantallas 2</span>
           <span class="caret" :class="{ open: showPantallas2 }">▾</span>
         </div>
         <div v-show="showPantallas2" class="submenu">
           <router-link to="/dashboard-2" class="submenu-item">Dashboard 2</router-link>
+          <!-- CORRECCIÓN: Usar el nombre correcto de la ruta -->
           <router-link to="/inscripciones-2" class="submenu-item">Formulario 2</router-link>
         </div>
       </div>
@@ -77,25 +78,6 @@ function onStorage(e) {
 const showUsuarios = ref(false)
 const showMantenedores = ref(false)
 const showPantallas2 = ref(false)
-const mantenedoresTabs = [
-  // Orden solicitado: región, provincia, comuna, zona, distrito, grupo
-  { id: 'regiones', label: 'Regiones' },
-  { id: 'provincias', label: 'Provincias' },
-  { id: 'comunas', label: 'Comunas' },
-  { id: 'zonas', label: 'Zonas' },
-  { id: 'distritos', label: 'Distritos' },
-  { id: 'grupos', label: 'Grupos Scout' },
-  // Resto de mantenedores (manteniendo su orden relativo original)
-  { id: 'ramas', label: 'Ramas' },
-  { id: 'tipos-curso', label: 'Tipos Curso' },
-  { id: 'cargos', label: 'Cargos' },
-  { id: 'alimentacion', label: 'Alimentación' },
-  { id: 'niveles', label: 'Niveles' },
-  { id: 'estados-civiles', label: 'Estados Civiles' },
-  { id: 'roles', label: 'Roles' },
-  { id: 'conceptos-contables', label: 'Conceptos Contables' },
-  { id: 'tipos-archivo', label: 'Tipos de Archivo' }
-]
 
 function toggleUsuarios() {
   showUsuarios.value = !showUsuarios.value
@@ -117,6 +99,7 @@ onMounted(async () => {
   if (route && route.path) {
     showUsuarios.value = route.path.startsWith('/usuarios') || route.path.startsWith('/roles')
     showMantenedores.value = route.path.startsWith('/mantenedores')
+    // CORRECCIÓN: Incluir también la ruta del formulario 2
     showPantallas2.value = route.path.startsWith('/dashboard-2') || route.path.startsWith('/inscripciones-2')
   }
 
@@ -125,6 +108,7 @@ onMounted(async () => {
     if (p) {
       showUsuarios.value = p.startsWith('/usuarios') || p.startsWith('/roles')
       showMantenedores.value = p.startsWith('/mantenedores')
+      // CORRECCIÓN: Incluir también la ruta del formulario 2
       showPantallas2.value = p.startsWith('/dashboard-2') || p.startsWith('/inscripciones-2')
     }
     // No actualizamos estado de autenticación ni consultamos authService en modo UI-only

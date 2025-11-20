@@ -95,6 +95,10 @@ si no tienes una secret_key o te da problemas, intenta crear una nueva
 ```bash
 from django.core.management.utils import get_random_secret_key
 print(get_random_secret_key())
+
+o:
+
+python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 ```
 esto te devolverá una clave, que deberás copiar y pegar en la variable **SECRET_KEY**
 

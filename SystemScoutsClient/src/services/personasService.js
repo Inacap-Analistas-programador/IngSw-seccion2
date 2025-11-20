@@ -31,6 +31,14 @@ export const personaCursosSinPrefijo = makeCrud('cursos')
 export const estadoCursosSinPrefijo = makeCrud('estado-cursos')
 export const vehiculosSinPrefijo = makeCrud('vehiculos')
 
+// ✨ NUEVAS EXPORTACIONES PARA FORMULARIO 2.VUE
+// Estas son las exportaciones específicas que necesita Formulario 2.vue
+export const personaGrupos = makeCrud('personas/grupos') // Reutiliza el endpoint de grupos
+export const personaNiveles = makeCrud('personas/niveles') // Reutiliza el endpoint de niveles
+export const personaIndividuales = makeCrud('personas/individuales') // Reutiliza el endpoint de individuales
+
+// Nota: personaCursos ya está exportado arriba, así que no necesita duplicarse
+
 // ✨ Funciones auxiliares para obtener datos de filtros
 export const obtenerRoles = async () => {
   try {
@@ -153,6 +161,10 @@ export default {
   personaCursos, 
   estadoCursos, 
   vehiculos,
+  // NUEVAS EXPORTACIONES PARA FORMULARIO 2.VUE
+  personaGrupos,
+  personaNiveles,
+  personaIndividuales,
   obtenerRoles,
   obtenerRamas,
   obtenerGrupos,

@@ -1,3 +1,5 @@
+[file name]: Formulario 2.vue
+[file content begin]
 <template>
   <div class="formulario-scouts">
     <!-- Header del Formulario -->
@@ -64,33 +66,14 @@
                 <div class="course-meta-uniform">
                   <span class="course-cupo-uniform">Cupos: {{ curso.inscritos }}/{{ curso.cupoMaximo }}</span>
                 </div>
-            
-                <!-- Secciones anidadas dentro de la tarjeta cuando está seleccionada -->
-                <div v-if="formData.cursoId === curso.id" style="margin-top: 18px;">
-                  <div v-if="cargandoSecciones" class="info-message" style="padding: 8px; background:#eef6ff; border:1px solid #cde6ff; border-radius:6px; color:#23527c; margin-bottom:8px;">Cargando secciones desde SSB...</div>
-
-                  <div v-else>
-                    <div v-if="getSeccionesParaCurso(curso).length === 0" class="no-sections-message" style="padding: 8px; background:#fff3cd; border:1px solid #ffeeba; border-radius:6px; color:#856404; margin-bottom:8px;">No se encontraron secciones para esta opción en SSB.</div>
-
-                    <div v-else style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:10px;">
-                      <div
-                        v-for="seccion in getSeccionesParaCurso(curso)"
-                        :key="seccion.id"
-                        :class="['seccion-card', { 'seccion-selected': formData.cusId === seccion.id }]"
-                        @click.stop.prevent="selectSeccion(seccion)"
-                        style="padding:10px; border:1px solid #ddd; border-radius:8px; cursor:pointer; background:white;"
-                      >
-                        <div style="font-weight:600; color:#2c5aa0;">{{ seccion.descripcion }}</div>
-                        <div style="font-size:0.85rem; color:#6c757d">{{ seccion.cursoNombre ? ('Curso: ' + seccion.cursoNombre) : '' }}</div>
-                        <div style="font-size:0.85rem; color:#6c757d">{{ seccion.fechaInicio ? ('Inicio: ' + seccion.fechaInicio) : '' }}</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
 
+          <!-- Mensaje informativo -->
+          <div v-if="formData.cursoId" class="info-message" style="padding: 12px; background:#e7f3ff; border:1px solid #b3d9ff; border-radius:6px; color:#2c5aa0; margin-top: 16px;">
+            ✅ Curso seleccionado: <strong>{{ getCursoSeleccionado().nombre }}</strong>
+          </div>
 
         </div>
 
@@ -338,7 +321,7 @@
           </div>
         </div>
 
-        <!-- Paso 4: Salud y Alimentación (CON FICHA MÉDICA) -->
+        <!-- Paso 4: Salud y Alimentación (CON FICHA MÉDICA MEJORADA) -->
         <div v-show="currentStep === 3" class="form-step">
           <h2 class="step-title">Salud y Alimentación</h2>
           
@@ -374,7 +357,7 @@
               />
             </div>
 
-            <!-- NUEVO: Subida de Ficha Médica -->
+            <!-- MEJORADO: Subida de Ficha Médica con FileUploader mejorado -->
             <FileUploader
               v-model="formData.fichaMedica"
               label="Ficha Médica (Opcional)"
@@ -578,6 +561,10 @@
                   <strong>Nivel:</strong>
                   <span>{{ getNivelLabel(formData.nivel) }}</span>
                 </div>
+                <div v-if="formData.fichaMedica" class="summary-item-expanded">
+                  <strong>Ficha Médica:</strong>
+                  <span>{{ formData.fichaMedica.name }}</span>
+                </div>
               </div>
             </div>
 
@@ -693,9 +680,7 @@ export default {
     const mostrarEducacionFormador = ref(false)
     const telefonoPlaceholder = ref('8 1234 5678')
     const isNavigating = ref(false)
-    const seccionesDisponibles = ref([])
-    const seccionSeleccionada = ref('')
-    const cargandoSecciones = ref(false)
+    const cursosDisponibles = ref([])
 
     // PASOS CORREGIDOS - Curso como primer paso
     const steps = ref([
@@ -710,7 +695,7 @@ export default {
     const formData = reactive({
       // Paso 0 - Curso (primer paso)
       cursoId: '',
-      cusId: '', // ID de la sección seleccionada
+      cusId: 1, // Valor por defecto ya que no cargamos secciones
       
       // Paso 1 - Datos Personales (CON NUEVOS CAMPOS)
       nombres: '',
@@ -856,8 +841,6 @@ export default {
     const niveles = ref([])
     const tiposAlimentacion = ref([])
 
-    const cursosDisponibles = ref([])
-
     // Computed properties para filtrar provincias y comunas
     const provinciasFiltradas = computed(() => {
       if (!formData.region) return []
@@ -872,8 +855,8 @@ export default {
     // CORRECCIÓN CRÍTICA: Validación por paso mejorada
     const isStepValid = (step) => {
       switch (step) {
-        case 0: // Selección de Curso y Sección
-          return !!(formData.cursoId && formData.cusId)
+        case 0: // Selección de Curso - SOLO requiere cursoId
+          return !!formData.cursoId
         
         case 1: // Datos Personales
           return !!(
@@ -881,6 +864,7 @@ export default {
             formData.apellidoPaterno?.trim() &&
             formData.rut?.trim() &&
             formData.fechaNacimiento &&
+            formData.estadoCivil &&
             formData.direccion?.trim() &&
             formData.region &&
             formData.provincia &&
@@ -896,7 +880,7 @@ export default {
             formData.nivel
           )
         
-        case 3: // Salud
+        case 3: // Salud - La ficha médica es OPCIONAL, no se incluye en validación
           return !!(
             formData.alimentacion &&
             formData.contactoEmergenciaNombre?.trim() &&
@@ -945,62 +929,15 @@ export default {
       }
     }
 
-    const selectCurso = async (curso) => {
+    const selectCurso = (curso) => {
+      console.log(`📚 Curso seleccionado: ${curso.nombre} (id=${curso.id})`)
       formData.cursoId = Number(curso.id || curso.CUR_ID)
-      formData.cusId = 0 // Resetear sección seleccionada a 0 (nulo)
-      seccionSeleccionada.value = 0
-      cargandoSecciones.value = true
-
-      try {
-        // Cargar secciones del curso seleccionado por su CUR_ID desde SSB
-        const cursoId = Number(curso.id || curso.CUR_ID)
-        console.log(`📚 Cargando secciones desde SSB para curso CUR_ID=${cursoId} (${curso.CUR_DESCRIPCION || curso.nombre})`)
-        
-        const raw = await cursosService.secciones.list({ curso_id: cursoId })
-        const arr = Array.isArray(raw) ? raw : (Array.isArray(raw?.results) ? raw.results : [])
-        
-        seccionesDisponibles.value = arr.map(s => ({
-          id: Number(s.CUS_ID || s.id),
-          nombre: `${s.CUS_DESCRIPCION || s.descripcion || ''}`.trim(),
-          descripcion: s.CUS_DESCRIPCION || s.descripcion || '',
-          fechaInicio: s.CUS_FECHA_INICIO || s.fecha_inicio || '',
-          fechaFin: s.CUS_FECHA_TERMINO || s.fecha_fin || '',
-          cupo: s.CUS_CANT_PARTICIPANTE || s.cupo || 0,
-          cursoId: cursoId,
-          cursoNombre: curso.CUR_DESCRIPCION || curso.nombre || '',
-          original: s
-        }))
-        
-        console.log(`✅ ${seccionesDisponibles.value.length} secciones cargadas desde SSB para CUR_ID=${cursoId}`)
-      } catch (e) {
-        console.error('❌ Error cargando secciones desde SSB:', e?.message || e)
-        seccionesDisponibles.value = []
-      } finally {
-        cargandoSecciones.value = false
-      }
-    }
-
-    const selectSeccion = (seccion) => {
-      // Guardar id como número para consistencia
-      formData.cusId = Number(seccion.id)
-      seccionSeleccionada.value = Number(seccion.id)
-      console.log(`✅ Sección seleccionada desde SSB: ${seccion.descripcion} (id=${formData.cusId}, tipo=${typeof formData.cusId})`)
-      console.log(`✅ Validación step 0: cursoId=${formData.cursoId}, cusId=${formData.cusId}, válido=${!!(formData.cursoId && formData.cusId)}`)
+      // No cargamos secciones, usamos valor por defecto
+      formData.cusId = 1
     }
 
     const getCursoSeleccionado = () => {
       return (cursosDisponibles.value || []).find(curso => curso.id === formData.cursoId) || {}
-    }
-
-    const getSeccionSeleccionada = () => {
-      return seccionesDisponibles.value.find(seccion => seccion.id === formData.cusId) || {}
-    }
-
-    // Devuelve las secciones relevantes para una tarjeta de curso.
-    const getSeccionesParaCurso = (curso) => {
-      if (!Array.isArray(seccionesDisponibles.value)) return []
-      const cursoId = Number(curso.id || curso.CUR_ID)
-      return seccionesDisponibles.value.filter(s => Number(s.cursoId) === cursoId)
     }
 
     // NUEVO: Manejar Enter en el campo de observaciones
@@ -1161,12 +1098,8 @@ export default {
         const personaId = personaCreada.PER_ID || personaCreada.id || personaCreada.PER_ID_id
         console.log('✅ Persona creada en SSB:', personaCreada)
 
-        // Crear inscripción (Persona_Curso) en SSB - Usar directamente la sección seleccionada
-        const cusIdToUse = formData.cusId || null
-
-        if (!cusIdToUse) {
-          throw new Error('No hay sección de curso seleccionada en SSB')
-        }
+        // Crear inscripción (Persona_Curso) en SSB - Usar directamente la sección por defecto
+        const cusIdToUse = formData.cusId || 1
 
         const personaCursoPayload = {
           PER_ID: personaId,
@@ -1264,10 +1197,9 @@ export default {
         }
       })
       
-      // Resetear secciones
-      seccionesDisponibles.value = []
-      seccionSeleccionada.value = ''
-      cargandoSecciones.value = false
+      // Resetear curso
+      formData.cursoId = ''
+      formData.cusId = 1
       
       // Resetear pasos
       steps.value.forEach(step => {
@@ -1444,24 +1376,20 @@ export default {
       niveles,
       tiposAlimentacion,
       cursosDisponibles,
-      seccionesDisponibles,
-      cargandoSecciones,
       isStepValid,
       isFormValid,
       actualizarProvincias,
       actualizarComunas,
       actualizarPlaceholderTelefono,
       selectCurso,
-      selectSeccion,
       getCursoSeleccionado,
-      getSeccionSeleccionada,
       getRegionLabel,
       getProvinciaLabel,
       getComunaLabel,
       getRamaLabel,
       getRolLabel,
       getNivelLabel,
-      handleObservacionesEnter, // NUEVO: Exportar la función
+      handleObservacionesEnter,
       nextStep,
       previousStep,
       submitForm,
@@ -2215,3 +2143,4 @@ export default {
   transition: all 0.2s ease-in-out;
 }
 </style>
+[file content end]
