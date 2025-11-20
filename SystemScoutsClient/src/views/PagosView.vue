@@ -284,11 +284,6 @@
     <div v-else-if="tab === 'historico'" class="card card-historico">
       <!-- Filtros compactos -->
       <div class="filtros filtros-historico">
-        <InputBase class="filtro-busqueda filtro-corto"
-            v-model="filtroQ"
-            placeholder="NOMBRE / RUT / EMAIL"
-            @keydown.enter.prevent="cargarPagos"
-        />
         <div class="row-buscar">
           <div class="buscar-input">
             <InputBase
@@ -680,25 +675,29 @@ export default {
   },
   watch: {
     /**
-     * Observa cambios en el filtro de histórico y ejecuta la carga de pagos con debounce.
-     */
-    filtroQ(newVal) {
-      if (!this.debounceCargarPagos) return
-      this.debounceCargarPagos()
-    },
-    /**
      * Observa cambios en la pestaña activa y recarga los pagos si se cambia a 'historico'.
      */
     tab(newTab, oldTab) {
       if (newTab === 'historico' && oldTab !== 'historico') {
         this.cargarPagos(true); // Forzar recarga al cambiar a la pestaña de histórico
       }
+    },
+    /**
+     * Observa cambios en el filtro de curso y ejecuta la carga de pagos con debounce.
+     */
+    filtroCurso() {
+      this.debounceCargarPagos();
+    },
+    /**
+     * Observa cambios en el filtro de grupo y ejecuta la carga de pagos con debounce.
+     */
+    filtroGrupo() {
+      this.debounceCargarPagos();
     }
   },
   created() {
     // Crear la función con debounce una vez que el componente es creado
-    this.debounceCargarPagos = this.debounce(() => this.cargarPagos(), 400);
-    // this.debounceCargarPagos = this.debounce(() => this.cargarPagos(), 400); // Ya no es necesario
+    this.debounceCargarPagos = this.debounce(() => this.cargarPagos(), 400); // Se mantiene para los filtros de select
   },
   computed: {
     allChecked () {
@@ -995,8 +994,9 @@ export default {
      * @param {boolean} force - Si es true, fuerza la recarga aunque ya esté en proceso.
      */
     async cargarPagos (force = false) {
-      // Evita cargas múltiples si ya hay una en progreso.
-      if (this.cargandoPagos && !force) return;
+      if (this.cargandoPagos && !force) {
+        return; // Evita cargas automáticas duplicadas, pero permite forzar con el botón.
+      }
       this.cargandoPagos = true
       this.errorPagos = null
       try {
@@ -1603,10 +1603,6 @@ label {
 
 .filtros-historico {
   margin-bottom: 10px;
-}
-
-.filtros-historico .filtro-busqueda {
-  width: 200px;
 }
 
 .filtros-historico .filtro-corto {
