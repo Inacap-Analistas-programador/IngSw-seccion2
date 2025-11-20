@@ -130,12 +130,14 @@ si te devuelve un error, debes escribir en el buscador de windows ***editar las 
 una vez ejecutado, ingresa la contraseña root que habias definido en la instalación de mysql
 
 1. crea una nueva conexión, ingresa: ***nombre***; (cualquiera), ***port***; (el que configuraste en la instalación), en ***Store in Vault...*** debes ingresar la contraseña root que definiste en la instalación
-2. crea un nuevo SCHEMA con el nombre de la base de datos, aunque puede ser cualquiera, pero de preferencia algo estandar como ***ssb***
+2. crea un nuevo SCHEMA
+***El nombre del schema debe coincidir exactamente con el valor que pongas en NAME= dentro de tu archivo .env o settings.py.***
 
 para comprobar que estás conectado, intenta:
 - cd SystemScoutsApi
 - ejecutar python manage.py makemigrations
 si te dice: *No changes detected* entonces estás conectado correctamente
+*Si te aparece un error del tipo “Unknown database”, revisa que el nombre del schema sea exactamente igual en Workbench y en tu .env/settings.py*
 
 ## Makemigrations y Migrate
 para que se creen las tablas de los modelos, debes escribir lo siguiente (debes estar posicionado en **SystemScoutsApi**

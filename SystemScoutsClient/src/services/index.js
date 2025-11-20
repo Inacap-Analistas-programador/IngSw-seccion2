@@ -12,8 +12,9 @@ import * as mantenedoresService from './mantenedoresService'
 import * as pagosService from './pagosService'
 import * as archivosService from './archivosService'
 import * as reportesService from './reportesService'
+import dashboardService from './dashboardService'
+import dashboard2Service from './dashboard_2'
 // usuariosRolesService and CorreosService are legacy files removed after migration
-// dashboardService removed — functionality split into per-section services (cursos, pagos, personas, etc.)
 
 // Export everything as named exports. Prefer importing from '@/services' in views.
 export {
@@ -28,6 +29,8 @@ export {
   pagosService,
   archivosService,
   reportesService,
+  dashboardService,
+  dashboard2Service,
   // Removed legacy CorreosService,
 }
 

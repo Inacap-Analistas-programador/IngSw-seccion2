@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ..Models.usuario_model import *
+from ..Models.ModuloUsuarios import *
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 
@@ -8,8 +8,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
     @staticmethod
     def _build_perfil_payload(perfil):
-        """
-        Arma los datos de perfil y permisos.
+        """Arma los datos de perfil y permisos.
 
         No es estrictamente necesario usar un helper, pero mantener la
         construcción en un solo lugar evita duplicar lógica entre
@@ -58,22 +57,10 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         return token
 
     def validate(self, attrs):
-        username = attrs.get('USU_USERNAME')
-        password = attrs.get('password')
+        """Delegamos la autenticación en ``super`` y solo enriquecemos la respuesta."""
 
-        try:
-            user = Usuario.objects.get(USU_USERNAME=username)
-        except Usuario.DoesNotExist:
-            raise serializers.ValidationError("Usuario no encontrado")
-
-        if not user.check_password(password):
-            raise serializers.ValidationError("Contraseña incorrecta")
-
-        if not user.is_active:
-            raise serializers.ValidationError("Usuario inactivo")
-
-        credentials = {self.username_field: username, 'password': password}
-        data = super().validate(credentials)
+        data = super().validate(attrs)
+        user = self.user
 
         perfil_payload, aplicaciones = self._build_perfil_payload(getattr(user, 'PEL_ID', None))
 
@@ -86,17 +73,16 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         })
         return data
 
-
 class LoginSerializer(serializers.Serializer):
-    username = serializers.CharField()
-    password = serializers.CharField(write_only=True)
+    USU_USERNAME = serializers.CharField(min_length=3, max_length=150)
+    password = serializers.CharField(write_only=True, min_length=3)
 
 
 class UsuarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Usuario
         fields = ['USU_ID', 'PEL_ID', 'USU_USERNAME', 'USU_RUTA_FOTO', 'USU_VIGENTE']
-        read_only_fields = ('USU_ID',)
+        read_only_fields = ('USU_ID', 'PEL_ID')
 
 
 class AplicacionSerializer(serializers.ModelSerializer):

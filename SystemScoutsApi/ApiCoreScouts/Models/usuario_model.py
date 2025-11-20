@@ -37,8 +37,8 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     last_login = None
     USU_RUTA_FOTO = models.CharField(max_length=255, null=True, db_column='USU_RUTA_FOTO')
     USU_VIGENTE = models.BooleanField(default=True, null=False, db_column='USU_VIGENTE')
-    is_staff = models.BooleanField(default=False)
-    is_superuser = models.BooleanField(default=False)
+    is_staff = models.BooleanField(default=False, db_column='USU_IS_STAFF')
+    is_superuser = models.BooleanField(default=False, db_column='USU_IS_SUPERUSER')
 
     objects = UsuarioManager()
 

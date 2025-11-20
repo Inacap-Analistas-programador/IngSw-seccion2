@@ -12,16 +12,16 @@
       
       <!-- Con sesión: mostrar menú completo (por defecto admin) -->
       <div v-else>
-        <!-- Apartado desplegable: Usuarios y Roles -->
+        <!-- Apartado desplegable: Usuarios y Perfiles -->
         <div class="nav-item nav-collapsible" @click="toggleUsuarios" :class="{ 'router-link-exact-active': showUsuarios }">
           <span class="nav-icon"><AppIcons name="users" :size="20" /></span>
-          <span class="nav-collapsible-title">Usuarios y Roles</span>
+          <span class="nav-collapsible-title">Usuarios y Perfiles</span>
           <span class="caret" :class="{ open: showUsuarios }">▾</span>
         </div>
         <Transition name="submenu-slide">
           <div v-show="showUsuarios" class="submenu">
             <router-link to="/usuarios" class="submenu-item"><span class="submenu-icon"><AppIcons name="user" :size="16" /></span>Usuarios</router-link>
-            <router-link to="/roles" class="submenu-item"><span class="submenu-icon"><AppIcons name="lock" :size="16" /></span>Roles</router-link>
+            <router-link to="/roles" class="submenu-item"><span class="submenu-icon"><AppIcons name="lock" :size="16" /></span>Perfiles</router-link>
           </div>
         </Transition>
 
@@ -126,6 +126,7 @@ const props = defineProps({
 const emit = defineEmits(['update:collapsed'])
 
 const internalCollapsed = ref(false)
+const openMobile = ref(false)
 
 // computed `collapsed` acts as a proxy: when prop is provided, it becomes controlled; otherwise it uses internal state.
 const collapsed = computed({
@@ -157,7 +158,7 @@ const mantenedoresTabs = [
   { id: 'alimentacion', label: 'Alimentación' },
   { id: 'niveles', label: 'Niveles' },
   { id: 'estados-civiles', label: 'Estados Civiles' },
-  { id: 'roles', label: 'Roles' },
+  { id: 'roles', label: 'Perfiles' },
   { id: 'conceptos-contables', label: 'Conceptos Contables' },
   { id: 'tipos-archivo', label: 'Tipos de Archivo' }
 ]
@@ -255,6 +256,24 @@ onBeforeUnmount(() => {
     if (onResizeForSidebar) window.removeEventListener('resize', onResizeForSidebar)
   } catch (e) { /* ignore */ }
 })
+
+function closeMobile() { openMobile.value = false }
+
+// Scroll lock when mobile sidebar is open
+watch(openMobile, (v) => {
+  try {
+    if (v) {
+      document.documentElement.style.overflow = 'hidden'
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.documentElement.style.overflow = ''
+      document.body.style.overflow = ''
+    }
+  } catch (e) { /* ignore */ }
+})
+
+// Handler para abrir la sidebar en móvil (referencia para add/remove)
+function openMobileHandler() { openMobile.value = true }
 </script>
 
 <style scoped>

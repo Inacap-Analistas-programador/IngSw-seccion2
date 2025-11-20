@@ -1,7 +1,7 @@
 # ApiCoreScouts/Permissions.py
 from rest_framework.permissions import BasePermission
 
-from .Models.usuario_model import Perfil_Aplicacion
+from .Models.ModuloUsuarios import Perfil_Aplicacion
 
 class PerfilPermission(BasePermission):
     """
@@ -35,7 +35,12 @@ class PerfilPermission(BasePermission):
         if required_permissions is None:
             action_permissions = getattr(view, 'ACTION_PERMISSIONS', {})
             action = getattr(view, 'action', None)
-            required_permissions = action_permissions.get(action) if action else None
+            if action and action_permissions:
+                if action not in action_permissions:
+                    return False
+                required_permissions = action_permissions.get(action)
+            else:
+                required_permissions = None
 
         if not required_permissions:
             required_permissions = ('PEA_INGRESAR',)
