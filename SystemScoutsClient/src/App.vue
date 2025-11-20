@@ -7,6 +7,8 @@ const collapsed = ref(false)
 function toggleCollapsed() {
 	collapsed.value = !collapsed.value
 }
+
+ 
 </script>
 
 <template>
@@ -17,7 +19,9 @@ function toggleCollapsed() {
 			<main class="main-content">
 				<router-view v-slot="{ Component, route }">
 					<Transition :name="route.meta.transition || 'fade'" mode="out-in">
-						<component :is="Component" :key="route.path" />
+						<!-- Use fullPath as key so components remount when query/hash/params change -->
+						<!-- Use a composite key so remount triggers on name/params/query/hash changes -->
+						<component :is="Component" :key="(route.name || route.path) + '|' + (route.fullPath || '')" />
 					</Transition>
 				</router-view>
 			</main>

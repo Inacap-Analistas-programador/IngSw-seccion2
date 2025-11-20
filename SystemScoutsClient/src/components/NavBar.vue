@@ -112,6 +112,7 @@ function logout() {
   localStorage.removeItem('accessToken')
   localStorage.removeItem('refreshToken')
   updateAuthState()
+  try { window.dispatchEvent(new Event('auth-changed')) } catch (e) {}
   router.push('/')
 }
 
@@ -121,6 +122,7 @@ function goToLogin() {
   localStorage.removeItem('accessToken')
   localStorage.removeItem('refreshToken')
   updateAuthState()
+  try { window.dispatchEvent(new Event('auth-changed')) } catch (e) {}
   router.push({ name: 'login' })
 }
 
