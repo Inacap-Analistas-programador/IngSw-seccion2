@@ -1,8 +1,8 @@
 <template>
-  <aside :class="['sidebar', { collapsed, 'mobile-open': openMobile }]" @click.self="closeMobile">
+  <aside id="app-sidebar" :class="['sidebar', { collapsed, 'mobile-open': openMobile }]" @click.self="closeMobile">
     <div class="sidebar-top">
-      <button class="collapse-btn" @click="toggleCollapse" :aria-pressed="collapsed">
-        {{ collapsed ? '»' : '«' }}
+      <button v-if="typeof props.collapsed === 'undefined'" class="collapse-btn" @click="toggleCollapse" :aria-pressed="collapsed" :title="collapsed ? 'Expandir sidebar' : 'Colapsar sidebar'">
+        <AppIcons :name="collapsed ? 'chevron-right' : 'chevron-left'" :size="16" />
       </button>
     </div>
 
@@ -27,13 +27,20 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from "vue";
+import { ref, onMounted, onBeforeUnmount, computed } from "vue";
+import AppIcons from './icons/AppIcons.vue'
 
 // Estado local para saber qué mockup está activo
 const currentMockup = ref(1);
 
-// Collapsed / mobile state
-const collapsed = ref(false);
+// Collapsed / mobile state (controlled or uncontrolled)
+const props = defineProps({ collapsed: { type: Boolean, default: undefined } })
+const emit = defineEmits(['update:collapsed'])
+const internalCollapsed = ref(false)
+const collapsed = computed({
+  get() { return typeof props.collapsed !== 'undefined' ? props.collapsed : internalCollapsed.value },
+  set(v) { if (typeof props.collapsed !== 'undefined') emit('update:collapsed', v); else internalCollapsed.value = v; try { localStorage.setItem('sidebar-collapsed', v ? '1' : '0') } catch {} }
+})
 const openMobile = ref(false);
 
 // Lista de ítems de la sidebar
@@ -54,7 +61,7 @@ const menuItems = [
 // Persist collapse state
 onMounted(() => {
   const saved = localStorage.getItem('sidebar-collapsed')
-  if (saved !== null) collapsed.value = saved === '1'
+  if (saved !== null && typeof props.collapsed === 'undefined') internalCollapsed.value = saved === '1'
   // listen for mobile open event
   window.addEventListener('open-sidebar-mobile', openMobileSidebar)
 })
@@ -63,10 +70,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('open-sidebar-mobile', openMobileSidebar)
 })
 
-function toggleCollapse() {
-  collapsed.value = !collapsed.value
-  localStorage.setItem('sidebar-collapsed', collapsed.value ? '1' : '0')
-}
+function toggleCollapse() { collapsed.value = !collapsed.value }
 
 function openMobileSidebar() { openMobile.value = true }
 function closeMobile() { openMobile.value = false }

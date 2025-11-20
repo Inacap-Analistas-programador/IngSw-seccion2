@@ -136,4 +136,32 @@ const closeModal = () => {
   from { opacity: 0; transform: scale(0.95) translateY(10px); }
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
+
+/* Mobile adjustments: avoid close button overlapping header/content */
+@media (max-width: 600px) {
+  .modal-content {
+    width: 96%;
+    max-width: 540px;
+    border-radius: 10px;
+  }
+
+  /* Make the close button slightly smaller and closer to the corner on phones */
+  .close-btn {
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+  }
+
+  /* Reserve horizontal space in the header so the title doesn't sit under the X */
+  .modal-header {
+    padding: 18px 64px 12px 16px; /* top, right (space for X), bottom, left */
+  }
+
+  /* Slight inner padding so content doesn't touch edges */
+  .modal-body-content {
+    padding: 0 14px 16px 14px;
+  }
+}
 </style>

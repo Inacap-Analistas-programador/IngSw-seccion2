@@ -12,8 +12,8 @@
         <BaseButton class="btn-search btn-standard" variant="primary" @click="filtrar"><AppIcons name="search" :size="16" /> Buscar</BaseButton>
       </div>
       <div class="filtros-right">
-        <BaseButton v-if="canCreate" class="btn-add btn-standard" variant="success" @click="abrirModalCrear"><AppIcons name="plus" :size="16" /> Nueva Persona</BaseButton>
-        <BaseButton v-if="canCreate" class="btn-import btn-standard" variant="info" @click="abrirModalImportar"><AppIcons name="download" :size="16" /> Importar Excel</BaseButton>
+        <BaseButton v-if="canCreate" class="btn-add btn-standard" variant="primary" @click="abrirModalCrear"><AppIcons name="plus" :size="16" /> Nueva Persona</BaseButton>
+        <BaseButton v-if="canCreate" class="btn-import btn-standard" variant="secondary" @click="abrirModalImportar"><AppIcons name="download" :size="16" /> Importar Excel</BaseButton>
         <BaseButton class="btn-export btn-standard" variant="secondary" @click="exportarExcel"><AppIcons name="upload" :size="16" /> Exportar</BaseButton>
       </div>
     </div>
@@ -68,16 +68,16 @@
             <span
               :class="['estado', p.PER_VIGENTE ? 'activo' : 'inactivo']"
             >
-              {{ p.PER_VIGENTE ? 'Activo' : 'Inactivo' }}
+                {{ p.PER_VIGENTE ? 'Activo' : 'Inactivo' }}
             </span>
           </td>
           <td>
             <div class="acciones-buttons">
-              <BaseButton class="btn-ver btn-action" variant="info" @click="abrirModalVer(p)"><AppIcons name="eye" :size="14" /> Ver</BaseButton>
+              <BaseButton class="btn-ver btn-action" variant="secondary" @click="abrirModalVer(p)"><AppIcons name="eye" :size="14" /> Ver</BaseButton>
               <BaseButton 
                 v-if="canEdit" 
                 class="btn-editar btn-action" 
-                variant="secondary" 
+                variant="primary" 
                 @click="abrirModalEditar(p)"
               >
                 <AppIcons name="edit" :size="14" /> Editar
@@ -85,7 +85,7 @@
               <BaseButton 
                 v-if="canDelete && p.PER_VIGENTE" 
                 class="btn-anular btn-action" 
-                variant="warning" 
+                variant="secondary" 
                 @click="anularPersona(p)"
               >
                 <AppIcons name="x" :size="14" /> Anular
@@ -93,7 +93,7 @@
               <BaseButton 
                 v-if="canDelete && !p.PER_VIGENTE" 
                 class="btn-reactivar btn-action" 
-                variant="success" 
+                variant="primary" 
                 @click="reactivarPersona(p)"
               >
                 <AppIcons name="check" :size="14" /> Reactivar
@@ -122,8 +122,20 @@
                     <h2>{{ modoSoloLectura ? 'Ver Persona' : 'Editar Persona' }}</h2>
                     <p class="subtitle">{{ `${personaEditada?.PER_NOMBRES || ''} ${personaEditada?.PER_APELPTA || ''}`.trim() }}</p>
                   </div>
-                  <div class="header-actions" v-if="!modoSoloLectura">
+                  <div class="header-actions">
                     <BaseButton 
+                      v-if="!modoSoloLectura"
+                      class="btn-cancel btn-modal-header" 
+                      type="button" 
+                      variant="secondary" 
+                      @click="cancelarEdicion"
+                      :disabled="guardandoPersona"
+                    >
+                      <AppIcons name="x" :size="16" />
+                      Cancelar
+                    </BaseButton>
+                    <BaseButton 
+                      v-if="!modoSoloLectura"
                       class="btn-save btn-modal-header" 
                       type="button" 
                       variant="primary" 
@@ -132,6 +144,16 @@
                     >
                       <AppIcons :name="guardandoPersona ? 'clock' : 'save'" :size="16" />
                       {{ guardandoPersona ? 'Guardando...' : 'Guardar Cambios' }}
+                    </BaseButton>
+                    <BaseButton 
+                      v-if="modoSoloLectura"
+                      class="btn-cancel btn-modal-header" 
+                      type="button" 
+                      variant="secondary" 
+                      @click="cancelarEdicion"
+                    >
+                      <AppIcons name="x" :size="16" />
+                      Cerrar
                     </BaseButton>
                   </div>
                 </header>
@@ -142,8 +164,14 @@
                 </div>
 
                 <form v-if="modalTab==='info'" @submit.prevent="" class="modal-form-editar">
-                  <!-- Sección de Foto de Perfil -->
-                  <div class="form-section foto-section">
+                  <!-- Información Personal -->
+                  <div class="form-section">
+                    <h3 class="section-title">
+                      <AppIcons name="person" :size="18" />
+                      Información Personal
+                    </h3>
+                    
+                    <!-- Foto de Perfil integrada -->
                     <div class="foto-container-editar">
                       <div class="foto-preview-wrapper">
                         <img 
@@ -154,7 +182,7 @@
                           @error="handleImageError('editar')"
                         />
                         <div v-else class="foto-placeholder-editar">
-                          <AppIcons name="person" :size="80" />
+                          <AppIcons name="person" :size="60" />
                           <span class="foto-text">Sin foto</span>
                         </div>
                       </div>
@@ -166,34 +194,29 @@
                           @change="handleFileUpload($event, 'editar')"
                           style="display: none"
                         />
-                        <button 
+                        <BaseButton 
                           type="button" 
                           @click="$refs.fotoInput?.click()" 
-                          class="btn-foto-upload"
+                          variant="primary"
+                          class="btn-foto"
                         >
                           <AppIcons name="camera" :size="16" /> {{ personaEditada.foto ? 'Cambiar Foto' : 'Subir Foto' }}
-                        </button>
-                        <button 
+                        </BaseButton>
+                        <BaseButton 
                           v-if="personaEditada.foto" 
                           type="button" 
                           @click="removePhoto('editar')" 
-                          class="btn-foto-remove"
+                          variant="secondary"
+                          class="btn-foto"
                         >
                           <AppIcons name="trash" :size="16" /> Eliminar
-                        </button>
+                        </BaseButton>
                       </div>
                       <div class="foto-info">
-                        <small>PNG o JPG • Máx. 5MB • Se redimensiona a 300x300px</small>
+                        <small>PNG o JPG • Máx. 5MB</small>
                       </div>
                     </div>
-                  </div>
-
-                  <!-- Información Personal -->
-                  <div class="form-section">
-                    <h3 class="section-title">
-                      <AppIcons name="person" :size="18" />
-                      Información Personal
-                    </h3>
+                    
                     <div class="form-grid">
                       <div class="form-field">
                         <label>Nombres *</label>
@@ -337,23 +360,158 @@
                       </div>
                     </div>
                   </div>
+
+                  <!-- Información de Grupo -->
+                  <div class="form-section">
+                    <h3 class="section-title">
+                      <AppIcons name="users" :size="18" />
+                      Grupo Scout
+                    </h3>
+                    <div class="form-grid">
+                      <div class="form-field">
+                        <label>Grupo</label>
+                        <BaseSelect v-model="personaEditada.GRU_ID" :options="gruposOptions" :disabled="modoSoloLectura" placeholder="Seleccione grupo" />
+                      </div>
+                      <div class="form-field">
+                        <label>Vigente en Grupo</label>
+                        <BaseSelect v-model="personaEditada.PEG_VIGENTE" :options="[{value: true, label: 'Sí'}, {value: false, label: 'No'}]" :disabled="modoSoloLectura" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Información de Formador -->
+                  <div class="form-section">
+                    <h3 class="section-title">
+                      <AppIcons name="award" :size="18" />
+                      Datos de Formador
+                    </h3>
+                    <div class="form-grid">
+                      <div class="form-field">
+                        <label>Habilitación 1</label>
+                        <BaseSelect v-model="personaEditada.PEF_HAB_1" :options="[{value: true, label: 'Sí'}, {value: false, label: 'No'}]" :disabled="modoSoloLectura" />
+                      </div>
+                      <div class="form-field">
+                        <label>Habilitación 2</label>
+                        <BaseSelect v-model="personaEditada.PEF_HAB_2" :options="[{value: true, label: 'Sí'}, {value: false, label: 'No'}]" :disabled="modoSoloLectura" />
+                      </div>
+                      <div class="form-field">
+                        <label>Verificado</label>
+                        <BaseSelect v-model="personaEditada.PEF_VERIF" :options="[{value: true, label: 'Sí'}, {value: false, label: 'No'}]" :disabled="modoSoloLectura" />
+                      </div>
+                      <div class="form-field full-width">
+                        <label>Historial de Formador</label>
+                        <InputBase v-model="personaEditada.PEF_HISTORIAL" :readonly="modoSoloLectura" placeholder="Historial de formación" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Información Individual -->
+                  <div class="form-section">
+                    <h3 class="section-title">
+                      <AppIcons name="person" :size="18" />
+                      Información Individual
+                    </h3>
+                    <div class="form-grid">
+                      <div class="form-field">
+                        <label>Cargo</label>
+                        <BaseSelect v-model="personaEditada.CAR_ID" :options="cargosOptions" :disabled="modoSoloLectura" placeholder="Seleccione cargo" />
+                      </div>
+                      <div class="form-field">
+                        <label>Distrito</label>
+                        <BaseSelect v-model="personaEditada.DIS_ID" :options="distritosOptions" :disabled="modoSoloLectura" placeholder="Seleccione distrito" />
+                      </div>
+                      <div class="form-field">
+                        <label>Zona</label>
+                        <BaseSelect v-model="personaEditada.ZON_ID" :options="zonasOptions" :disabled="modoSoloLectura" placeholder="Seleccione zona" />
+                      </div>
+                      <div class="form-field">
+                        <label>Vigente Individual</label>
+                        <BaseSelect v-model="personaEditada.PEI_VIGENTE" :options="[{value: true, label: 'Sí'}, {value: false, label: 'No'}]" :disabled="modoSoloLectura" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Información de Nivel -->
+                  <div class="form-section">
+                    <h3 class="section-title">
+                      <AppIcons name="star" :size="18" />
+                      Nivel y Rama
+                    </h3>
+                    <div class="form-grid">
+                      <div class="form-field">
+                        <label>Nivel</label>
+                        <BaseSelect v-model="personaEditada.NIV_ID" :options="nivelesOptions" :disabled="modoSoloLectura" placeholder="Seleccione nivel" />
+                      </div>
+                      <div class="form-field">
+                        <label>Rama (Nivel)</label>
+                        <BaseSelect v-model="personaEditada.RAM_ID_NIVEL" :options="ramasOptions" :disabled="modoSoloLectura" placeholder="Seleccione rama" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Información de Vehículo -->
+                  <div class="form-section">
+                    <h3 class="section-title">
+                      <AppIcons name="truck" :size="18" />
+                      Vehículo
+                    </h3>
+                    <div class="form-grid">
+                      <div class="form-field">
+                        <label>Patente</label>
+                        <InputBase v-model="personaEditada.PEV_PATENTE" :readonly="modoSoloLectura" placeholder="AA-BB-12" />
+                      </div>
+                      <div class="form-field">
+                        <label>Marca</label>
+                        <InputBase v-model="personaEditada.PEV_MARCA" :readonly="modoSoloLectura" placeholder="Toyota" />
+                      </div>
+                      <div class="form-field">
+                        <label>Modelo</label>
+                        <InputBase v-model="personaEditada.PEV_MODELO" :readonly="modoSoloLectura" placeholder="Corolla" />
+                      </div>
+                      <div class="form-field">
+                        <label>Año</label>
+                        <InputBase v-model="personaEditada.PEV_ANIO" :readonly="modoSoloLectura" type="number" placeholder="2020" />
+                      </div>
+                      <div class="form-field">
+                        <label>Color</label>
+                        <InputBase v-model="personaEditada.PEV_COLOR" :readonly="modoSoloLectura" placeholder="Blanco" />
+                      </div>
+                      <div class="form-field">
+                        <label>Capacidad</label>
+                        <InputBase v-model="personaEditada.PEV_CAPACIDAD" :readonly="modoSoloLectura" type="number" placeholder="5" />
+                      </div>
+                    </div>
+                  </div>
                 </form>
 
                 <div v-else class="historial-panel" :class="{ 'historial-anulado': personaEditada.estado === 'Anulado' }">
                   <div class="hist-list">
-                    <div v-if="(personaEditada.historial || []).length === 0">No hay participaciones previas.</div>
-                    <ul>
-                      <li v-for="(h, idx) in (personaEditada.historial || [])" :key="idx" 
-                          :class="['historial-item', { 'historial-item-anulado': personaEditada.estado === 'Anulado' }]">
-                        <div class="historial-content" :class="{ 'historial-content-anulado': personaEditada.estado === 'Anulado' }">
-                          <div class="historial-main" :class="{ 'historial-main-anulado': personaEditada.estado === 'Anulado' }">
-                            <strong>{{ h.fecha }}</strong>: {{ h.descripcion }}
+                    <h4>Cursos Realizados</h4>
+                    <div v-if="!personaEditada.cursosHistorial || personaEditada.cursosHistorial.length === 0" class="no-cursos-msg">
+                      Esta persona no tiene cursos registrados.
+                    </div>
+                    <ul v-else>
+                      <li v-for="curso in personaEditada.cursosHistorial" :key="curso.PEC_ID" 
+                          class="historial-curso-item"
+                          @click="navegarACurso(curso.CUS_ID)"
+                          :title="'Clic para ver detalles del curso'">
+                        <div class="curso-item-content">
+                          <div class="curso-header">
+                            <strong class="curso-nombre">{{ curso.CUR_NOMBRE || 'Curso sin nombre' }}</strong>
+                            <span class="curso-codigo">#{{ curso.CUR_CODIGO || curso.CUS_ID }}</span>
                           </div>
-                          <div v-if="h.curso" class="historial-curso">
-                            <span class="curso-badge" :class="{ 'curso-badge-anulado': personaEditada.estado === 'Anulado' }">{{ getCursoLabel(h.curso) }}</span>
-                            <span :class="['aprobacion-badge', h.aprobado ? 'aprobado' : 'no-aprobado', { 'aprobacion-badge-anulado': personaEditada.estado === 'Anulado' }]">
-                              {{ h.aprobado ? '✅ Aprobado' : '❌ No Aprobado' }}
+                          <div class="curso-info">
+                            <span class="curso-rol">{{ curso.ROL_DESCRIPCION || 'Sin rol' }}</span>
+                            <span v-if="curso.ESTADO_APROBACION" class="curso-estado" :class="curso.ESTADO_APROBACION.aprobado ? 'aprobado' : 'no-aprobado'">
+                              {{ curso.ESTADO_APROBACION.texto }}
                             </span>
+                            <span v-if="curso.CUR_FECHAINICIO" class="curso-fecha">
+                              {{ formatearFecha(curso.CUR_FECHAINICIO) }}
+                              <span v-if="curso.CUR_FECHAFIN"> - {{ formatearFecha(curso.CUR_FECHAFIN) }}</span>
+                            </span>
+                          </div>
+                          <div v-if="curso.CUR_DESCRIPCION" class="curso-descripcion">
+                            {{ curso.CUR_DESCRIPCION }}
                           </div>
                         </div>
                       </li>
@@ -393,8 +551,27 @@
               <BaseButton @click="cancelarAnulacion" variant="secondary" class="btn-modal-cancel btn-modal">
                 <AppIcons name="x" :size="16" /> Cancelar
               </BaseButton>
-              <BaseButton @click="confirmarAnulacion" variant="warning" class="btn-modal-anular btn-modal">
+              <BaseButton @click="confirmarAnulacion" variant="primary" class="btn-modal-anular btn-modal">
                 <AppIcons name="alert-triangle" :size="16" /> Anular
+              </BaseButton>
+            </div>
+          </div>
+        </template>
+      </BaseModal>
+
+      <!-- Modal de Confirmación de Reactivación -->
+      <BaseModal v-model="confirmModalReactivarVisible" title="Confirmar Reactivación">
+        <template #default>
+          <div class="confirm-content">
+            <div class="confirm-icon success-icon"><AppIcons name="check" :size="48" /></div>
+            <p>¿Estás seguro de que deseas reactivar a <strong>{{ personaAReactivar?.PER_NOMBRES }} {{ personaAReactivar?.PER_APELPTA }}</strong>?</p>
+            <p class="confirm-warning">Esta acción marcará a la persona como vigente en la base de datos.</p>
+            <div class="confirm-actions">
+              <BaseButton @click="cancelarReactivacion" variant="secondary" class="btn-modal-cancel btn-modal">
+                <AppIcons name="x" :size="16" /> Cancelar
+              </BaseButton>
+              <BaseButton @click="confirmarReactivacion" variant="primary" class="btn-modal-reactivar btn-modal">
+                <AppIcons name="check" :size="16" /> Reactivar
               </BaseButton>
             </div>
           </div>
@@ -413,6 +590,16 @@
               </div>
               <div class="header-actions">
                 <BaseButton 
+                  class="btn-cancel btn-modal-header" 
+                  type="button" 
+                  variant="secondary" 
+                  @click="cerrarModalCrear"
+                  :disabled="guardandoPersona"
+                >
+                  <AppIcons name="x" :size="16" />
+                  Cancelar
+                </BaseButton>
+                <BaseButton 
                   class="btn-save btn-modal-header" 
                   type="button" 
                   variant="primary" 
@@ -427,8 +614,14 @@
 
             <form @submit.prevent="guardarPersonaNueva" class="modal-form-crear">
               
-              <!-- Sección de Foto de Perfil -->
-              <div class="form-section foto-section">
+              <!-- Información Personal -->
+              <div class="form-section">
+                <h3 class="section-title">
+                  <AppIcons name="person" :size="18" />
+                  Información Personal
+                </h3>
+                
+                <!-- Foto de Perfil integrada -->
                 <div class="foto-container-crear">
                   <div class="foto-preview-wrapper">
                     <img 
@@ -439,7 +632,7 @@
                       @error="handleImageError('nueva')"
                     />
                     <div v-else class="foto-placeholder-crear">
-                      <AppIcons name="person" :size="80" />
+                      <AppIcons name="person" :size="60" />
                       <span class="foto-text">Sin foto</span>
                     </div>
                   </div>
@@ -451,36 +644,31 @@
                       @change="handleFileUpload($event, 'nueva')"
                       style="display: none"
                     />
-                    <button 
+                    <BaseButton 
                       type="button" 
                       @click="$refs.fotoInputNueva?.click()" 
-                      class="btn-foto-upload"
+                      variant="primary"
+                      class="btn-foto"
                       :disabled="guardandoPersona"
                     >
                       <AppIcons name="camera" :size="16" /> {{ personaNueva.foto ? 'Cambiar Foto' : 'Subir Foto' }}
-                    </button>
-                    <button 
+                    </BaseButton>
+                    <BaseButton 
                       v-if="personaNueva.foto" 
                       type="button" 
                       @click="removePhoto('nueva')" 
-                      class="btn-foto-remove"
+                      variant="secondary"
+                      class="btn-foto"
                       :disabled="guardandoPersona"
                     >
                       <AppIcons name="trash" :size="16" /> Eliminar
-                    </button>
+                    </BaseButton>
                   </div>
                   <div class="foto-info">
-                    <small>PNG o JPG • Máx. 5MB • Se redimensiona a 300x300px</small>
+                    <small>PNG o JPG • Máx. 5MB</small>
                   </div>
                 </div>
-              </div>
-
-              <!-- Información Personal -->
-              <div class="form-section">
-                <h3 class="section-title">
-                  <AppIcons name="person" :size="18" />
-                  Información Personal
-                </h3>
+                
                 <div class="form-grid">
                   <div class="form-field">
                     <label>Nombres *</label>
@@ -768,6 +956,224 @@
                 </div>
               </div>
               
+              <!-- Grupo Scout -->
+              <div class="form-section">
+                <h3 class="section-title">
+                  <AppIcons name="people" :size="18" />
+                  Grupo Scout
+                </h3>
+                <div class="form-grid">
+                  <div class="form-field">
+                    <label>Grupo</label>
+                    <BaseSelect 
+                      v-model="personaNueva.GRU_ID" 
+                      :options="gruposOptions"
+                      :disabled="guardandoPersona"
+                    />
+                  </div>
+
+                  <div class="form-field">
+                    <label>Vigente</label>
+                    <BaseSelect 
+                      v-model="personaNueva.PEG_VIGENTE" 
+                      :options="[
+                        { value: true, label: 'Sí' },
+                        { value: false, label: 'No' }
+                      ]"
+                      :disabled="guardandoPersona"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Datos de Formador -->
+              <div class="form-section">
+                <h3 class="section-title">
+                  <AppIcons name="school" :size="18" />
+                  Datos de Formador
+                </h3>
+                <div class="form-grid">
+                  <div class="form-field">
+                    <label>Habilitación 1</label>
+                    <InputBase 
+                      v-model="personaNueva.PEF_HAB_1" 
+                      placeholder="Primera habilitación" 
+                      :disabled="guardandoPersona"
+                    />
+                  </div>
+
+                  <div class="form-field">
+                    <label>Habilitación 2</label>
+                    <InputBase 
+                      v-model="personaNueva.PEF_HAB_2" 
+                      placeholder="Segunda habilitación" 
+                      :disabled="guardandoPersona"
+                    />
+                  </div>
+
+                  <div class="form-field">
+                    <label>Verificado</label>
+                    <BaseSelect 
+                      v-model="personaNueva.PEF_VERIF" 
+                      :options="[
+                        { value: true, label: 'Sí' },
+                        { value: false, label: 'No' }
+                      ]"
+                      :disabled="guardandoPersona"
+                    />
+                  </div>
+
+                  <div class="form-field full-width">
+                    <label>Historial</label>
+                    <InputBase 
+                      v-model="personaNueva.PEF_HISTORIAL" 
+                      placeholder="Historial de formador" 
+                      :disabled="guardandoPersona"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Información Individual -->
+              <div class="form-section">
+                <h3 class="section-title">
+                  <AppIcons name="person" :size="18" />
+                  Información Individual
+                </h3>
+                <div class="form-grid">
+                  <div class="form-field">
+                    <label>Cargo</label>
+                    <BaseSelect 
+                      v-model="personaNueva.CAR_ID" 
+                      :options="cargosOptions"
+                      :disabled="guardandoPersona"
+                    />
+                  </div>
+
+                  <div class="form-field">
+                    <label>Distrito</label>
+                    <BaseSelect 
+                      v-model="personaNueva.DIS_ID" 
+                      :options="distritosOptions"
+                      :disabled="guardandoPersona"
+                    />
+                  </div>
+
+                  <div class="form-field">
+                    <label>Zona</label>
+                    <BaseSelect 
+                      v-model="personaNueva.ZON_ID" 
+                      :options="zonasOptions"
+                      :disabled="guardandoPersona"
+                    />
+                  </div>
+
+                  <div class="form-field">
+                    <label>Vigente</label>
+                    <BaseSelect 
+                      v-model="personaNueva.PEI_VIGENTE" 
+                      :options="[
+                        { value: true, label: 'Sí' },
+                        { value: false, label: 'No' }
+                      ]"
+                      :disabled="guardandoPersona"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Nivel y Rama -->
+              <div class="form-section">
+                <h3 class="section-title">
+                  <AppIcons name="layers" :size="18" />
+                  Nivel y Rama
+                </h3>
+                <div class="form-grid">
+                  <div class="form-field">
+                    <label>Nivel</label>
+                    <BaseSelect 
+                      v-model="personaNueva.NIV_ID" 
+                      :options="nivelesOptions"
+                      :disabled="guardandoPersona"
+                    />
+                  </div>
+
+                  <div class="form-field">
+                    <label>Rama</label>
+                    <BaseSelect 
+                      v-model="personaNueva.RAM_ID_NIVEL" 
+                      :options="ramaOptions"
+                      :disabled="guardandoPersona"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Vehículo -->
+              <div class="form-section">
+                <h3 class="section-title">
+                  <AppIcons name="car" :size="18" />
+                  Vehículo
+                </h3>
+                <div class="form-grid">
+                  <div class="form-field">
+                    <label>Patente</label>
+                    <InputBase 
+                      v-model="personaNueva.PEV_PATENTE" 
+                      placeholder="XXXX00" 
+                      :disabled="guardandoPersona"
+                    />
+                  </div>
+
+                  <div class="form-field">
+                    <label>Marca</label>
+                    <InputBase 
+                      v-model="personaNueva.PEV_MARCA" 
+                      placeholder="Toyota, Nissan, etc." 
+                      :disabled="guardandoPersona"
+                    />
+                  </div>
+
+                  <div class="form-field">
+                    <label>Modelo</label>
+                    <InputBase 
+                      v-model="personaNueva.PEV_MODELO" 
+                      placeholder="Corolla, Versa, etc." 
+                      :disabled="guardandoPersona"
+                    />
+                  </div>
+
+                  <div class="form-field">
+                    <label>Año</label>
+                    <InputBase 
+                      v-model="personaNueva.PEV_ANIO" 
+                      type="number"
+                      placeholder="2024" 
+                      :disabled="guardandoPersona"
+                    />
+                  </div>
+
+                  <div class="form-field">
+                    <label>Color</label>
+                    <InputBase 
+                      v-model="personaNueva.PEV_COLOR" 
+                      placeholder="Blanco, Negro, etc." 
+                      :disabled="guardandoPersona"
+                    />
+                  </div>
+
+                  <div class="form-field">
+                    <label>Capacidad</label>
+                    <InputBase 
+                      v-model="personaNueva.PEV_CAPACIDAD" 
+                      type="number"
+                      placeholder="5" 
+                      :disabled="guardandoPersona"
+                    />
+                  </div>
+                </div>
+              </div>
+              
               <!-- Botón de cancelar al final del formulario -->
               <div class="form-actions-bottom">
                 <BaseButton 
@@ -797,9 +1203,19 @@
               </div>
               <div class="header-actions">
                 <BaseButton 
+                  class="btn-cancel btn-modal-header" 
+                  type="button" 
+                  variant="secondary" 
+                  @click="cerrarModalImportar"
+                  :disabled="importandoPersonas"
+                >
+                  <AppIcons name="x" :size="16" />
+                  Cancelar
+                </BaseButton>
+                <BaseButton 
                   class="btn-import-header" 
                   type="button" 
-                  variant="success" 
+                  variant="primary" 
                   @click="importarPersonasExcel"
                   :disabled="!archivoSeleccionado || importandoPersonas"
                 >
@@ -823,8 +1239,9 @@
                     <li>La primera fila debe contener los encabezados</li>
                     <li>Columnas requeridas: <strong>Nombres, Apellido Paterno, RUT, DV, Email</strong></li>
                     <li><strong>Tipo de Teléfono:</strong> Escribe "Celular" o "Fijo"</li>
-                    <li><strong>Estado Civil:</strong> Escribe "Soltero", "Casado", "Divorciado" o "Viudo"</li>
-                    <li><strong>Vigente:</strong> Escribe "Sí" o "No"</li>
+                    <li><strong>Estado Civil:</strong> Escribe el nombre completo (Ej: "Soltero", "Casado", "Divorciado", "Viudo")</li>
+                    <li><strong>Región, Provincia, Comuna, Grupo:</strong> Escribe el nombre completo (Ej: "Región del Biobío", "Concepción")</li>
+                    <li><strong>Campos Sí/No:</strong> Vigente, Vigente en Grupo, Habilitación 1, Habilitación 2, Verificado - Escribe "Sí" o "No"</li>
                     <li>Completa los datos y sube el archivo</li>
                   </ul>
                   
@@ -832,8 +1249,8 @@
                   <div class="template-download">
                     <BaseButton 
                       @click="descargarPlantillaExcel"
-                      variant="info"
-                      class="btn-template"
+                      variant="primary"
+                      class="btn-search btn-standard"
                     >
                       <AppIcons name="download" :size="16" /> Descargar Plantilla Excel
                     </BaseButton>
@@ -959,6 +1376,11 @@ export default {
       courseOptions: [
         { value: '', label: 'Todos los grupos' }
       ],
+      gruposOptions: [],
+      cargosOptions: [],
+      distritosOptions: [],
+      zonasOptions: [],
+      nivelesOptions: [],
       estadoCivilOptions: [
         { value: '', label: 'Seleccione Estado Civil' }
       ],
@@ -978,6 +1400,8 @@ export default {
   mensajeConfirmacion: '',
   confirmModalAnularVisible: false,
   personaAAnular: null,
+  confirmModalReactivarVisible: false,
+  personaAReactivar: null,
   
   crearModalVisible: false,
   personaNueva: null,
@@ -1037,7 +1461,12 @@ export default {
       }
     },
     personasFiltradas() {
-      return this.filteredPersonas.length > 0 ? this.filteredPersonas : this.personas;
+      // Si no se ha aplicado el filtro, no mostrar nada
+      if (!this.filtroAplicado) {
+        return [];
+      }
+      // Si se aplicó el filtro, devolver el resultado (aunque esté vacío)
+      return this.filteredPersonas;
     }
   },
   methods: {
@@ -1052,6 +1481,19 @@ export default {
       }
       if (this.personaEditada.PER_FONO_EMERGENCIA) {
         this.personaEditada.PER_FONO_EMERGENCIA = String(this.personaEditada.PER_FONO_EMERGENCIA).replace(/^\+56/, '');
+      }
+      
+      // Cargar cursos de la persona
+      if (this.personaEditada.PER_ID) {
+        try {
+          const cursosData = await personasService.obtenerCursosPersona(this.personaEditada.PER_ID);
+          this.personaEditada.cursosHistorial = cursosData || [];
+        } catch (error) {
+          console.error('Error cargando cursos de la persona:', error);
+          this.personaEditada.cursosHistorial = [];
+        }
+      } else {
+        this.personaEditada.cursosHistorial = [];
       }
       
       if (!this.personaEditada.historial) this.personaEditada.historial = [];
@@ -1086,6 +1528,14 @@ export default {
       if (this.personaEditada.PRO_ID) {
         await this.cargarComunasPorProvinciaEditar();
       }
+    },
+
+    navegarACurso(cursoId) {
+      // Navegar a la vista de cursos con el curso seleccionado
+      this.$router.push({ 
+        name: 'cursoscapacitaciones', 
+        query: { cursoId: cursoId } 
+      });
     },
 
     abrirModal(persona) {
@@ -1230,37 +1680,52 @@ export default {
       });
     },
     exportarExcel() {
-      const datos = this.personasFiltradas.map((p) => ({
-        'ID': p.PER_ID || '',
-        'Nombres': p.PER_NOMBRES || '',
-        'Apellido Paterno': p.PER_APELPTA || '',
-        'Apellido Materno': p.PER_APELMAT || '',
-        'RUT': p.PER_RUN || '',
-        'DV': p.PER_DV || '',
-        'Email': p.PER_MAIL || '',
-        'Fecha de Nacimiento': p.PER_FECHA_NAC || '',
-        'Dirección': p.PER_DIRECCION || '',
-        'Tipo de Teléfono': p.PER_TIPO_FONO || '',
-        'Teléfono': p.PER_FONO || '',
-        'Celular': p.PER_CEL || '',
-        'Apodo': p.PER_APODO || '',
-        'Profesión': p.PER_PROFESION || '',
-        'Nombre de Emergencia': p.PER_NOM_EMERGENCIA || '',
-        'Teléfono de Emergencia': p.PER_FONO_EMERGENCIA || '',
-        'Alergia o Enfermedad': p.PER_ALERGIA_ENFERMEDAD || '',
-        'Limitación': p.PER_LIMITACION || '',
-        'Religión': p.PER_RELIGION || '',
-        'Tiempo NNAJ': p.PER_TIEMPO_NNAJ || '',
-        'Tiempo Adulto': p.PER_TIEMPO_ADULTO || '',
-        'Número MMA': p.PER_NUM_MMA || '',
-        'Otros': p.PER_OTROS || '',
-        'Rol': p.PER_ROL || '',
-        'Rama': p.PER_RAMA || '',
-        'Grupo': p.PER_GRUPO || '',
-        'Estado Civil (ID)': p.ESC_ID || 1,
-        'Comuna (ID)': p.COM_ID || 1,
-        'Vigente': p.PER_VIGENTE !== undefined ? (p.PER_VIGENTE ? 'Sí' : 'No') : 'Sí'
-      }));
+      const datos = this.personasFiltradas.map((p) => {
+        // Buscar nombres descriptivos
+        const regionNombre = this.regionOptions.find(r => r.value === p.REG_ID)?.label || '';
+        const provinciaNombre = this.provinciaOptions.find(pr => pr.value === p.PRO_ID)?.label || '';
+        const comunaNombre = this.comunaOptions.find(c => c.value === p.COM_ID)?.label || '';
+        const estadoCivilNombre = this.estadoCivilOptions.find(ec => ec.value === p.ESC_ID)?.label || '';
+        const grupoNombre = this.gruposOptions.find(g => g.value === p.GRU_ID)?.label || '';
+        
+        return {
+          'ID': p.PER_ID || '',
+          'Nombres': p.PER_NOMBRES || '',
+          'Apellido Paterno': p.PER_APELPTA || '',
+          'Apellido Materno': p.PER_APELMAT || '',
+          'RUT': p.PER_RUN || '',
+          'DV': p.PER_DV || '',
+          'Email': p.PER_MAIL || '',
+          'Fecha de Nacimiento': p.PER_FECHA_NAC || '',
+          'Dirección': p.PER_DIRECCION || '',
+          'Región': regionNombre,
+          'Provincia': provinciaNombre,
+          'Comuna': comunaNombre,
+          'Tipo de Teléfono': p.PER_TIPO_FONO === 1 ? 'Fijo' : (p.PER_TIPO_FONO === 2 ? 'Celular' : ''),
+          'Teléfono': p.PER_FONO || '',
+          'Celular': p.PER_CEL || '',
+          'Apodo': p.PER_APODO || '',
+          'Profesión': p.PER_PROFESION || '',
+          'Nombre de Emergencia': p.PER_NOM_EMERGENCIA || '',
+          'Teléfono de Emergencia': p.PER_FONO_EMERGENCIA || '',
+          'Alergia o Enfermedad': p.PER_ALERGIA_ENFERMEDAD || '',
+          'Limitación': p.PER_LIMITACION || '',
+          'Religión': p.PER_RELIGION || '',
+          'Tiempo NNAJ': p.PER_TIEMPO_NNAJ || '',
+          'Tiempo Adulto': p.PER_TIEMPO_ADULTO || '',
+          'Número MMA': p.PER_NUM_MMA || '',
+          'Otros': p.PER_OTROS || '',
+          'Rol': p.PER_ROL || '',
+          'Rama': p.PER_RAMA || '',
+          'Grupo': grupoNombre,
+          'Vigente en Grupo': p.PEG_VIGENTE !== undefined ? (p.PEG_VIGENTE ? 'Sí' : 'No') : '',
+          'Estado Civil': estadoCivilNombre,
+          'Habilitación 1': p.PEF_HAB_1 !== undefined ? (p.PEF_HAB_1 ? 'Sí' : 'No') : '',
+          'Habilitación 2': p.PEF_HAB_2 !== undefined ? (p.PEF_HAB_2 ? 'Sí' : 'No') : '',
+          'Verificado': p.PEF_VERIF !== undefined ? (p.PEF_VERIF ? 'Sí' : 'No') : '',
+          'Vigente': p.PER_VIGENTE !== undefined ? (p.PER_VIGENTE ? 'Sí' : 'No') : 'Sí'
+        };
+      });
 
       const ws = XLSX.utils.json_to_sheet(datos);
       const wb = XLSX.utils.book_new();
@@ -1382,51 +1847,155 @@ export default {
         
         const personaId = this.personaEditada.PER_ID;
         
-        if (this.personaEditada.PER_RAMA && this.personaEditada.PER_RAMA !== '') {
+        // Actualizar/Crear Grupo Scout
+        if (this.personaEditada.GRU_ID && this.personaEditada.GRU_ID !== '') {
+          try {
+            const gruposActuales = await personasService.grupos.list();
+            const grupoPersona = gruposActuales.find(g => g.PER_ID === personaId);
+            
+            const grupoData = {
+              GRU_ID: Number(this.personaEditada.GRU_ID),
+              PEG_VIGENTE: this.personaEditada.PEG_VIGENTE !== undefined ? this.personaEditada.PEG_VIGENTE : true
+            };
+            
+            if (grupoPersona) {
+              await personasService.grupos.partialUpdate(grupoPersona.PEG_ID, grupoData);
+              console.log('✅ Grupo actualizado');
+            } else {
+              await personasService.grupos.create({
+                PER_ID: personaId,
+                ...grupoData
+              });
+              console.log('✅ Grupo asignado');
+            }
+          } catch (error) {
+            console.warn('⚠️ No se pudo actualizar el grupo:', error);
+          }
+        }
+        
+        // Actualizar/Crear Datos de Formador
+        if (this.personaEditada.PEF_HAB_1 || this.personaEditada.PEF_HAB_2 || this.personaEditada.PER_ROL) {
+          try {
+            const formadoresActuales = await personasService.formadores.list();
+            const formadorPersona = formadoresActuales.find(f => f.PER_ID === personaId);
+            
+            const formadorData = {
+              PEF_HAB_1: this.personaEditada.PEF_HAB_1 || null,
+              PEF_HAB_2: this.personaEditada.PEF_HAB_2 || null,
+              PEF_VERIF: this.personaEditada.PEF_VERIF !== undefined ? this.personaEditada.PEF_VERIF : false,
+              PEF_HISTORIAL: this.personaEditada.PEF_HISTORIAL || null
+            };
+            
+            if (formadorPersona) {
+              await personasService.formadores.partialUpdate(formadorPersona.PEF_ID, formadorData);
+              console.log('✅ Datos de formador actualizados');
+            } else {
+              await personasService.formadores.create({
+                PER_ID: personaId,
+                ...formadorData
+              });
+              console.log('✅ Datos de formador creados');
+            }
+          } catch (error) {
+            console.warn('⚠️ No se pudieron actualizar datos de formador:', error);
+          }
+        }
+        
+        // Actualizar/Crear Información Individual
+        if (this.personaEditada.CAR_ID || this.personaEditada.DIS_ID || this.personaEditada.ZON_ID) {
+          try {
+            const individualesActuales = await personasService.individuales.list();
+            const individualPersona = individualesActuales.find(i => i.PER_ID === personaId);
+            
+            const individualData = {
+              CAR_ID: this.personaEditada.CAR_ID && this.personaEditada.CAR_ID !== '' ? Number(this.personaEditada.CAR_ID) : null,
+              DIS_ID: this.personaEditada.DIS_ID && this.personaEditada.DIS_ID !== '' ? Number(this.personaEditada.DIS_ID) : null,
+              ZON_ID: this.personaEditada.ZON_ID && this.personaEditada.ZON_ID !== '' ? Number(this.personaEditada.ZON_ID) : null,
+              PEI_VIGENTE: this.personaEditada.PEI_VIGENTE !== undefined ? this.personaEditada.PEI_VIGENTE : true
+            };
+            
+            if (individualPersona) {
+              await personasService.individuales.partialUpdate(individualPersona.PEI_ID, individualData);
+              console.log('✅ Información individual actualizada');
+            } else {
+              await personasService.individuales.create({
+                PER_ID: personaId,
+                ...individualData
+              });
+              console.log('✅ Información individual creada');
+            }
+          } catch (error) {
+            console.warn('⚠️ No se pudo actualizar información individual:', error);
+          }
+        }
+        
+        // Actualizar/Crear Nivel y Rama
+        if ((this.personaEditada.NIV_ID && this.personaEditada.NIV_ID !== '') || this.personaEditada.PER_RAMA || this.personaEditada.RAM_ID_NIVEL) {
           try {
             const nivelesActuales = await personasService.niveles.list();
             const nivelPersona = nivelesActuales.find(n => n.PER_ID === personaId);
             
-            const ramaData = await mantenedoresService.rama.list();
-            const ramaEncontrada = ramaData.find(r => r.RAM_DESCRIPCION === this.personaEditada.PER_RAMA);
+            const ramId = this.personaEditada.RAM_ID_NIVEL && this.personaEditada.RAM_ID_NIVEL !== '' ? 
+              Number(this.personaEditada.RAM_ID_NIVEL) : 
+              null;
             
-            if (ramaEncontrada) {
-              if (nivelPersona) {
-                await personasService.niveles.partialUpdate(nivelPersona.PEN_ID, {
-                  RAM_ID: ramaEncontrada.RAM_ID
-                });
-                console.log('✅ Rama actualizada:', this.personaEditada.PER_RAMA);
-              } else {
-                await personasService.niveles.create({
-                  PER_ID: personaId,
-                  RAM_ID: ramaEncontrada.RAM_ID,
-                  NIV_ID: 1
-                });
-                console.log('✅ Rama asignada:', this.personaEditada.PER_RAMA);
+            // Si no se proporcionó RAM_ID_NIVEL pero sí PER_RAMA, buscar el ID
+            let ramaIdFinal = ramId;
+            if (!ramaIdFinal && this.personaEditada.PER_RAMA && this.personaEditada.PER_RAMA !== '') {
+              const ramaData = await mantenedoresService.rama.list();
+              const ramaEncontrada = ramaData.find(r => r.RAM_DESCRIPCION === this.personaEditada.PER_RAMA);
+              if (ramaEncontrada) {
+                ramaIdFinal = ramaEncontrada.RAM_ID;
               }
             }
+            
+            const nivelData = {
+              NIV_ID: this.personaEditada.NIV_ID && this.personaEditada.NIV_ID !== '' ? Number(this.personaEditada.NIV_ID) : 1,
+              RAM_ID: ramaIdFinal
+            };
+            
+            if (nivelPersona) {
+              await personasService.niveles.partialUpdate(nivelPersona.PEN_ID, nivelData);
+              console.log('✅ Nivel y rama actualizados');
+            } else if (ramaIdFinal) {
+              await personasService.niveles.create({
+                PER_ID: personaId,
+                ...nivelData
+              });
+              console.log('✅ Nivel y rama asignados');
+            }
           } catch (error) {
-            console.warn('⚠️ No se pudo actualizar la rama:', error);
-            console.error('Error completo:', error);
+            console.warn('⚠️ No se pudo actualizar nivel y rama:', error);
           }
         }
         
-        if (this.personaEditada.PER_ROL && this.personaEditada.PER_ROL !== '') {
+        // Actualizar/Crear Vehículo
+        if (this.personaEditada.PEV_PATENTE && this.personaEditada.PEV_PATENTE !== '') {
           try {
-            const formadoresActuales = await personasService.formadores.list();
-            const esFormador = formadoresActuales.find(f => f.PER_ID === personaId);
+            const vehiculosActuales = await personasService.vehiculos.list();
+            const vehiculoPersona = vehiculosActuales.find(v => v.PER_ID === personaId);
             
-            if (!esFormador) {
-              await personasService.formadores.create({
-                PER_ID: personaId
-              });
-              console.log('✅ Registrado como formador');
+            const vehiculoData = {
+              PEV_PATENTE: this.personaEditada.PEV_PATENTE,
+              PEV_MARCA: this.personaEditada.PEV_MARCA || null,
+              PEV_MODELO: this.personaEditada.PEV_MODELO || null,
+              PEV_ANIO: this.personaEditada.PEV_ANIO || null,
+              PEV_COLOR: this.personaEditada.PEV_COLOR || null,
+              PEV_CAPACIDAD: this.personaEditada.PEV_CAPACIDAD || null
+            };
+            
+            if (vehiculoPersona) {
+              await personasService.vehiculos.partialUpdate(vehiculoPersona.PEV_ID, vehiculoData);
+              console.log('✅ Vehículo actualizado');
             } else {
-              console.log('✅ Ya estaba registrado como formador');
+              await personasService.vehiculos.create({
+                PER_ID: personaId,
+                ...vehiculoData
+              });
+              console.log('✅ Vehículo creado');
             }
           } catch (error) {
-            console.warn('⚠️ No se pudo actualizar el rol:', error);
-            console.error('Error completo:', error);
+            console.warn('⚠️ No se pudo actualizar el vehículo:', error);
           }
         }
         
@@ -1547,27 +2116,46 @@ export default {
       console.log('🔵 FIN confirmarAnulacion - Timestamp:', Date.now());
     },
     
-    async reactivarPersona(persona) {
-      if (!confirm(`¿Estás seguro de que deseas reactivar a ${persona.PER_NOMBRES} ${persona.PER_APELPTA}?`)) {
-        return;
-      }
+    reactivarPersona(persona) {
+      this.personaAReactivar = persona;
+      this.confirmModalReactivarVisible = true;
+    },
+    
+    cancelarReactivacion() {
+      this.confirmModalReactivarVisible = false;
+      this.personaAReactivar = null;
+    },
+    
+    async confirmarReactivacion() {
+      if (!this.personaAReactivar) return;
       
       try {
-        console.log('🔄 Reactivando persona en BD:', persona.PER_NOMBRES);
+        console.log('🔄 Reactivando persona en BD:', this.personaAReactivar.PER_NOMBRES);
+        console.log('📋 ID de persona:', this.personaAReactivar.PER_ID);
         
         const datosReactivacion = {
           PER_VIGENTE: true
         };
         
-        const resultado = await personasService.personas.partialUpdate(persona.PER_ID, datosReactivacion);
+        console.log('📝 Datos a enviar:', datosReactivacion);
+        
+        const resultado = await personasService.personas.partialUpdate(this.personaAReactivar.PER_ID, datosReactivacion);
         
         console.log('✅ Persona reactivada en BD:', resultado);
         
         alert('✅ Persona reactivada correctamente en la base de datos');
         
+        this.confirmModalReactivarVisible = false;
+        this.personaAReactivar = null;
+        
       } catch (error) {
         console.error('❌ Error al reactivar persona:', error);
-        alert('❌ Error al reactivar la persona. Inténtalo de nuevo.');
+        
+        let mensajeError = 'Error al reactivar la persona. ';
+        if (error.message) {
+          mensajeError += error.message;
+        }
+        alert('❌ ' + mensajeError);
         return;
       }
       
@@ -1600,6 +2188,16 @@ export default {
     getCursoLabel(cursoCodigo) {
       const curso = this.courseOptions.find(c => c.value === cursoCodigo);
       return curso ? curso.label : cursoCodigo;
+    },
+    
+    formatearFecha(fecha) {
+      if (!fecha) return '';
+      try {
+        const date = new Date(fecha);
+        return date.toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' });
+      } catch (error) {
+        return fecha;
+      }
     },
     
     handleFileUpload(event, modo) {
@@ -1801,6 +2399,72 @@ export default {
           console.warn('No se pudieron cargar regiones:', error.message);
         }
         
+        try {
+          const cargos = await mantenedoresService.cargo.list();
+          this.cargosOptions = [
+            { value: '', label: 'Seleccione Cargo' },
+            ...cargos
+              .filter(cargo => cargo.CAR_VIGENTE !== false)
+              .map(cargo => ({ value: cargo.CAR_ID, label: cargo.CAR_DESCRIPCION }))
+          ];
+          console.log('Cargos cargados:', this.cargosOptions.length - 1);
+        } catch (error) {
+          console.warn('No se pudieron cargar cargos:', error.message);
+        }
+        
+        try {
+          const distritos = await mantenedoresService.distrito.list();
+          this.distritosOptions = [
+            { value: '', label: 'Seleccione Distrito' },
+            ...distritos
+              .filter(distrito => distrito.DIS_VIGENTE !== false)
+              .map(distrito => ({ value: distrito.DIS_ID, label: distrito.DIS_DESCRIPCION }))
+          ];
+          console.log('Distritos cargados:', this.distritosOptions.length - 1);
+        } catch (error) {
+          console.warn('No se pudieron cargar distritos:', error.message);
+        }
+        
+        try {
+          const zonas = await mantenedoresService.zona.list();
+          this.zonasOptions = [
+            { value: '', label: 'Seleccione Zona' },
+            ...zonas
+              .filter(zona => zona.ZON_VIGENTE !== false)
+              .map(zona => ({ value: zona.ZON_ID, label: zona.ZON_DESCRIPCION }))
+          ];
+          console.log('Zonas cargadas:', this.zonasOptions.length - 1);
+        } catch (error) {
+          console.warn('No se pudieron cargar zonas:', error.message);
+        }
+        
+        try {
+          const niveles = await mantenedoresService.nivel.list();
+          this.nivelesOptions = [
+            { value: '', label: 'Seleccione Nivel' },
+            ...niveles
+              .filter(nivel => nivel.NIV_VIGENTE !== false)
+              .map(nivel => ({ value: nivel.NIV_ID, label: nivel.NIV_DESCRIPCION }))
+          ];
+          console.log('Niveles cargados:', this.nivelesOptions.length - 1);
+        } catch (error) {
+          console.warn('No se pudieron cargar niveles:', error.message);
+        }
+        
+        // También cargar grupos para el formulario
+        try {
+          const grupos = await mantenedoresService.grupo.list();
+          this.gruposOptions = [
+            { value: '', label: 'Seleccione Grupo' },
+            ...grupos
+              .filter(grupo => grupo.GRU_VIGENTE !== false)
+              .map(grupo => ({ value: grupo.GRU_ID, label: grupo.GRU_DESCRIPCION }))
+          ];
+          console.log('Grupos para formulario cargados:', this.gruposOptions.length - 1);
+        } catch (error) {
+          console.warn('No se pudieron cargar grupos para formulario:', error.message);
+        }
+        
         console.log('Filtros cargados: Roles:', this.roleOptions.length - 1, 'Ramas:', this.ramaOptions.length - 1, 'Grupos:', this.courseOptions.length - 1);
         
       } catch (error) {
@@ -1925,7 +2589,30 @@ export default {
         COM_ID: '',
         PER_VIGENTE: true,
         PER_ROL: '',
-        PER_RAMA: ''
+        PER_RAMA: '',
+        // Grupo Scout
+        GRU_ID: '',
+        PEG_VIGENTE: true,
+        // Datos de Formador
+        PEF_HAB_1: '',
+        PEF_HAB_2: '',
+        PEF_VERIF: false,
+        PEF_HISTORIAL: '',
+        // Información Individual
+        CAR_ID: '',
+        DIS_ID: '',
+        ZON_ID: '',
+        PEI_VIGENTE: true,
+        // Nivel y Rama
+        NIV_ID: '',
+        RAM_ID_NIVEL: '',
+        // Vehículo
+        PEV_PATENTE: '',
+        PEV_MARCA: '',
+        PEV_MODELO: '',
+        PEV_ANIO: null,
+        PEV_COLOR: '',
+        PEV_CAPACIDAD: null
       };
       this.crearModalVisible = true;
     },
@@ -1999,6 +2686,9 @@ export default {
         'Email': '',
         'Fecha de Nacimiento': '',
         'Dirección': '',
+        'Región': 'Ejemplo: Región del Biobío',
+        'Provincia': 'Ejemplo: Concepción',
+        'Comuna': 'Ejemplo: Concepción',
         'Tipo de Teléfono': 'Celular o Fijo',
         'Teléfono': '',
         'Celular': '',
@@ -2015,9 +2705,12 @@ export default {
         'Otros': '',
         'Rol': '',
         'Rama': '',
-        'Grupo': '',
-        'Estado Civil': 'Soltero, Casado, Divorciado, Viudo, etc.',
-        'Comuna': 'Nombre de la comuna',
+        'Grupo': 'Nombre del grupo',
+        'Vigente en Grupo': 'Sí o No',
+        'Estado Civil': 'Soltero, Casado, Divorciado o Viudo',
+        'Habilitación 1': 'Sí o No',
+        'Habilitación 2': 'Sí o No',
+        'Verificado': 'Sí o No',
         'Vigente': 'Sí o No'
       }];
 
@@ -2033,6 +2726,9 @@ export default {
         { wch: 25 }, // Email
         { wch: 15 }, // Fecha de Nacimiento
         { wch: 30 }, // Dirección
+        { wch: 25 }, // Región
+        { wch: 20 }, // Provincia
+        { wch: 20 }, // Comuna
         { wch: 18 }, // Tipo de Teléfono
         { wch: 15 }, // Teléfono
         { wch: 15 }, // Celular
@@ -2049,9 +2745,12 @@ export default {
         { wch: 25 }, // Otros
         { wch: 20 }, // Rol
         { wch: 15 }, // Rama
-        { wch: 15 }, // Grupo
-        { wch: 18 }, // Estado Civil (ID)
-        { wch: 15 }, // Comuna (ID)
+        { wch: 25 }, // Grupo
+        { wch: 16 }, // Vigente en Grupo
+        { wch: 18 }, // Estado Civil
+        { wch: 15 }, // Habilitación 1
+        { wch: 15 }, // Habilitación 2
+        { wch: 12 }, // Verificado
         { wch: 10 }  // Vigente
       ];
       ws['!cols'] = colWidths;
@@ -2168,26 +2867,95 @@ export default {
             }
 
             // Convertir Estado Civil de texto a ID
-            let estadoCivilId = 1; // Por defecto Soltero
-            const estadoCivilTexto = (fila['Estado Civil'] || fila['Estado Civil (ID)'] || fila['ESC_ID'] || '').toString().toLowerCase();
-            if (estadoCivilTexto.includes('casad') || estadoCivilTexto === '2') {
-              estadoCivilId = 2;
-            } else if (estadoCivilTexto.includes('divorciad') || estadoCivilTexto === '3') {
-              estadoCivilId = 3;
-            } else if (estadoCivilTexto.includes('viud') || estadoCivilTexto === '4') {
-              estadoCivilId = 4;
-            } else if (estadoCivilTexto.includes('solter') || estadoCivilTexto === '1') {
-              estadoCivilId = 1;
+            let estadoCivilId = null;
+            const estadoCivilTexto = (fila['Estado Civil'] || fila['Estado Civil (ID)'] || fila['ESC_ID'] || '').toString();
+            // Buscar por nombre en estadoCivilOptions
+            const estadoCivilEncontrado = this.estadoCivilOptions.find(ec => 
+              ec.label && estadoCivilTexto && ec.label.toLowerCase().includes(estadoCivilTexto.toLowerCase())
+            );
+            if (estadoCivilEncontrado && estadoCivilEncontrado.value) {
+              estadoCivilId = estadoCivilEncontrado.value;
+            } else {
+              // Fallback: búsqueda por palabras clave
+              const estadoLower = estadoCivilTexto.toLowerCase();
+              if (estadoLower.includes('casad') || estadoLower === '2') {
+                estadoCivilId = 2;
+              } else if (estadoLower.includes('divorciad') || estadoLower === '3') {
+                estadoCivilId = 3;
+              } else if (estadoLower.includes('viud') || estadoLower === '4') {
+                estadoCivilId = 4;
+              } else if (estadoLower.includes('solter') || estadoLower === '1') {
+                estadoCivilId = 1;
+              }
             }
             
             console.log(`🔄 Conversiones - Tipo Fono: ${tipoTelefono}, Estado Civil: ${estadoCivilId} (de: "${estadoCivilTexto}")`);
 
-            // Para Comuna, intentar buscar por nombre (simplificado - usar ID 1 por defecto)
-            // En el futuro se podría hacer una búsqueda real en la base de datos
-            let comunaId = 1;
-            const comunaTexto = fila['Comuna'] || fila['Comuna (ID)'] || fila['COM_ID'] || '';
-            if (comunaTexto && !isNaN(comunaTexto)) {
-              comunaId = parseInt(comunaTexto);
+            // Obtener IDs de ubicación buscando por nombre
+            let regionId = null;
+            const regionTexto = (fila['Región'] || fila['Región (ID)'] || fila['REG_ID'] || '').toString();
+            if (regionTexto) {
+              if (!isNaN(regionTexto)) {
+                // Si es un número, usar directamente
+                regionId = parseInt(regionTexto);
+              } else {
+                // Buscar por nombre en regionOptions
+                const regionEncontrada = this.regionOptions.find(r => 
+                  r.label && regionTexto && r.label.toLowerCase().includes(regionTexto.toLowerCase())
+                );
+                if (regionEncontrada && regionEncontrada.value) {
+                  regionId = regionEncontrada.value;
+                }
+              }
+            }
+
+            let provinciaId = null;
+            const provinciaTexto = (fila['Provincia'] || fila['Provincia (ID)'] || fila['PRO_ID'] || '').toString();
+            if (provinciaTexto) {
+              if (!isNaN(provinciaTexto)) {
+                provinciaId = parseInt(provinciaTexto);
+              } else {
+                // Buscar por nombre en provinciaOptions
+                const provinciaEncontrada = this.provinciaOptions.find(pr => 
+                  pr.label && provinciaTexto && pr.label.toLowerCase().includes(provinciaTexto.toLowerCase())
+                );
+                if (provinciaEncontrada && provinciaEncontrada.value) {
+                  provinciaId = provinciaEncontrada.value;
+                }
+              }
+            }
+
+            let comunaId = null;
+            const comunaTexto = (fila['Comuna'] || fila['Comuna (ID)'] || fila['COM_ID'] || '').toString();
+            if (comunaTexto) {
+              if (!isNaN(comunaTexto)) {
+                comunaId = parseInt(comunaTexto);
+              } else {
+                // Buscar por nombre en comunaOptions
+                const comunaEncontrada = this.comunaOptions.find(c => 
+                  c.label && comunaTexto && c.label.toLowerCase().includes(comunaTexto.toLowerCase())
+                );
+                if (comunaEncontrada && comunaEncontrada.value) {
+                  comunaId = comunaEncontrada.value;
+                }
+              }
+            }
+
+            // Obtener Grupo ID buscando por nombre
+            let grupoId = null;
+            const grupoTexto = (fila['Grupo'] || fila['Grupo (ID)'] || fila['GRU_ID'] || '').toString();
+            if (grupoTexto) {
+              if (!isNaN(grupoTexto)) {
+                grupoId = parseInt(grupoTexto);
+              } else {
+                // Buscar por nombre en gruposOptions
+                const grupoEncontrado = this.gruposOptions.find(g => 
+                  g.label && grupoTexto && g.label.toLowerCase().includes(grupoTexto.toLowerCase())
+                );
+                if (grupoEncontrado && grupoEncontrado.value) {
+                  grupoId = grupoEncontrado.value;
+                }
+              }
             }
 
             // Convertir Vigente a booleano
@@ -2195,6 +2963,40 @@ export default {
             let vigente = true; // Por defecto activo
             if (vigenteTexto === 'no' || vigenteTexto === '0' || vigenteTexto === 'false' || vigenteTexto === 'inactivo') {
               vigente = false;
+            }
+
+            // Convertir Vigente en Grupo a booleano
+            const vigenteGrupoTexto = (fila['Vigente en Grupo'] || '').toString().toLowerCase();
+            let vigenteGrupo = null;
+            if (vigenteGrupoTexto === 'sí' || vigenteGrupoTexto === 'si' || vigenteGrupoTexto === '1' || vigenteGrupoTexto === 'true') {
+              vigenteGrupo = true;
+            } else if (vigenteGrupoTexto === 'no' || vigenteGrupoTexto === '0' || vigenteGrupoTexto === 'false') {
+              vigenteGrupo = false;
+            }
+
+            // Convertir Habilitaciones y Verificado a booleano
+            const hab1Texto = (fila['Habilitación 1'] || '').toString().toLowerCase();
+            let hab1 = null;
+            if (hab1Texto === 'sí' || hab1Texto === 'si' || hab1Texto === '1' || hab1Texto === 'true') {
+              hab1 = true;
+            } else if (hab1Texto === 'no' || hab1Texto === '0' || hab1Texto === 'false') {
+              hab1 = false;
+            }
+
+            const hab2Texto = (fila['Habilitación 2'] || '').toString().toLowerCase();
+            let hab2 = null;
+            if (hab2Texto === 'sí' || hab2Texto === 'si' || hab2Texto === '1' || hab2Texto === 'true') {
+              hab2 = true;
+            } else if (hab2Texto === 'no' || hab2Texto === '0' || hab2Texto === 'false') {
+              hab2 = false;
+            }
+
+            const verifTexto = (fila['Verificado'] || '').toString().toLowerCase();
+            let verif = null;
+            if (verifTexto === 'sí' || verifTexto === 'si' || verifTexto === '1' || verifTexto === 'true') {
+              verif = true;
+            } else if (verifTexto === 'no' || verifTexto === '0' || verifTexto === 'false') {
+              verif = false;
             }
 
             // Obtener usuario actual desde authService (soporta cookies y localStorage)
@@ -2228,7 +3030,14 @@ export default {
               PER_RAMA: fila['Rama'] || fila['PER_RAMA'] || null,
               PER_GRUPO: fila['Grupo'] || fila['PER_GRUPO'] || null,
               ESC_ID: estadoCivilId,
+              REG_ID: regionId,
+              PRO_ID: provinciaId,
               COM_ID: comunaId,
+              GRU_ID: grupoId,
+              PEG_VIGENTE: vigenteGrupo,
+              PEF_HAB_1: hab1,
+              PEF_HAB_2: hab2,
+              PEF_VERIF: verif,
               USU_ID: usuId,
               PER_VIGENTE: vigente
             };
@@ -2485,34 +3294,97 @@ export default {
         
         const personaId = personaCreada.PER_ID;
         
-        if (this.personaNueva.PER_RAMA && this.personaNueva.PER_RAMA !== '') {
+        // Guardar Grupo Scout
+        if (this.personaNueva.GRU_ID && this.personaNueva.GRU_ID !== '') {
           try {
-            const ramaData = await mantenedoresService.rama.list();
-            const ramaEncontrada = ramaData.find(r => r.RAM_DESCRIPCION === this.personaNueva.PER_RAMA);
-            
-            if (ramaEncontrada) {
-              await personasService.niveles.create({
-                PER_ID: personaId,
-                RAM_ID: ramaEncontrada.RAM_ID,
-                NIV_ID: 1
-              });
-              console.log('✅ Rama asignada:', this.personaNueva.PER_RAMA);
-            }
+            await personasService.grupos.create({
+              PER_ID: personaId,
+              GRU_ID: Number(this.personaNueva.GRU_ID),
+              PEG_VIGENTE: this.personaNueva.PEG_VIGENTE !== undefined ? this.personaNueva.PEG_VIGENTE : true
+            });
+            console.log('✅ Grupo asignado:', this.personaNueva.GRU_ID);
           } catch (error) {
-            console.warn('⚠️ No se pudo asignar la rama:', error);
-            console.error('Error completo:', error);
+            console.warn('⚠️ No se pudo asignar el grupo:', error);
           }
         }
         
-        if (this.personaNueva.PER_ROL && this.personaNueva.PER_ROL !== '') {
+        // Guardar Datos de Formador
+        if (this.personaNueva.PEF_HAB_1 || this.personaNueva.PEF_HAB_2 || this.personaNueva.PER_ROL) {
           try {
             await personasService.formadores.create({
-              PER_ID: personaId
+              PER_ID: personaId,
+              PEF_HAB_1: this.personaNueva.PEF_HAB_1 || null,
+              PEF_HAB_2: this.personaNueva.PEF_HAB_2 || null,
+              PEF_VERIF: this.personaNueva.PEF_VERIF !== undefined ? this.personaNueva.PEF_VERIF : false,
+              PEF_HISTORIAL: this.personaNueva.PEF_HISTORIAL || null
             });
-            console.log('✅ Registrado como formador');
+            console.log('✅ Datos de formador guardados');
           } catch (error) {
-            console.warn('⚠️ No se pudo registrar como formador:', error);
-            console.error('Error completo:', error);
+            console.warn('⚠️ No se pudieron guardar datos de formador:', error);
+          }
+        }
+        
+        // Guardar Información Individual
+        if (this.personaNueva.CAR_ID || this.personaNueva.DIS_ID || this.personaNueva.ZON_ID) {
+          try {
+            await personasService.individuales.create({
+              PER_ID: personaId,
+              CAR_ID: this.personaNueva.CAR_ID && this.personaNueva.CAR_ID !== '' ? Number(this.personaNueva.CAR_ID) : null,
+              DIS_ID: this.personaNueva.DIS_ID && this.personaNueva.DIS_ID !== '' ? Number(this.personaNueva.DIS_ID) : null,
+              ZON_ID: this.personaNueva.ZON_ID && this.personaNueva.ZON_ID !== '' ? Number(this.personaNueva.ZON_ID) : null,
+              PEI_VIGENTE: this.personaNueva.PEI_VIGENTE !== undefined ? this.personaNueva.PEI_VIGENTE : true
+            });
+            console.log('✅ Información individual guardada');
+          } catch (error) {
+            console.warn('⚠️ No se pudo guardar información individual:', error);
+          }
+        }
+        
+        // Guardar Nivel y Rama
+        if ((this.personaNueva.NIV_ID && this.personaNueva.NIV_ID !== '') || this.personaNueva.PER_RAMA) {
+          try {
+            const ramId = this.personaNueva.RAM_ID_NIVEL && this.personaNueva.RAM_ID_NIVEL !== '' ? 
+              Number(this.personaNueva.RAM_ID_NIVEL) : 
+              null;
+            
+            // Si no se proporcionó RAM_ID_NIVEL pero sí PER_RAMA, buscar el ID
+            let ramaIdFinal = ramId;
+            if (!ramaIdFinal && this.personaNueva.PER_RAMA && this.personaNueva.PER_RAMA !== '') {
+              const ramaData = await mantenedoresService.rama.list();
+              const ramaEncontrada = ramaData.find(r => r.RAM_DESCRIPCION === this.personaNueva.PER_RAMA);
+              if (ramaEncontrada) {
+                ramaIdFinal = ramaEncontrada.RAM_ID;
+              }
+            }
+            
+            if (ramaIdFinal) {
+              await personasService.niveles.create({
+                PER_ID: personaId,
+                NIV_ID: this.personaNueva.NIV_ID && this.personaNueva.NIV_ID !== '' ? Number(this.personaNueva.NIV_ID) : 1,
+                RAM_ID: ramaIdFinal
+              });
+              console.log('✅ Nivel y rama asignados');
+            }
+          } catch (error) {
+            console.warn('⚠️ No se pudo asignar nivel y rama:', error);
+          }
+        }
+        
+        // Guardar Vehículo
+        if (this.personaNueva.PEV_PATENTE && this.personaNueva.PEV_PATENTE !== '') {
+          try {
+            await personasService.vehiculos.create({
+              PER_ID: personaId,
+              PEV_PATENTE: this.personaNueva.PEV_PATENTE,
+              PEV_MARCA: this.personaNueva.PEV_MARCA || null,
+              PEV_MODELO: this.personaNueva.PEV_MODELO || null,
+              PEV_ANIO: this.personaNueva.PEV_ANIO || null,
+              PEV_COLOR: this.personaNueva.PEV_COLOR || null,
+              PEV_CAPACIDAD: this.personaNueva.PEV_CAPACIDAD || null
+            });
+            console.log('✅ Vehículo guardado');
+          } catch (error) {
+            console.warn('⚠️ No se pudo guardar el vehículo:', error);
           }
         }
         
@@ -2600,31 +3472,34 @@ export default {
 <style>
 .gestion-personas {
   box-sizing: border-box;
-  margin: 20px auto;
-  padding: 16px 40px; 
-  background: #ffffff;
+  margin: 0;
+  padding: 0;
+  background: #fff;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(60,60,60,0.08);
+    padding: 24px;
+    margin-bottom: 24px;
   color: #111;
   display: flex;
   flex-direction: column;
-  gap: 16px;
   font-family: Arial, sans-serif;
-  width: 1400px;                
-  max-width: calc(100% - 48px);
-  height: auto;
-  max-height: calc(100vh - 48px);
-  border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(16,24,40,0.08);
-  overflow: hidden;            
-}
-
-.main-area { 
-  display: flex;
-  flex-direction: column;
+  width: 100%;
   height: 100%;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* Restaurar esquinas redondeadas del fondo blanco */
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 .header h2 {
-  background-color: #214e9c;
+  background-color: var(--color-primary);
   color: #fff;
   padding: 14px 18px;
   border-radius: 6px;
@@ -2642,11 +3517,14 @@ export default {
   gap: 12px;
   align-items: center;
   flex: 0 0 auto;
-  padding: 12px 0;
+  padding: 16px 40px 12px 40px;
   min-height: 56px;
+  max-height: none;
   flex-wrap: wrap; 
   box-sizing: border-box;
-  padding-right: 8px;
+  background: #fff;
+  z-index: 10;
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .filtros-left { display:flex; gap:12px; align-items:center; flex: 1 1 auto; min-width: 0 }
@@ -2658,7 +3536,7 @@ export default {
   border: 1px solid #e0e0e0;
   border-radius: 4px;
   color: #222;
-  background: #fff;
+  background: var(--color-background-soft);
 }
 
 .filtros input {
@@ -2779,8 +3657,9 @@ export default {
   display: flex;
   gap: 3px;
   flex-wrap: nowrap;
-  justify-content: center;
+  justify-content: flex-end;
   align-items: center;
+  padding-right: 12px;
 }
 
 .acciones-buttons .base-button {
@@ -2793,34 +3672,38 @@ export default {
 .editar { padding: 6px 10px; }
 
 .filtro-activo {
-  background-color: #f4faf5;
+  background-color: var(--color-background-mute);
   color: #115e26;
   padding: 8px;
-  margin-bottom: 6px;
   border-radius: 4px;
+  flex: 0 0 auto;
 }
 
 .table-wrapper {
   flex: 1 1 auto;
-  overflow: auto;
-  padding-right: 12px; 
+  overflow-y: auto;
+  overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  min-height: 0; 
+  min-height: 0;
+  position: relative;
 }
 
 .main-area {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
-  overflow: hidden; 
-  min-height: 0; 
+  overflow: hidden;
+  min-height: 0;
+  height: 100%;
+  padding: 16px 40px;
+  gap: 16px;
 }
 
 table {
   width: 100%;
   box-sizing: border-box;
   border-collapse: collapse;
-  background-color: #fff;
+  background-color: var(--color-background-soft);
   min-width: 0; 
   font-size: 14px;
 }
@@ -2833,8 +3716,14 @@ th, td {
   opacity: 1;
 }
 
+/* Columna de acciones sin padding derecho para que el color llegue al borde */
+th:last-child,
+td:last-child {
+  padding-right: 0;
+}
+
 th {
-  background-color: #f7f7f7;
+  background-color: var(--color-background-mute);
   color: #222;
   font-weight: 600;
   position: sticky;
@@ -2951,31 +3840,215 @@ th {
   background: linear-gradient(180deg,#fff,#fbfbfb);
 }
 
-@media (max-width: 960px) {
-  .filtros { flex-wrap: wrap; }
-}
-
-@media (max-width: 520px) {
-  .gestion-personas { padding: 12px; }
-  .filtros { flex-direction: column; align-items: stretch; }
-  .filtros-left, .filtros-right { width: 100%; justify-content: space-between }
-  .filtros input, .filtros select, .filtros .base-input, .filtros .base-select { width: 100%; }
-
-  thead { display: none; }
-  tr { display: block; margin-bottom: 12px; box-shadow: none; }
-  td { display: flex; justify-content: space-between; border-bottom: 0; padding: 8px 6px; }
-  .table-wrapper { overflow:auto; }
-  td[data-label]::before { content: attr(data-label) ": "; font-weight:600; margin-right:6px; color:#333; }
-}
-
-@media (max-width: 1400px) {
-  .gestion-personas {
-    width: calc(100% - 32px);
-    height: auto;
-    margin: 12px auto;
-    border-radius: 6px;
+/* Responsive para tablets y pantallas medianas */
+@media (max-width: 1200px) {
+  .filtros {
+    flex-wrap: wrap;
+    padding: 12px 24px;
+  }
+  
+  .filtros .base-input {
+    flex: 1 1 300px;
+  }
+  
+  .main-area {
+    padding: 12px 24px;
   }
 }
+
+/* Responsive para tablets pequeñas */
+@media (max-width: 960px) {
+  .filtros {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 20px;
+  }
+  
+  .filtros-left {
+    width: 100%;
+  }
+  
+  .filtros-right {
+    width: 100%;
+  }
+  
+  .main-area {
+    padding: 12px 20px;
+  }
+}
+
+/* Responsive para móviles (incluyendo 21:9) */
+@media (max-width: 768px) {
+  .gestion-personas {
+    border-radius: 0;
+  }
+  
+  .filtros {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 8px 0;
+  }
+  
+  .filtros-left,
+  .filtros-right {
+    width: 100%;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .filtros input,
+  .filtros select,
+  .filtros .base-input,
+  .filtros .base-select,
+  .filtros .btn-standard {
+    width: 100%;
+    max-width: 100%;
+    flex: 1 1 auto;
+  }
+  
+  /* Tabla responsiva estilo tarjetas */
+  .table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  table {
+    min-width: 100%;
+  }
+  
+  thead {
+    display: none;
+  }
+  
+  tbody tr {
+    display: block;
+    margin-bottom: 16px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    background: var(--color-surface);
+  }
+  
+  tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    text-align: left;
+  }
+  
+  tbody td:last-child {
+    border-bottom: none;
+  }
+  
+  td[data-label]::before {
+    content: attr(data-label) ": ";
+    font-weight: 600;
+    color: #333;
+    margin-right: 8px;
+  }
+  
+  /* Botones de acción en móviles */
+  td .btn-action {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+  
+  /* Ajustar detalle en móviles */
+  .detalle {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+/* Móviles pequeños y pantallas 21:9 */
+@media (max-width: 520px) {
+  .filtros {
+    padding: 8px 12px;
+  }
+  
+  .main-area {
+    padding: 8px 12px;
+    gap: 12px;
+  }
+  
+  .btn-standard {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+  
+  tbody tr {
+    margin-bottom: 12px;
+  }
+  
+  tbody td {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+  
+  /* Ajustar modales para móviles */
+  .modal-edit,
+  .modal-crear {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+  }
+  
+  .modal-header-editar,
+  .modal-header-crear {
+    padding: 12px 16px;
+  }
+  
+  .modal-tabs {
+    padding: 12px 16px 0 16px !important;
+    gap: 4px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .modal-tabs button {
+    padding: 8px 12px !important;
+    font-size: 13px !important;
+    white-space: nowrap;
+  }
+  
+  .form-grid-editar,
+  .modal-form-crear {
+    padding: 16px !important;
+  }
+}
+
+/* Pantallas muy estrechas (21:9 en posición vertical) */
+@media (max-width: 380px) {
+  .filtros {
+    padding: 8px;
+  }
+  
+  .main-area {
+    padding: 8px;
+  }
+  
+  .filtros-right {
+    flex-direction: column;
+  }
+  
+  tbody td {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  td[data-label]::before {
+    display: block;
+    margin-bottom: 4px;
+  }
+}
+
+
 
 @media (min-width: 1400px) {
   .main-area {
@@ -3053,8 +4126,8 @@ th {
   border-radius: 4px;
 }
 .cerrar-detalle:hover { background: rgba(255,255,255,0.06); }
-.detalle-body {
-  background: #fff;
+  .detalle-body {
+  background: var(--color-surface);
   border-radius: 0 0 6px 6px;
   padding: 18px;
   border: 1px solid #eef2f6;
@@ -3089,6 +4162,7 @@ td[data-label="RUT"] {
   padding: 20px;
   color: #555;
   font-style: italic;
+  flex: 0 0 auto;
 }
 
 .mensaje-error {
@@ -3097,8 +4171,8 @@ td[data-label="RUT"] {
   padding: 15px;
   border: 1px solid #f5c6cb;
   border-radius: 5px;
-  margin: 10px 0;
   text-align: center;
+  flex: 0 0 auto;
 }
 
 .mensaje-error button {
@@ -3108,8 +4182,8 @@ td[data-label="RUT"] {
 /* Estilos para el modal de creación */
 /* ===== ESTILOS PARA MODAL CREAR PERSONA MEJORADO ===== */
 .modal-crear {
-  width: 900px;
-  max-width: calc(100vw - 40px);
+  width: 100%;
+  max-width: 100%;
   max-height: calc(100vh - 96px);
   overflow: auto;
   box-sizing: border-box;
@@ -3122,7 +4196,7 @@ td[data-label="RUT"] {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 24px 32px 20px 32px;
+  padding: 16px 20px;
   background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
   border-bottom: 2px solid #bbf7d0;
   margin-bottom: 0;
@@ -3176,7 +4250,7 @@ td[data-label="RUT"] {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  padding: 24px 32px 20px 32px;
+  padding: 20px;
 }
 
 /* Sección de Foto para Crear */
@@ -3184,18 +4258,22 @@ td[data-label="RUT"] {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 6px;
   width: 100%;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .foto-perfil-crear {
-  width: 160px;
-  height: 160px;
+  width: 120px;
+  height: 120px;
   border-radius: 50%;
   object-fit: cover;
-  border: 4px solid #ffffff;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border: 3px solid #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
+  flex-shrink: 0;
 }
 
 .foto-perfil-crear:hover {
@@ -3204,18 +4282,19 @@ td[data-label="RUT"] {
 }
 
 .foto-placeholder-crear {
-  width: 160px;
-  height: 160px;
+  width: 120px;
+  height: 120px;
   border-radius: 50%;
   background: linear-gradient(135deg, #e0e7ff 0%, #dbeafe 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border: 4px solid #ffffff;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  border: 3px solid #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   color: #64748b;
-  gap: 8px;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 .foto-placeholder-crear .foto-text {
@@ -3226,52 +4305,15 @@ td[data-label="RUT"] {
 
 .foto-actions-crear {
   display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
+  flex-direction: row;
+  gap: 8px;
   justify-content: center;
 }
 
-.foto-actions-crear .btn-foto-upload,
-.foto-actions-crear .btn-foto-remove {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.foto-actions-crear .btn-foto-upload {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  color: white;
-}
-
-.foto-actions-crear .btn-foto-upload:hover:not(:disabled) {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-}
-
-.foto-actions-crear .btn-foto-remove {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  color: white;
-}
-
-.foto-actions-crear .btn-foto-remove:hover:not(:disabled) {
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-}
-
-.foto-actions-crear button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none !important;
+.foto-actions-crear .btn-foto {
+  width: auto;
+  min-width: 140px;
+  justify-content: center;
 }
 
 /* Acciones del formulario */
@@ -3376,8 +4418,8 @@ td[data-label="RUT"] {
 
 /* ===== ESTILOS PARA MODAL EDITAR MEJORADO ===== */
 .modal-edit {
-  width: 900px;
-  max-width: calc(100vw - 40px);
+  width: 100%;
+  max-width: 100%;
   max-height: calc(100vh - 96px);
   overflow: auto;
   box-sizing: border-box;
@@ -3390,7 +4432,7 @@ td[data-label="RUT"] {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 24px 32px 20px 32px;
+  padding: 16px 20px;
   background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%);
   border-bottom: 2px solid #e2e8f0;
   margin-bottom: 0;
@@ -3439,12 +4481,17 @@ td[data-label="RUT"] {
   cursor: not-allowed;
 }
 
+/* Ocultar el botón X del componente BaseModal en modales de persona */
+.persona-modal :deep(.close-btn) {
+  display: none !important;
+}
+
 /* Tabs mejorados */
-.modal-edit .modal-tabs {
+  .modal-edit .modal-tabs {
   display: flex;
   gap: 8px;
   padding: 16px 32px 0 32px;
-  background: #ffffff;
+  background: var(--color-surface);
   border-bottom: 1px solid #e2e8f0;
   position: sticky;
   top: 86px;
@@ -3470,26 +4517,26 @@ td[data-label="RUT"] {
   color: #3b82f6;
 }
 
-.modal-edit .modal-tabs button.active {
-  background: #ffffff;
+  .modal-edit .modal-tabs button.active {
+  background: var(--color-surface);
   color: #214e9c;
   border-color: #214e9c;
   box-shadow: 0 -2px 8px rgba(33, 78, 156, 0.1);
 }
 
-.modal-edit .modal-tabs button.active::after {
+  .modal-edit .modal-tabs button.active::after {
   content: '';
   position: absolute;
   bottom: -1px;
   left: 0;
   right: 0;
   height: 2px;
-  background: #ffffff;
+  background: var(--color-surface);
 }
 
 /* Contenedor de formulario con padding */
 .modal-edit .modal-form-editar {
-  padding: 24px 32px;
+  padding: 20px;
 }
 
 @media (max-width: 768px) {
@@ -3713,58 +4760,20 @@ td[data-label="RUT"] {
   justify-content: center;
 }
 
-.btn-foto-upload {
-  background: linear-gradient(180deg, #3b82f6, #1d4ed8);
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
-}
-
-.btn-foto-upload:hover {
-  background: linear-gradient(180deg, #1d4ed8, #1e40af);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-}
-
-.btn-foto-remove {
-  background: linear-gradient(180deg, #ef4444, #dc2626);
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
-}
-
-.btn-foto-remove:hover {
-  background: linear-gradient(180deg, #dc2626, #b91c1c);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-}
-
 /* ===== ESTILOS PARA FORMULARIO DE EDICIÓN MEJORADO ===== */
 .modal-form-editar {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  padding-right: 8px;
+  gap: 20px;
+  padding-right: 4px;
   max-height: calc(100vh - 280px);
   overflow-y: auto;
-  padding-bottom: 20px;
+  padding-bottom: 16px;
 }
 
 /* Sección de Formulario */
 .form-section {
-  background: #ffffff;
+  background: var(--color-surface);
   border-radius: 12px;
   padding: 20px;
   border: 1px solid #e2e8f0;
@@ -3781,7 +4790,7 @@ td[data-label="RUT"] {
 .form-section.foto-section {
   background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%);
   border: 2px dashed #cbd5e1;
-  padding: 24px;
+  padding: 12px;
 }
 
 /* Título de Sección */
@@ -3800,7 +4809,7 @@ td[data-label="RUT"] {
 /* Grid de Formulario */
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px 20px;
 }
 
@@ -3827,7 +4836,7 @@ td[data-label="RUT"] {
   align-items: center;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
-  background: white;
+  background: var(--color-surface);
   overflow: hidden;
   transition: all 0.2s ease;
 }
@@ -3870,8 +4879,11 @@ td[data-label="RUT"] {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 6px;
   width: 100%;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .foto-preview-wrapper {
@@ -3882,13 +4894,14 @@ td[data-label="RUT"] {
 }
 
 .foto-perfil-editar {
-  width: 160px;
-  height: 160px;
+  width: 120px;
+  height: 120px;
   border-radius: 50%;
   object-fit: cover;
-  border: 4px solid #ffffff;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border: 3px solid #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
+  flex-shrink: 0;
 }
 
 .foto-perfil-editar:hover {
@@ -3897,18 +4910,19 @@ td[data-label="RUT"] {
 }
 
 .foto-placeholder-editar {
-  width: 160px;
-  height: 160px;
+  width: 120px;
+  height: 120px;
   border-radius: 50%;
   background: linear-gradient(135deg, #e0e7ff 0%, #dbeafe 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border: 4px solid #ffffff;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  border: 3px solid #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   color: #64748b;
-  gap: 8px;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 .foto-placeholder-editar .foto-text {
@@ -3919,52 +4933,21 @@ td[data-label="RUT"] {
 
 .foto-actions-editar {
   display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
+  flex-direction: row;
+  gap: 8px;
   justify-content: center;
 }
 
-.foto-actions-editar .btn-foto-upload,
-.foto-actions-editar .btn-foto-remove {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.foto-actions-editar .btn-foto-upload {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  color: white;
-}
-
-.foto-actions-editar .btn-foto-upload:hover {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-}
-
-.foto-actions-editar .btn-foto-remove {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  color: white;
-}
-
-.foto-actions-editar .btn-foto-remove:hover {
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+.foto-actions-editar .btn-foto {
+  width: auto;
+  min-width: 140px;
+  justify-content: center;
 }
 
 /* Información de foto */
 .foto-info {
   text-align: center;
-  margin-top: 8px;
+  margin-top: 0;
 }
 
 .foto-info small {
@@ -4012,11 +4995,17 @@ td[data-label="RUT"] {
   }
   
   .modal-form-editar {
-    gap: 16px;
+     gap: 16px;
+     background: #fff;
+     border-radius: 12px;
+     box-shadow: 0 4px 24px rgba(60,60,60,0.08);
   }
   
   .form-section {
-    padding: 16px;
+     padding: 16px;
+     background: #fff;
+     border-radius: 12px;
+     box-shadow: 0 4px 24px rgba(60,60,60,0.08);
   }
   
   .foto-perfil-editar,
@@ -4092,16 +5081,132 @@ td[data-label="RUT"] {
 .hist-list { 
   flex: 1; 
   overflow: auto;
-  background: #ffffff;
+  background: var(--color-surface);
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.hist-list h4 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 12px;
+}
+
+.no-cursos-msg {
+  padding: 32px;
+  text-align: center;
+  color: #64748b;
+  font-size: 14px;
 }
 
 .hist-list ul { 
   list-style: none; 
   padding: 0; 
   margin: 0;
+}
+
+/* Estilos para cursos clickeables */
+.historial-curso-item {
+  padding: 16px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: var(--color-surface);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.historial-curso-item:hover {
+  background: #f1f5f9;
+  border-color: #3b82f6;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.curso-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.curso-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.curso-nombre {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+  flex: 1;
+}
+
+.curso-codigo {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.curso-info {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.curso-rol {
+  font-size: 13px;
+  color: #3b82f6;
+  font-weight: 500;
+  background: #eff6ff;
+  padding: 4px 10px;
+  border-radius: 4px;
+}
+
+.curso-estado {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.curso-estado.aprobado {
+  color: #10b981;
+  background: #d1fae5;
+}
+
+.curso-estado.no-aprobado {
+  color: #ef4444;
+  background: #fee2e2;
+}
+
+.curso-fecha {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.curso-descripcion {
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.5;
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .hist-list li { 
@@ -4120,7 +5225,7 @@ td[data-label="RUT"] {
 
 .hist-add { 
   width: 340px;
-  background: #ffffff;
+  background: var(--color-surface);
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
@@ -4194,10 +5299,9 @@ td[data-label="RUT"] {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 32px 24px;
+  padding: 40px 32px;
   background: linear-gradient(135deg, #fafafa, #f3f4f6);
   border-radius: 12px;
-  margin: -16px;
 }
 
 .confirm-icon {
@@ -4212,24 +5316,29 @@ td[data-label="RUT"] {
   filter: drop-shadow(0 4px 8px rgba(245, 158, 11, 0.3));
 }
 
+.confirm-icon.success-icon {
+  color: #10b981;
+  filter: drop-shadow(0 4px 8px rgba(16, 185, 129, 0.3));
+}
+
 .confirm-content p {
-  font-size: 18px;
+  font-size: 17px;
   color: #1f2937;
   margin-bottom: 8px;
   line-height: 1.6;
   font-weight: 500;
-  max-width: 400px;
+  max-width: 500px;
 }
 
 .confirm-content p:last-of-type {
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .confirm-actions {
   display: flex;
   gap: 16px;
   justify-content: center;
-  margin-top: 32px;
+  margin-top: 24px;
 }
 
 .confirm-warning {
@@ -4239,73 +5348,15 @@ td[data-label="RUT"] {
   margin-bottom: 16px !important;
 }
 
-.btn-modal-cancel {
-  background: linear-gradient(180deg, #6b7280, #4b5563) !important;
-  color: #fff !important;
-  border: none !important;
-  padding: 12px 24px !important;
-  border-radius: 8px !important;
-  font-weight: 600 !important;
-  font-size: 16px !important;
-  min-width: 120px !important;
-  transition: all 0.2s ease !important;
-  box-shadow: 0 4px 12px rgba(107, 114, 128, 0.25) !important;
-}
-
-.btn-modal-cancel:hover {
-  background: linear-gradient(180deg, #4b5563, #374151) !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 6px 16px rgba(107, 114, 128, 0.35) !important;
-}
-
-.btn-modal-confirm {
-  background: linear-gradient(180deg, #10b981, #059669) !important;
-  color: #fff !important;
-  border: none !important;
-  padding: 12px 24px !important;
-  border-radius: 8px !important;
-  font-weight: 600 !important;
-  font-size: 16px !important;
-  min-width: 120px !important;
-  transition: all 0.2s ease !important;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25) !important;
-}
-
-.btn-modal-confirm:hover {
-  background: linear-gradient(180deg, #059669, #047857) !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35) !important;
-}
-
-.btn-modal-anular {
-  background: linear-gradient(180deg, #ef4444, #dc2626) !important;
-  color: #fff !important;
-  border: none !important;
-  padding: 12px 24px !important;
-  border-radius: 8px !important;
-  font-weight: 600 !important;
-  font-size: 16px !important;
-  min-width: 120px !important;
-  transition: all 0.2s ease !important;
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25) !important;
-}
-
-.btn-modal-anular:hover {
-  background: linear-gradient(180deg, #dc2626, #b91c1c) !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.35) !important;
-}
-
-.btn-modal-cancel:active,
-.btn-modal-confirm:active,
-.btn-modal-anular:active {
-  transform: translateY(0) !important;
+/* Los botones de modal ahora usan los estilos del componente BaseButton */
+.btn-modal {
+  min-width: 120px;
 }
 
 /* Estilos para el modal de importar Excel - Diseño mejorado */
 .modal-importar {
-  width: 900px;
-  max-width: calc(100vw - 40px);
+  width: 100%;
+  max-width: 100%;
   max-height: calc(100vh - 96px);
   overflow: auto;
   box-sizing: border-box;
@@ -4318,7 +5369,7 @@ td[data-label="RUT"] {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 24px 32px 20px 32px;
+  padding: 16px 20px;
   background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
   border-bottom: 2px solid #fbbf24;
   margin-bottom: 0;
@@ -4461,7 +5512,7 @@ td[data-label="RUT"] {
   width: 100%;
   border-collapse: collapse;
   font-size: 14px;
-  background: white;
+  background: var(--color-surface);
 }
 
 .preview-table th,
@@ -4480,7 +5531,7 @@ td[data-label="RUT"] {
 }
 
 .preview-table td {
-  background: white;
+  background: var(--color-surface);
   color: #64748b;
 }
 
@@ -4579,8 +5630,8 @@ td[data-label="RUT"] {
   background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
   border: 2px solid #3b82f6;
   border-radius: 8px;
-  margin-bottom: 16px;
   box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+  flex: 0 0 auto;
 }
 
 .mensaje-info-permisos span {
@@ -4597,6 +5648,73 @@ td[data-label="RUT"] {
     gap: 8px;
     padding: 16px;
   }
+  
+  /* En móviles, ocultar sidebar y usar todo el espacio */
+  .gestion-personas {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+/* Adaptación específica para pantallas 21:9 en orientación vertical */
+@media (max-aspect-ratio: 9/21) and (max-width: 480px) {
+  .gestion-personas {
+    padding: 8px;
+    gap: 10px;
+  }
+  
+  .filtros {
+    gap: 8px;
+  }
+  
+  .btn-standard {
+    font-size: 13px;
+    padding: 8px 12px;
+  }
+  
+  tbody td {
+    font-size: 13px;
+    padding: 8px 10px;
+  }
+}
+
+/* Adaptación para pantallas 21:9 en orientación horizontal */
+@media (min-aspect-ratio: 21/9) and (max-height: 480px) {
+  .gestion-personas {
+    max-height: calc(100vh - 80px);
+    margin: 8px auto;
+  }
+  
+  .table-wrapper {
+    max-height: calc(100vh - 220px);
+  }
+  
+  .modal-edit,
+  .modal-crear {
+    max-height: calc(100vh - 40px) !important;
+  }
+}
+
+/* Desktop: Usar todo el ancho disponible */
+@media (min-width: 769px) {
+  .gestion-personas {
+    width: calc(100% - 40px);
+    margin: 20px;
+  }
+}
+
+/* Transiciones suaves en todos los tamaños */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.gestion-personas,
+.filtros,
+.table-wrapper,
+.modal-edit,
+.modal-crear {
+  transition: all 0.3s ease;
 }
 </style>
 

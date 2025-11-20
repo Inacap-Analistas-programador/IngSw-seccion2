@@ -1,143 +1,146 @@
 <template>
 	<ModernMainScrollbar>
-	<div class="correos-bg">
-		<div class="correos-container">
-			<div class="page-header">
-				<h3>Envío de Correos</h3>
-				<p class="page-description">Administra, crea y organiza los envíos de correo de formación.</p>
-			</div>
+		<div class="correos-bg">
+			<div class="correos-container">
+				<div class="page-header">
+					<h3>Envío de Correos</h3>
+					<p class="page-description">Administra, crea y organiza los envíos de correo de formación.</p>
+				</div>
 
-			<!-- Barra de filtros global -->
-			<div class="filters-bar">
-				<label>
-					Curso
-					<select v-model="filters.curso">
-						<option value="Todos">Todos</option>
-						<option v-for="c in cursos" :key="c" :value="c">{{ c }}</option>
-					</select>
-				</label>
+				<!-- Barra de filtros global -->
+				<div class="filters-bar">
+					<label>
+						Curso
+						<select v-model="filters.curso" class="compact-select">
+							<option v-for="c in cursosOpts" :key="c" :value="c">{{ c }}</option>
+						</select>
+					</label>
 
-				<label>
-					Rol
-					<select v-model="filters.cargo">
-						<option value="Todos">Todos</option>
-						<option value="Participante">Participante</option>
-						<option value="Formador">Formador</option>
-					</select>
-				</label>
+					<label>
+						Rol
+						<select v-model="filters.rol" class="compact-select">
+							<option v-for="r in rolesOpts" :key="r" :value="r">{{ r }}</option>
+						</select>
+					</label>
 
-				<label>
-					Estado de la persona
-					<select v-model="filters.estadoPersona">
-						<option value="Todos">Todos</option>
-						<option value="Preinscrito">Preinscrito</option>
-						<option value="Inscrito">Inscrito</option>
-						<option value="Confirmado">Confirmado</option>
-						<option value="Rechazado">Rechazado</option>
-					</select>
-				</label>
+					<label>
+						Estado persona
+						<select v-model="filters.estadoPersona" class="compact-select">
+							<option v-for="e in estadoPersonaOpts" :key="e" :value="e">{{ e }}</option>
+						</select>
+					</label>
 
-				<label>
-					Estado de correo
-					<select v-model="filters.estadoCorreo">
-						<option value="Todos">Todos</option>
-						<option value="Enviado">Enviado</option>
-						<option value="Pendiente">Pendiente</option>
-						<option value="No enviado">No enviado</option>
-					</select>
-				</label>
+					<label>
+						Estado correo
+						<select v-model="filters.estadoCorreo" class="compact-select">
+							<option v-for="e in estadoCorreoOpts" :key="e" :value="e">{{ e }}</option>
+						</select>
+					</label>
 
-				<!-- Botón Buscar: aplica los filtros manualmente (al final de los filtros) -->
-				<BaseButton variant="primary" @click="applyFilters" style="align-self: end; margin-left: 8px;">
-					<AppIcons name="search" :size="16" /> Buscar
-				</BaseButton>
-			</div>
+					<BaseButton class="search-button" variant="primary" @click="applyFilters">
+						<AppIcons name="search" :size="16" /> Buscar
+					</BaseButton>
+				</div>
 
-					<!-- Lista completa combinada -->
-					<section class="correos-card">
-						<div class="correos-card-header">
-							<span class="correos-card-title blue-bar">Lista de Participantes</span>
-							<div class="correos-card-actions">
+				<!-- Lista completa combinada -->
+				<section class="correos-card">
+					<div class="correos-card-header">
+						<span class="correos-card-title blue-bar">Lista de Participantes</span>
+						<div class="correos-card-actions">
 								<BaseButton variant="secondary" @click="exportarCorreos"><AppIcons name="download" :size="16" /> Exportar Correos</BaseButton>
-								<BaseButton variant="primary" @click="marcarEnviado"><AppIcons name="check" :size="16" /> Marcar Enviado</BaseButton>
+								<BaseButton variant="primary" @click="marcarEnviado"><AppIcons name="check" :size="16" /> {{ marcarButtonLabel }}</BaseButton>
 								<BaseButton variant="primary" @click="enviarPorCorreo"><AppIcons name="send" :size="16" /> Enviar por correo</BaseButton>
 							</div>
-						</div>
-						<div class="correos-card-desc">
-							<span v-if="loading" style="color: var(--color-info); font-weight: 600;"> (Cargando...)</span>
-							<span v-if="error" style="color: var(--color-danger); font-weight: 600;"> ⚠️ {{ error }}</span>
-						</div>
-						<div class="datatable-visual">
-							<table class="datatable-table">
-								<thead>
-									<tr>
-										<th></th>
-										<th>Nombre</th>
-										<th>Email</th>
-										<th>Vigente</th>
-										<th>Estado pago</th>
-										<th>Estado persona</th>
-										<th>Estado correo</th>
-									</tr>
-								</thead>
-								<tbody>
-									<tr v-if="loading">
-										<td colspan="7" style="text-align: center; padding: 20px;">Cargando personas...</td>
-									</tr>
-									<tr v-else-if="error">
-										<td colspan="7" style="text-align: center; padding: 20px; color: var(--color-danger);">{{ error }}</td>
-									</tr>
-									<tr v-else-if="!rowsFiltered.length">
-										<td colspan="7" style="text-align: center; padding: 20px;">No hay personas que coincidan con los filtros</td>
-									</tr>
-									<tr v-else v-for="row in rowsFiltered" :key="row.id">
-										<td><input type="checkbox" v-model="seleccion[row.id]" /></td>
-										<td class="cell-name">{{ row.fullName }}</td>
-										<td class="cell-email">{{ row.email || '(sin email)' }}</td>
-										<td>
-											<span :class="['badge', vigenteClass(row)]">
-												{{ row.vigente ? 'Vigente' : 'No vigente' }}
-											</span>
-										</td>
-										<td>
-											<span :class="['badge', estadoPagoClass(row)]">
-												{{ row.estadoPago }}
-											</span>
-										</td>
-										<td>
-											<span :class="['badge', estadoPersonaClass(row)]">
-												{{ row.estadoPersona }}
-											</span>
-										</td>
-										<td>
-											<span :class="['badge', estadoCorreoClass(row)]">
-												{{ row.estadoCorreo }}
-											</span>
-										</td>
-									</tr>
-								</tbody>
-							</table>
-						</div>
-					</section>
+					</div>
+					<div class="correos-card-desc">
+						<span v-if="loading" style="color: var(--color-info); font-weight: 600;"> (Cargando...)</span>
+						<span v-if="error" style="color: var(--color-danger); font-weight: 600;"> ⚠️ {{ error }}</span>
+					</div>
+					<div class="datatable-visual">
+						<table class="datatable-table">
+							<thead>
+								<tr>
+									<th></th>
+									<th>Nombre</th>
+									<th>Email</th>
+									<th>Vigente</th>
+									<th>Estado pago</th>
+									<th>Estado correo</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr v-if="loading">
+									<td colspan="6" style="text-align: center; padding: 20px;">Cargando personas...</td>
+								</tr>
+								<tr v-else-if="error">
+									<td colspan="6" style="text-align: center; padding: 20px; color: var(--color-danger);">{{ error }}</td>
+								</tr>
+								<tr v-else-if="!rowsFiltered.length">
+									<td colspan="6" style="text-align: center; padding: 20px;">No hay personas que coincidan con los filtros</td>
+								</tr>
+								<tr v-else v-for="row in rowsFiltered" :key="row.id">
+									<td><input type="checkbox" v-model="seleccion[row.id]" /></td>
+									<td class="cell-name">{{ row.fullName }}</td>
+									<td class="cell-email">{{ row.email || '(sin email)' }}</td>
+									<td>
+										<span :class="['badge', vigenteClass(row)]">
+											{{ row.vigente ? 'Vigente' : 'No vigente' }}
+										</span>
+									</td>
+									<td>
+										<span :class="['badge', estadoPagoClass(row)]">
+											{{ row.estadoPago }}
+										</span>
+									</td>
+									<td>
+										<span :class="['badge', estadoCorreoClass(row)]">
+											{{ row.estadoCorreo }}
+										</span>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
 
-					<!-- Modal QR simple -->
-					<div v-if="mostrarQR" class="qr-modal">
-						<div class="qr-modal-content">
-							<h3>Código QR generado</h3>
-							<p>Escanea para verificar el envío</p>
-							<canvas ref="qrCanvas"></canvas>
-							<div class="qr-actions">
-								<BaseButton variant="secondary" @click="cerrarQR">Cerrar</BaseButton>
-							</div>
+					<!-- Paginación (estilo Usuarios.vue) -->
+					<div class="pagination-bar">
+						<div class="pagination-left">
+							<label>Mostrar
+								<select v-model.number="pageSize" @change="onPageSizeChange">
+									<option v-for="s in pageSizes" :key="s" :value="s">{{ s }}</option>
+								</select>
+							</label>
+							<span class="pagination-range">{{ showingRange }}</span>
+						</div>
+						<div class="pagination-right">
+							<button class="pager-btn" :disabled="page === 1" @click="goToPage(page - 1)">Anterior</button>
+							<template v-for="p in pagesToShow" :key="String(p) + '-' + page">
+								<button v-if="p !== '...'" :class="['pager-btn', { active: p === page }]" @click="goToPage(p)">{{ p }}</button>
+								<span v-else class="pager-ellipsis">…</span>
+							</template>
+							<button class="pager-btn" :disabled="page === totalPages" @click="goToPage(page + 1)">Siguiente</button>
 						</div>
 					</div>
-					<!-- Toast -->
-					<NotificationToast v-if="showToast" :message="toastMessage" :icon="toastIcon" @close="showToast = false" />
+				</section>
+
+				<!-- Modal QR simple -->
+				<div v-if="mostrarQR" class="qr-modal">
+					<div class="qr-modal-content">
+						<h3>Código QR generado</h3>
+						<p>Escanea para verificar el envío</p>
+						<canvas ref="qrCanvas"></canvas>
+						<div class="qr-actions">
+							<BaseButton variant="secondary" @click="cerrarQR">Cerrar</BaseButton>
+						</div>
+					</div>
 				</div>
+
+				<!-- Toast -->
+				<NotificationToast v-if="showToast" :message="toastMessage" :icon="toastIcon" @close="showToast = false" />
+			</div>
 		</div>
 	</ModernMainScrollbar>
-	</template>
-
+</template>
 
 <script setup>
 import { reactive, computed, ref, onMounted, nextTick } from 'vue'
@@ -147,17 +150,28 @@ import NotificationToast from '@/components/NotificationToast.vue'
 import ModernMainScrollbar from '@/components/ModernMainScrollbar.vue'
 import QRCode from 'qrcode'
 import { personas as personasService, personaCursos as personaCursosService } from '@/services/personasService'
+import { cursos as cursosService } from '@/services/cursosService'
 import authViewsService from '@/services/auth_viewsService.js'
 import { rol } from '@/services/mantenedoresService'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
-// Flag temporal: cuando es false, 'Estado correo' NO se conecta a la API (sin PEC_ENVIO_CORREO_QR)
-const USE_BACKEND_ESTADO_CORREO = false
+// Flag temporal: cuando es true, 'Estado correo' se determina desde persona-cursos (PEC_ENVIO_CORREO_QR)
+const USE_BACKEND_ESTADO_CORREO = true
 
 // Datos desde la API
 const rows = ref([])
 const loading = ref(true)
 const error = ref(null)
+
+// Paginación
+const page = ref(1)
+const pageSize = ref(50)
+const pageSizes = [10, 25, 50, 100]
+const total = ref(0)
+const totalPages = computed(() => Math.max(1, Math.ceil((total.value || 0) / pageSize.value)))
+
+// Guardar últimos parámetros de consulta para paginar sin perder filtros
+const lastQueryParams = ref({})
 
 // Filtros editables (UI)
 const filters = reactive({ curso: 'Todos', rol: 'Todos', estadoPersona: 'Todos', estadoCorreo: 'Todos' })
@@ -165,15 +179,48 @@ const filters = reactive({ curso: 'Todos', rol: 'Todos', estadoPersona: 'Todos',
 const appliedFilters = reactive({ curso: 'Todos', rol: 'Todos', estadoPersona: 'Todos', estadoCorreo: 'Todos' })
 // Aplica los filtros al presionar el botón Buscar
 function applyFilters() {
+	// update appliedFilters for UI state
 	appliedFilters.curso = filters.curso
 	appliedFilters.rol = filters.rol
 	appliedFilters.estadoPersona = filters.estadoPersona
 	appliedFilters.estadoCorreo = filters.estadoCorreo
+
+	// Build query params to send to backend (only non-'Todos')
+	const params = {}
+	if (filters.curso && filters.curso !== 'Todos') params.curso = filters.curso
+	if (filters.rol && filters.rol !== 'Todos') params.rol = filters.rol
+	// Estado persona: si el usuario selecciona 'Vigente' o 'No vigente', enviar per_vigente=1/0
+	if (filters.estadoPersona && filters.estadoPersona !== 'Todos') {
+		// backend persona filter expects parameter `vigente`
+		if (filters.estadoPersona === 'Vigente') params.vigente = true
+		else if (filters.estadoPersona === 'No vigente') params.vigente = false
+		else params.estadoPersona = filters.estadoPersona
+	}
+	// Estado correo: si el usuario selecciona Enviado/Pendiente/No enviado, enviar pec_envio_correo_qr=1/0
+	if (filters.estadoCorreo && filters.estadoCorreo !== 'Todos') {
+		if (filters.estadoCorreo === 'Enviado') params.pec_envio_correo_qr = 1
+		else if (filters.estadoCorreo === 'Pendiente' || filters.estadoCorreo === 'No enviado') params.pec_envio_correo_qr = 0
+		else params.estadoCorreo = filters.estadoCorreo
+	}
+
+	// Reset to first page when applying new filters
+	page.value = 1
+	// Save last query params (used when navigating pages)
+	lastQueryParams.value = { ...params }
+	// Fetch filtered rows from API (page/page_size will be appended automatically)
+	fetchRows(params)
 }
 
 const seleccion = reactive({})
 const mostrarQR = ref(false)
 const qrCanvas = ref(null)
+
+// Opciones para los selects (provienen de la API)
+const cursosOpts = ref(['Todos'])
+const rolesOpts = ref(['Todos'])
+// Estado persona ligado a PER_VIGENTE: 1 => Vigente, 0 => No vigente
+const estadoPersonaOpts = ref(['Todos', 'Vigente', 'No vigente'])
+const estadoCorreoOpts = ref(['Todos', 'Enviado', 'Pendiente', 'No enviado'])
 
 // Toast de notificaciones
 const showToast = ref(false)
@@ -187,64 +234,67 @@ function notify(msg, icon = '') {
 	setTimeout(() => { showToast.value = false }, 4000)
 }
 
-// Cargar personas desde la API
-onMounted(async () => {
+// Cargar personas desde la API (centralizado)
+async function fetchRows(params = {}) {
+	loading.value = true
+	error.value = null
 	try {
-		loading.value = true
-		error.value = null
-
-		let personas
+		// attach pagination params
+		const requestParams = { ...params }
+		if (page.value) requestParams.page = page.value
+		if (pageSize.value) requestParams.page_size = pageSize.value
+		const personas = await personasService.list(requestParams)
 		let cursosPersona = []
 		if (USE_BACKEND_ESTADO_CORREO) {
-			// Cargar personas y persona-curso en paralelo (tolerante a fallos del endpoint de cursos)
-			const [pRes, cRes] = await Promise.allSettled([
-				personasService.list(),
-				personaCursosService.list()
-			])
-			if (pRes.status !== 'fulfilled') {
-				throw pRes.reason || new Error('No se pudo cargar la lista de personas')
+			try {
+				cursosPersona = await personaCursosService.list()
+			} catch (e) {
+				console.warn('No se pudieron cargar persona-curso (opcional):', e.message || e)
 			}
-			personas = pRes.value
-			if (cRes.status === 'fulfilled') {
-				cursosPersona = cRes.value
-			} else {
-				console.warn('No se pudieron cargar persona-curso:', cRes.reason)
-				// Aviso no bloqueante
-				notify('No se pudo cargar la relación persona-curso. Estado correo puede no reflejar backend.', 'alert-circle')
-			}
-		} else {
-			// Temporalmente: sólo cargamos personas (estado correo se maneja localmente)
-			personas = await personasService.list()
 		}
 
-		// Asegurarnos de que 'personas' es un array antes de usar .map.
-		// La API puede devolver la lista directa, o un objeto con { data: [...] } / { results: [...] }.
+		// Normalize response and support paginated shapes ({count, results})
 		let list = []
 		if (Array.isArray(personas)) {
 			list = personas
-		} else if (personas && Array.isArray(personas.data)) {
-			list = personas.data
-		} else if (personas && Array.isArray(personas.results)) {
-			list = personas.results
-		} else if (personas && Array.isArray(personas.personas)) {
-			// Algunos endpoints devuelven un objeto con la lista en la clave 'personas'
-			list = personas.personas
+			total.value = personas.length
+		} else if (personas && typeof personas === 'object') {
+			// common paginated shapes: { count, results } or { total, data }
+			if (Array.isArray(personas.results)) {
+				list = personas.results
+				total.value = personas.count ?? personas.total ?? list.length
+			} else if (Array.isArray(personas.data)) {
+				list = personas.data
+				total.value = personas.count ?? personas.total ?? list.length
+			} else if (Array.isArray(personas.personas)) {
+				list = personas.personas
+				total.value = personas.count ?? list.length
+			} else {
+				// fallback: try to find any array value inside
+				const keys = Object.keys(personas)
+				let found = false
+				for (const k of keys) {
+					if (Array.isArray(personas[k])) { list = personas[k]; found = true; break }
+				}
+				if (!found) {
+					console.warn('Respuesta inesperada de personasService.list():', personas)
+					throw new Error('Respuesta inesperada de la API de personas. Keys recibidas: ' + (keys.length ? keys.join(', ') : 'ninguna'))
+				}
+				total.value = list.length
+			}
 		} else {
-			// Si recibimos un objeto inesperado, adjuntamos las keys para facilitar debug
-			const keys = personas && typeof personas === 'object' ? Object.keys(personas) : []
-			console.warn('Respuesta inesperada de personasService.list():', personas)
-			throw new Error('Respuesta inesperada de la API de personas. Keys recibidas: ' + (keys.length ? keys.join(', ') : 'ninguna'))
+			list = []
+			total.value = 0
 		}
 
-		// Mapa PER_ID -> registro Persona_Curso (sólo si está habilitado el backend para estado correo)
+		// Build map for persona-curso if available
 		let cursosMap = new Map()
 		if (USE_BACKEND_ESTADO_CORREO && Array.isArray(cursosPersona)) {
 			for (const c of cursosPersona) {
 				const perId = c.PER_ID || (c.PER_ID_id ?? c.per_id) || c.perId || null
 				if (!perId) continue
-				if (!cursosMap.has(perId)) {
-					cursosMap.set(perId, c)
-				} else {
+				if (!cursosMap.has(perId)) cursosMap.set(perId, c)
+				else {
 					const prev = cursosMap.get(perId)
 					if (!prev.PEC_ENVIO_CORREO_QR && c.PEC_ENVIO_CORREO_QR) cursosMap.set(perId, c)
 				}
@@ -255,38 +305,144 @@ onMounted(async () => {
 			id: p.id || p.PER_ID || null,
 			pecId: (USE_BACKEND_ESTADO_CORREO ? (() => { const cp = cursosMap.get(p.PER_ID || p.id); return cp ? (cp.PEC_ID || cp.id || null) : null })() : null),
 			pecEnvioCorreoQR: (USE_BACKEND_ESTADO_CORREO ? (() => { const cp = cursosMap.get(p.PER_ID || p.id); return cp ? (cp.PEC_ENVIO_CORREO_QR === true || cp.PEC_ENVIO_CORREO_QR === 1 || cp.PEC_ENVIO_CORREO_QR === '1') : false })() : false),
-			// Normalizar posibles nombres de campo desde el backend
 			nombre: p.PER_NOMBRES || p.nombre || p.nombre_completo || p.full_name || '',
 			apellidoPaterno: p.PER_APELPTA || p.PER_APELLIDO_PATERNO || p.apellido_paterno || p.apellidoPaterno || p.apellido1 || '',
 			apellidoMaterno: p.PER_APELMAT || p.PER_APELLIDO_MATERNO || p.apellido_materno || p.apellidoMaterno || p.apellido2 || '',
 			email: p.PER_MAIL || p.email || p.mail || p.correo || '',
-			curso: p.curso || 'Sin curso', // TODO: si viene desde persona-curso
-			rol: p.rol || 'Participante', // TODO: desde relaciones
-			// Estado de la persona (normalizado)
-			estadoPersona: p.estadoPersona || p.estado || p.PER_ESTADO || 'Preinscrito',
-			// Estado de pago (PAP_ESTADO): normalizar a Pagado / Pendiente
+			curso: p.curso || 'Sin curso',
+			rol: p.rol || p.PER_ROL || 'Participante',
+			// Mapear PER_VIGENTE (1/0/true/false) a labels y booleanos correctamente
+			// Soportar varias formas que el backend pueda devolver (mayúsculas/minúsculas)
+			_per_vigente_raw: (function() {
+				if (p.PER_VIGENTE !== undefined) return p.PER_VIGENTE
+				if (p.per_vigente !== undefined) return p.per_vigente
+				if (p.vigente !== undefined) return p.vigente
+				if (p.USU_VIGENTE !== undefined) return p.USU_VIGENTE
+				return undefined
+			})(),
+			vigente: (function() {
+				const raw = (function() {
+					if (p.PER_VIGENTE !== undefined) return p.PER_VIGENTE
+					if (p.per_vigente !== undefined) return p.per_vigente
+					if (p.vigente !== undefined) return p.vigente
+					if (p.USU_VIGENTE !== undefined) return p.USU_VIGENTE
+					return undefined
+				})()
+				if (raw === undefined || raw === null) return true
+				return (raw === 1 || raw === '1' || raw === true || raw === 'true')
+			})(),
+			estadoPersona: (function() {
+				const raw = (function() {
+					if (p.PER_VIGENTE !== undefined) return p.PER_VIGENTE
+					if (p.per_vigente !== undefined) return p.per_vigente
+					if (p.vigente !== undefined) return p.vigente
+					if (p.USU_VIGENTE !== undefined) return p.USU_VIGENTE
+					return undefined
+				})()
+				if (raw === undefined || raw === null) return (p.estadoPersona || p.estado || p.PER_ESTADO || 'Preinscrito')
+				return (raw === 1 || raw === '1' || raw === true || raw === 'true') ? 'Vigente' : 'No vigente'
+			})(),
 			estadoPagoRaw: p.PAP_ESTADO,
 			estadoPagoBool: (p.PAP_ESTADO === 1 || p.PAP_ESTADO === true || p.PAP_ESTADO === '1'),
 			estadoPago: (p.PAP_ESTADO !== undefined ? ((p.PAP_ESTADO === 1 || p.PAP_ESTADO === true || p.PAP_ESTADO === '1') ? 'Pagado' : 'Pendiente') : (p.estadoPago || 'Pendiente')),
 			estadoCorreo: (USE_BACKEND_ESTADO_CORREO ? (() => { const s = cursosMap.get(p.PER_ID || p.id); return s && (s.PEC_ENVIO_CORREO_QR === true || s.PEC_ENVIO_CORREO_QR === 1 || s.PEC_ENVIO_CORREO_QR === '1') ? 'Enviado' : 'Pendiente' })() : 'Pendiente'),
 			diasPendiente: null,
-			// Normalizar campo 'vigente' que en el modelo es PER_VIGENTE
-			vigente: (p.vigente !== undefined ? p.vigente : (p.PER_VIGENTE !== undefined ? p.PER_VIGENTE : true)) !== false,
-			// nombre completo para mostrar en tabla (APELLIDO PATERNO + APELLIDO MATERNO + NOMBRES)
 			fullName: [
 				(p.PER_APELPTA || p.PER_APELLIDO_PATERNO || p.apellido_paterno || p.apellidoPaterno || ''),
 				(p.PER_APELMAT || p.PER_APELLIDO_MATERNO || p.apellido_materno || p.apellidoMaterno || ''),
 				(p.PER_NOMBRES || p.nombre || p.nombre_completo || p.full_name || '')
 			].filter(Boolean).join(' ').trim()
 		}))
-		} catch (e) {
-			// Si falla la petición a la API, mostrar el error y no usar mocks
-			console.error('Error cargando personas desde API:', e)
-			error.value = (e && e.message) ? e.message : String(e)
-			rows.value = []
+
+		// Si el filtro de Estado correo está activo y usamos el backend para derivarlo,
+		// aplicar un filtrado cliente sobre PEC_ENVIO_CORREO_QR (0 = Pendiente, 1 = Enviado).
+		if (appliedFilters.estadoCorreo && appliedFilters.estadoCorreo !== 'Todos' && USE_BACKEND_ESTADO_CORREO) {
+			const wantSent = appliedFilters.estadoCorreo === 'Enviado'
+			rows.value = rows.value.filter(r => Boolean(r.pecEnvioCorreoQR) === Boolean(wantSent))
+			// Ajustar total para que la paginación muestre el rango correcto (cliente)
+			total.value = rows.value.length
+		}
+	} catch (e) {
+		console.error('Error cargando personas desde API:', e)
+		error.value = (e && e.message) ? e.message : String(e)
+		rows.value = []
 	} finally {
 		loading.value = false
 	}
+}
+
+async function loadOptions() {
+	try {
+		const [cRes, rRes] = await Promise.allSettled([
+			cursosService.list(),
+			// obtener roles desde mantenedores para usar ROL_DESCRIPCION
+			rol.list()
+		])
+
+		// Helper: normalizar distintas formas de respuesta a un array
+		const normalize = (val) => {
+			if (!val) return []
+			if (Array.isArray(val)) return val
+			if (val && Array.isArray(val.data)) return val.data
+			if (val && Array.isArray(val.results)) return val.results
+			// Algunas APIs devuelven { cursos: [...] }
+			const keys = Object.keys(val || {})
+			for (const k of keys) {
+				if (Array.isArray(val[k])) return val[k]
+			}
+			return []
+		}
+
+		const cursosListRaw = normalize(cRes.status === 'fulfilled' ? cRes.value : null)
+		if (cursosListRaw.length) {
+			// Preferir CUR_DESCRIPCION del mantenedor de cursos si existe
+			const cursosList = cursosListRaw.map(c => (
+				(c && (c.CUR_DESCRIPCION || c.cur_descripcion || c.CUR_DESC)) || c.descripcion || c.nombre || c.titulo || c.title || c.name || c.curso || c.curso_nombre || c
+			))
+			cursosOpts.value = ['Todos', ...Array.from(new Set(cursosList)).filter(Boolean)]
+		} else {
+			console.warn('No se pudieron cargar cursos o respuesta vacía:', cRes.status === 'fulfilled' ? cRes.value : cRes.reason)
+		}
+
+		// Mapear roles desde la tabla mantenedores: usar ROL_DESCRIPCION
+		const rolesListRaw = normalize(rRes.status === 'fulfilled' ? rRes.value : null)
+		if (rolesListRaw.length) {
+			rolesOpts.value = ['Todos', ...rolesListRaw.map(r => (r && (r.ROL_DESCRIPCION || r.rol_descripcion || r.ROL_DESC || r.descripcion)) || r.label || r.value || r).filter(Boolean)]
+		} else {
+			console.warn('No se pudieron cargar roles desde mantenedores o respuesta vacía:', rRes.status === 'fulfilled' ? rRes.value : rRes.reason)
+		}
+
+		// Usar PER_VIGENTE como fuente canonical: 1 => Vigente, 0 => No vigente
+		estadoPersonaOpts.value = ['Todos', 'Vigente', 'No vigente']
+
+		// Intentar derivar estadoCorreo desde personaCursos (PEC_ENVIO_CORREO_QR)
+		try {
+			const pcRes = await personaCursosService.list()
+			const pcList = normalize(pcRes)
+			if (pcList && pcList.length) {
+				const estados = new Set()
+				pcList.forEach(x => {
+					const v = (x.PEC_ENVIO_CORREO_QR === true || x.PEC_ENVIO_CORREO_QR === 1 || x.PEC_ENVIO_CORREO_QR === '1') ? 'Enviado' : 'Pendiente'
+					estados.add(v)
+				})
+				estadoCorreoOpts.value = ['Todos', ...Array.from(estados)]
+			} else {
+				estadoCorreoOpts.value = ['Todos', 'Enviado', 'Pendiente', 'No enviado']
+			}
+		} catch (e) {
+			console.warn('No se pudieron derivar estados de correo desde personaCursos:', e)
+			estadoCorreoOpts.value = ['Todos', 'Enviado', 'Pendiente', 'No enviado']
+		}
+
+	} catch (e) {
+		console.warn('Error cargando opciones de filtros:', e)
+	}
+}
+
+onMounted(async () => {
+	await loadOptions()
+	lastQueryParams.value = {}
+	await fetchRows()
 })
 
 const cursos = computed(() => {
@@ -295,15 +451,90 @@ const cursos = computed(() => {
 	return Array.from(s)
 })
 
-function matchesFilter(row) {
-	if (appliedFilters.curso !== 'Todos' && row.curso !== appliedFilters.curso) return false
-	if (appliedFilters.rol !== 'Todos' && row.rol !== appliedFilters.rol
-		
-	) return false
-	if (appliedFilters.estadoPersona !== 'Todos' && row.estadoPersona !== appliedFilters.estadoPersona) return false
-	if (appliedFilters.estadoCorreo !== 'Todos' && row.estadoCorreo !== appliedFilters.estadoCorreo) return false
-	return true
+// Rows shown in the table: server may apply some filters, but provide
+// a client-side layer so filters like `curso`, `rol` and `estadoPersona`
+// work even if the API endpoint doesn't support them.
+const rowsFiltered = computed(() => {
+	let list = (rows.value || []).slice()
+	// aplicar filtro por curso si está activo
+	if (appliedFilters.curso && appliedFilters.curso !== 'Todos') {
+		list = list.filter(r => String(r.curso || '').trim() === String(appliedFilters.curso).trim())
+	}
+	// aplicar filtro por rol si está activo
+	if (appliedFilters.rol && appliedFilters.rol !== 'Todos') {
+		list = list.filter(r => String(r.rol || '').trim() === String(appliedFilters.rol).trim())
+	}
+	// aplicar filtro por estadoPersona si está activo
+	if (appliedFilters.estadoPersona && appliedFilters.estadoPersona !== 'Todos') {
+		if (appliedFilters.estadoPersona === 'Vigente') list = list.filter(r => Boolean(r.vigente))
+		else if (appliedFilters.estadoPersona === 'No vigente') list = list.filter(r => !Boolean(r.vigente))
+	}
+	return list
+})
+
+// Etiqueta dinámica para el botón de marcar (según selección)
+const marcarButtonLabel = computed(() => {
+	const selIds = Object.keys(seleccion).filter(k => seleccion[k])
+	if (!selIds.length) return 'Marcar Enviado'
+	const targets = rows.value.filter(r => selIds.includes(String(r.id)))
+	if (!targets.length) return 'Marcar Enviado'
+	const allSent = targets.every(t => Boolean(t.pecEnvioCorreoQR))
+	const allPending = targets.every(t => !Boolean(t.pecEnvioCorreoQR))
+	if (allSent) return 'Marcar Pendiente'
+	if (allPending) return 'Marcar Enviado'
+	return 'Alternar estado'
+})
+
+const startIndex = computed(() => {
+	if (!total.value) return 0
+	return (page.value - 1) * pageSize.value + 1
+})
+const endIndex = computed(() => {
+	if (!total.value) return 0
+	return Math.min(page.value * pageSize.value, total.value)
+})
+
+const showingRange = computed(() => {
+	const t = total.value || 0
+	if (t === 0) return '0-0 de 0'
+	return `${startIndex.value}-${endIndex.value} de ${t}`
+})
+
+const pagesToShow = computed(() => {
+	const tp = totalPages.value
+	const current = page.value
+	const out = []
+	// If small number of pages, show all
+	if (tp <= 9) {
+		for (let i = 1; i <= tp; i++) out.push(i)
+		return out
+	}
+
+	out.push(1)
+	if (current > 4) out.push('...')
+
+	const start = Math.max(2, current - 2)
+	const end = Math.min(tp - 1, current + 2)
+	for (let i = start; i <= end; i++) out.push(i)
+
+	if (current < tp - 3) out.push('...')
+	out.push(tp)
+	return out
+})
+
+function goToPage(n) {
+	if (!n || n < 1) return
+	const np = Math.min(Math.max(1, n), totalPages.value)
+	if (np === page.value) return
+	page.value = np
+	fetchRows(lastQueryParams.value || {})
 }
+
+function onPageSizeChange() {
+	page.value = 1
+	fetchRows(lastQueryParams.value || {})
+}
+
 
 // Clases de estilo para diferenciar visualmente los estados
 function vigenteClass(row) {
@@ -343,10 +574,7 @@ function estadoCorreoClass(row) {
 	}
 }
 
-const rowsFiltered = computed(() => {
-	if (!rows.value) return []
-	return rows.value.filter(matchesFilter)
-})
+// rowsFiltered is server-driven (see above)
 
 function exportarCorreos() {
 	const selIds = Object.keys(seleccion).filter(k => seleccion[k])
@@ -366,46 +594,50 @@ async function marcarEnviado() {
 		notify('Selecciona al menos un registro', 'alert-circle')
 		return
 	}
-	
-	// Marca localmente como enviado
-	for (const r of rows.value) {
-		if (selIds.includes(String(r.id))) {
-			r.estadoCorreo = 'Enviado'
+
+	const targets = rows.value.filter(r => selIds.includes(String(r.id)))
+	if (!targets.length) return
+
+	const toPersist = USE_BACKEND_ESTADO_CORREO ? targets.filter(t => t.pecId) : []
+	const localOnly = targets.filter(t => !t.pecId || !USE_BACKEND_ESTADO_CORREO)
+
+	let updated = 0
+	let failed = 0
+
+	// Persistir toggles en backend para los que tengan pecId
+	if (toPersist.length) {
+		try {
+			await Promise.all(toPersist.map(async t => {
+				try {
+					const current = Boolean(t.pecEnvioCorreoQR)
+					const newVal = !current
+					await personaCursosService.partialUpdate(t.pecId, { PEC_ENVIO_CORREO_QR: newVal })
+					// actualizar estado local
+					t.pecEnvioCorreoQR = newVal
+					t.estadoCorreo = newVal ? 'Enviado' : 'Pendiente'
+					updated++
+				} catch (err) {
+					console.error('Error actualizando PEC for pecId', t.pecId, err)
+					failed++
+				}
+			}))
+		} catch (e) {
+			console.error('Error en actualización de PEC_ENVIO_CORREO_QR:', e)
+			notify('Error al actualizar estados en servidor', 'alert-circle')
 		}
 	}
-	
-		// Llamar al backend (servicio `auth_views`) para generar token firmado y persistirlo
-		try {
-			const payload = {
-				ids: selIds.map(id => Number(id)),
-				tipo: 'correo-enviado',
-				expSeconds: 24 * 3600,
-				usuId: 1 // TODO: usar usuario autenticado
-			}
-			const result = await authViewsService.qr_token(payload)
-			const token = result && result.token
 
-			// Renderizar QR con el token del backend
-			if (!token) throw new Error('Respuesta inválida del servidor')
-			mostrarQR.value = true
-			await nextTick()
-			await QRCode.toCanvas(qrCanvas.value, token, { width: 220 })
-		} catch (e) {
-			console.error('Error generando QR desde backend:', e)
-			notify('No se pudo generar el QR: ' + (e?.message || e), 'x-circle')
-		}
-
-	// Persistir en backend PEC_ENVIO_CORREO_QR = true (si tenemos pecId) - sólo si está habilitado el backend
-	if (USE_BACKEND_ESTADO_CORREO) {
-		try {
-			const targets = rows.value.filter(r => selIds.includes(String(r.id)) && r.pecId)
-			await Promise.all(targets.map(t => personaCursosService.partialUpdate(t.pecId, { PEC_ENVIO_CORREO_QR: true })))
-		} catch (e) {
-			console.error('No se pudo actualizar PEC_ENVIO_CORREO_QR:', e)
-			// Solo informar, ya que es una mejora de consistencia
-			notify('No se pudo guardar el estado de correo en el servidor', 'alert-circle')
-		}
+	// Toggle local-only rows
+	for (const t of localOnly) {
+		const newVal = !Boolean(t.pecEnvioCorreoQR)
+		t.pecEnvioCorreoQR = newVal
+		t.estadoCorreo = newVal ? 'Enviado' : 'Pendiente'
 	}
+
+	// Notificar resultados
+	const totalChanged = updated + localOnly.length
+	if (failed > 0) notify(`Actualizados: ${totalChanged - failed}. Fallidos: ${failed}`, 'alert-circle')
+	else notify(`Se actualizaron ${totalChanged} registros`, 'check')
 }
 
 function cerrarQR() {
@@ -495,7 +727,8 @@ async function enviarPorCorreo() {
 .correos-card {
 	background: var(--color-surface);
 	border-radius: 12px;
-	box-shadow: 0 4px 18px rgba(40,92,168,0.13);
+	/* Shadow tuned to match Usuarios.vue subtle dark-blue neutral */
+	box-shadow: 0 2px 8px rgba(16,24,40,0.06);
 	margin: 0 auto 28px auto;
 	padding: 22px 22px 16px 22px;
 	max-width: 1300px;
@@ -514,7 +747,8 @@ async function enviarPorCorreo() {
 .correos-card-title {
 	font-size: 1.18rem;
 	font-weight: 700;
-	color: var(--color-primary);
+	/* Use same primary/title color as Usuarios.vue */
+	color: #1e3a8a;
 	position: relative;
 	padding-left: 14px;
 }
@@ -541,13 +775,14 @@ async function enviarPorCorreo() {
 	font-size: 1rem;
 	font-weight: 600;
 	border-radius: 8px;
-	box-shadow: 0 2px 8px rgba(40,92,168,0.08);
+	/* Subtle shadow similar to Usuarios actions */
+	box-shadow: 0 2px 8px rgba(16,24,40,0.06);
 	border: none;
 	transition: all 0.3s ease;
 }
 .correos-card-actions button:hover {
 	filter: brightness(0.95);
-	box-shadow: 0 4px 16px rgba(40,92,168,0.13);
+	box-shadow: 0 4px 16px rgba(16,24,40,0.08);
 }
 .correos-card-desc {
 	color: #444;
@@ -569,11 +804,12 @@ async function enviarPorCorreo() {
 	margin-bottom: 0;
 }
 .datatable-table th {
-	background: var(--color-background-mute);
-	color: var(--color-text);
+	/* Match Usuarios.vue table header colors */
+	background: #3d4f5f;
+	color: #ffffff;
 	font-weight: 700;
 	padding: 12px 10px;
-	border-bottom: 2px solid var(--color-border);
+	border-bottom: 2px solid rgba(0,0,0,0.06);
 	text-align: left;
 }
 .datatable-table td {
@@ -635,34 +871,67 @@ input[type="checkbox"] {
 }
 .filters-bar {
 	display: flex;
-	gap: 12px;
+	gap: 10px;
 	align-items: center;
 	justify-content: flex-start;
-	margin: 10px auto 0 auto;
+	margin: 8px auto 0 auto;
 	/* Mismo ancho/gutter que el card */
-	padding: 0 22px 12px 22px;
-	flex-wrap: wrap;
+	padding: 6px 12px 8px 12px;
+	flex-wrap: nowrap; /* mantener todo en una línea en pantallas grandes */
+	overflow-x: auto; /* permitir scroll horizontal si no cabe */
 	width: 100%;
 	max-width: 1300px;
 	box-sizing: border-box;
 }
 .filters-bar label {
-	font-weight: 600;
-	color: var(--color-text);
-	display: flex;
-	flex-direction: column;
-	font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--color-text);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    margin-right: 6px;
 }
 .filters-bar select {
-	margin-top: 6px;
-	padding: 6px 8px;
-	border-radius: 6px;
-	border: 1px solid var(--color-border);
-	background: var(--color-surface);
-	color: var(--color-text);
+    margin-top: 0;
+    padding: 5px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text);
+	min-width: 120px;
+	max-width: 160px;
+	font-size: 0.95rem;
+}
+
+/* Selects más compactos para estados (mismo look pero ocupando menos ancho) */
+.filters-bar select.compact-select {
+	min-width: 92px;
+	max-width: 160px;
+	padding: 4px 6px;
+	font-size: 0.9rem;
+}
+
+/* Asegurar que el botón Buscar tenga la misma altura y estilo compacto */
+.filters-bar :deep(.search-button) {
+	display: inline-flex;
+	align-items: center;
+	height: 36px;
+}
+.filters-bar :deep(.search-button) button {
+	height: 30px;
+	padding: 6px 12px;
+	font-size: 0.95rem;
+}
+
+.filters-bar .search-button {
+	margin-left: 6px;
+	align-self: center;
+	flex: 0 0 auto;
 }
 @media (max-width: 900px) {
-	.correos-title, .correos-subtitle, .correos-card {
+    .correos-title, .correos-subtitle, .correos-card {
 		max-width: 100%;
 		padding-left: 8px;
 		padding-right: 8px;
@@ -671,10 +940,12 @@ input[type="checkbox"] {
 		padding: 8px 0 6px 0;
 	}
 	.filters-bar {
-		padding: 0 8px 12px 8px;
+		padding: 6px 8px 10px 8px;
 		margin-left: 0;
 		margin-right: 0;
 		max-width: 100%;
+		gap: 8px;
+		flex-wrap: wrap; /* permitir que envuelva en pantallas pequeñas */
 	}
 	.correos-card-actions {
 		flex-direction: column;
@@ -687,6 +958,62 @@ input[type="checkbox"] {
 		padding: 8px 4px;
 		font-size: 0.97em;
 	}
+}
+
+/* Pagination styles (copied from Usuarios.vue) */
+.pagination-bar {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 12px 0 0 0;
+	gap: 12px;
+}
+.pagination-left {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	color: #374151;
+}
+.pagination-left select {
+	padding: 6px 8px;
+	border-radius: 6px;
+	border: 1px solid #e5e7eb;
+	background: #fff;
+}
+.pagination-right .pager-btn {
+	margin-left: 6px;
+	padding: 6px 10px;
+	border-radius: 8px;
+	border: 1px solid rgba(16,24,40,0.06);
+	background: #ffffff;
+	box-shadow: 0 1px 2px rgba(16,24,40,0.04);
+	cursor: pointer;
+	color: #1f2937;
+	transition: all 120ms ease;
+}
+.pagination-right .pager-btn:hover:not(:disabled) {
+	transform: translateY(-1px);
+	box-shadow: 0 4px 12px rgba(16,24,40,0.08);
+}
+.pagination-right .pager-btn.active {
+	background: #1e40af;
+	color: #fff;
+	border-color: rgba(30,64,175,0.2);
+}
+.pagination-right .pager-btn:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+.pager-ellipsis {
+	display: inline-block;
+	margin: 0 6px;
+	color: #6b7280;
+	font-size: 1.1rem;
+	vertical-align: middle;
+}
+.pagination-range {
+	color: #6b7280;
+	font-size: 0.9rem;
 }
 </style>
 

@@ -17,7 +17,7 @@
       <BaseSelect 
         v-model="filtroRol" 
         :options="rolesOptions" 
-        placeholder="Todos los roles"
+        placeholder="Todos los perfiles"
         class="filtro-item"
       />
       <BaseSelect 
@@ -86,7 +86,7 @@
           </thead>
           <tbody>
             <tr 
-              v-for="usuario in usuariosFiltrados" 
+              v-for="usuario in displayedUsuarios" 
               :key="usuario.id"
               :class="{ 
                 'usuario-inactivo': !usuario.activo,
@@ -135,8 +135,33 @@
           </tbody>
         </table>
       </div>
+      <!-- Paginación -->
+      <div class="pagination-bar">
+        <div class="pagination-left">
+          <label>Mostrar</label>
+          <select v-model.number="perPage" @change="currentPage = 1">
+            <option v-for="opt in perPageOptions" :key="opt" :value="opt">{{ opt }}</option>
+          </select>
+          <span class="pagination-range">{{ showingRange }}</span>
+        </div>
+        <div class="pagination-right">
+          <button class="pager-btn" @click="currentPage = Math.max(1, currentPage - 1)" :disabled="currentPage === 1">Anterior</button>
+          <template v-for="(p, idx) in pagesToShow" :key="String(p) + '-' + idx">
+            <button
+              v-if="p !== '...'"
+              class="pager-btn"
+              :class="{ 'active': currentPage === p }"
+              @click="currentPage = p"
+              :aria-current="currentPage === p ? 'page' : null"
+            >
+              {{ p }}
+            </button>
+            <span v-else class="pager-ellipsis">…</span>
+          </template>
+          <button class="pager-btn" @click="currentPage = Math.min(totalPages, currentPage + 1)" :disabled="currentPage === totalPages">Siguiente</button>
+        </div>
+      </div>
     </div>
-    </ModernMainScrollbar>
 
     <!-- Modal para crear/editar usuario -->
     <BaseModal v-model="modalVisible" @close="cerrarModal">
@@ -330,7 +355,8 @@
       :type="notificacion.tipo"
       @close="cerrarNotificacion"
     />
-  </div>
+      </ModernMainScrollbar>
+    </div>
 </template>
 
 <script>
@@ -417,9 +443,75 @@ export default {
       ,
       // Foto por defecto cuando no se sube ninguna
       defaultFoto: 'https://via.placeholder.com/96.png?text=Avatar'
+      ,
+      // Paginación (server-side)
+      currentPage: 1,
+      perPage: 50,
+      perPageOptions: [10, 20, 50, 100],
+      totalCount: 0,
+      serverSide: true
+    }
+  },
+  watch: {
+    // Resetear página cuando cambian los resultados filtrados (client-side fallback)
+    usuariosFiltrados() {
+      if (!this.serverSide) this.currentPage = 1
+    },
+    currentPage(newPage, oldPage) {
+      if (this.serverSide && newPage !== oldPage) this.cargarDatos(newPage)
+    },
+    perPage(newVal, oldVal) {
+      if (this.serverSide && newVal !== oldVal) {
+        this.currentPage = 1
+        this.cargarDatos(1)
+      }
     }
   },
   computed: {
+    // Usuarios que se mostrarán en la página actual
+    displayedUsuarios() {
+      // If serverSide, usuariosFiltrados already contains the current page results
+      if (this.serverSide) return this.usuariosFiltrados
+      // Client-side fallback: slice the full filtered list
+      const start = (this.currentPage - 1) * this.perPage
+      return this.usuariosFiltrados.slice(start, start + this.perPage)
+    },
+
+    totalPages() {
+      const total = this.serverSide ? this.totalCount : (this.usuariosFiltrados.length || 0)
+      return Math.max(1, Math.ceil(total / this.perPage))
+    },
+
+    showingRange() {
+      const total = this.serverSide ? this.totalCount : (this.usuariosFiltrados.length || 0)
+      if (total === 0) return '0-0 de 0'
+      const start = (this.currentPage - 1) * this.perPage + 1
+      const end = Math.min(total, this.currentPage * this.perPage)
+      return `${start}-${end} de ${total}`
+    },
+    // Pages to display in pager (with ellipses)
+    pagesToShow() {
+      const total = this.totalPages
+      const current = this.currentPage
+      const pages = []
+      if (total <= 9) {
+        for (let i = 1; i <= total; i++) pages.push(i)
+        return pages
+      }
+
+      pages.push(1)
+      if (current > 4) pages.push('...')
+
+      const start = Math.max(2, current - 2)
+      const end = Math.min(total - 1, current + 2)
+      for (let i = start; i <= end; i++) {
+        pages.push(i)
+      }
+
+      if (current < total - 3) pages.push('...')
+      pages.push(total)
+      return pages
+    },
     formularioValido() {
       if (!this.usuarioForm.username || !this.usuarioForm.rol) {
         return false
@@ -485,23 +577,55 @@ export default {
     },
 
     async cargarDatos() {
+      // Server-side pagination: accept optional page param
+      // Build params based on filters and pagination
       this.cargando = true
       try {
-        // Cargar perfiles (roles) desde la API
+        // Cargar perfiles (roles) desde la API (no paginado)
         const perfilesResponse = await perfilesService.list()
         const perfilesList = Array.isArray(perfilesResponse) ? perfilesResponse : (perfilesResponse.results || perfilesResponse.data || [])
-        
         const roles = perfilesList.map(p => ({
           value: p.PEL_ID || p.id,
           label: p.PEL_DESCRIPCION || p.descripcion || p.nombre || `Perfil ${p.PEL_ID || p.id}`
         }))
+        this.rolesOptions = [{ value: '', label: 'Todos los perfiles' }, ...roles]
 
-        this.rolesOptions = [{ value: '', label: 'Todos los roles' }, ...roles]
+        // Build query params for users
+        const params = {
+          page: this.currentPage,
+          page_size: this.perPage
+        }
 
-        // Cargar usuarios desde la API
-        const usuariosResponse = await usuariosService.list()
-        const usuariosList = Array.isArray(usuariosResponse) ? usuariosResponse : (usuariosResponse.results || usuariosResponse.data || [])
-        
+        if (this.searchQuery) params.search = this.searchQuery
+        if (this.filtroRol) params.perfil = this.filtroRol
+        if (this.filtroEstado) params.estado = this.filtroEstado
+
+        const usuariosResponse = await usuariosService.list(params)
+
+        // Detect common paginated formats or full-array responses
+        let usuariosList = []
+        if (Array.isArray(usuariosResponse)) {
+          // API returned a full array (no server-side pagination) -> fall back to client-side
+          usuariosList = usuariosResponse
+          this.totalCount = usuariosList.length
+          this.serverSide = false
+          // Ensure page reset
+          this.currentPage = 1
+        } else if (usuariosResponse && usuariosResponse.results) {
+          usuariosList = usuariosResponse.results
+          this.totalCount = usuariosResponse.count || usuariosResponse.total || (usuariosList.length)
+          this.serverSide = true
+        } else if (usuariosResponse && usuariosResponse.data) {
+          usuariosList = usuariosResponse.data
+          this.totalCount = usuariosResponse.total || usuariosList.length
+          this.serverSide = Boolean(usuariosResponse.total)
+        } else {
+          usuariosList = []
+          this.totalCount = 0
+          this.serverSide = false
+        }
+
+        // Map to internal shape
         this.usuarios = usuariosList.map(u => ({
           id: u.USU_ID || u.id,
           nombre: u.USU_USERNAME || u.nombre || u.username || '',
@@ -513,19 +637,18 @@ export default {
           password_hash: u.USU_PASSWORD || u.password || null
         }))
 
-        // Inicializar permisos por usuario (vacíos por ahora)
-        this.usuarios.forEach(u => {
-          this.userPerms[u.id] = null
-        })
+        // Initialize perms map for loaded users
+        this.usuarios.forEach(u => { this.userPerms[u.id] = null })
 
+        // For server-side mode, usuariosFiltrados represents the current page
         this.usuariosFiltrados = [...this.usuarios]
       } catch (error) {
         console.error('Error al cargar datos desde la API:', error)
         this.mostrarNotificacion('Error al cargar los datos: ' + (error.message || 'Error desconocido'), 'error')
-        // En caso de error, inicializar vacío en lugar de usar mocks
         this.usuarios = []
         this.usuariosFiltrados = []
-        this.rolesOptions = [{ value: '', label: 'Todos los roles' }]
+        this.rolesOptions = [{ value: '', label: 'Todos los perfiles' }]
+        this.totalCount = 0
       } finally {
         this.cargando = false
       }
@@ -537,9 +660,17 @@ export default {
       return rol ? rol.label : ''
     },
     
-    filtrarUsuarios() {
+    async filtrarUsuarios() {
+      if (this.serverSide) {
+        // For server-side pagination, request the first page with current filters
+        this.currentPage = 1
+        await this.cargarDatos()
+        return
+      }
+
+      // Client-side fallback: filter the loaded users
       let resultado = [...this.usuarios]
-      
+
       // Filtrar por búsqueda
       if (this.searchQuery) {
         const query = this.searchQuery.toLowerCase()
@@ -548,20 +679,22 @@ export default {
           u.username.toLowerCase().includes(query)
         )
       }
-      
+
       // Filtrar por rol (comparar por perfil_id que es el value en rolesOptions)
       if (this.filtroRol) {
         resultado = resultado.filter(u => String(u.perfil_id || '') === String(this.filtroRol))
       }
-      
+
       // Filtrar por estado
       if (this.filtroEstado === 'activo') {
         resultado = resultado.filter(u => u.activo)
       } else if (this.filtroEstado === 'inactivo') {
         resultado = resultado.filter(u => !u.activo)
       }
-      
+
       this.usuariosFiltrados = resultado
+      // Ensure pagination resets to first page when filtering
+      this.currentPage = 1
     },
     
     limpiarFiltros() {
@@ -1057,7 +1190,10 @@ export default {
   background: white;
   border-radius: 0 0 8px 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: auto;
+  /* Limit height so table doesn't consume full viewport like before; similar to Correos view */
+  max-height: 520px;
 }
 
 .usuarios-table {
@@ -1807,7 +1943,9 @@ export default {
   }
 
   .table-wrapper {
+    overflow-y: auto;
     overflow-x: auto;
+    max-height: calc(100vh - var(--navbar-height) - var(--card-top-offset));
   }
 
   .usuarios-table {
@@ -1886,5 +2024,61 @@ export default {
   .form-actions :deep(button) {
     width: 100%;
   }
+}
+
+/* Pagination styles */
+.pagination-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0 0 0;
+  gap: 12px;
+}
+.pagination-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #374151;
+}
+.pagination-left select {
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+}
+.pagination-right .pager-btn {
+  margin-left: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(16,24,40,0.06);
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(16,24,40,0.04);
+  cursor: pointer;
+  color: #1f2937;
+  transition: all 120ms ease;
+}
+.pagination-right .pager-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16,24,40,0.08);
+}
+.pagination-right .pager-btn.active {
+  background: #1e40af;
+  color: #fff;
+  border-color: rgba(30,64,175,0.2);
+}
+.pagination-right .pager-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.pager-ellipsis {
+  display: inline-block;
+  margin: 0 6px;
+  color: #6b7280;
+  font-size: 1.1rem;
+  vertical-align: middle;
+}
+.pagination-range {
+  color: #6b7280;
+  font-size: 0.9rem;
 }
 </style>
