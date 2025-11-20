@@ -1,5 +1,18 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue'
+import AppIcons from './icons/AppIcons.vue'
+const emit = defineEmits(['toggle-sidebar'])
+const props = defineProps({ collapsed: { type: Boolean, default: false }})
+function toggleSidebar() {
+  // On small screens, open the sidebar as a mobile overlay instead of toggling collapse
+  try {
+    if (typeof window !== 'undefined' && window.innerWidth <= 900) {
+      window.dispatchEvent(new Event('open-sidebar-mobile'))
+      return
+    }
+  } catch (e) {}
+  emit('toggle-sidebar')
+}
 import { useRouter, useRoute } from 'vue-router'
 import logoSrc from '@/assets/Logo_Boyscout_Chile.png'
 import authService from '@/services/authService.js'
@@ -11,6 +24,17 @@ const user = ref({ name: 'Usuario', role: 'Invitado', avatarUrl: null })
 const avatarSrc = ref(avatarDefault)
 const logoutSrc = ref(logoutDefault)
 const isAuthenticated = ref(false)
+const navRef = ref(null)
+let ro = null
+function updateNavbarHeight() {
+  try {
+    const el = navRef.value
+    if (!el) return
+    const h = Math.round(el.getBoundingClientRect().height) || 64
+    const clamped = Math.max(56, Math.min(120, h))
+    document.documentElement.style.setProperty('--navbar-height', `${clamped}px`)
+  } catch (e) { /* ignore */ }
+}
 
 const router = useRouter()
 const route = useRoute()
@@ -65,10 +89,20 @@ watch(() => route.path, checkAuthOnRouteChange)
 onMounted(() => {
   updateAuthState()
   window.addEventListener('storage', updateAuthState)
+  // Set CSS variable --navbar-height based on actual navbar size so main content can offset
+  updateNavbarHeight()
+  // Resize observer to keep it updated when content changes
+  try {
+    ro = new ResizeObserver(updateNavbarHeight)
+    if (navRef.value) ro.observe(navRef.value)
+  } catch (e) {}
+  window.addEventListener('resize', updateNavbarHeight)
 })
 
 onUnmounted(() => {
   window.removeEventListener('storage', updateAuthState)
+  window.removeEventListener('resize', updateNavbarHeight)
+  try { if (ro && navRef.value) ro.unobserve(navRef.value) } catch (e) {}
 })
 
 // Función de logout
@@ -101,9 +135,12 @@ function onLogoutImgError() {
 </script>
 
 <template>
-  <nav class="navbar">
+  <nav class="navbar" ref="navRef">
     <!-- Logo -->
     <div class="navbar-left">
+      <button class="sidebar-toggle" @click="toggleSidebar" :title="props.collapsed ? 'Expandir sidebar' : 'Colapsar sidebar'" :aria-pressed="props.collapsed" :aria-expanded="!props.collapsed" aria-controls="app-sidebar">
+        <AppIcons :name="props.collapsed ? 'chevron-right' : 'chevron-left'" :size="18" />
+      </button>
       <router-link class="brand" to="/dashboard" aria-label="Ir al Dashboard">
         <img :src="logoSrc" alt="Logo Scouts" class="logo" />
         <span class="title">S.S.B</span>
@@ -142,7 +179,8 @@ function onLogoutImgError() {
   background: var(--color-primary); /* Azul institucional estandarizado */
   color: white;
   padding: 8px 20px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+  /* Drop shadow under header: slightly stronger to show on white backgrounds */
+  box-shadow: 0 3px 4px rgba(0,0,0,0.12);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -202,6 +240,23 @@ function onLogoutImgError() {
 }
 .dash-link:hover { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.4); }
 .dash-link:active { transform: translateY(1px); }
+
+.sidebar-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-right: 6px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.08s ease;
+}
+.sidebar-toggle:hover { background: rgba(255,255,255,0.14); transform: translateY(-1px); }
+.sidebar-toggle:active { transform: translateY(0); }
 
 /* ====== Usuario derecha (avatar + nombre/rol + salir) ====== */
 .navbar-user {
@@ -294,6 +349,11 @@ function onLogoutImgError() {
 /* ====== Responsive ====== */
 @media (max-width: 768px) {
   .user-meta { display: none; }
+}
+
+/* Ocultar botón de toggle del sidebar en pantallas pequeñas (abrir via otra UI si se desea) */
+@media (max-width: 900px) {
+  .sidebar-toggle { display: none; }
 }
 
 /* ====== Animación de entrada/salida del usuario ====== */

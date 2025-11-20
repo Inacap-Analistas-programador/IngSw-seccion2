@@ -70,7 +70,7 @@
             placeholder="Buscar zona por descripción..."
             v-model="searchZonas"
           >
-          <button class="btn-primary">🔍 Buscar</button>
+          <button class="btn-primary" @click="buscarZonas">🔍 Buscar</button>
         </div>
         
         <div class="table-container-expanded">
@@ -87,6 +87,288 @@
               <tr v-for="zona in filteredZonas" :key="zona.id">
                 <td>{{ zona.descripcion }}</td>
                 <td>{{ zona.unilateral ? 'Sí' : 'No' }}</td>
+            <!-- Modales para otros mantenedores (tipoCurso, cargo, alimentacion, comuna, provincia, region, nivel, estadoCivil, rol, concepto, tipoArchivo) -->
+            <div v-if="modalActivo === 'crear-tipoCurso' || modalActivo === 'editar-tipoCurso'" class="modal-overlay" @click="cerrarModal">
+              <div class="modal-content" @click.stop>
+                <div class="modal-header">
+                  <h3>{{ editando ? 'Editar' : 'Nuevo' }} Tipo de Curso</h3>
+                  <button class="modal-close" @click="cerrarModal">×</button>
+                </div>
+                <div class="modal-body">
+                  <form @submit.prevent="guardarTipoCurso">
+                    <div class="form-group">
+                      <label class="form-label">Descripción:</label>
+                      <input type="text" class="form-control" v-model="formTipoCurso.descripcion" required />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Tipo:</label>
+                      <select class="form-control" v-model="formTipoCurso.tipo" required>
+                        <option :value="1">Inicial</option>
+                        <option :value="2">Medio</option>
+                        <option :value="3">Avanzado</option>
+                        <option :value="4">Habilitación</option>
+                        <option :value="5">Verificación</option>
+                        <option :value="6">Institucional</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Cant. Participantes:</label>
+                      <input type="number" class="form-control" v-model="formTipoCurso.cant_participante" />
+                    </div>
+                    <div class="form-actions">
+                      <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
+                      <button type="submit" class="btn-primary">💾 {{ editando ? 'Actualizar' : 'Guardar' }}</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="modalActivo === 'crear-cargo' || modalActivo === 'editar-cargo'" class="modal-overlay" @click="cerrarModal">
+              <div class="modal-content" @click.stop>
+                <div class="modal-header">
+                  <h3>{{ editando ? 'Editar' : 'Nuevo' }} Cargo</h3>
+                  <button class="modal-close" @click="cerrarModal">×</button>
+                </div>
+                <div class="modal-body">
+                  <form @submit.prevent="guardarCargo">
+                    <div class="form-group">
+                      <label class="form-label">Descripción:</label>
+                      <input type="text" class="form-control" v-model="formCargo.descripcion" required />
+                    </div>
+                    <div class="form-actions">
+                      <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
+                      <button type="submit" class="btn-primary">💾 {{ editando ? 'Actualizar' : 'Guardar' }}</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="modalActivo === 'crear-alimentacion' || modalActivo === 'editar-alimentacion'" class="modal-overlay" @click="cerrarModal">
+              <div class="modal-content" @click.stop>
+                <div class="modal-header">
+                  <h3>{{ editando ? 'Editar' : 'Nueva' }} Alimentación</h3>
+                  <button class="modal-close" @click="cerrarModal">×</button>
+                </div>
+                <div class="modal-body">
+                  <form @submit.prevent="guardarAlimentacion">
+                    <div class="form-group">
+                      <label class="form-label">Descripción:</label>
+                      <input type="text" class="form-control" v-model="formAlimentacion.descripcion" required />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Tipo:</label>
+                      <select class="form-control" v-model="formAlimentacion.tipo" required>
+                        <option :value="1">Con Almuerzo</option>
+                        <option :value="2">Sin Almuerzo</option>
+                      </select>
+                    </div>
+                    <div class="form-actions">
+                      <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
+                      <button type="submit" class="btn-primary">💾 {{ editando ? 'Actualizar' : 'Guardar' }}</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="modalActivo === 'crear-comuna' || modalActivo === 'editar-comuna'" class="modal-overlay" @click="cerrarModal">
+              <div class="modal-content" @click.stop>
+                <div class="modal-header">
+                  <h3>{{ editando ? 'Editar' : 'Nueva' }} Comuna</h3>
+                  <button class="modal-close" @click="cerrarModal">×</button>
+                </div>
+                <div class="modal-body">
+                  <form @submit.prevent="guardarComuna">
+                    <div class="form-group">
+                      <label class="form-label">Descripción:</label>
+                      <input type="text" class="form-control" v-model="formComuna.descripcion" required />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Provincia:</label>
+                      <select class="form-control" v-model="formComuna.provincia_id" required>
+                        <option value="">Seleccione provincia</option>
+                        <option v-for="prov in provincias" :key="prov.id" :value="prov.id">{{ prov.descripcion }}</option>
+                      </select>
+                    </div>
+                    <div class="form-actions">
+                      <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
+                      <button type="submit" class="btn-primary">💾 {{ editando ? 'Actualizar' : 'Guardar' }}</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="modalActivo === 'crear-provincia' || modalActivo === 'editar-provincia'" class="modal-overlay" @click="cerrarModal">
+              <div class="modal-content" @click.stop>
+                <div class="modal-header">
+                  <h3>{{ editando ? 'Editar' : 'Nueva' }} Provincia</h3>
+                  <button class="modal-close" @click="cerrarModal">×</button>
+                </div>
+                <div class="modal-body">
+                  <form @submit.prevent="guardarProvincia">
+                    <div class="form-group">
+                      <label class="form-label">Descripción:</label>
+                      <input type="text" class="form-control" v-model="formProvincia.descripcion" required />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Región:</label>
+                      <select class="form-control" v-model="formProvincia.region_id" required>
+                        <option value="">Seleccione región</option>
+                        <option v-for="reg in regiones" :key="reg.id" :value="reg.id">{{ reg.descripcion }}</option>
+                      </select>
+                    </div>
+                    <div class="form-actions">
+                      <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
+                      <button type="submit" class="btn-primary">💾 {{ editando ? 'Actualizar' : 'Guardar' }}</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="modalActivo === 'crear-region' || modalActivo === 'editar-region'" class="modal-overlay" @click="cerrarModal">
+              <div class="modal-content" @click.stop>
+                <div class="modal-header">
+                  <h3>{{ editando ? 'Editar' : 'Nueva' }} Región</h3>
+                  <button class="modal-close" @click="cerrarModal">×</button>
+                </div>
+                <div class="modal-body">
+                  <form @submit.prevent="guardarRegion">
+                    <div class="form-group">
+                      <label class="form-label">Descripción:</label>
+                      <input type="text" class="form-control" v-model="formRegion.descripcion" required />
+                    </div>
+                    <div class="form-actions">
+                      <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
+                      <button type="submit" class="btn-primary">💾 {{ editando ? 'Actualizar' : 'Guardar' }}</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="modalActivo === 'crear-nivel' || modalActivo === 'editar-nivel'" class="modal-overlay" @click="cerrarModal">
+              <div class="modal-content" @click.stop>
+                <div class="modal-header">
+                  <h3>{{ editando ? 'Editar' : 'Nuevo' }} Nivel</h3>
+                  <button class="modal-close" @click="cerrarModal">×</button>
+                </div>
+                <div class="modal-body">
+                  <form @submit.prevent="guardarNivel">
+                    <div class="form-group">
+                      <label class="form-label">Descripción:</label>
+                      <input type="text" class="form-control" v-model="formNivel.descripcion" required />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Orden:</label>
+                      <input type="number" class="form-control" v-model="formNivel.orden" required />
+                    </div>
+                    <div class="form-actions">
+                      <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
+                      <button type="submit" class="btn-primary">💾 {{ editando ? 'Actualizar' : 'Guardar' }}</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="modalActivo === 'crear-estadoCivil' || modalActivo === 'editar-estadoCivil'" class="modal-overlay" @click="cerrarModal">
+              <div class="modal-content" @click.stop>
+                <div class="modal-header">
+                  <h3>{{ editando ? 'Editar' : 'Nuevo' }} Estado Civil</h3>
+                  <button class="modal-close" @click="cerrarModal">×</button>
+                </div>
+                <div class="modal-body">
+                  <form @submit.prevent="guardarEstadoCivil">
+                    <div class="form-group">
+                      <label class="form-label">Descripción:</label>
+                      <input type="text" class="form-control" v-model="formEstadoCivil.descripcion" required />
+                    </div>
+                    <div class="form-actions">
+                      <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
+                      <button type="submit" class="btn-primary">💾 {{ editando ? 'Actualizar' : 'Guardar' }}</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="modalActivo === 'crear-rol' || modalActivo === 'editar-rol'" class="modal-overlay" @click="cerrarModal">
+              <div class="modal-content" @click.stop>
+                <div class="modal-header">
+                  <h3>{{ editando ? 'Editar' : 'Nuevo' }} Rol</h3>
+                  <button class="modal-close" @click="cerrarModal">×</button>
+                </div>
+                <div class="modal-body">
+                  <form @submit.prevent="guardarRol">
+                    <div class="form-group">
+                      <label class="form-label">Descripción:</label>
+                      <input type="text" class="form-control" v-model="formRol.descripcion" required />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Tipo:</label>
+                      <select class="form-control" v-model="formRol.tipo" required>
+                        <option :value="1">Participante</option>
+                        <option :value="2">Formadores</option>
+                        <option :value="3">Apoyo Formadores</option>
+                        <option :value="4">Organización</option>
+                        <option :value="5">Servicio</option>
+                        <option :value="6">Salud</option>
+                      </select>
+                    </div>
+                    <div class="form-actions">
+                      <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
+                      <button type="submit" class="btn-primary">💾 {{ editando ? 'Actualizar' : 'Guardar' }}</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="modalActivo === 'crear-conceptoContable' || modalActivo === 'editar-conceptoContable'" class="modal-overlay" @click="cerrarModal">
+              <div class="modal-content" @click.stop>
+                <div class="modal-header">
+                  <h3>{{ editando ? 'Editar' : 'Nuevo' }} Concepto Contable</h3>
+                  <button class="modal-close" @click="cerrarModal">×</button>
+                </div>
+                <div class="modal-body">
+                  <form @submit.prevent="guardarConceptoContable">
+                    <div class="form-group">
+                      <label class="form-label">Descripción:</label>
+                      <input type="text" class="form-control" v-model="formConceptoContable.descripcion" required />
+                    </div>
+                    <div class="form-actions">
+                      <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
+                      <button type="submit" class="btn-primary">💾 {{ editando ? 'Actualizar' : 'Guardar' }}</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="modalActivo === 'crear-tipoArchivo' || modalActivo === 'editar-tipoArchivo'" class="modal-overlay" @click="cerrarModal">
+              <div class="modal-content" @click.stop>
+                <div class="modal-header">
+                  <h3>{{ editando ? 'Editar' : 'Nuevo' }} Tipo de Archivo</h3>
+                  <button class="modal-close" @click="cerrarModal">×</button>
+                </div>
+                <div class="modal-body">
+                  <form @submit.prevent="guardarTipoArchivo">
+                    <div class="form-group">
+                      <label class="form-label">Descripción:</label>
+                      <input type="text" class="form-control" v-model="formTipoArchivo.descripcion" required />
+                    </div>
+                    <div class="form-actions">
+                      <button type="button" class="btn-secondary" @click="cerrarModal">Cancelar</button>
+                      <button type="submit" class="btn-primary">💾 {{ editando ? 'Actualizar' : 'Guardar' }}</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
                 <td>
                   <span class="status-badge" :class="zona.vigente ? 'status-active' : 'status-inactive'">
                     {{ zona.vigente ? 'Activo' : 'Inactivo' }}
@@ -138,7 +420,7 @@
               {{ zona.descripcion }}
             </option>
           </select>
-          <button class="btn-primary">🔍 Buscar</button>
+          <button class="btn-primary" @click="buscarDistritos">🔍 Buscar</button>
         </div>
         
         <div class="table-container-expanded">
@@ -206,7 +488,7 @@
               {{ distrito.descripcion }}
             </option>
           </select>
-          <button class="btn-primary">🔍 Buscar</button>
+          <button class="btn-primary" @click="buscarGrupos">🔍 Buscar</button>
         </div>
         
         <div class="table-container-expanded">
@@ -474,7 +756,7 @@
             placeholder="Buscar comuna..."
             v-model="searchComunas"
           >
-          <button class="btn-primary">🔍 Buscar</button>
+          <button class="btn-primary" @click="buscarComunas">🔍 Buscar</button>
         </div>
         
         <div class="table-container-expanded">
@@ -1662,7 +1944,11 @@ export default {
       { id: 'tipos-archivo', label: 'Tipos de Archivo', icon: '📁' }
     ]
 
+<<<<<<< HEAD
     // Datos de ejemplo para todos los mantenedores
+=======
+    // Datos reactivos para todos los mantenedores (inicialmente vacíos, se llenan desde la API)
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
     const zonas = ref([])
     const distritos = ref([])
     const grupos = ref([])
@@ -1678,6 +1964,54 @@ export default {
     const roles = ref([])
     const conceptosContables = ref([])
     const tiposArchivo = ref([])
+<<<<<<< HEAD
+=======
+
+    // Carga inicial de todos los mantenedores
+    const cargarMantenedores = async () => {
+      // Obtener raw desde API
+      const rawZonas = await mantenedoresService.zona.list().catch(() => [])
+      const rawDistritos = await mantenedoresService.distrito.list().catch(() => [])
+      const rawGrupos = await mantenedoresService.grupo.list().catch(() => [])
+      const rawRamas = await mantenedoresService.rama.list().catch(() => [])
+      const rawTiposCurso = await mantenedoresService.tipoCursos.list().catch(() => [])
+      const rawCargos = await mantenedoresService.cargo.list().catch(() => [])
+      const rawAlimentacion = await mantenedoresService.alimentacion.list().catch(() => [])
+      const rawComunas = await mantenedoresService.comuna.list().catch(() => [])
+      const rawProvincias = await mantenedoresService.provincia.list().catch(() => [])
+      const rawRegiones = await mantenedoresService.region.list().catch(() => [])
+      const rawNiveles = await mantenedoresService.nivel.list().catch(() => [])
+      const rawEstadosCiviles = await mantenedoresService.estadoCivil.list().catch(() => [])
+      const rawRoles = await mantenedoresService.rol.list().catch(() => [])
+      const rawConceptos = await mantenedoresService.conceptoContable.list().catch(() => [])
+      const rawTiposArchivo = await mantenedoresService.tipoArchivos.list().catch(() => [])
+
+      // Normalizar campos de la API (mayúsculas/DB) a forma usada en la UI
+      zonas.value = (rawZonas || []).map(z => ({ id: z.ZON_ID ?? z.id, descripcion: z.ZON_DESCRIPCION ?? z.descripcion, unilateral: z.ZON_UNILATERAL ?? z.unilateral, vigente: z.ZON_VIGENTE ?? z.vigente }))
+      distritos.value = (rawDistritos || []).map(d => ({ id: d.DIS_ID ?? d.id, descripcion: d.DIS_DESCRIPCION ?? d.descripcion, zona_id: (d.ZON_ID?.ZON_ID) ?? d.ZON_ID ?? d.zona_id, vigente: d.DIS_VIGENTE ?? d.vigente }))
+      grupos.value = (rawGrupos || []).map(g => ({ id: g.GRU_ID ?? g.id, descripcion: g.GRU_DESCRIPCION ?? g.descripcion, distrito_id: (g.DIS_ID?.DIS_ID) ?? g.DIS_ID ?? g.distrito_id, vigente: g.GRU_VIGENTE ?? g.vigente }))
+      ramas.value = (rawRamas || []).map(r => ({ id: r.RAM_ID ?? r.id, descripcion: r.RAM_DESCRIPCION ?? r.descripcion, vigente: r.RAM_VIGENTE ?? r.vigente }))
+      tiposCurso.value = (rawTiposCurso || []).map(t => ({ id: t.TCU_ID ?? t.id, descripcion: t.TCU_DESCRIPCION ?? t.descripcion, tipo: t.TCU_TIPO ?? t.tipo, cant_participante: t.TCU_CANT_PARTICIPANTE ?? t.cant_participante, vigente: t.TCU_VIGENTE ?? t.vigente }))
+      cargos.value = (rawCargos || []).map(c => ({ id: c.CAR_ID ?? c.id, descripcion: c.CAR_DESCRIPCION ?? c.descripcion, vigente: c.CAR_VIGENTE ?? c.vigente }))
+      alimentacion.value = (rawAlimentacion || []).map(a => ({ id: a.ALI_ID ?? a.id, descripcion: a.ALI_DESCRIPCION ?? a.descripcion, tipo: a.ALI_TIPO ?? a.tipo, vigente: a.ALI_VIGENTE ?? a.vigente }))
+      comunas.value = (rawComunas || []).map(c => ({ id: c.COM_ID ?? c.id, descripcion: c.COM_DESCRIPCION ?? c.descripcion, provincia_id: (c.PRO_ID?.PRO_ID) ?? c.PRO_ID ?? c.provincia_id, vigente: c.COM_VIGENTE ?? c.vigente }))
+      provincias.value = (rawProvincias || []).map(p => ({ id: p.PRO_ID ?? p.id, descripcion: p.PRO_DESCRIPCION ?? p.descripcion, region_id: (p.REG_ID?.REG_ID) ?? p.REG_ID ?? p.region_id, vigente: p.PRO_VIGENTE ?? p.vigente }))
+      regiones.value = (rawRegiones || []).map(rg => ({ id: rg.REG_ID ?? rg.id, descripcion: rg.REG_DESCRIPCION ?? rg.descripcion, vigente: rg.REG_VIGENTE ?? rg.vigente }))
+      niveles.value = (rawNiveles || []).map(n => ({ id: n.NIV_ID ?? n.id, descripcion: n.NIV_DESCRIPCION ?? n.descripcion, orden: n.NIV_ORDEN ?? n.orden, vigente: n.NIV_VIGENTE ?? n.vigente }))
+      estadosCiviles.value = (rawEstadosCiviles || []).map(e => ({ id: e.ESC_ID ?? e.id, descripcion: e.ESC_DESCRIPCION ?? e.descripcion, vigente: e.ESC_VIGENTE ?? e.vigente }))
+      roles.value = (rawRoles || []).map(r => ({ id: r.ROL_ID ?? r.id, descripcion: r.ROL_DESCRIPCION ?? r.descripcion, tipo: r.ROL_TIPO ?? r.tipo, vigente: r.ROL_VIGENTE ?? r.vigente }))
+      conceptosContables.value = (rawConceptos || []).map(c => ({ id: c.COC_ID ?? c.id, descripcion: c.COC_DESCRIPCION ?? c.descripcion, vigente: c.COC_VIGENTE ?? c.vigente }))
+      tiposArchivo.value = (rawTiposArchivo || []).map(t => ({ id: t.TAR_ID ?? t.id, descripcion: t.TAR_DESCRIPCION ?? t.descripcion, extension: t.TAR_EXTENSION ?? t.extension, vigente: t.TAR_VIGENTE ?? t.vigente }))
+    }
+
+    onMounted(() => {
+      cargarMantenedores()
+      document.addEventListener('click', handleClickOutside)
+    })
+
+    // Recarga tras crear/editar/eliminar
+    const recargar = cargarMantenedores
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
 
     // Formularios
     const formZona = reactive({
@@ -1707,6 +2041,7 @@ export default {
       vigente: true
     })
 
+<<<<<<< HEAD
     const formTipoCurso = reactive({
       id: null,
       descripcion: '',
@@ -2036,6 +2371,20 @@ export default {
         cargando.value = false
       }
     }
+=======
+    // Formularios adicionales para otros mantenedores
+    const formTipoCurso = reactive({ id: null, descripcion: '', tipo: 1, cant_participante: null, vigente: true })
+    const formCargo = reactive({ id: null, descripcion: '', vigente: true })
+    const formAlimentacion = reactive({ id: null, descripcion: '', tipo: 1, vigente: true })
+    const formComuna = reactive({ id: null, descripcion: '', provincia_id: null, vigente: true })
+    const formProvincia = reactive({ id: null, descripcion: '', region_id: null, vigente: true })
+    const formRegion = reactive({ id: null, descripcion: '', vigente: true })
+    const formNivel = reactive({ id: null, descripcion: '', orden: 1, vigente: true })
+    const formEstadoCivil = reactive({ id: null, descripcion: '', vigente: true })
+    const formRol = reactive({ id: null, descripcion: '', tipo: 1, vigente: true })
+    const formConceptoContable = reactive({ id: null, descripcion: '', vigente: true })
+    const formTipoArchivo = reactive({ id: null, descripcion: '', vigente: true })
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
 
     // Computed properties para filtros
     const filteredZonas = computed(() => {
@@ -2082,6 +2431,24 @@ export default {
       
       return filtered
     })
+
+    // Métodos de búsqueda activados por los botones "Buscar"
+    const buscarZonas = () => {
+      searchZonas.value = (searchZonas.value || '').trim()
+    }
+
+    const buscarDistritos = () => {
+      searchDistritos.value = (searchDistritos.value || '').trim()
+      // si hay filtro de zona, aplicarlo (la computed ya lo usa)
+    }
+
+    const buscarGrupos = () => {
+      searchGrupos.value = (searchGrupos.value || '').trim()
+    }
+
+    const buscarComunas = () => {
+      searchComunas.value = (searchComunas.value || '').trim()
+    }
 
     // Métodos auxiliares
     const getZonaNombre = (zonaId) => {
@@ -2280,13 +2647,21 @@ export default {
           Object.assign(formRama, elemento)
           break
         case 'tipoCurso':
+<<<<<<< HEAD
           Object.assign(formTipoCurso, elemento)
+=======
+          Object.assign(formTipoCurso, { id: elemento.id, descripcion: elemento.descripcion, tipo: elemento.tipo, cant_participante: elemento.cant_participante, vigente: elemento.vigente })
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
           break
         case 'cargo':
           Object.assign(formCargo, elemento)
           break
         case 'alimentacion':
+<<<<<<< HEAD
           Object.assign(formAlimentacion, elemento)
+=======
+          Object.assign(formAlimentacion, { id: elemento.id, descripcion: elemento.descripcion, tipo: elemento.tipo, vigente: elemento.vigente })
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
           break
         case 'comuna':
           Object.assign(formComuna, elemento)
@@ -2304,7 +2679,11 @@ export default {
           Object.assign(formEstadoCivil, elemento)
           break
         case 'rol':
+<<<<<<< HEAD
           Object.assign(formRol, elemento)
+=======
+          Object.assign(formRol, { id: elemento.id, descripcion: elemento.descripcion, tipo: elemento.tipo, vigente: elemento.vigente })
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
           break
         case 'conceptoContable':
           Object.assign(formConceptoContable, elemento)
@@ -2312,6 +2691,10 @@ export default {
         case 'tipoArchivo':
           Object.assign(formTipoArchivo, elemento)
           break
+<<<<<<< HEAD
+=======
+        // Agregar casos para otros tipos
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
       }
     }
 
@@ -2339,6 +2722,7 @@ export default {
         descripcion: '',
         vigente: true
       })
+<<<<<<< HEAD
       Object.assign(formTipoCurso, {
         id: null,
         descripcion: '',
@@ -2401,6 +2785,19 @@ export default {
         extension: '',
         vigente: true
       })
+=======
+      Object.assign(formTipoCurso, { id: null, descripcion: '', tipo: 1, cant_participante: null, vigente: true })
+      Object.assign(formCargo, { id: null, descripcion: '', vigente: true })
+      Object.assign(formAlimentacion, { id: null, descripcion: '', tipo: 1, vigente: true })
+      Object.assign(formComuna, { id: null, descripcion: '', provincia_id: null, vigente: true })
+      Object.assign(formProvincia, { id: null, descripcion: '', region_id: null, vigente: true })
+      Object.assign(formRegion, { id: null, descripcion: '', vigente: true })
+      Object.assign(formNivel, { id: null, descripcion: '', orden: 1, vigente: true })
+      Object.assign(formEstadoCivil, { id: null, descripcion: '', vigente: true })
+      Object.assign(formRol, { id: null, descripcion: '', tipo: 1, vigente: true })
+      Object.assign(formConceptoContable, { id: null, descripcion: '', vigente: true })
+      Object.assign(formTipoArchivo, { id: null, descripcion: '', vigente: true })
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
     }
 
     const cerrarModal = () => {
@@ -2411,6 +2808,7 @@ export default {
       limpiarFormularios()
     }
 
+<<<<<<< HEAD
     // Métodos de guardado
     const guardarZona = async () => {
       try {
@@ -2431,11 +2829,95 @@ export default {
         cerrarModal()
       } catch (err) {
         error.value = 'Error al guardar zona: ' + err.message
+=======
+    const confirmarAnular = () => {
+      const tipo = tipoElemento.value
+      const elemento = elementoSeleccionado.value
+      if (!elemento) {
+        cerrarModal()
+        return
+      }
+      const id = elemento.id
+      // Mapear tipos a campos API
+      const fieldMap = {
+        'zona': { service: mantenedoresService.zona, field: 'ZON_VIGENTE' },
+        'distrito': { service: mantenedoresService.distrito, field: 'DIS_VIGENTE' },
+        'grupo': { service: mantenedoresService.grupo, field: 'GRU_VIGENTE' },
+        'rama': { service: mantenedoresService.rama, field: 'RAM_VIGENTE' },
+        'tipoCurso': { service: mantenedoresService.tipoCursos, field: 'TCU_VIGENTE' },
+        'cargo': { service: mantenedoresService.cargo, field: 'CAR_VIGENTE' },
+        'alimentacion': { service: mantenedoresService.alimentacion, field: 'ALI_VIGENTE' },
+        'comuna': { service: mantenedoresService.comuna, field: 'COM_VIGENTE' },
+        'provincia': { service: mantenedoresService.provincia, field: 'PRO_VIGENTE' },
+        'region': { service: mantenedoresService.region, field: 'REG_VIGENTE' },
+        'nivel': { service: mantenedoresService.nivel, field: 'NIV_VIGENTE' },
+        'estadoCivil': { service: mantenedoresService.estadoCivil, field: 'ESC_VIGENTE' },
+        'rol': { service: mantenedoresService.rol, field: 'ROL_VIGENTE' },
+        'conceptoContable': { service: mantenedoresService.conceptoContable, field: 'COC_VIGENTE' },
+        'tipoArchivo': { service: mantenedoresService.tipoArchivos, field: 'TAR_VIGENTE' }
+      }
+      const map = fieldMap[tipo]
+      if (map && map.service && id != null) {
+        // usar partialUpdate si está disponible
+        const payload = {}
+        payload[map.field] = false
+        map.service.partialUpdate(id, payload).catch(err => console.error('Error anular:', err)).finally(() => recargar())
+      } else {
+        // fallback: actualizar localmente
+        const index = getArrayByTipo(tipo).findIndex(item => item.id === id)
+        if (index !== -1) getArrayByTipo(tipo)[index].vigente = false
+      }
+      cerrarModal()
+    }
+
+    const getArrayByTipo = (tipo) => {
+      const arrays = {
+        'zona': zonas,
+        'distrito': distritos,
+        'grupo': grupos,
+        'rama': ramas,
+        'tipoCurso': tiposCurso,
+        'cargo': cargos,
+        'alimentacion': alimentacion,
+        'comuna': comunas,
+        'provincia': provincias,
+        'region': regiones,
+        'nivel': niveles,
+        'estadoCivil': estadosCiviles,
+        'rol': roles,
+        'conceptoContable': conceptosContables,
+        'tipoArchivo': tiposArchivo
+      }
+      return arrays[tipo] || zonas
+    }
+
+    // Métodos de guardado
+
+    // Métodos CRUD para zonas, distritos, grupos, ramas (ejemplo, igual para los demás)
+    const guardarZona = async () => {
+      try {
+        const payload = {
+          ZON_DESCRIPCION: formZona.descripcion,
+          ZON_UNILATERAL: !!formZona.unilateral,
+          ZON_VIGENTE: !!formZona.vigente
+        }
+        if (editando.value) {
+          await mantenedoresService.zona.update(formZona.id, payload)
+        } else {
+          await mantenedoresService.zona.create(payload)
+        }
+      } catch (err) {
+        console.error('Error guardarZona:', err)
+      } finally {
+        cerrarModal()
+        recargar()
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
       }
     }
 
     const guardarDistrito = async () => {
       try {
+<<<<<<< HEAD
         const datosUI = {
           descripcion: formDistrito.descripcion.toUpperCase(),
           zona_id: formDistrito.zona_id,
@@ -2453,11 +2935,29 @@ export default {
         cerrarModal()
       } catch (err) {
         error.value = 'Error al guardar distrito: ' + err.message
+=======
+        const payload = {
+          DIS_DESCRIPCION: formDistrito.descripcion,
+          ZON_ID: formDistrito.zona_id,
+          DIS_VIGENTE: !!formDistrito.vigente
+        }
+        if (editando.value) {
+          await mantenedoresService.distrito.update(formDistrito.id, payload)
+        } else {
+          await mantenedoresService.distrito.create(payload)
+        }
+      } catch (err) {
+        console.error('Error guardarDistrito:', err)
+      } finally {
+        cerrarModal()
+        recargar()
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
       }
     }
 
     const guardarGrupo = async () => {
       try {
+<<<<<<< HEAD
         const datosUI = {
           descripcion: formGrupo.descripcion.toUpperCase(),
           distrito_id: formGrupo.distrito_id,
@@ -2475,11 +2975,29 @@ export default {
         cerrarModal()
       } catch (err) {
         error.value = 'Error al guardar grupo: ' + err.message
+=======
+        const payload = {
+          GRU_DESCRIPCION: formGrupo.descripcion,
+          DIS_ID: formGrupo.distrito_id,
+          GRU_VIGENTE: !!formGrupo.vigente
+        }
+        if (editando.value) {
+          await mantenedoresService.grupo.update(formGrupo.id, payload)
+        } else {
+          await mantenedoresService.grupo.create(payload)
+        }
+      } catch (err) {
+        console.error('Error guardarGrupo:', err)
+      } finally {
+        cerrarModal()
+        recargar()
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
       }
     }
 
     const guardarRama = async () => {
       try {
+<<<<<<< HEAD
         const datosUI = {
           descripcion: formRama.descripcion.toUpperCase(),
           vigente: editando.value ? formRama.vigente : true
@@ -2735,6 +3253,72 @@ export default {
       } catch (err) {
         error.value = 'Error al guardar tipo de archivo: ' + err.message
       }
+=======
+        const payload = {
+          RAM_DESCRIPCION: formRama.descripcion,
+          RAM_VIGENTE: !!formRama.vigente
+        }
+        if (editando.value) {
+          await mantenedoresService.rama.update(formRama.id, payload)
+        } else {
+          await mantenedoresService.rama.create(payload)
+        }
+      } catch (err) {
+        console.error('Error guardarRama:', err)
+      } finally {
+        cerrarModal()
+        recargar()
+      }
+    }
+
+    // Guardar otros mantenedores
+    const guardarTipoCurso = async () => {
+      try {
+        const payload = { TCU_DESCRIPCION: formTipoCurso.descripcion, TCU_TIPO: formTipoCurso.tipo, TCU_CANT_PARTICIPANTE: formTipoCurso.cant_participante, TCU_VIGENTE: !!formTipoCurso.vigente }
+        if (editando.value) await mantenedoresService.tipoCursos.update(formTipoCurso.id, payload)
+        else await mantenedoresService.tipoCursos.create(payload)
+      } catch (err) { console.error('Error guardarTipoCurso', err) } finally { cerrarModal(); recargar() }
+    }
+
+    const guardarCargo = async () => {
+      try { const payload = { CAR_DESCRIPCION: formCargo.descripcion, CAR_VIGENTE: !!formCargo.vigente }; if (editando.value) await mantenedoresService.cargo.update(formCargo.id, payload); else await mantenedoresService.cargo.create(payload) } catch (err) { console.error('Error guardarCargo', err) } finally { cerrarModal(); recargar() }
+    }
+
+    const guardarAlimentacion = async () => {
+      try { const payload = { ALI_DESCRIPCION: formAlimentacion.descripcion, ALI_TIPO: formAlimentacion.tipo, ALI_VIGENTE: !!formAlimentacion.vigente }; if (editando.value) await mantenedoresService.alimentacion.update(formAlimentacion.id, payload); else await mantenedoresService.alimentacion.create(payload) } catch (err) { console.error('Error guardarAlimentacion', err) } finally { cerrarModal(); recargar() }
+    }
+
+    const guardarComuna = async () => {
+      try { const payload = { COM_DESCRIPCION: formComuna.descripcion, PRO_ID: formComuna.provincia_id, COM_VIGENTE: !!formComuna.vigente }; if (editando.value) await mantenedoresService.comuna.update(formComuna.id, payload); else await mantenedoresService.comuna.create(payload) } catch (err) { console.error('Error guardarComuna', err) } finally { cerrarModal(); recargar() }
+    }
+
+    const guardarProvincia = async () => {
+      try { const payload = { PRO_DESCRIPCION: formProvincia.descripcion, REG_ID: formProvincia.region_id, PRO_VIGENTE: !!formProvincia.vigente }; if (editando.value) await mantenedoresService.provincia.update(formProvincia.id, payload); else await mantenedoresService.provincia.create(payload) } catch (err) { console.error('Error guardarProvincia', err) } finally { cerrarModal(); recargar() }
+    }
+
+    const guardarRegion = async () => {
+      try { const payload = { REG_DESCRIPCION: formRegion.descripcion, REG_VIGENTE: !!formRegion.vigente }; if (editando.value) await mantenedoresService.region.update(formRegion.id, payload); else await mantenedoresService.region.create(payload) } catch (err) { console.error('Error guardarRegion', err) } finally { cerrarModal(); recargar() }
+    }
+
+    const guardarNivel = async () => {
+      try { const payload = { NIV_DESCRIPCION: formNivel.descripcion, NIV_ORDEN: formNivel.orden, NIV_VIGENTE: !!formNivel.vigente }; if (editando.value) await mantenedoresService.nivel.update(formNivel.id, payload); else await mantenedoresService.nivel.create(payload) } catch (err) { console.error('Error guardarNivel', err) } finally { cerrarModal(); recargar() }
+    }
+
+    const guardarEstadoCivil = async () => {
+      try { const payload = { ESC_DESCRIPCION: formEstadoCivil.descripcion, ESC_VIGENTE: !!formEstadoCivil.vigente }; if (editando.value) await mantenedoresService.estadoCivil.update(formEstadoCivil.id, payload); else await mantenedoresService.estadoCivil.create(payload) } catch (err) { console.error('Error guardarEstadoCivil', err) } finally { cerrarModal(); recargar() }
+    }
+
+    const guardarRol = async () => {
+      try { const payload = { ROL_DESCRIPCION: formRol.descripcion, ROL_TIPO: formRol.tipo, ROL_VIGENTE: !!formRol.vigente }; if (editando.value) await mantenedoresService.rol.update(formRol.id, payload); else await mantenedoresService.rol.create(payload) } catch (err) { console.error('Error guardarRol', err) } finally { cerrarModal(); recargar() }
+    }
+
+    const guardarConceptoContable = async () => {
+      try { const payload = { COC_DESCRIPCION: formConceptoContable.descripcion, COC_VIGENTE: !!formConceptoContable.vigente }; if (editando.value) await mantenedoresService.conceptoContable.update(formConceptoContable.id, payload); else await mantenedoresService.conceptoContable.create(payload) } catch (err) { console.error('Error guardarConceptoContable', err) } finally { cerrarModal(); recargar() }
+    }
+
+    const guardarTipoArchivo = async () => {
+      try { const payload = { TAR_DESCRIPCION: formTipoArchivo.descripcion, TAR_VIGENTE: !!formTipoArchivo.vigente }; if (editando.value) await mantenedoresService.tipoArchivos.update(formTipoArchivo.id, payload); else await mantenedoresService.tipoArchivos.create(payload) } catch (err) { console.error('Error guardarTipoArchivo', err) } finally { cerrarModal(); recargar() }
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
     }
 
     return {
@@ -2773,6 +3357,10 @@ export default {
       formDistrito,
       formGrupo,
       formRama,
+<<<<<<< HEAD
+=======
+      // nuevos formularios
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
       formTipoCurso,
       formCargo,
       formAlimentacion,
@@ -2784,9 +3372,14 @@ export default {
       formRol,
       formConceptoContable,
       formTipoArchivo,
+<<<<<<< HEAD
+=======
+      // filtros computados
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
       filteredZonas,
       filteredDistritos,
       filteredGrupos,
+      // utilidades
       getZonaNombre,
       getDistritoNombre,
       getProvinciaNombre,
@@ -2797,12 +3390,25 @@ export default {
       getSelectedTabInfo,
       toggleDropdown,
       selectTab,
+      // acciones
       abrirModalCrear,
       verElemento,
       editarElemento,
+<<<<<<< HEAD
       cambiarEstado,
       cerrarModal,
       cargarDatos,
+=======
+      solicitarAnular,
+      // búsquedas
+      buscarZonas,
+      buscarDistritos,
+      buscarGrupos,
+      buscarComunas,
+      cerrarModal,
+      confirmarAnular,
+      // guardados
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
       guardarZona,
       guardarDistrito,
       guardarGrupo,
@@ -2817,7 +3423,13 @@ export default {
       guardarEstadoCivil,
       guardarRol,
       guardarConceptoContable,
+<<<<<<< HEAD
       guardarTipoArchivo
+=======
+      guardarTipoArchivo,
+      // misc
+      recargar
+>>>>>>> a3e58cb9e8bb4a71df27789f08c3212640f52ee1
     }
   }
 }
