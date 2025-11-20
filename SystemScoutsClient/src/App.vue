@@ -62,7 +62,8 @@ body, html {
 	flex: 1;
 	margin-left: var(--sidebar-width, 256px); /* Match sidebar width via variable */
 	overflow-y: auto;
-	padding: 16px; /* Restore padding for better spacing */
+		/* Añadir offset superior igual a la altura de la navbar para evitar solapamiento */
+		padding: calc(var(--navbar-height, 64px) + 16px) 16px 16px 16px;
 	background: #f5f5f5;
 	position: relative;
 	transition: margin-left 180ms ease; /* Smooth transition when sidebar collapses */
