@@ -178,10 +178,11 @@ const usuarios = ref([])
 
 async function cargarUsuarios() {
   try {
-    const token = localStorage.getItem('accessToken')
+    const token = localStorage.getItem('accessToken') || localStorage.getItem('token')
     if (!token) return
 
-    const response = await fetch('http://127.0.0.1:8000/api/usuarios/', {
+    // Usar el endpoint correcto del router: /api/usuarios/usuarios/ (no la raíz del router)
+    const response = await fetch('http://127.0.0.1:8000/api/usuarios/usuarios/', {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'

@@ -803,7 +803,8 @@ export default {
 
         // Solo incluir password si hay uno nuevo
         if (this.usuarioForm.password) {
-          usuarioData.USU_PASSWORD = this.usuarioForm.password
+          // El backend espera el campo `password` (no `USU_PASSWORD`) en el serializer
+          usuarioData.password = this.usuarioForm.password
         }
 
         if (this.modoEdicion) {

@@ -16,6 +16,20 @@ class UsuarioViewSet(viewsets.ModelViewSet):
     authentication_classes = [JWTAuthentication]
     permission_classes = [PerfilPermission]
 
+    # Envoltorio para capturar y loggear excepciones durante list (500s)
+    def list(self, request, *args, **kwargs):
+        try:
+            return super().list(request, *args, **kwargs)
+        except Exception as e:
+            import traceback
+            tb = traceback.format_exc()
+            # Imprimir traceback en la salida del servidor para debugging
+            print('--- Exception in UsuarioViewSet.list ---')
+            print(tb)
+            from rest_framework.response import Response
+            from rest_framework import status
+            return Response({'detail': 'internal_server_error', 'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 class PerfilViewSet(viewsets.ModelViewSet):
     queryset = Perfil.objects.all()
     serializer_class = MU_S.PerfilSerializer
