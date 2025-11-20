@@ -707,7 +707,7 @@ export default {
       )
     },
     puedeRegistrarIndividual () {
-      return (
+      return (0
         this.formInd.personaId &&
         this.formInd.CUR_ID &&
         this.formInd.PAP_MONTO > 0 &&
