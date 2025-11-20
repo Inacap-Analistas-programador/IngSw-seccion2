@@ -204,7 +204,7 @@ La API usa **Django REST Framework** para:
 ```bash
   git pull origin main
 ```
-para mantener el repositorio sincronizado.
+3. Borra las carpetas pycaché o cualquier archivo cache basura de tu proyecto local para evitar errores **(suceden muy amenudo)**
 
 ## Acciones recomendadas:
 
