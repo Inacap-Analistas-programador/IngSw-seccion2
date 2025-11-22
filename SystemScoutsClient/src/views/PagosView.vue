@@ -16,6 +16,12 @@
       <button :class="{ active: tab === 'historico' }" @click="tab = 'historico'">
         Histórico
       </button>
+      <button :class="{ active: tab === 'comprobantes' }" @click="tab = 'comprobantes'">
+        Comprobantes
+      </button>
+      <button :class="{ active: tab === 'proveedores' }" @click="tab = 'proveedores'">
+        Pagos a Proveedores
+      </button>
     </div>
 
     <!-- ===================== SECCIÓN: REGISTRO INDIVIDUAL ===================== -->
@@ -33,20 +39,6 @@
               v-model="buscarPersonaQ"
               placeholder="EJ: 12.345.678-9 O JUAN PÉREZ"
             />
-          </div>
-          <div>
-            <BaseButton
-              variant="primary"
-              :disabled="!buscarPersonaQ || buscandoPersonas"
-              @click="buscarPersonas(buscarPersonaQ)"
-            >
-              <template v-if="buscandoPersonas">
-                <span class="spinner"></span> Buscando...
-              </template>
-              <template v-else>
-                Buscar
-              </template>
-            </BaseButton>
           </div>
         </div>
 
@@ -87,6 +79,31 @@
           </div>
 
           <div class="col">
+            <label>Tipo de Pago *</label>
+            <div class="button-group">
+              <BaseButton
+                :variant="formInd.tipoPago === 'ingreso' ? 'primary' : 'secondary'"
+                @click="formInd.tipoPago = 'ingreso'">
+                Ingreso
+              </BaseButton>
+              <BaseButton
+                :variant="formInd.tipoPago === 'egreso' ? 'primary' : 'secondary'"
+                @click="formInd.tipoPago = 'egreso'">
+                Egreso
+              </BaseButton>
+            </div>
+          </div>
+
+          <div class="col">
+            <label>Concepto *</label>
+            <BaseSelect
+              v-model="formInd.COC_ID"
+              :options="conceptosOptions"
+              placeholder="Seleccione concepto"
+            />
+          </div>
+
+          <div class="col">
             <label>Curso / Capacitación *</label>
             <BaseSelect
               v-model="formInd.CUR_ID"
@@ -124,7 +141,7 @@
           </div>
 
           <div class="col full comprobante-wrapper">
-            <label>Comprobante de transferencia *</label>
+            <label>Comprobante de transferencia {{ formInd.tipoPago === 'egreso' ? '(Opcional)' : '' }}</label>
             <input
               ref="fileIndRef"
               type="file"
@@ -175,7 +192,45 @@
               placeholder="Seleccione curso"
             />
           </div>
-          <div class="col auto">
+          <div class="col">
+            <label>Tipo de Pago *</label>
+            <BaseSelect
+              v-model="formMasivo.tipoPago"
+              :options="[{value: 'ingreso', label: 'Ingreso'}, {value: 'egreso', label: 'Egreso'}]"
+              placeholder="Seleccione tipo"
+            />
+          </div>
+          <div class="col">
+            <label>Concepto *</label>
+            <BaseSelect
+              v-model="formMasivo.COC_ID"
+              :options="conceptosOptions"
+              placeholder="Seleccione concepto"
+            />
+          </div>
+          <div class="col half">
+            <label>Valor Total *</label>
+            <div class="with-prefix">
+              <span class="prefix">$</span>
+              <input
+                type="number"
+                min="0"
+                step="100"
+                v-model.number="formMasivo.PAP_MONTO"
+                placeholder="Ingrese el monto total"
+                :disabled="!seleccionados.length"
+              />
+            </div>
+          </div>
+          <div class="col half">
+            <label>Fecha de Pago *</label>
+            <InputBase 
+              type="date" 
+              v-model="formMasivo.PAP_FECHA_PAGO" 
+              :disabled="!seleccionados.length"
+            />
+          </div>
+          <div class="col auto full-width">
             <label class="invisible">Cargar</label>
             <BaseButton class="btn-standard"
               variant="primary"
@@ -212,23 +267,7 @@
         </div>
 
         <div v-if="seleccionados.length" class="grid grid-masivo">
-          <div class="col">
-            <label>Valor por Persona *</label>
-            <div class="with-prefix">
-              <span class="prefix">$</span>
-              <input
-                type="number"
-                min="0"
-                step="100"
-                v-model.number="formMasivo.PAP_MONTO"
-              />
-            </div>
-          </div>
-          <div class="col">
-            <label>Fecha de Pago *</label>
-            <InputBase type="date" v-model="formMasivo.PAP_FECHA_PAGO" />
-          </div>
-          <div class="col full">
+          <div class="col span-2">
             <label>Comentario / Observación (máx. 200 caracteres)</label>
             <textarea
               class="comentario-input"
@@ -237,8 +276,8 @@
               placeholder="Detalle general del pago; se aplicará a todos."
             />
           </div>
-          <div class="col full comprobante-wrapper">
-            <label>Comprobante de transferencia grupal (obligatorio)</label>
+          <div class="col span-2 comprobante-wrapper">
+            <label>Comprobante de transferencia grupal {{ formMasivo.tipoPago === 'egreso' ? '(Opcional)' : '' }}</label>
             <input
               ref="fileMasivoRef"
               type="file"
@@ -253,12 +292,12 @@
           v-if="seleccionados.length && formMasivo.PAP_MONTO"
         >
           <div>Seleccionados: <strong>{{ seleccionados.length }}</strong></div>
-          <div>Valor por persona: <strong>${{ formMasivo.PAP_MONTO.toLocaleString('es-CL') }}</strong></div>
+          <div>Valor por persona: <strong>${{ valorPorPersonaMasivo.toLocaleString('es-CL') }}</strong></div>
           <div class="total">
             Total:
             <strong>
               ${{
-                (seleccionados.length * formMasivo.PAP_MONTO).toLocaleString('es-CL')
+                (formMasivo.PAP_MONTO).toLocaleString('es-CL')
               }}
             </strong>
           </div>
@@ -283,54 +322,33 @@
     <!-- ===================== SECCIÓN: HISTÓRICO DE PAGOS ===================== -->
     <div v-else-if="tab === 'historico'" class="card card-historico">
       <!-- Filtros compactos -->
-      <div class="filtros filtros-historico">
-        <div class="row-buscar">
-          <div class="buscar-input">
-            <InputBase
-              v-model="filtroQ"
-              placeholder="NOMBRE / RUT / EMAIL"
-              @keydown.enter.prevent="cargarPagos"
-            />
-          </div>
-          <BaseButton variant="primary" @click="cargarPagos" :disabled="cargandoPagos">
-            Buscar
-          </BaseButton>
+      <div class="filtros filtros-historico" style="align-items: flex-end;">
+        <div style="display: flex; flex-direction: column;">
+          <label>Buscar</label>
+          <InputBase class="filtro-busqueda filtro-corto" v-model="filtroQ" placeholder="NOMBRE / RUT / EMAIL" title="Buscar por Nombre, RUT o Email" />
         </div>
-        <BaseSelect
-          class="filtro-corto"
-          v-model="filtroCurso"
-          :options="[{ value: '', label: 'Todos los cursos' }, ...cursoOptions]"
-        />
-        <BaseSelect
-          class="filtro-corto"
-          v-model="filtroGrupo"
-          :options="[{ value: '', label: 'Todos los grupos' }, ...grupoOptions]"
-        />
+        <div style="display: flex; flex-direction: column;">
+          <label>Curso</label>
+          <BaseSelect class="filtro-corto" v-model="filtroCurso" :options="[{ value: '', label: 'Todos los cursos' }, ...cursoOptions]" title="Filtrar por Curso" />
+        </div>
+        <div style="display: flex; flex-direction: column;">
+          <label>Grupo</label>
+          <BaseSelect class="filtro-corto" v-model="filtroGrupo" :options="[{ value: '', label: 'Todos los grupos' }, ...grupoOptions]" title="Filtrar por Grupo" />
+        </div>
+        <div style="display: flex; flex-direction: column;">
+          <label>Estado de Pago</label>
+          <BaseSelect class="filtro-corto" v-model="filtroEstado" :options="[{ value: '', label: 'Todos' }, { value: 'pagado', label: 'Pagado' }, { value: 'pendiente', label: 'Pendiente' }, { value: 'anulado', label: 'Anulado' }]" title="Filtrar por Estado de Pago" />
+        </div>
+        <BaseButton class="btn-standard" variant="primary" @click="cargarPagos(true)">
+          <AppIcons name="search" :size="16" /> Buscar
+        </BaseButton>
       </div>
 
       <!-- Toolbar -->
       <div class="toolbar">
-        <BaseButton class="btn-standard" variant="secondary" @click="exportarCSV">
+        <BaseButton class="btn-standard" variant="secondary" @click="exportarExcel">
           <AppIcons name="download" :size="16" />
-          Exportar CSV
-        </BaseButton>
-
-        <BaseButton
-          class="btn-standard"
-          variant="info"
-          :disabled="!seleccionadosHistorico.length"
-          @click="marcarEnviado"
-        >
-          <AppIcons name="check" :size="16" /> Marcar Enviado
-        </BaseButton>
-
-        <BaseButton
-          class="btn-standard"
-          variant="primary"
-          :disabled="!seleccionadosHistorico.length"
-          @click="enviarPorCorreo"
-        >
-          <AppIcons name="send" :size="16" /> Enviar por correo
+          Exportar
         </BaseButton>
       </div>
 
@@ -396,10 +414,10 @@
                 >
                   <AppIcons name="edit" :size="14" /> Editar
                 </BaseButton>
-                <BaseButton class="btn-action"
+                <BaseButton class="btn-action" 
                   size="sm"
                   variant="secondary"
-                  @click="abrirTransferir(p)"
+                  @click="abrirCambioPersona(p)"
                 >
                   <AppIcons name="share" :size="14" /> Transferir
                 </BaseButton>
@@ -429,6 +447,122 @@
         </table>
       </div>
     </div>
+
+    <!-- ===================== SECCIÓN: COMPROBANTES ===================== -->
+    <div v-else-if="tab === 'comprobantes'" class="card card-registro">
+      <section class="panel panel-box">
+        <div class="panel-title">
+          <h3>Generación de Comprobantes</h3>
+          <p>Filtra los pagos y genera un comprobante en formato PDF.</p>
+        </div>
+
+        <!-- Filtros para Comprobantes -->
+        <div class="grid grid-comprobantes">
+          <div class="col">
+            <label>Tipo de Comprobante</label>
+            <BaseSelect v-model="formComprobante.tipo" :options="[{value: 'ingreso', label: 'Ingreso'}, {value: 'egreso', label: 'Egreso'}]" />
+          </div>
+          <div class="col">
+            <label>Concepto</label>
+            <BaseSelect v-model="formComprobante.COC_ID" :options="conceptosOptions" placeholder="Todos los conceptos" />
+          </div>
+          <div class="col">
+            <label>Curso</label>
+            <BaseSelect v-model="formComprobante.CUR_ID" :options="cursoOptions" placeholder="Todos los cursos" />
+          </div>
+          <div class="col">
+            <label>Grupo</label>
+            <BaseSelect v-model="formComprobante.GRU_ID" :options="grupoOptions" placeholder="Todos los grupos" />
+          </div>
+          <div class="col">
+            <label>Fecha Desde</label>
+            <InputBase type="date" v-model="formComprobante.fechaDesde" />
+          </div>
+          <div class="col">
+            <label>Fecha Hasta</label>
+            <InputBase type="date" v-model="formComprobante.fechaHasta" />
+          </div>
+          <div class="col auto">
+            <label class="invisible">Buscar</label>
+            <BaseButton class="btn-standard" variant="primary" @click="buscarPagosParaComprobante" :disabled="cargandoPagosComprobante">
+              <AppIcons name="search" :size="16" /> {{ cargandoPagosComprobante ? 'Buscando...' : 'Buscar Pagos' }}
+            </BaseButton>
+          </div>
+        </div>
+
+        <!-- Tabla de resultados para comprobantes -->
+        <div v-if="pagosBuscadosComprobante" class="lista" style="margin-top: 20px;">
+          <div class="lista-header">
+            <h5>Pagos Encontrados ({{ pagosParaComprobante.length }})</h5>
+            <div class="acciones">
+              <BaseButton size="sm" variant="secondary" @click="toggleSelectAllComprobante(true)">Seleccionar todos</BaseButton>
+              <BaseButton size="sm" variant="secondary" @click="toggleSelectAllComprobante(false)">Deseleccionar</BaseButton>
+            </div>
+          </div>
+          <div class="table-wrapper" style="max-height: 300px;">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 32px;"><input type="checkbox" @change="toggleSelectAllComprobante($event.target.checked)" /></th>
+                  <th>Nombre</th>
+                  <th>Concepto</th>
+                  <th>Monto</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="cargandoPagosComprobante"><td colspan="5" class="placeholder">Cargando...</td></tr>
+                <tr v-else-if="!pagosParaComprobante.length"><td colspan="5" class="placeholder">No se encontraron pagos con esos filtros.</td></tr>
+                <tr v-for="p in pagosParaComprobante" :key="p.PAP_ID">
+                  <td><input type="checkbox" :value="p.PAP_ID" v-model="seleccionadosComprobante" /></td>
+                  <td data-label="Nombre">{{ p.persona_nombre }}</td>
+                  <td data-label="Concepto">{{ p.concepto_descripcion }}</td>
+                  <td data-label="Monto">${{ (p.PAP_MONTO || 0).toLocaleString('es-CL') }}</td>
+                  <td data-label="Fecha">{{ dateCL(p.PAP_FECHA_PAGO) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Acciones para comprobantes -->
+        <div v-if="seleccionadosComprobante.length" class="acciones center" style="margin-top: 20px;">
+          <div class="resumen" style="margin-bottom: 10px;">
+            <div>Seleccionados: <strong>{{ seleccionadosComprobante.length }}</strong></div>
+            <div class="total">Total: <strong>${{ totalSeleccionadoComprobante.toLocaleString('es-CL') }}</strong></div>
+          </div>
+          <BaseButton variant="success" class="btn-standard" @click="generarComprobantePDF">
+            <AppIcons name="download" :size="16" /> Generar Comprobante PDF
+          </BaseButton>
+        </div>
+      </section>
+    </div>
+
+    <!-- ===================== SECCIÓN: PAGOS A PROVEEDORES ===================== -->
+    <div v-else-if="tab === 'proveedores'" class="card card-registro">
+      <section class="panel panel-box">
+        <div class="panel-title">
+          <h3>Pagos a Proveedores</h3>
+          <p>Registra egresos destinados a proveedores de servicios o productos.</p>
+        </div>
+
+        <div class="grid grid-proveedor">
+          <div class="col"><label>Nombre o Razón Social *</label><InputBase v-model="formProveedor.nombre" placeholder="Ej: Imprenta Central" /></div>
+          <div class="col"><label>RUT del Proveedor *</label><InputBase v-model="formProveedor.rut" placeholder="Ej: 76.123.456-7" /></div>
+          <div class="col"><label>Concepto de Egreso *</label><BaseSelect v-model="formProveedor.COC_ID" :options="conceptosEgresoOptions" placeholder="Seleccione concepto" /></div>
+          <div class="col half"><label>Valor Pagado *</label><div class="with-prefix"><span class="prefix">$</span><input type="number" min="0" v-model.number="formProveedor.PAP_MONTO" /></div></div>
+          <div class="col half"><label>Fecha de Pago *</label><InputBase type="date" v-model="formProveedor.PAP_FECHA_PAGO" /></div>
+          <div class="col span-2"><label>Comentario / Observación</label><textarea class="comentario-input" v-model="formProveedor.observacion" maxlength="200" placeholder="Nº de factura, detalle del servicio, etc."></textarea></div>
+          <div class="col full comprobante-wrapper"><label>Comprobante (Opcional)</label><input ref="fileProveedorRef" type="file" accept=".pdf,.jpg,.jpeg,.png" @change="onFileProveedor" /></div>
+        </div>
+
+        <div class="acciones center acciones-individual">
+          <BaseButton variant="success" class="btn-standard" :disabled="!puedeRegistrarProveedor" @click="registrarPagoProveedor"><AppIcons name="save" :size="16" /> Registrar Egreso</BaseButton>
+          <BaseButton variant="secondary" class="btn-standard" @click="limpiarProveedor"><AppIcons name="x" :size="16" /> Limpiar</BaseButton>
+        </div>
+      </section>
+    </div>
+
     <!-- ===================== MODALES ===================== -->
     <!-- Modal Editar -->
     <BaseModal v-model="modalEditar" class="pago-modal">
@@ -523,23 +657,36 @@
             </div>
             <BaseButton variant="primary" @click="buscarPersonaParaTransferir">Buscar</BaseButton>
           </div>
-          <div v-if="buscandoPersonasTransferir" class="estado-carga">Buscando...</div>
-          <div v-if="personasEncontradasTransferir.length" class="resultados">
-             <!-- Resultados de la búsqueda -->
+          <div v-if="buscandoPersonasTransferir" class="estado-carga">
+            <div class="spinner"></div> Buscando...
+          </div>
+          <div v-if="personasEncontradasTransferir.length" class="resultados" @click="seleccionarPersonaParaTransferir(p)">
+             <div
+              v-for="p in personasEncontradasTransferir"
+              :key="p.id"
+              class="resultado"
+              @click="seleccionarPersonaParaTransferir(p)"
+            >
+              <div class="resultado-left">
+                <strong>{{ p.nombre }}</strong>
+                <span class="muted">{{ p.rut }}</span>
+              </div>
+              <BaseButton size="sm" variant="secondary" class="btn-action">Elegir</BaseButton>
+            </div>
           </div>
 
           <div class="form-fields-grid">
             <div class="row">
-              <label>RUT nuevo participante</label>
-              <input v-model="transferForm.rut" />
+              <label>Nombre nuevo participante</label>
+              <InputBase v-model="transferForm.nombre" readonly placeholder="Selecciona una persona" />
             </div>
             <div class="row">
-              <label>Email nuevo participante</label>
-              <input v-model="transferForm.email" />
+              <label>RUT nuevo participante</label>
+              <InputBase v-model="transferForm.rut" readonly />
             </div>
             <div class="row">
               <label>Tipo de devolución</label>
-              <select v-model="transferForm.tipo">
+              <select v-model="transferForm.tipo" disabled>
                 <option value="total">Devolución / Transferencia Total</option>
                 <option value="parcial">Devolución / Transferencia Parcial</option>
               </select>
@@ -549,6 +696,7 @@
               <input
                 type="number"
                 min="0"
+                disabled
                 v-model.number="transferForm.monto_parcial"
               />
             </div>
@@ -566,6 +714,7 @@
               variant="primary"
               class="btn-modal"
               @click="confirmarTransferencia"
+              :disabled="!transferForm.personaId"
             >
               <AppIcons name="check" :size="16" /> Confirmar
             </BaseButton>
@@ -583,11 +732,13 @@ import BaseSelect from '@/components/BaseSelect.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import BaseModal from '@/components/BaseModal.vue'
 import pagosService from '@/services/pagosService.js'
-import { request } from '@/services/apiClient.js'
 import personasService from '@/services/personasService.js'
 import cursosService from '@/services/cursosService.js'
 import mantenedoresService from '@/services/mantenedoresService.js'
 import { format, parseISO } from 'date-fns'
+import jsPDF from 'jspdf'
+import * as XLSX from 'xlsx'
+import 'jspdf-autotable'
 
 
 function hoyISO () {
@@ -665,39 +816,55 @@ export default {
       transferForm: {
         q: '',
         personaId: null,
-        nombre: '',
+        nombre: '', // Nombre de la nueva persona
         rut: '',
         email: '',
         tipo: 'total',
         monto_parcial: null
       }
-    }
+      ,
+      formComprobante: {
+        tipo: 'ingreso',
+        fechaDesde: '',
+        fechaHasta: '',
+        CUR_ID: '',
+        GRU_ID: '',
+      seccion: '',
+        COC_ID: ''
+      },
+      pagosParaComprobante: [],
+      cargandoPagosComprobante: false,
+      pagosBuscadosComprobante: false, // Para saber si ya se hizo una búsqueda
+      seleccionadosComprobante: [],
+      conceptosOptions: [],
+
+      formProveedor: {
+        nombre: '',
+        rut: '',
+        COC_ID: null,
+        PAP_MONTO: null,
+        PAP_FECHA_PAGO: hoyISO(),
+        observacion: '',
+        file: null
+      }
+    };
   },
   watch: {
-    /**
-     * Observa cambios en la pestaña activa y recarga los pagos si se cambia a 'historico'.
-     */
     tab(newTab, oldTab) {
       if (newTab === 'historico' && oldTab !== 'historico') {
         this.cargarPagos(true); // Forzar recarga al cambiar a la pestaña de histórico
       }
     },
-    /**
-     * Observa cambios en el filtro de curso y ejecuta la carga de pagos con debounce.
-     */
-    filtroCurso() {
-      this.debounceCargarPagos();
+    // Implementa debounce para la búsqueda de personas en el registro individual
+    buscarPersonaQ(newQuery) {
+      if (this.debounceTimer) clearTimeout(this.debounceTimer);
+      this.debounceTimer = setTimeout(() => this.buscarPersonas(newQuery), 300);
     },
-    /**
-     * Observa cambios en el filtro de grupo y ejecuta la carga de pagos con debounce.
-     */
-    filtroGrupo() {
-      this.debounceCargarPagos();
+    // Implementa debounce para la búsqueda en el histórico
+    filtroQ(newQuery) {
+      if (this.debounceTimer) clearTimeout(this.debounceTimer);
+      this.debounceTimer = setTimeout(() => this.cargarPagos(true), 300);
     }
-  },
-  created() {
-    // Crear la función con debounce una vez que el componente es creado
-    this.debounceCargarPagos = this.debounce(() => this.cargarPagos(), 400); // Se mantiene para los filtros de select
   },
   computed: {
     allChecked () {
@@ -707,23 +874,48 @@ export default {
       )
     },
     puedeRegistrarIndividual () {
-      return (0
+      const isEgreso = this.formInd.tipoPago === 'egreso';
+      return (
         this.formInd.personaId &&
         this.formInd.CUR_ID &&
+        this.formInd.COC_ID &&
+        this.formInd.tipoPago &&
         this.formInd.PAP_MONTO > 0 &&
         this.formInd.PAP_FECHA_PAGO &&
-        this.formInd.file
-      )
+        (isEgreso || this.formInd.file)
+      );
     },
     puedeRegistrarMasivo () {
       return (
         this.seleccionados.length &&
         this.formMasivo.CUR_ID &&
         this.formMasivo.GRU_ID &&
+        this.formMasivo.COC_ID &&
+        this.formMasivo.tipoPago &&
         this.formMasivo.PAP_MONTO > 0 &&
         this.formMasivo.PAP_FECHA_PAGO &&
-        this.formMasivo.file
-      )
+        (this.formMasivo.tipoPago === 'egreso' || this.formMasivo.file)
+      );
+    },
+    valorPorPersonaMasivo() {
+      if (!this.formMasivo.PAP_MONTO || !this.seleccionados.length) return 0;
+      return Math.round(this.formMasivo.PAP_MONTO / this.seleccionados.length);
+    },
+    totalSeleccionadoComprobante() {
+      if (!this.seleccionadosComprobante.length) return 0;
+      return this.pagosParaComprobante
+        .filter(p => this.seleccionadosComprobante.includes(p.PAP_ID))
+        .reduce((total, p) => total + (p.PAP_MONTO || 0), 0);
+    },
+    conceptosEgresoOptions() {
+      return this.conceptosOptions.filter(c => c.tipo === 'egreso');
+    },
+    puedeRegistrarProveedor() {
+      return this.formProveedor.nombre &&
+             this.formProveedor.rut &&
+             this.formProveedor.COC_ID &&
+             this.formProveedor.PAP_MONTO > 0 &&
+             this.formProveedor.PAP_FECHA_PAGO;
     }
   },
   methods: {
@@ -760,6 +952,19 @@ export default {
         console.error('Error cargando grupos:', e)
         this.grupoOptions = []
       }
+
+      try {
+        const conceptosResponse = await mantenedoresService.conceptoContable.list();
+        const conceptos = Array.isArray(conceptosResponse) ? conceptosResponse : (conceptosResponse.results || []);
+        this.conceptosOptions = conceptos.map(c => ({
+          value: c.COC_ID,
+          label: c.COC_DESCRIPCION,
+          tipo: c.COC_TIPO
+        }));
+      } catch (e) {
+        console.error('Error cargando conceptos contables:', e);
+        this.conceptosOptions = [];
+      }
     },
 
     // ===================================================================
@@ -771,31 +976,22 @@ export default {
      * @param {string} q - El término de búsqueda.
      */
     async buscarPersonas (q) {
-      console.debug('[buscarPersonas] q=', q)
-      if (!q) {
+      let searchTerm = (q || '').trim();
+      if (!searchTerm) {
         this.personasEncontradas = []
         return
       }
+      // Formatear RUT si el usuario ingresa solo números
+      if (/^\d{7,8}$/.test(searchTerm)) {
+        searchTerm = this.formatRut(searchTerm);
+      }
+
       this.buscandoPersonas = true
       try {
-        // Detectar si q es un RUT (con o sin DV y puntos). Si es RUT, usar el filtro `run` (exacto).
-        const cleaned = String(q).replace(/\./g, '').replace(/\s+/g, '')
-        let params = null
-        if (/^\d{6,8}-?\w?$/.test(cleaned)) {
-          // RUT: usar filtro exacto `run` para devolver solo esa persona
-          params = { run: cleaned.split('-')[0] }
-        } else {
-          // Nombre/email: requerir al menos 3 caracteres para evitar traer todo
-          if (String(q).trim().length < 3) {
-            this.personasEncontradas = []
-            this.buscandoPersonas = false
-            return
-          }
-          // Usar el filtro `nombre` definido en PersonaFilter (icontains)
-          params = { nombre: q }
-        }
-        console.debug('[buscarPersonas] params=', params)
-        const response = await personasService.personas.list(params)
+        const params = { search: q };
+        // The user wants to search by RUT, name, or last name. The backend should support this via the 'search' parameter.
+        // The placeholder already suggests this.
+        const response = await personasService.personas.list(params);
         const arr = Array.isArray(response) ? response : (response.results || [])
         this.personasEncontradas = arr.map(p => ({
           id: p.PER_ID,
@@ -843,6 +1039,8 @@ export default {
         PAP_MONTO: null,
         PAP_FECHA_PAGO: hoyISO(),
         observacion: '',
+        tipoPago: 'ingreso',
+        COC_ID: null,
         file: null
       }
       this.buscarPersonaQ = ''
@@ -854,32 +1052,24 @@ export default {
      */
     async registrarPagoIndividual () {
       try {
-        // Construir FormData para crear un Comprobante_Pago
         const fd = new FormData()
-        // En el modelo Comprobante_Pago:
-        // USU_ID, PEC_ID (curso), COC_ID, CPA_FECHA_HORA, CPA_NUMERO, CPA_VALOR
-        // Usamos valores por defecto para USU_ID y COC_ID si no disponibles en el frontend.
-        fd.append('USU_ID', 1)
-        fd.append('PEC_ID', this.formInd.CUR_ID)
-        fd.append('COC_ID', 1)
-        // Fecha/hora: usar la fecha seleccionada con hora actual
-        const fechaPago = this.formInd.PAP_FECHA_PAGO || hoyISO()
-        const fechaHoraIso = new Date(fechaPago).toISOString()
-        fd.append('CPA_FECHA_HORA', fechaHoraIso)
-        // Número y valor
-        fd.append('CPA_NUMERO', 0)
-        fd.append('CPA_VALOR', this.formInd.PAP_MONTO)
-        // Si se sube un comprobante como archivo (campo libre), lo incluimos con la clave 'comprobante'
-        if (this.formInd.file) fd.append('comprobante', this.formInd.file)
+        fd.append('PER_ID', this.formInd.personaId)
+        fd.append('CUR_ID', this.formInd.CUR_ID)
+        fd.append('PAP_MONTO', this.formInd.PAP_MONTO)
+        fd.append('COC_ID', this.formInd.COC_ID);
+        fd.append('PAP_FECHA_PAGO', this.formInd.PAP_FECHA_PAGO)
+        if (this.formInd.observacion) {
+          fd.append('PAP_OBSERVACION', this.formInd.observacion)
+        }
+        fd.append('comprobante', this.formInd.file)
+        fd.append('MET_ID', 1) // Asumiendo 1 para Transferencia
+        await pagosService.pagos.create(fd)
 
-        await request('pagos/comprobante-pago', { method: 'POST', body: fd })
-
-        alert('Comprobante registrado correctamente')
+        alert('Pago individual registrado correctamente')
         this.limpiarIndividual()
         this.cargarPagos()
       } catch (e) {
-        console.error('Error registrando comprobante:', e)
-        alert('Error registrando comprobante')
+        alert('Error registrando pago individual')
       }
     },
 
@@ -902,7 +1092,7 @@ export default {
       this.participantes = []
       try {
         const response = await personasService.personas.list({
-          GRU_ID: this.formMasivo.GRU_ID
+          grupo: this.formMasivo.GRU_ID, curso: this.formMasivo.CUR_ID
         })
         const arr = Array.isArray(response) ? response : (response.results || [])
         this.participantes = arr.map(p => ({
@@ -940,6 +1130,8 @@ export default {
         PAP_MONTO: null,
         PAP_FECHA_PAGO: hoyISO(),
         observacion: '',
+        tipoPago: 'ingreso',
+        COC_ID: null,
         file: null
       }
       this.participantes = []
@@ -955,6 +1147,7 @@ export default {
         fd.append('GRU_ID', this.formMasivo.GRU_ID)
         fd.append('CUR_ID', this.formMasivo.CUR_ID)
         fd.append('PAP_MONTO', this.formMasivo.PAP_MONTO)
+        fd.append('COC_ID', this.formMasivo.COC_ID);
         fd.append('PAP_FECHA_PAGO', this.formMasivo.PAP_FECHA_PAGO)
         if (this.formMasivo.observacion) {
           fd.append('PAP_OBSERVACION', this.formMasivo.observacion)
@@ -965,7 +1158,7 @@ export default {
         fd.append('comprobante', this.formMasivo.file)
         fd.append('MET_ID', 1) // Asumiendo 1 para Transferencia
         
-        await request('pagos/pago-persona', { method: 'POST', body: fd })
+        await pagosService.pagos.createMasivo(fd)
 
         alert('Pago masivo registrado correctamente')
         this.limpiarMasivo()
@@ -994,37 +1187,23 @@ export default {
      * @param {boolean} force - Si es true, fuerza la recarga aunque ya esté en proceso.
      */
     async cargarPagos (force = false) {
-      if (this.cargandoPagos && !force) {
-        return; // Evita cargas automáticas duplicadas, pero permite forzar con el botón.
-      }
+      // Evita cargas múltiples si ya hay una en progreso.
+      if (this.cargandoPagos && !force) return;
       this.cargandoPagos = true
       this.errorPagos = null
       try {
-        // Construir parámetros de filtros para la API.
-        // Si el filtro Q parece ser un RUT (contiene '-') enviamos `persona_run`
-        // (sin DV ni puntos). En otro caso enviamos `search` para búsqueda por nombre/email.
+        let searchTerm = (this.filtroQ || '').trim();
+        // Formatear RUT si el usuario ingresa solo números
+        if (/^\d{7,8}$/.test(searchTerm)) {
+          searchTerm = this.formatRut(searchTerm);
+        }
         const params = {
+          search: searchTerm || undefined,
           CUR_ID: this.filtroCurso || undefined,
-          GRU_ID: this.filtroGrupo || undefined
+          GRU_ID: this.filtroGrupo || undefined,
+          estado: this.filtroEstado || undefined
         }
-
-        const q = (this.filtroQ || '').trim()
-        if (q) {
-          // Normalizar para detectar RUT (ej: 12.345.678-9 o 12345678-9)
-          const cleaned = q.replace(/\./g, '').replace(/\s+/g, '')
-          if (/^\d{7,8}-?\w?$/.test(cleaned)) {
-            // Extraer la parte numérica antes del guión (sin DV)
-            const runPart = cleaned.split('-')[0]
-            params.persona_run = runPart
-          } else {
-            params.search = q
-          }
-        }
-        // Eliminar claves con valor undefined o cadena vacía para no enviar `...=undefined`
-        const qp = Object.fromEntries(
-          Object.entries(params).filter(([, v]) => v !== undefined && v !== '' && v !== 'undefined')
-        )
-        const response = await pagosService.pagoPersona.list(qp)
+        const response = await pagosService.pagos.list(params)
         // Asegurarse de que la respuesta es un array, incluso si la API devuelve otra cosa.
         if (Array.isArray(response)) {
           this.pagos = response;
@@ -1046,40 +1225,35 @@ export default {
     /**
      * Exporta los pagos actualmente visibles en la tabla a un archivo CSV.
      */
-    exportarCSV () {
-      const rows = this.pagos.map(p => ({
-        Nombre: p.persona_nombre,
-        RUT: p.persona_rut,
-        Curso: p.curso_descripcion,
-        Monto: p.PAP_MONTO,
-        Fecha: dateCL(p.PAP_FECHA_PAGO),
-        Metodo: p.metodo_descripcion
-      }))
-      const headers = rows.length
-        ? Object.keys(rows[0])
-        : ['Nombre', 'RUT', 'Curso', 'Monto', 'Fecha', 'Metodo']
-      const csv = [headers.join(',')]
-        .concat(
-          rows.map(r =>
-            headers
-              .map(h =>
-                `"${String(r[h] ?? '').replace(/"/g, '""')}"`
-              )
-              .join(',')
-          )
-        )
-        .join('\r\n')
-      const blob = new Blob([csv], {
-        type: 'text/csv;charset=utf-8;'
-      })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'Pagos.csv'
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+    exportarExcel () {
+      if (this.pagos.length === 0) {
+        alert("No hay datos para exportar.");
+        return;
+      }
+
+      const rowsToExport = this.pagos.map(p => {
+        const valorCuota = p.valor_cuota || 0; // Assuming this data comes from the API
+        const valorPagado = p.PAP_MONTO || 0;
+        return {
+          'Rut': p.persona_rut,
+          'Nombre': p.persona_nombre?.split(' ')[0] || '',
+          'Apellidos': p.persona_nombre?.split(' ').slice(1).join(' ') || '',
+          'Correo electrónico': p.persona_email || '',
+          'Grupo': p.grupo_nombre || '',
+          'Distrito': p.distrito_nombre || '',
+          'Zona': p.zona_nombre || '',
+          'Curso': this.cursoLabel(p.CUR_ID),
+          'Valor Cuota': valorCuota,
+          'Valor Pagado': valorPagado,
+          'Valor Adeudado': valorCuota - valorPagado,
+          'Fecha Ultimo Pago': dateCL(p.PAP_FECHA_PAGO)
+        };
+      });
+
+      const ws = XLSX.utils.json_to_sheet(rowsToExport);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Pagos");
+      XLSX.writeFile(wb, "Pagos_Historico.xlsx");
     },
     /**
      * Selecciona o deselecciona todos los checkboxes de la tabla de historial.
@@ -1089,28 +1263,6 @@ export default {
       this.seleccionadosHistorico = checked
         ? this.pagos.map(p => p.id)
         : []
-    },
-    /**
-     * Simula la acción de marcar pagos como "enviados".
-     */
-    marcarEnviado () {
-      if (!this.seleccionadosHistorico.length) return
-      alert(
-        `Marcados como enviados: ${this.seleccionadosHistorico.join(
-          ', '
-        )}`
-      )
-    },
-    /**
-     * Simula el envío de correos para los pagos seleccionados.
-     */
-    enviarPorCorreo () {
-      if (!this.seleccionadosHistorico.length) return
-      alert(
-        `Simulación de envío de correos a IDs: ${this.seleccionadosHistorico.join(
-          ', '
-        )}`
-      )
     },
 
     // ===================================================================
@@ -1129,11 +1281,11 @@ export default {
      * Abre el modal para transferir un pago a otra persona.
      * @param {object} p - El objeto del pago a transferir.
      */
-    abrirTransferir (p) {
+    abrirCambioPersona (p) {
       this.personasEncontradasTransferir = [];
       this.buscandoPersonasTransferir = false;
-      this.pagoTransferir = p
-      this.transferForm = {
+      this.pagoCambio = p
+      this.cambioForm = {
         nombre: '',
         rut: '',
         email: '',
@@ -1143,15 +1295,47 @@ export default {
       this.modalTransferir = true
     },
     /**
+     * Selecciona una persona de la lista de resultados de búsqueda para la transferencia
+     * y rellena el formulario de transferencia con sus datos.
+     * @param {object} p - El objeto de la persona seleccionada.
+     */
+    seleccionarPersonaParaTransferir(p) {
+      this.transferForm.personaId = p.id;
+      this.transferForm.nombre = p.nombre;
+      this.transferForm.rut = p.rut;
+      this.transferForm.email = p.email;
+      this.personasEncontradasTransferir = []; // Ocultar resultados
+      this.transferForm.q = p.nombre; // Poner el nombre en el input de búsqueda
+    },
+    /**
      * Confirma la transferencia de un pago. (Lógica de API pendiente)
      */
     async confirmarTransferencia () {
-      if (!this.pagoTransferir) return
-      // Aquí llamarías al endpoint real de transferencia/devolución
-      console.log(
-        `Transferencia registrada para pago ID ${this.pagoTransferir.id} (${this.transferForm.tipo})`
-      )
-      this.modalTransferir = false
+      if (!this.pagoTransferir || !this.transferForm.personaId) {
+        alert("Debes seleccionar una persona para realizar la transferencia.");
+        return;
+      }
+
+      try {
+        const payload = {
+          pago_id: this.pagoTransferir.PAP_ID,
+          nueva_persona_id: this.transferForm.personaId,
+          // Aquí podrías agregar más datos si la API lo requiere, como el tipo de transferencia
+        };
+
+        console.log("Enviando payload de transferencia:", payload);
+
+        // Suponiendo que tienes un nuevo endpoint para esto en tu servicio
+        await pagosService.pagos.transferir(payload);
+
+        alert(`Pago transferido exitosamente a ${this.transferForm.nombre}.`);
+        this.modalTransferir = false;
+        await this.cargarPagos(true); // Recargar el historial para ver el cambio
+
+      } catch (error) {
+        console.error("Error al confirmar la transferencia:", error);
+        alert("Ocurrió un error al intentar transferir el pago. Revisa la consola para más detalles.");
+      }
     },
     /**
      * Busca una persona para realizar la transferencia de un pago.
@@ -1164,27 +1348,12 @@ export default {
       }
       this.buscandoPersonasTransferir = true;
       try {
-        console.debug('[buscarPersonaParaTransferir] q=', q)
-        // Si q parece RUT, buscar por run exacto para no devolver muchos resultados
-        const cleaned = String(q).replace(/\./g, '').replace(/\s+/g, '')
-        let params = null
-        if (/^\d{6,8}-?\w?$/.test(cleaned)) {
-          params = { run: cleaned.split('-')[0] }
-        } else {
-          if (String(q).trim().length < 3) {
-            this.personasEncontradasTransferir = []
-            this.buscandoPersonasTransferir = false
-            return;
-          }
-          params = { nombre: q }
-        }
-        console.debug('[buscarPersonaParaTransferir] params=', params)
-        const response = await personasService.personas.list(params);
+        const response = await personasService.personas.list({ search: q });
         const arr = Array.isArray(response) ? response : (response.results || []);
         this.personasEncontradasTransferir = arr.map(p => ({
           id: p.PER_ID,
           nombre: `${p.PER_NOMBRES || ''} ${p.PER_APELPTA || ''}`.trim(),
-          rut: (p.PER_RUN && p.PER_DV) ? `${p.PER_RUN}-${p.PER_DV}` : (p.PER_RUN || ''),
+          rut: (p.PER_RUN && p.PER_DV) ? `${String(p.PER_RUN).replace(/\./g, '')}-${p.PER_DV}` : (p.PER_RUN || ''),
           email: p.PER_MAIL || ''
         }));
       } catch (e) {
@@ -1234,7 +1403,7 @@ export default {
           PAP_FECHA_PAGO: this.pagoEdit.fecha,
           PAP_OBSERVACION: this.pagoEdit.observacion
         }
-        await pagosService.pagoPersona.partialUpdate(this.pagoEdit.id, body)
+        await pagosService.pagos.partialUpdate(this.pagoEdit.id, body)
         this.modalEditar = false
         await this.cargarPagos()
         alert('Pago actualizado')
@@ -1259,7 +1428,7 @@ export default {
     async confirmarAnulacion () {
       if (!this.pagoAnular) return;
       try {
-        await pagosService.pagoPersona.remove(this.pagoAnular.PAP_ID)
+        await pagosService.pagos.remove(this.pagoAnular.PAP_ID)
         this.modalAnular = false
         await this.cargarPagos()
         alert('Pago anulado')
@@ -1267,27 +1436,167 @@ export default {
         alert('Error al anular pago')
       }
     },
-    /**
-     * Función de debounce para retrasar la ejecución de una función.
-     * Usado para la búsqueda de personas.
-     */
-    debounce(func, delay) {
-      let timeout;
-      return function(...args) {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(this, args), delay);
-      };
-    },
-    /**
-     * Abre el comprobante de pago en una nueva pestaña.
-     * @param {object} p - El objeto del pago.
-     */
-    descargarComprobante (p) {
-      if (p.PAP_RUTA_COMPROBANTE) {
-        window.open(p.PAP_RUTA_COMPROBANTE, '_blank')
-      } else {
-        alert('No hay comprobante disponible.')
+
+    // ===================================================================
+    // MÉTODOS PARA GENERACIÓN DE COMPROBANTES
+    // ===================================================================
+    async buscarPagosParaComprobante() {
+      this.cargandoPagosComprobante = true;
+      this.pagosBuscadosComprobante = true;
+      this.pagosParaComprobante = [];
+      this.seleccionadosComprobante = [];
+
+      try {
+        // Construir parámetros de búsqueda
+        const params = {
+          tipo: this.formComprobante.tipo,
+          fecha_desde: this.formComprobante.fechaDesde || undefined,
+          fecha_hasta: this.formComprobante.fechaHasta || undefined,
+          CUR_ID: this.formComprobante.CUR_ID || undefined,
+          GRU_ID: this.formComprobante.GRU_ID || undefined,
+          COC_ID: this.formComprobante.COC_ID || undefined,
+        };
+
+        // Simulación de llamada a API. Reemplazar con el servicio real.
+        // const response = await pagosService.pagos.list(params);
+        // this.pagosParaComprobante = response.results || response;
+        
+        // Usamos los pagos existentes para la demo
+        const todosLosPagos = await pagosService.pagos.list({});
+        this.pagosParaComprobante = (todosLosPagos.results || todosLosPagos).filter(p => {
+            const concepto = this.conceptosOptions.find(c => c.value === p.COC_ID);
+            const tipoConcepto = concepto ? concepto.tipo : 'ingreso';
+            
+            const coincideTipo = tipoConcepto === this.formComprobante.tipo;
+            const coincideFechaDesde = !params.fecha_desde || new Date(p.PAP_FECHA_PAGO) >= new Date(params.fecha_desde);
+            const coincideFechaHasta = !params.fecha_hasta || new Date(p.PAP_FECHA_PAGO) <= new Date(params.fecha_hasta);
+            const coincideCurso = !params.CUR_ID || String(p.CUR_ID) === String(params.CUR_ID);
+            const coincideGrupo = !params.GRU_ID || String(p.GRU_ID) === String(params.GRU_ID);
+            const coincideConcepto = !params.COC_ID || String(p.COC_ID) === String(params.COC_ID);
+
+            return coincideTipo && coincideFechaDesde && coincideFechaHasta && coincideCurso && coincideConcepto;
+        });
+
+      } catch (e) {
+        console.error("Error buscando pagos para comprobante:", e);
+        alert("No se pudieron cargar los pagos para el comprobante.");
+      } finally {
+        this.cargandoPagosComprobante = false;
       }
+    },
+
+    toggleSelectAllComprobante(checked) {
+      this.seleccionadosComprobante = checked ? this.pagosParaComprobante.map(p => p.PAP_ID) : [];
+    },
+
+    async generarComprobantePDF() {
+      const seleccionados = this.pagosParaComprobante.filter(p => this.seleccionadosComprobante.includes(p.PAP_ID));
+      if (seleccionados.length === 0) {
+        alert("No hay pagos seleccionados para generar el comprobante.");
+        return;
+      }
+
+      const doc = new jsPDF();
+      const tipoComprobante = this.formComprobante.tipo.charAt(0).toUpperCase() + this.formComprobante.tipo.slice(1);
+
+      // Encabezado
+      doc.setFontSize(18);
+      doc.text(`Comprobante de ${tipoComprobante}`, 14, 22);
+      doc.setFontSize(11);
+      doc.setTextColor(100);
+      doc.text(`Fecha de generación: ${format(new Date(), 'dd-MM-yyyy')}`, 14, 30);
+
+      // Resumen
+      doc.setFontSize(12);
+      doc.text('Resumen', 14, 45);
+      doc.autoTable({
+        startY: 50,
+        head: [['Concepto', 'Valor']],
+        body: [
+          ['Monto Total', `$${this.totalSeleccionadoComprobante.toLocaleString('es-CL')}`],
+          ['Cantidad de Transacciones', seleccionados.length],
+        ],
+        theme: 'striped',
+        headStyles: { fillColor: [44, 90, 160] },
+      });
+
+      // Detalle de pagos
+      const tableBody = seleccionados.map(p => [
+        dateCL(p.PAP_FECHA_PAGO),
+        p.persona_nombre,
+        p.persona_rut,
+        p.concepto_descripcion,
+        `$${(p.PAP_MONTO || 0).toLocaleString('es-CL')}`
+      ]);
+
+      doc.autoTable({
+        head: [['Fecha', 'Nombre', 'RUT', 'Concepto', 'Monto']],
+        body: tableBody,
+        startY: doc.autoTable.previous.finalY + 10,
+        headStyles: { fillColor: [44, 90, 160] },
+      });
+
+      // Guardar el PDF
+      doc.save(`Comprobante_${tipoComprobante}_${format(new Date(), 'yyyyMMdd')}.pdf`);
+    },
+    // ===================================================================
+    // MÉTODOS PARA PAGOS A PROVEEDORES
+    // ===================================================================
+    onFileProveedor(e) {
+      this.formProveedor.file = e.target.files?.[0] || null;
+    },
+
+    limpiarProveedor() {
+      this.formProveedor = {
+        nombre: '',
+        rut: '',
+        COC_ID: null,
+        PAP_MONTO: null,
+        PAP_FECHA_PAGO: hoyISO(),
+        observacion: '',
+        file: null
+      };
+      if (this.$refs.fileProveedorRef) {
+        this.$refs.fileProveedorRef.value = '';
+      }
+    },
+
+    async registrarPagoProveedor() {
+      if (!this.puedeRegistrarProveedor) return;
+      try {
+        const fd = new FormData();
+        fd.append('proveedor_nombre', this.formProveedor.nombre);
+        fd.append('proveedor_rut', this.formProveedor.rut);
+        fd.append('COC_ID', this.formProveedor.COC_ID);
+        fd.append('PAP_MONTO', this.formProveedor.PAP_MONTO);
+        fd.append('PAP_FECHA_PAGO', this.formProveedor.PAP_FECHA_PAGO);
+        if (this.formProveedor.observacion) fd.append('PAP_OBSERVACION', this.formProveedor.observacion);
+        if (this.formProveedor.file) fd.append('comprobante', this.formProveedor.file);
+        
+        // Se necesitará un nuevo endpoint en el servicio, por ejemplo:
+        // await pagosService.proveedores.create(fd);
+
+        alert('Pago a proveedor registrado correctamente (simulación).');
+        this.limpiarProveedor();
+      } catch (e) {
+        alert('Error registrando pago a proveedor.');
+        console.error("Error en registrarPagoProveedor:", e);
+      }
+    }
+    , // Mantener la coma
+
+    /**
+     * Formatea un RUT numérico (ej: 12345678) a un formato con puntos (ej: 12.345.678).
+     * @param {string} rut - El RUT sin formato.
+     * @returns {string} El RUT formateado.
+     */
+    formatRut(rut) {
+      if (!rut) return '';
+      const rutLimpio = String(rut).replace(/[^0-9]/g, '');
+      if (rutLimpio.length < 2) return rutLimpio;
+      const cuerpo = rutLimpio.slice(0, -1);
+      const dv = rutLimpio.slice(-1); // Aunque no se usa el DV para el formato con puntos, lo separamos.
+      return cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     }
   },
   async mounted () {
@@ -1426,7 +1735,7 @@ export default {
   gap: 12px 18px;
 }
 .grid-masivo {
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px 18px;
 }
 
@@ -1603,6 +1912,10 @@ label {
 
 .filtros-historico {
   margin-bottom: 10px;
+}
+
+.filtros-historico .filtro-busqueda {
+  width: 200px;
 }
 
 .filtros-historico .filtro-corto {
@@ -1888,6 +2201,27 @@ th {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.button-group {
+  display: flex;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 2px; /* Alineación visual */
+}
+
+.button-group .base-button {
+  flex: 1;
+  border-radius: 0;
+  border: none !important;
+  box-shadow: none !important;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.button-group .base-button:not(:last-child) {
+  border-right: 1px solid #d1d5db;
+}
+
 </style>
 <style>
 /* Estilos de botones estandarizados, inspirados en GestionPersonas */
