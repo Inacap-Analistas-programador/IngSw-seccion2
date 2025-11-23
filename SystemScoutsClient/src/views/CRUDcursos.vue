@@ -57,9 +57,10 @@
             <td>{{ getPersonaName(c.PER_ID_RESPONSABLE) }}</td>
             <td><span :class="['badge', getEstadoClass(c.CUR_ESTADO)]">{{ getEstadoText(c.CUR_ESTADO) }}</span></td>
             <td class="actions-cell">
-              <BaseButton @click="abrirModalEditar(c)" variant="secondary" size="sm"><AppIcons name="edit" :size="14" /> Editar</BaseButton>
-              <BaseButton @click="deshabilitarCurso(c)" variant="danger" size="sm"><AppIcons name="ban" :size="14" /> Anular</BaseButton>
+              <BaseButton @click="abrirModalEditar(c)" variant="secondary" size="sm"><AppIcons name="edit" :size="14" /> Modificar</BaseButton>
+              <BaseButton @click="abrirModalCambioEstadoCurso(c)" variant="warning" size="sm"><AppIcons name="refresh" :size="14" /> Cambio Estado</BaseButton>
               <BaseButton @click="abrirModalVer(c)" variant="info" size="sm"><AppIcons name="eye" :size="14" /> Ver</BaseButton>
+              <BaseButton @click="abrirDashboard(c)" variant="primary" size="sm"><AppIcons name="chart-bar" :size="14" /> Dashboard</BaseButton>
             </td>
           </tr>
           <tr v-if="cursosFiltrados.length === 0">
@@ -81,7 +82,7 @@
           <div class="form-group"><label>Código</label><InputBase v-model="form.CUR_CODIGO" /></div>
           <div class="form-group"><label>Tipo de Curso</label><BaseSelect v-model="form.TCU_ID" :options="tiposCursoOptions" optionLabel="text" /><small class="field-hint">Selecciona el tipo de curso</small></div>
           <div class="form-group"><label>Responsable</label><BaseSelect v-model="form.PER_ID_RESPONSABLE" :options="personasOptions" optionLabel="text" /><small class="field-hint">Selecciona a la persona responsable</small></div>
-          <div class="form-group"><label>Encargo</label><BaseSelect v-model="form.CAR_ID_RESPONSABLE" :options="cargosOptions" optionLabel="text" /><small class="field-hint">Selecciona el encargo del responsable</small></div>
+          <div class="form-group"><label>Cargo</label><BaseSelect v-model="form.CAR_ID_RESPONSABLE" :options="cargosOptions" optionLabel="text" /><small class="field-hint">Selecciona el cargo del responsable</small></div>
           <div class="form-group"><label>Fecha de Solicitud</label>
             <InputBase type="date" v-model="form.CUR_FECHA_SOLICITUD" />
             <small class="field-hint">Formato: AAAA-MM-DD (Ej: 2025-11-12)</small>
@@ -112,6 +113,7 @@
         <!-- Sección de Gestión de Fechas -->
         <div class="fechas-section" v-if="esEdicion">
           <hr class="section-divider">
+          <div class="section-box">
           <h4>Períodos del Curso</h4>
           
           <!-- Tabla de Fechas Existentes -->
@@ -133,6 +135,7 @@
                   <td>{{ formatDateSimple(fecha.CUF_FECHA_TERMINO) }}</td>
                   <td>{{ opcionesTipoFecha.find(t => t.value === fecha.CUF_TIPO)?.text }}</td>
                   <td>
+                    <BaseButton @click="iniciarEdicionFecha(fecha)" variant="secondary" size="sm">Modificar</BaseButton>
                     <BaseButton @click="eliminarFecha(fecha.CUF_ID || ('tmp-' + (fecha.__tmpId || 0)))" variant="danger" size="sm">Eliminar</BaseButton>
                   </td>
                 </tr>
@@ -153,11 +156,15 @@
               <label>Tipo</label>
               <BaseSelect v-model="nuevoPeriodo.CUF_TIPO" :options="opcionesTipoFecha" optionLabel="text" />
             </div>
-            <BaseButton @click="agregarFecha" class="add-button">Añadir Período</BaseButton>
+            <BaseButton v-if="!editandoFecha" @click="agregarFecha" class="add-button">Añadir Período</BaseButton>
+            <BaseButton v-if="editandoFecha" @click="guardarEdicionFecha" class="add-button" variant="primary">Guardar</BaseButton>
+            <BaseButton v-if="editandoFecha" @click="cancelarEdicionFecha" class="add-button" variant="secondary">Cancelar</BaseButton>
+          </div>
           </div>
 
           <!-- Sección de Gestión de Secciones -->
           <hr class="section-divider">
+          <div class="section-box">
           <h4>Secciones del Curso</h4>
           
           <!-- Tabla de Secciones Existentes -->
@@ -179,6 +186,7 @@
                   <td>{{ getRamaName(seccion.RAM_ID) }}</td>
                   <td>{{ seccion.CUS_CANT_PARTICIPANTE }}</td>
                   <td>
+                    <BaseButton @click="iniciarEdicionSeccion(seccion)" variant="secondary" size="sm">Modificar</BaseButton>
                     <BaseButton @click="eliminarSeccion(seccion.CUS_ID || ('tmp-' + (seccion.__tmpId || 0)))" variant="danger" size="sm">Eliminar</BaseButton>
                   </td>
                 </tr>
@@ -199,11 +207,16 @@
               <label>Participantes</label>
               <InputBase type="number" v-model="nuevaSeccion.CUS_CANT_PARTICIPANTE" placeholder="Cantidad" />
             </div>
-            <BaseButton @click="agregarSeccion" class="add-button">Añadir Sección</BaseButton>
+            <BaseButton v-if="!editandoSeccion" @click="agregarSeccion" class="add-button">Añadir Sección</BaseButton>
+            <BaseButton v-if="editandoSeccion" @click="guardarEdicionSeccion" class="add-button" variant="primary">Guardar</BaseButton>
+            <BaseButton v-if="editandoSeccion" @click="cancelarEdicionSeccion" class="add-button" variant="secondary">Cancelar</BaseButton>
+          </div>
+
           </div>
 
           <!-- Sección Equipo Formadores -->
           <hr class="section-divider">
+          <div class="section-box">
           <h4>Equipo Formadores</h4>
           <table class="fechas-table">
             <thead>
@@ -225,6 +238,7 @@
                 <td>{{ seccionesCurso.find(s => s.CUS_ID === f.CUS_ID)?.CUS_SECCION || '-' }}</td>
                 <td>{{ f.CUO_DIRECTOR ? 'Sí' : 'No' }}</td>
                 <td>
+                  <BaseButton @click="iniciarEdicionFormador(f)" variant="secondary" size="sm">Modificar</BaseButton>
                   <BaseButton @click="eliminarFormador(f)" variant="danger" size="sm">Eliminar</BaseButton>
                 </td>
               </tr>
@@ -247,11 +261,16 @@
               <label>Director</label>
               <input type="checkbox" v-model="nuevaFormador.CUO_DIRECTOR" />
             </div>
-            <BaseButton @click="agregarFormador" class="add-button">Añadir Formador</BaseButton>
+            <BaseButton v-if="!editandoFormador" @click="agregarFormador" class="add-button">Añadir Formador</BaseButton>
+            <BaseButton v-if="editandoFormador" @click="guardarEdicionFormador" class="add-button" variant="primary">Guardar</BaseButton>
+            <BaseButton v-if="editandoFormador" @click="cancelarEdicionFormador" class="add-button" variant="secondary">Cancelar</BaseButton>
+          </div>
+
           </div>
 
           <!-- Sección Alimentación -->
           <hr class="section-divider">
+          <div class="section-box">
           <h4>Cuotas y Alimentación</h4>
           <div class="cuotas-grid">
             <div class="form-group">
@@ -270,7 +289,7 @@
               <tr>
                 <th>Fecha</th>
                 <th>Tiempo</th>
-                <th>Alimento</th>
+                <th>Tipo Alimentación</th>
                 <th>Descripción</th>
                 <th>Adic.</th>
                 <th>Acciones</th>
@@ -287,6 +306,7 @@
                 <td>{{ a.CUA_DESCRIPCION }}</td>
                 <td>{{ a.CUA_CANTIDAD_ADICIONAL }}</td>
                 <td>
+                  <BaseButton @click="iniciarEdicionAlimentacion(a)" variant="secondary" size="sm">Modificar</BaseButton>
                   <BaseButton @click="eliminarAlimentacion(a)" variant="danger" size="sm">Eliminar</BaseButton>
                 </td>
               </tr>
@@ -302,7 +322,7 @@
               <BaseSelect v-model="nuevaAlimentacion.CUA_TIEMPO" :options="tiempoAlimentacionOptions" optionLabel="text" />
             </div>
             <div class="form-group">
-              <label>Alimento</label>
+              <label>Tipo Alimentación</label>
               <BaseSelect v-model="nuevaAlimentacion.ALI_ID" :options="alimentacionOptions" optionLabel="text" />
             </div>
             <div class="form-group">
@@ -313,10 +333,96 @@
               <label>Adicional</label>
               <InputBase type="number" v-model="nuevaAlimentacion.CUA_CANTIDAD_ADICIONAL" />
             </div>
-            <BaseButton @click="agregarAlimentacion" class="add-button">Añadir Alimentación</BaseButton>
+            <BaseButton v-if="!editandoAlimentacion" @click="agregarAlimentacion" class="add-button">Añadir Alimentación</BaseButton>
+            <BaseButton v-if="editandoAlimentacion" @click="guardarEdicionAlimentacion" class="add-button" variant="primary">Guardar</BaseButton>
+            <BaseButton v-if="editandoAlimentacion" @click="cancelarEdicionAlimentacion" class="add-button" variant="secondary">Cancelar</BaseButton>
+          </div>
+
+          </div>
+
+          <!-- Sección Cuotas del Curso -->
+          <hr class="section-divider">
+          <div class="section-box">
+          <h4>Cuotas del Curso</h4>
+          <table class="fechas-table">
+            <thead>
+              <tr>
+                <th>Tipo</th>
+                <th>Fecha</th>
+                <th>Monto</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="!cuotasCurso.length">
+                <td colspan="4" class="no-results-small">Sin cuotas</td>
+              </tr>
+              <tr v-for="c in cuotasCurso" :key="c.CUU_ID || ('tmp-' + (c.__tmpId || 0))">
+                <td>{{ c.CUU_TIPO === 1 ? 'Con Almuerzo' : 'Sin Almuerzo' }}</td>
+                <td>{{ formatDateSimple(c.CUU_FECHA) }}</td>
+                <td>${{ c.CUU_VALOR }}</td>
+                <td>
+                  <BaseButton @click="eliminarCuota(c)" variant="danger" size="sm">Eliminar</BaseButton>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="add-fecha-form add-cuota-form">
+            <div class="form-group">
+              <label>Tipo</label>
+              <BaseSelect v-model="nuevaCuota.CUU_TIPO" :options="[{value:1,text:'Con Almuerzo'},{value:2,text:'Sin Almuerzo'}]" />
+            </div>
+            <div class="form-group">
+              <label>Fecha</label>
+              <InputBase type="date" v-model="nuevaCuota.CUU_FECHA" />
+            </div>
+            <div class="form-group">
+              <label>Monto</label>
+              <InputBase type="number" v-model="nuevaCuota.CUU_VALOR" placeholder="15000" />
+            </div>
+            <BaseButton @click="agregarCuota" class="add-button">Añadir Cuota</BaseButton>
+          </div>
+
+          </div>
+
+          <!-- Sección Coordinadores del Curso -->
+          <hr class="section-divider">
+          <div class="section-box">
+          <h4>Coordinadores del Curso</h4>
+          <table class="fechas-table">
+            <thead>
+              <tr>
+                <th>Persona</th>
+                <th>Cargo</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="!coordinadoresCurso.length">
+                <td colspan="3" class="no-results-small">Sin coordinadores</td>
+              </tr>
+              <tr v-for="coord in coordinadoresCurso" :key="coord.CUC_ID || ('tmp-' + (coord.__tmpId || 0))">
+                <td>{{ getPersonaName(coord.PER_ID) }}</td>
+                <td>{{ cargosList.find(c => c.CAR_ID === coord.CAR_ID)?.CAR_DESCRIPCION || '-' }}</td>
+                <td>
+                  <BaseButton @click="eliminarCoordinador(coord)" variant="danger" size="sm">Eliminar</BaseButton>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="add-fecha-form add-coordinador-form">
+            <div class="form-group">
+              <label>Persona</label>
+              <BaseSelect v-model="nuevoCoordinador.PER_ID" :options="personasOptions" optionLabel="text" />
+            </div>
+            <div class="form-group">
+              <label>Cargo</label>
+              <BaseSelect v-model="nuevoCoordinador.CAR_ID" :options="cargosOptions" optionLabel="text" />
+            </div>
+            <BaseButton @click="agregarCoordinador" class="add-button">Añadir Coordinador</BaseButton>
+          </div>
           </div>
         </div>
-
       </div>
       <template #footer>
         <BaseButton @click="cerrarModal" variant="secondary">Cancelar</BaseButton>
@@ -418,19 +524,85 @@
             </tr>
           </tbody>
         </table>
+
+        <h4 class="mt-16">Cuotas</h4>
+        <table class="fechas-table">
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Fecha</th>
+              <th>Monto</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="!cuotasCurso.length"><td colspan="3" class="no-results-small">Sin cuotas</td></tr>
+            <tr v-for="c in cuotasCurso" :key="c.CUU_ID">
+              <td>{{ c.CUU_TIPO === 1 ? 'Con Almuerzo' : 'Sin Almuerzo' }}</td>
+              <td>{{ formatDateSimple(c.CUU_FECHA) }}</td>
+              <td>${{ c.CUU_VALOR }}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h4 class="mt-16">Coordinadores</h4>
+        <table class="fechas-table">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Cargo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="!coordinadoresCurso.length"><td colspan="2" class="no-results-small">Sin coordinadores</td></tr>
+            <tr v-for="coord in coordinadoresCurso" :key="coord.CUC_ID">
+              <td>{{ getPersonaName(coord.PER_ID) }}</td>
+              <td>{{ cargosList.find(c => c.CAR_ID === coord.CAR_ID)?.CAR_DESCRIPCION || '-' }}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
       <template #footer>
         <BaseButton @click="cerrarModalVer" variant="secondary">Cerrar</BaseButton>
       </template>
     </BaseModal>
 
+    <!-- Modal Cambio de Estado -->
+    <BaseModal :show="mostrarModalCambioEstado" @close="cerrarModalCambioEstado" title="Cambio de Estado">
+      <div class="modal-form">
+        <div class="form-group">
+          <label>Estado Actual: <strong>{{ cursoParaCambioEstado ? (opcionesEstado.find(e => e.value === cursoParaCambioEstado.CUR_ESTADO)?.text || 'Desconocido') : '-' }}</strong></label>
+        </div>
+        <div class="form-group">
+          <label for="nuevo-estado">Nuevo Estado *</label>
+          <BaseSelect v-model="nuevoEstado" :options="opcionesEstado" id="nuevo-estado" />
+        </div>
+      </div>
+      <template #footer>
+        <BaseButton @click="guardarCambioEstado" variant="primary" :disabled="isDisabling">
+          {{ isDisabling ? 'Guardando...' : 'Guardar' }}
+        </BaseButton>
+        <BaseButton @click="cerrarModalCambioEstado" variant="secondary" :disabled="isDisabling">Cancelar</BaseButton>
+      </template>
+    </BaseModal>
+
   </div>
+
+  <!-- Dashboard del Curso - Overlay completo -->
+  <Teleport to="body">
+    <div v-if="mostrarDashboard" class="dashboard-overlay">
+      <CursoDashboard 
+        :cursoId="cursoIdDashboard" 
+        @close="cerrarDashboard"
+      />
+    </div>
+  </Teleport>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { request } from '@/services/apiClient.js'
 import cursosService from '@/services/cursosService.js'
+import CursoDashboard from './CursoDashboard.vue'
 import personasService from '@/services/personasService.js'
 import mantenedores from '@/services/mantenedoresService.js'
 
@@ -440,6 +612,8 @@ const seccionesApi = cursosService.secciones
 const fechasApi = cursosService.fechas
 const formadoresApi = cursosService.formadores
 const alimentacionesApi = cursosService.alimentaciones
+const cuotasApi = cursosService.cuotas
+const coordinadoresApi = cursosService.coordinadores
 
 import InputBase from '@/components/InputBase.vue'
 import BaseButton from '@/components/BaseButton.vue'
@@ -468,8 +642,17 @@ const nuevaFormador = ref({ PER_ID: null, ROL_ID: null, CUS_ID: null, CUO_DIRECT
 const alimentacionesCurso = ref([])
 const nuevaAlimentacion = ref({ ALI_ID: null, CUA_FECHA: '', CUA_TIEMPO: null, CUA_DESCRIPCION: '', CUA_CANTIDAD_ADICIONAL: 0 })
 const alimentacionCatalogo = ref([])
+const cuotasCurso = ref([])
+const nuevaCuota = ref({ CUU_TIPO: 1, CUU_FECHA: '', CUU_VALOR: '' })
+const coordinadoresCurso = ref([])
+const nuevoCoordinador = ref({ PER_ID: null, CAR_ID: null })
 const mostrarModalVer = ref(false)
 const cursoSeleccionado = ref(null)
+const mostrarDashboard = ref(false)
+const cursoIdDashboard = ref(null)
+const mostrarModalCambioEstado = ref(false)
+const cursoParaCambioEstado = ref(null)
+const nuevoEstado = ref(null)
 
 const mostrarModal = ref(false)
 const esEdicion = ref(false)
@@ -487,6 +670,16 @@ const isAddingFormador = ref(false)
 const isDeletingFormador = ref(false)
 const isAddingAlimentacion = ref(false)
 const isDeletingAlimentacion = ref(false)
+const isAddingCuota = ref(false)
+const isDeletingCuota = ref(false)
+const isAddingCoordinador = ref(false)
+const isDeletingCoordinador = ref(false)
+
+// Estados de edición para cada sección
+const editandoFecha = ref(null)
+const editandoSeccion = ref(null)
+const editandoFormador = ref(null)
+const editandoAlimentacion = ref(null)
 
 const filtros = ref({
   searchQuery: '',
@@ -723,6 +916,17 @@ function aplicarFiltros() {
   if (estado !== null && estado !== undefined && estado !== '') items = items.filter(c => Number(c.CUR_ESTADO) === Number(estado))
   if (tipoCurso !== null && tipoCurso !== undefined && tipoCurso !== '') items = items.filter(c => Number(c.TCU_ID) === Number(tipoCurso))
   if (responsable !== null && responsable !== undefined && responsable !== '') items = items.filter(c => Number(c.PER_ID_RESPONSABLE) === Number(responsable))
+  
+  // Ordenar por ESTADO (ascendente 0-3) y luego por DESCRIPCIÓN (ascendente)
+  items.sort((a, b) => {
+    const estadoA = Number(a.CUR_ESTADO) || 0
+    const estadoB = Number(b.CUR_ESTADO) || 0
+    if (estadoA !== estadoB) return estadoA - estadoB
+    const descA = (a.CUR_DESCRIPCION || '').toLowerCase()
+    const descB = (b.CUR_DESCRIPCION || '').toLowerCase()
+    return descA.localeCompare(descB)
+  })
+  
   cursosFiltrados.value = items
 }
 
@@ -748,10 +952,14 @@ async function abrirModalCrear() {
   seccionesCurso.value = []
   formadoresCurso.value = []
   alimentacionesCurso.value = []
+  cuotasCurso.value = []
+  coordinadoresCurso.value = []
   nuevoPeriodo.value = { CUF_FECHA_INICIO: '', CUF_FECHA_TERMINO: '', CUF_TIPO: 1 }
   nuevaSeccion.value = { CUS_SECCION: '', RAM_ID: null, CUS_CANT_PARTICIPANTE: '' }
   nuevaFormador.value = { PER_ID: null, ROL_ID: null, CUS_ID: null, CUO_DIRECTOR: false }
   nuevaAlimentacion.value = { ALI_ID: null, CUA_FECHA: '', CUA_TIEMPO: null, CUA_DESCRIPCION: '', CUA_CANTIDAD_ADICIONAL: 0 }
+  nuevaCuota.value = { CUC_NUMERO: '', CUC_MONTO: '', CUC_FECHA_VENCIMIENTO: '' }
+  nuevoCoordinador.value = { PER_ID: null, CAR_ID: null }
   // Si aún no se han cargado catálogos (persona, tipos, comunas, cargos, ramas) forzar carga rápida
   if (
     personasList.value.length === 0 ||
@@ -775,25 +983,33 @@ async function abrirModalEditar(curso) {
   originalCursoBackup.value = JSON.parse(JSON.stringify(form.value))
   await cargarFechasDelCurso(curso.CUR_ID)
   await cargarSeccionesDelCurso(curso.CUR_ID)
-  // Cargar equipo y alimentación del curso
+  // Cargar equipo, alimentación, cuotas y coordinadores del curso
   try {
-    const [forms, alims] = await Promise.all([
+    const [forms, alims, cuots, coords] = await Promise.all([
       formadoresApi.list({ CUR_ID: curso.CUR_ID }).catch(() => []),
       alimentacionesApi.list({ CUR_ID: curso.CUR_ID }).catch(() => []),
+      cuotasApi.list({ CUR_ID: curso.CUR_ID }).catch(() => []),
+      coordinadoresApi.list({ CUR_ID: curso.CUR_ID }).catch(() => []),
     ])
     formadoresCurso.value = Array.isArray(forms?.results) ? forms.results : (forms || [])
     alimentacionesCurso.value = Array.isArray(alims?.results) ? alims.results : (alims || [])
-  } catch (e) { console.warn('No se pudo cargar formadores/alimentación:', e) }
+    cuotasCurso.value = Array.isArray(cuots?.results) ? cuots.results : (cuots || [])
+    coordinadoresCurso.value = Array.isArray(coords?.results) ? coords.results : (coords || [])
+  } catch (e) { console.warn('No se pudo cargar datos relacionados:', e) }
   originalBuffersBackup.value = {
     fechas: JSON.parse(JSON.stringify(fechasCurso.value)),
     secciones: JSON.parse(JSON.stringify(seccionesCurso.value)),
     formadores: JSON.parse(JSON.stringify(formadoresCurso.value)),
     alimentaciones: JSON.parse(JSON.stringify(alimentacionesCurso.value)),
+    cuotas: JSON.parse(JSON.stringify(cuotasCurso.value)),
+    coordinadores: JSON.parse(JSON.stringify(coordinadoresCurso.value)),
   }
   nuevoPeriodo.value = { CUF_FECHA_INICIO: '', CUF_FECHA_TERMINO: '', CUF_TIPO: 1 }
   nuevaSeccion.value = { CUS_SECCION: '', RAM_ID: null, CUS_CANT_PARTICIPANTE: '' }
   nuevaFormador.value = { PER_ID: null, ROL_ID: null, CUS_ID: null, CUO_DIRECTOR: false }
   nuevaAlimentacion.value = { ALI_ID: null, CUA_FECHA: '', CUA_TIEMPO: null, CUA_DESCRIPCION: '', CUA_CANTIDAD_ADICIONAL: 0 }
+  nuevaCuota.value = { CUU_TIPO: 1, CUU_FECHA: '', CUU_VALOR: '' }
+  nuevoCoordinador.value = { PER_ID: null, CAR_ID: null }
   mostrarModal.value = true
 }
 
@@ -852,6 +1068,47 @@ async function agregarFecha() {
     nuevoPeriodo.value.CUF_FECHA_TERMINO = ''
     alert('Período agregado exitosamente.')
   } finally { isAddingPeriodo.value = false }
+}
+
+function iniciarEdicionFecha(fecha) {
+  editandoFecha.value = fecha.CUF_ID || `tmp-${fecha.__tmpId}`
+  nuevoPeriodo.value = { ...fecha }
+}
+
+async function guardarEdicionFecha() {
+  if (!nuevoPeriodo.value.CUF_FECHA_INICIO || !nuevoPeriodo.value.CUF_FECHA_TERMINO) {
+    alert('Debe completar fecha de inicio y término.')
+    return
+  }
+  if (new Date(nuevoPeriodo.value.CUF_FECHA_TERMINO) < new Date(nuevoPeriodo.value.CUF_FECHA_INICIO)) {
+    alert('La fecha de término no puede ser anterior al inicio.')
+    return
+  }
+  try {
+    if (typeof editandoFecha.value === 'string' && editandoFecha.value.startsWith('tmp-')) {
+      // Actualizar en buffer temporal
+      const idx = fechasCurso.value.findIndex(f => `tmp-${f.__tmpId}` === editandoFecha.value)
+      if (idx !== -1) fechasCurso.value[idx] = { ...nuevoPeriodo.value }
+    } else {
+      // Actualizar en API
+      await fechasApi.update(editandoFecha.value, nuevoPeriodo.value)
+      const idx = fechasCurso.value.findIndex(f => f.CUF_ID === editandoFecha.value)
+      if (idx !== -1) fechasCurso.value[idx] = { ...nuevoPeriodo.value, CUF_ID: editandoFecha.value }
+      // Actualizar caché
+      const cacheIdx = fechasCursoList.value.findIndex(f => f.CUF_ID === editandoFecha.value)
+      if (cacheIdx !== -1) fechasCursoList.value[cacheIdx] = { ...nuevoPeriodo.value, CUF_ID: editandoFecha.value }
+    }
+    cancelarEdicionFecha()
+    alert('Período actualizado exitosamente.')
+  } catch (e) {
+    console.error('Error actualizando período:', e)
+    alert('Error al actualizar el período.')
+  }
+}
+
+function cancelarEdicionFecha() {
+  editandoFecha.value = null
+  nuevoPeriodo.value = { CUF_FECHA_INICIO: '', CUF_FECHA_TERMINO: '', CUF_TIPO: 1 }
 }
 
 async function eliminarFecha(fechaId) {
@@ -924,6 +1181,40 @@ async function agregarSeccion() {
     nuevaSeccion.value.CUS_CANT_PARTICIPANTE = ''
     alert('Sección agregada exitosamente.')
   } finally { isAddingSeccion.value = false }
+}
+
+function iniciarEdicionSeccion(seccion) {
+  editandoSeccion.value = seccion.CUS_ID || `tmp-${seccion.__tmpId}`
+  nuevaSeccion.value = { ...seccion }
+}
+
+async function guardarEdicionSeccion() {
+  if (!nuevaSeccion.value.CUS_SECCION || !nuevaSeccion.value.RAM_ID || !nuevaSeccion.value.CUS_CANT_PARTICIPANTE) {
+    alert('Debe completar todos los campos.')
+    return
+  }
+  try {
+    if (typeof editandoSeccion.value === 'string' && editandoSeccion.value.startsWith('tmp-')) {
+      const idx = seccionesCurso.value.findIndex(s => `tmp-${s.__tmpId}` === editandoSeccion.value)
+      if (idx !== -1) seccionesCurso.value[idx] = { ...nuevaSeccion.value }
+    } else {
+      await seccionesApi.update(editandoSeccion.value, nuevaSeccion.value)
+      const idx = seccionesCurso.value.findIndex(s => s.CUS_ID === editandoSeccion.value)
+      if (idx !== -1) seccionesCurso.value[idx] = { ...nuevaSeccion.value, CUS_ID: editandoSeccion.value }
+      const cacheIdx = seccionesList.value.findIndex(s => s.CUS_ID === editandoSeccion.value)
+      if (cacheIdx !== -1) seccionesList.value[cacheIdx] = { ...nuevaSeccion.value, CUS_ID: editandoSeccion.value }
+    }
+    cancelarEdicionSeccion()
+    alert('Sección actualizada exitosamente.')
+  } catch (e) {
+    console.error('Error actualizando sección:', e)
+    alert('Error al actualizar la sección.')
+  }
+}
+
+function cancelarEdicionSeccion() {
+  editandoSeccion.value = null
+  nuevaSeccion.value = { CUS_SECCION: '', RAM_ID: null, CUS_CANT_PARTICIPANTE: '' }
 }
 
 async function eliminarSeccion(seccionId) {
@@ -1084,6 +1375,33 @@ async function guardarCurso() {
           } catch (e) { console.warn('No se pudo crear alimentación post-curso:', e) }
         }
       }
+      // Cuotas
+      for (const cuota of (cuotasCurso.value || [])) {
+        if (!cuota.CUU_ID) {
+          try {
+            const createdCuota = await cuotasApi.create({
+              CUR_ID: creado.CUR_ID,
+              CUU_TIPO: Number(cuota.CUU_TIPO),
+              CUU_FECHA: cuota.CUU_FECHA,
+              CUU_VALOR: Number(cuota.CUU_VALOR),
+            })
+            Object.assign(cuota, createdCuota)
+          } catch (e) { console.warn('No se pudo crear cuota post-curso:', e) }
+        }
+      }
+      // Coordinadores
+      for (const coord of (coordinadoresCurso.value || [])) {
+        if (!coord.CUC_ID) {
+          try {
+            const createdCoord = await coordinadoresApi.create({
+              CUR_ID: creado.CUR_ID,
+              PER_ID: coord.PER_ID,
+              CAR_ID: coord.CAR_ID,
+            })
+            Object.assign(coord, createdCoord)
+          } catch (e) { console.warn('No se pudo crear coordinador post-curso:', e) }
+        }
+      }
       await cargarFechasDelCurso(creado.CUR_ID)
       await cargarSeccionesDelCurso(creado.CUR_ID)
       isTrulyNew.value = false
@@ -1110,6 +1428,8 @@ async function guardarCurso() {
         secciones: JSON.parse(JSON.stringify(seccionesCurso.value)),
         formadores: JSON.parse(JSON.stringify(formadoresCurso.value)),
         alimentaciones: JSON.parse(JSON.stringify(alimentacionesCurso.value)),
+        cuotas: JSON.parse(JSON.stringify(cuotasCurso.value)),
+        coordinadores: JSON.parse(JSON.stringify(coordinadoresCurso.value)),
       }
       alert('Curso actualizado exitosamente.')
     }
@@ -1146,22 +1466,41 @@ function computeAutoEstadoFromFechas(fechas) {
   }
 }
 
-// --- Deshabilitar (CUR_ESTADO=2) ---
-async function deshabilitarCurso(curso) {
-  if (!window.confirm('¿Deshabilitar este curso?')) return
-  if (isDisabling.value) return // Prevenir múltiples clics
+// --- Cambio de Estado ---
+function abrirModalCambioEstadoCurso(curso) {
+  cursoParaCambioEstado.value = curso
+  nuevoEstado.value = curso.CUR_ESTADO
+  mostrarModalCambioEstado.value = true
+}
+
+function cerrarModalCambioEstado() {
+  mostrarModalCambioEstado.value = false
+  cursoParaCambioEstado.value = null
+  nuevoEstado.value = null
+}
+
+async function guardarCambioEstado() {
+  if (nuevoEstado.value === null || nuevoEstado.value === undefined) {
+    alert('Debe seleccionar un estado')
+    return
+  }
+  
+  const estadoTexto = opcionesEstado.find(e => e.value === Number(nuevoEstado.value))?.text || 'Desconocido'
+  if (!window.confirm(`¿Confirma cambiar el estado a "${estadoTexto}"?`)) return
+  
+  if (isDisabling.value) return
   isDisabling.value = true
   
   try {
-    // El modelo no tiene CUR_VIGENTE, usamos CUR_ESTADO=2 (Anulado)
-    const actualizado = await cursosApi.partialUpdate(curso.CUR_ID, { CUR_ESTADO: 2 })
-    Object.assign(curso, actualizado)
+    const actualizado = await cursosApi.partialUpdate(cursoParaCambioEstado.value.CUR_ID, { CUR_ESTADO: Number(nuevoEstado.value) })
+    Object.assign(cursoParaCambioEstado.value, actualizado)
     aplicarFiltros()
-    alert('Curso deshabilitado exitosamente.')
+    alert('Estado actualizado exitosamente.')
+    cerrarModalCambioEstado()
   } catch (e) {
-    console.error('Error al deshabilitar curso:', e)
+    console.error('Error al cambiar estado:', e)
     console.error('Response:', e.response?.data)
-    alert(`Error al deshabilitar: ${e.response?.data?.detail || e.message || 'Error desconocido'}`)
+    alert(`Error al cambiar estado: ${e.response?.data?.detail || e.message || 'Error desconocido'}`)
   } finally {
     isDisabling.value = false
   }
@@ -1245,7 +1584,11 @@ const opcionesAdministra = [
 
 // ====== Equipo Formadores ======
 const rolesOptions = computed(() => rolesList.value.map(r => ({ value: r.ROL_ID, text: r.ROL_DESCRIPCION })))
-const seccionesOptions = computed(() => seccionesCurso.value.map(s => ({ value: s.CUS_ID || `tmp-${s.__tmpId}`, text: `Sección ${s.CUS_SECCION}` })))
+const seccionesOptions = computed(() => seccionesCurso.value.map(s => {
+  const rama = ramaslist.value.find(r => r.RAM_ID === s.RAM_ID)
+  const ramaText = rama ? rama.RAM_DESCRIPCION : ''
+  return { value: s.CUS_ID || `tmp-${s.__tmpId}`, text: `SECCION N° ${s.CUS_SECCION} (${ramaText})` }
+}))
 async function agregarFormador() {
   if (isAddingFormador.value) return
   const f = nuevaFormador.value
@@ -1267,6 +1610,46 @@ async function agregarFormador() {
     nuevaFormador.value = { PER_ID: null, ROL_ID: null, CUS_ID: null, CUO_DIRECTOR: false }
   } finally { isAddingFormador.value = false }
 }
+
+function iniciarEdicionFormador(formador) {
+  editandoFormador.value = formador.CUF_ID || `tmp-${formador.__tmpId}`
+  nuevaFormador.value = { ...formador }
+}
+
+async function guardarEdicionFormador() {
+  const f = nuevaFormador.value
+  if (!f.PER_ID || !f.ROL_ID || !f.CUS_ID) {
+    alert('Completa persona, rol y sección.')
+    return
+  }
+  try {
+    if (typeof editandoFormador.value === 'string' && editandoFormador.value.startsWith('tmp-')) {
+      const idx = formadoresCurso.value.findIndex(x => `tmp-${x.__tmpId}` === editandoFormador.value)
+      if (idx !== -1) formadoresCurso.value[idx] = { ...f }
+    } else {
+      await formadoresApi.update(editandoFormador.value, {
+        CUR_ID: form.value.CUR_ID,
+        PER_ID: f.PER_ID,
+        ROL_ID: f.ROL_ID,
+        CUS_ID: typeof f.CUS_ID === 'number' ? f.CUS_ID : null,
+        CUO_DIRECTOR: !!f.CUO_DIRECTOR,
+      })
+      const idx = formadoresCurso.value.findIndex(x => x.CUF_ID === editandoFormador.value)
+      if (idx !== -1) formadoresCurso.value[idx] = { ...f, CUF_ID: editandoFormador.value }
+    }
+    cancelarEdicionFormador()
+    alert('Formador actualizado exitosamente.')
+  } catch (e) {
+    console.error('Error actualizando formador:', e)
+    alert('Error al actualizar el formador.')
+  }
+}
+
+function cancelarEdicionFormador() {
+  editandoFormador.value = null
+  nuevaFormador.value = { PER_ID: null, ROL_ID: null, CUS_ID: null, CUO_DIRECTOR: false }
+}
+
 async function eliminarFormador(item) {
   if (!item) return
   if (!item.CUF_ID) {
@@ -1317,6 +1700,47 @@ async function agregarAlimentacion() {
     nuevaAlimentacion.value = { ALI_ID: null, CUA_FECHA: '', CUA_TIEMPO: null, CUA_DESCRIPCION: '', CUA_CANTIDAD_ADICIONAL: 0 }
   } finally { isAddingAlimentacion.value = false }
 }
+
+function iniciarEdicionAlimentacion(alimentacion) {
+  editandoAlimentacion.value = alimentacion.CUA_ID || `tmp-${alimentacion.__tmpId}`
+  nuevaAlimentacion.value = { ...alimentacion }
+}
+
+async function guardarEdicionAlimentacion() {
+  const a = nuevaAlimentacion.value
+  if (!a.ALI_ID || !a.CUA_FECHA || !a.CUA_TIEMPO || !a.CUA_DESCRIPCION) {
+    alert('Completa todos los campos.')
+    return
+  }
+  try {
+    if (typeof editandoAlimentacion.value === 'string' && editandoAlimentacion.value.startsWith('tmp-')) {
+      const idx = alimentacionesCurso.value.findIndex(x => `tmp-${x.__tmpId}` === editandoAlimentacion.value)
+      if (idx !== -1) alimentacionesCurso.value[idx] = { ...a }
+    } else {
+      await alimentacionesApi.update(editandoAlimentacion.value, {
+        CUR_ID: form.value.CUR_ID,
+        ALI_ID: a.ALI_ID,
+        CUA_FECHA: a.CUA_FECHA,
+        CUA_TIEMPO: a.CUA_TIEMPO,
+        CUA_DESCRIPCION: a.CUA_DESCRIPCION,
+        CUA_CANTIDAD_ADICIONAL: Number(a.CUA_CANTIDAD_ADICIONAL || 0),
+      })
+      const idx = alimentacionesCurso.value.findIndex(x => x.CUA_ID === editandoAlimentacion.value)
+      if (idx !== -1) alimentacionesCurso.value[idx] = { ...a, CUA_ID: editandoAlimentacion.value }
+    }
+    cancelarEdicionAlimentacion()
+    alert('Alimentación actualizada exitosamente.')
+  } catch (e) {
+    console.error('Error actualizando alimentación:', e)
+    alert('Error al actualizar la alimentación.')
+  }
+}
+
+function cancelarEdicionAlimentacion() {
+  editandoAlimentacion.value = null
+  nuevaAlimentacion.value = { ALI_ID: null, CUA_FECHA: '', CUA_TIEMPO: null, CUA_DESCRIPCION: '', CUA_CANTIDAD_ADICIONAL: 0 }
+}
+
 async function eliminarAlimentacion(item) {
   if (!item) return
   if (!item.CUA_ID) {
@@ -1336,6 +1760,86 @@ async function eliminarAlimentacion(item) {
   } finally { isDeletingAlimentacion.value = false }
 }
 
+// ====== Cuotas del Curso ======
+async function agregarCuota() {
+  if (isAddingCuota.value) return
+  const c = nuevaCuota.value
+  if (!c.CUU_TIPO || !c.CUU_FECHA || !c.CUU_VALOR) { alert('Completa todos los campos.'); return }
+  try {
+    isAddingCuota.value = true
+    if (!form.value.CUR_ID) {
+      cuotasCurso.value.push({ ...c, __tmpId: Date.now() })
+    } else {
+      const creado = await cuotasApi.create({
+        CUR_ID: form.value.CUR_ID,
+        CUU_TIPO: Number(c.CUU_TIPO),
+        CUU_FECHA: c.CUU_FECHA,
+        CUU_VALOR: Number(c.CUU_VALOR),
+      })
+      cuotasCurso.value.push(creado)
+    }
+    nuevaCuota.value = { CUU_TIPO: 1, CUU_FECHA: '', CUU_VALOR: '' }
+  } finally { isAddingCuota.value = false }
+}
+async function eliminarCuota(item) {
+  if (!item) return
+  if (!item.CUU_ID) {
+    cuotasCurso.value = cuotasCurso.value.filter(x => x !== item)
+    return
+  }
+  if (!confirm('¿Eliminar cuota?')) return
+  if (isDeletingCuota.value) return
+  try {
+    isDeletingCuota.value = true
+    await cuotasApi.remove(item.CUU_ID)
+    cuotasCurso.value = cuotasCurso.value.filter(x => x.CUU_ID !== item.CUU_ID)
+  } catch (e) {
+    if (/404/.test(String(e?.message))) {
+      cuotasCurso.value = cuotasCurso.value.filter(x => x.CUU_ID !== item.CUU_ID)
+    } else { throw e }
+  } finally { isDeletingCuota.value = false }
+}
+
+// ====== Coordinadores del Curso ======
+// cargosOptions ya está definido arriba en la sección de edición
+async function agregarCoordinador() {
+  if (isAddingCoordinador.value) return
+  const coord = nuevoCoordinador.value
+  if (!coord.PER_ID || !coord.CAR_ID) { alert('Completa persona y cargo.'); return }
+  try {
+    isAddingCoordinador.value = true
+    if (!form.value.CUR_ID) {
+      coordinadoresCurso.value.push({ ...coord, __tmpId: Date.now() })
+    } else {
+      const creado = await coordinadoresApi.create({
+        CUR_ID: form.value.CUR_ID,
+        PER_ID: coord.PER_ID,
+        CAR_ID: coord.CAR_ID,
+      })
+      coordinadoresCurso.value.push(creado)
+    }
+    nuevoCoordinador.value = { PER_ID: null, CAR_ID: null }
+  } finally { isAddingCoordinador.value = false }
+}
+async function eliminarCoordinador(item) {
+  if (!item) return
+  if (!item.CUC_ID) {
+    coordinadoresCurso.value = coordinadoresCurso.value.filter(x => x !== item)
+    return
+  }
+  if (!confirm('¿Eliminar coordinador?')) return
+  if (isDeletingCoordinador.value) return
+  try {
+    isDeletingCoordinador.value = true
+    await coordinadoresApi.remove(item.CUC_ID)
+    coordinadoresCurso.value = coordinadoresCurso.value.filter(x => x.CUC_ID !== item.CUC_ID)
+  } catch (e) {
+    if (/404/.test(String(e?.message))) {
+      coordinadoresCurso.value = coordinadoresCurso.value.filter(x => x.CUC_ID !== item.CUC_ID)
+    } else { throw e }
+  } finally { isDeletingCoordinador.value = false }
+}
+
 async function abrirModalVer(curso) {
   cursoSeleccionado.value = curso
   mostrarModalVer.value = true // Abrir modal inmediatamente para mostrar al usuario
@@ -1345,14 +1849,18 @@ async function abrirModalVer(curso) {
     await cargarFechasDelCurso(curso.CUR_ID)
     seccionesCurso.value = seccionesList.value.filter(s => Number(s.CUR_ID) === Number(curso.CUR_ID))
     
-    // Cargar formadores y alimentación en paralelo pero sin bloquear UI
-    const [forms, alims] = await Promise.all([
+    // Cargar formadores, alimentación, cuotas y coordinadores en paralelo pero sin bloquear UI
+    const [forms, alims, cuots, coords] = await Promise.all([
       formadoresApi.list({ CUR_ID: curso.CUR_ID, page_size: 500 }).catch(() => []),
       alimentacionesApi.list({ CUR_ID: curso.CUR_ID, page_size: 500 }).catch(() => []),
+      cuotasApi.list({ CUR_ID: curso.CUR_ID, page_size: 500 }).catch(() => []),
+      coordinadoresApi.list({ CUR_ID: curso.CUR_ID, page_size: 500 }).catch(() => []),
     ])
     
     formadoresCurso.value = Array.isArray(forms?.results) ? forms.results : (forms || [])
     alimentacionesCurso.value = Array.isArray(alims?.results) ? alims.results : (alims || [])
+    cuotasCurso.value = Array.isArray(cuots?.results) ? cuots.results : (cuots || [])
+    coordinadoresCurso.value = Array.isArray(coords?.results) ? coords.results : (coords || [])
     
     // Cargar catálogo de alimentación solo si es necesario
     if (!alimentacionCatalogo.value.length) {
@@ -1367,6 +1875,16 @@ async function abrirModalVer(curso) {
 function cerrarModalVer() {
   mostrarModalVer.value = false
   cursoSeleccionado.value = null
+}
+
+function abrirDashboard(curso) {
+  cursoIdDashboard.value = curso.CUR_ID
+  mostrarDashboard.value = true
+}
+
+function cerrarDashboard() {
+  mostrarDashboard.value = false
+  cursoIdDashboard.value = null
 }
 </script>
 
@@ -1644,5 +2162,44 @@ function cerrarModalVer() {
 /* Línea de agregado específica para 5 campos + botón */
 .add-alimentacion-form {
   grid-template-columns: 1fr 1fr 1fr 1fr 0.8fr auto;
+}
+
+/* Estilos para section-box - Marco visual de secciones */
+.section-box {
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  background-color: #f9fafb;
+}
+
+/* Hacer controles más pequeños */
+.section-box .form-group label {
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.section-box .fechas-table th, 
+.section-box .fechas-table td {
+  padding: 6px 10px;
+  font-size: 13px;
+}
+.section-box .add-fecha-form {
+  gap: 8px;
+}
+.section-box h4 {
+  font-size: 16px;
+  margin-bottom: 12px;
+}
+
+/* Dashboard Overlay */
+.dashboard-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: white;
+  z-index: 9999;
+  overflow-y: auto;
 }
 </style>

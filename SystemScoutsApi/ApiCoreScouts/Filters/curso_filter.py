@@ -15,14 +15,14 @@ class CursoFilter(django_filters.FilterSet):
 		fields = ['codigo', 'estado', 'fecha_solicitud', 'lugar_comuna', 'tipo_curso', 'administra']
 
 class CursoCuotaFilter(django_filters.FilterSet):
-	curso_id = django_filters.NumberFilter(field_name='CUR_ID__CUR_ID')
+	CUR_ID = django_filters.NumberFilter(field_name='CUR_ID')
 	tipo = django_filters.NumberFilter(field_name='CUU_TIPO')
 	fecha = django_filters.DateFromToRangeFilter(field_name='CUU_FECHA')
 	valor = django_filters.RangeFilter(field_name='CUU_VALOR')
 
 	class Meta:
 		model = Curso_Cuota
-		fields = ['curso_id', 'tipo', 'fecha', 'valor']
+		fields = ['CUR_ID', 'tipo', 'fecha', 'valor']
 
 class CursoFechaFilter(django_filters.FilterSet):
 	CUR_ID = django_filters.NumberFilter(field_name='CUR_ID')
@@ -42,21 +42,21 @@ class CursoAlimentacionFilter(django_filters.FilterSet):
 		fields = ['CUR_ID']
 
 class CursoCoordinadorFilter(django_filters.FilterSet):
-	curso_id = django_filters.NumberFilter(field_name='CUR_ID__CUR_ID')
+	CUR_ID = django_filters.NumberFilter(field_name='CUR_ID')
 	persona_id = django_filters.NumberFilter(field_name='PER_ID__PER_ID')
 	cargo_id = django_filters.NumberFilter(field_name='CAR_ID__CAR_ID')
 
 	class Meta:
 		model = Curso_Coordinador
-		fields = ['curso_id', 'persona_id', 'cargo_id']
+		fields = ['CUR_ID', 'persona_id', 'cargo_id']
 
 class CursoSeccionFilter(django_filters.FilterSet):
-	curso_id = django_filters.NumberFilter(field_name='CUR_ID__CUR_ID')
+	CUR_ID = django_filters.NumberFilter(field_name='CUR_ID')
 	seccion = django_filters.NumberFilter(field_name='CUS_SECCION')
 
 	class Meta:
 		model = Curso_Seccion
-		fields = ['curso_id', 'seccion']
+		fields = ['CUR_ID', 'seccion']
 	
 class CursoFormadorFilter(django_filters.FilterSet):
 	CUR_ID = django_filters.NumberFilter(field_name='CUR_ID')
