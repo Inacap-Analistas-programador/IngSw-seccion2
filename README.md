@@ -79,6 +79,62 @@ asegurate de estar posicionado en manage.py con
 
 ---
 
+# Hacer migraciones en el backend: 
+
+1. **Debes estar en esta ruta (cd IngSw-seccion2/SystemScoutsApi):**
+python manage.py makemigrations
+
+2. **Ejecutar migraciones:**
+python manage.py migrate
+
+---
+
+# En caso de tener problemas al migrar los datos, haz estos pasos:
+
+1. **Revertir todas las migraciones de la app:**
+python manage.py migrate ApiCoreScouts zero
+
+2. **Eliminar archivos de migración conflictivos**
+rm ApiCoreScouts/migrations/0002_*.py
+
+3. **Crear migraciones limpias**
+python manage.py makemigrations ApiCoreScouts
+
+4. **Aplicar migraciones**
+python manage.py migrate
+
+# Crear super usuario (si aún no lo haz creado)
+
+---
+
+# Copiar y pegar el siguiente bloque de comandos en la shell de django..
+# Esto creará automáticamente un perfil de aministrador con un ID
+# (debes estar en esta ruta: cd IngSw-seccion2/SystemScoutsApi) 
+
+######################################################
+
+from ApiCoreScouts.Models.usuario_model import Perfil
+
+perfil_admin, created = Perfil.objects.get_or_create(
+    PEL_DESCRIPCION='Administrador',
+    defaults={'PEL_VIGENTE': True}
+)
+
+print(f"Perfil ID creado: {perfil_admin.PEL_ID}")
+
+######################################################
+
+# Salir de la shell con:
+exit()
+
+# Crear el superusuario con el comando:
+python manage.py createsuperuser
+
+# Introducir datos para crear el super usuario con el perfil "Administrador"
+USU USERNAME, Password (x2)
+
+---
+
 # Crear .env para conectar con Base de Datos
 debes crear un archivo .env que posea los siguientes datos:
 ```bash

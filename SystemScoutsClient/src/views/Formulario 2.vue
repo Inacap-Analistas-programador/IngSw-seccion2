@@ -1,5 +1,3 @@
-[file name]: Formulario 2.vue
-[file content begin]
 <template>
   <div class="formulario-scouts">
     <!-- Header del Formulario -->
@@ -89,6 +87,7 @@
                 label="Nombres *"
                 placeholder="Ingrese sus nombres"
                 :required="true"
+                maxlength="50"
                 class="form-field-expanded"
               />
               
@@ -97,6 +96,7 @@
                 label="Apellido Paterno *"
                 placeholder="Ingrese su apellido paterno"
                 :required="true"
+                maxlength="30"
                 class="form-field-expanded"
               />
               
@@ -104,25 +104,34 @@
                 v-model="formData.apellidoMaterno"
                 label="Apellido Materno"
                 placeholder="Ingrese su apellido materno"
+                maxlength="30"
                 class="form-field-expanded"
               />
               
-              <InputBase
-                v-model="formData.rut"
-                label="RUT *"
-                placeholder="12345678-9"
-                :required="true"
-                rules="rut"
-                class="form-field-expanded"
-              />
+              <!-- CAMPO RUT MEJORADO con formato automático -->
+              <div class="form-field-expanded">
+                <label class="input-label-expanded">RUT *</label>
+                <input
+                  v-model="formData.rut"
+                  @input="formatRut"
+                  placeholder="12.345.678-9"
+                  :required="true"
+                  class="rut-input-expanded"
+                  type="text"
+                  maxlength="12"
+                />
+              </div>
               
-              <InputBase
-                v-model="formData.fechaNacimiento"
-                label="Fecha de Nacimiento *"
-                type="date"
-                :required="true"
-                class="form-field-expanded"
-              />
+              <!-- FECHA DE NACIMIENTO MÁS COMPACTA -->
+              <div class="form-field-expanded compact-date-field">
+                <label class="input-label-expanded">Fecha de Nacimiento *</label>
+                <input
+                  v-model="formData.fechaNacimiento"
+                  :required="true"
+                  class="date-input-expanded"
+                  type="date"
+                />
+              </div>
 
               <BaseSelect
                 v-model="formData.estadoCivil"
@@ -138,6 +147,7 @@
                 v-model="formData.religion"
                 label="Religión"
                 placeholder="RELIGIÓN"
+                maxlength="30"
                 class="form-field-expanded"
               />
             </div>
@@ -166,6 +176,7 @@
                 :required="true"
                 rules="email"
                 type="email"
+                maxlength="50"
                 class="form-field-expanded"
               />
               
@@ -190,6 +201,7 @@
                       :required="true"
                       class="telefono-input-expanded"
                       type="text"
+                      maxlength="9"
                     />
                   </div>
                 </div>
@@ -205,6 +217,7 @@
                 label="Dirección *"
                 placeholder="Ingrese su dirección completa"
                 :required="true"
+                maxlength="100"
                 class="form-field-expanded"
               />
               
@@ -283,24 +296,51 @@
 
           <div class="form-section">
             <h3 class="section-title">Rol y Formación</h3>
-            <div class="form-row-expanded">
-              <BaseSelect
-                v-model="formData.rol"
-                :options="roles"
-                label="Rol en el Curso *"
-                placeholder="Seleccione su rol"
-                :required="true"
-                class="form-field-expanded select-field-expanded"
-              />
-              
-              <BaseSelect
-                v-model="formData.nivel"
-                :options="niveles"
-                label="N° Niveles *"
-                placeholder="Seleccione su nivel"
-                :required="true"
-                class="form-field-expanded select-field-expanded"
-              />
+            
+            <!-- Roles y Niveles MÚLTIPLES -->
+            <div v-for="(rolNivel, index) in formData.rolesNiveles" :key="index" class="rol-nivel-item-expanded">
+              <div class="form-row-expanded">
+                <BaseSelect
+                  v-model="rolNivel.rol"
+                  :options="roles"
+                  :label="index === 0 ? 'Rol en el Curso *' : `Rol adicional ${index + 1}`"
+                  :placeholder="index === 0 ? 'Seleccione su rol' : 'Seleccione rol adicional'"
+                  :required="index === 0"
+                  class="form-field-expanded select-field-expanded"
+                />
+                
+                <BaseSelect
+                  v-model="rolNivel.nivel"
+                  :options="niveles"
+                  :label="index === 0 ? 'N° Niveles *' : `Nivel adicional ${index + 1}`"
+                  :placeholder="index === 0 ? 'Seleccione su nivel' : 'Seleccione nivel adicional'"
+                  :required="index === 0"
+                  class="form-field-expanded select-field-expanded"
+                />
+                
+                <!-- Botón para eliminar rol adicional (solo mostrar si no es el primero) -->
+                <div v-if="index > 0" class="remove-rol-container-expanded">
+                  <button 
+                    type="button" 
+                    @click="removeRolNivel(index)"
+                    class="remove-rol-button-expanded"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Botón para agregar más roles -->
+            <div class="add-rol-container-expanded">
+              <BaseButton
+                type="button"
+                variant="outline"
+                @click="addRolNivel"
+                class="add-rol-button-expanded"
+              >
+                + Agregar otro rol y nivel
+              </BaseButton>
             </div>
             
             <InputBase
@@ -308,16 +348,11 @@
               v-model="formData.numeroMMAA"
               label="Número MMAA"
               placeholder="Ej: 5208"
+              maxlength="10"
               class="form-field-expanded"
             />
 
-            <InputBase
-              v-if="mostrarEducacionFormador"
-              v-model="formData.nivelEducacion"
-              label="Nivel de Educación"
-              placeholder="Ingrese su nivel de educación"
-              class="form-field-expanded"
-            />
+            <!-- Campo de nivel de educación ELIMINADO según requerimiento -->
           </div>
         </div>
 
@@ -344,6 +379,7 @@
                 placeholder="Describa sus alergias o enfermedades"
                 type="textarea"
                 :rows="8"
+                maxlength="500"
                 class="form-field-expanded textarea-field-expanded extra-large-textarea"
               />
               
@@ -353,19 +389,26 @@
                 placeholder="Describa sus limitaciones"
                 type="textarea"
                 :rows="8"
+                maxlength="500"
                 class="form-field-expanded textarea-field-expanded extra-large-textarea"
               />
             </div>
 
-            <!-- MEJORADO: Subida de Ficha Médica con FileUploader mejorado -->
-            <FileUploader
-              v-model="formData.fichaMedica"
-              label="Ficha Médica (Opcional)"
-              accept=".pdf,.doc,.docx,.txt"
-              uploadType="document"
-              class="form-field-expanded"
-            />
-            <p class="field-note">Formatos aceptados: PDF, Word, TXT</p>
+            <!-- MEJORADO: Ficha Médica ahora es OBLIGATORIA con opción de descargar plantilla -->
+            <div class="ficha-medica-section-expanded">
+              <FileUploader
+                v-model="formData.fichaMedica"
+                label="Ficha Médica (Obligatorio) *"
+                accept=".pdf,.doc,.docx,.txt"
+                uploadType="document"
+                :required="true"
+                class="form-field-expanded"
+              />
+              <p class="field-note">
+                Formatos aceptados: PDF, Word, TXT. 
+                <a href="#" @click.prevent="descargarFichaMedica" class="download-link-expanded">📥 Descargar plantilla de ficha médica</a>
+              </p>
+            </div>
           </div>
 
           <div class="form-section">
@@ -376,6 +419,7 @@
                 label="Nombre Contacto Emergencia *"
                 placeholder="Nombre completo"
                 :required="true"
+                maxlength="50"
                 class="form-field-expanded"
               />
               
@@ -389,6 +433,7 @@
                     :required="true"
                     class="telefono-input-expanded"
                     type="text"
+                    maxlength="9"
                   />
                 </div>
               </div>
@@ -408,6 +453,7 @@
                 v-model="formData.profesion"
                 label="Profesión u Oficio"
                 placeholder="Su profesión u oficio"
+                maxlength="50"
                 class="form-field-expanded"
               />
               
@@ -415,17 +461,29 @@
                 v-model="formData.apodo"
                 label="Apodo para Credencial"
                 placeholder="Apodo que aparecerá en su credencial"
+                maxlength="20"
                 class="form-field-expanded"
               />
             </div>
 
-            <!-- NUEVO: Campo Beneficiario (TEXTO MODIFICADO) -->
+            <!-- NUEVO: Campo Beneficiario con tiempo -->
             <div class="checkbox-group-expanded">
               <BaseCheckBox
                 v-model="formData.beneficiario"
                 label="¿Ha sido beneficiario?"
                 class="checkbox-field-expanded"
               />
+              
+              <!-- Campo de tiempo como beneficiario (se muestra solo si es beneficiario) -->
+              <div v-if="formData.beneficiario" class="beneficiario-time-expanded">
+                <InputBase
+                  v-model="formData.tiempoBeneficiario"
+                  label="Tiempo como beneficiario"
+                  placeholder="Ej: 2 años, 6 meses"
+                  maxlength="30"
+                  class="form-field-expanded"
+                />
+              </div>
               
               <BaseCheckBox
                 v-model="formData.trabajaConNNAJ"
@@ -438,6 +496,7 @@
                 v-model="formData.rangoEdadNNAJ"
                 label="Rango de edad con el que trabaja"
                 placeholder="Ej: 6-12 años, 13-17 años"
+                maxlength="30"
                 class="form-field-expanded"
               />
             </div>
@@ -459,6 +518,7 @@
                     v-model="formData.patenteVehiculo"
                     label="Patente del vehículo"
                     placeholder="Ej: CBDJ-K7"
+                    maxlength="10"
                     class="form-field-expanded"
                   />
                   
@@ -466,6 +526,7 @@
                     v-model="formData.marcaVehiculo"
                     label="Marca del vehículo"
                     placeholder="Ej: Toyota, Chevrolet"
+                    maxlength="20"
                     class="form-field-expanded"
                   />
                   
@@ -473,6 +534,7 @@
                     v-model="formData.modeloVehiculo"
                     label="Modelo del vehículo"
                     placeholder="Ej: Corolla, Cruze"
+                    maxlength="20"
                     class="form-field-expanded"
                   />
                 </div>
@@ -496,6 +558,7 @@
               placeholder="Otra información que considere importante"
               type="textarea"
               :rows="36"
+              maxlength="1000"
               class="form-field-expanded textarea-field-expanded extra-large-textarea super-large-textarea"
               @keydown.enter.prevent="handleObservacionesEnter"
             />
@@ -503,67 +566,149 @@
           </div>
         </div>
 
-        <!-- Paso 6: Resumen y Confirmación (SIMPLIFICADO) -->
+        <!-- Paso 6: Resumen y Confirmación (ESTILOS MEJORADOS) -->
         <div v-show="currentStep === 5" class="form-step">
           <h2 class="step-title">Resumen y Confirmación</h2>
           
           <div class="summary-container-expanded">
-            <!-- Resumen simplificado sin información extra -->
+            <!-- Resumen con estilos mejorados -->
             <div class="summary-section-expanded">
               <h3 class="summary-title-expanded">Resumen de Pre-Inscripción</h3>
               
               <div class="summary-grid-expanded">
-                <div class="summary-item-expanded">
-                  <strong>Curso:</strong>
-                  <span>{{ getCursoSeleccionado().nombre }}</span>
+                <!-- Sección Curso -->
+                <div class="summary-category-expanded">
+                  <h4 class="category-title-expanded">Información del Curso</h4>
+                  <div class="summary-item-expanded">
+                    <strong>Curso seleccionado:</strong>
+                    <span>{{ getCursoSeleccionado().nombre }}</span>
+                  </div>
                 </div>
-                <div class="summary-item-expanded">
-                  <strong>Participante:</strong>
-                  <span>{{ formData.nombres }} {{ formData.apellidoPaterno }} {{ formData.apellidoMaterno }}</span>
+
+                <!-- Sección Datos Personales -->
+                <div class="summary-category-expanded">
+                  <h4 class="category-title-expanded">Datos Personales</h4>
+                  <div class="summary-item-expanded">
+                    <strong>Participante:</strong>
+                    <span>{{ formData.nombres }} {{ formData.apellidoPaterno }} {{ formData.apellidoMaterno }}</span>
+                  </div>
+                  <div class="summary-item-expanded">
+                    <strong>RUT:</strong>
+                    <span>{{ formData.rut }}</span>
+                  </div>
+                  <div class="summary-item-expanded">
+                    <strong>Fecha de Nacimiento:</strong>
+                    <span>{{ formData.fechaNacimiento }}</span>
+                  </div>
+                  <div class="summary-item-expanded">
+                    <strong>Estado Civil:</strong>
+                    <span>{{ getEstadoCivilLabel(formData.estadoCivil) }}</span>
+                  </div>
+                  <div class="summary-item-expanded">
+                    <strong>Religión:</strong>
+                    <span>{{ formData.religion || 'No especificada' }}</span>
+                  </div>
                 </div>
-                <div class="summary-item-expanded">
-                  <strong>RUT:</strong>
-                  <span>{{ formData.rut }}</span>
+
+                <!-- Sección Contacto -->
+                <div class="summary-category-expanded">
+                  <h4 class="category-title-expanded">Contacto</h4>
+                  <div class="summary-item-expanded">
+                    <strong>Teléfono:</strong>
+                    <span>+56 {{ formData.telefono }}</span>
+                  </div>
+                  <div class="summary-item-expanded">
+                    <strong>Email:</strong>
+                    <span>{{ formData.email }}</span>
+                  </div>
+                  <div class="summary-item-expanded">
+                    <strong>Dirección:</strong>
+                    <span>{{ formData.direccion }}</span>
+                  </div>
+                  <div class="summary-item-expanded">
+                    <strong>Ubicación:</strong>
+                    <span>{{ getRegionLabel(formData.region) }}, {{ getProvinciaLabel(formData.provincia) }}, {{ getComunaLabel(formData.comuna) }}</span>
+                  </div>
                 </div>
-                <div class="summary-item-expanded">
-                  <strong>Teléfono:</strong>
-                  <span>+56 {{ formData.telefono }}</span>
+
+                <!-- Sección Asociación Scout -->
+                <div class="summary-category-expanded">
+                  <h4 class="category-title-expanded">Asociación Scout</h4>
+                  <div class="summary-item-expanded">
+                    <strong>Rama:</strong>
+                    <span>{{ getRamaLabel(formData.rama) }}</span>
+                  </div>
+                  <!-- Mostrar múltiples roles y niveles -->
+                  <div v-for="(rolNivel, index) in formData.rolesNiveles" :key="index" class="summary-item-expanded">
+                    <strong>{{ index === 0 ? 'Rol Principal:' : `Rol Adicional ${index + 1}:` }}</strong>
+                    <span>{{ getRolLabel(rolNivel.rol) }} - {{ getNivelLabel(rolNivel.nivel) }}</span>
+                  </div>
+                  <div v-if="formData.numeroMMAA" class="summary-item-expanded">
+                    <strong>Número MMAA:</strong>
+                    <span>{{ formData.numeroMMAA }}</span>
+                  </div>
                 </div>
-                <div class="summary-item-expanded">
-                  <strong>Región:</strong>
-                  <span>{{ getRegionLabel(formData.region) }}</span>
+
+                <!-- Sección Salud -->
+                <div class="summary-category-expanded">
+                  <h4 class="category-title-expanded">Salud y Alimentación</h4>
+                  <div class="summary-item-expanded">
+                    <strong>Tipo de Alimentación:</strong>
+                    <span>{{ getAlimentacionLabel(formData.alimentacion) }}</span>
+                  </div>
+                  <div v-if="formData.alergias" class="summary-item-expanded">
+                    <strong>Alergias/Enfermedades:</strong>
+                    <span>{{ formData.alergias }}</span>
+                  </div>
+                  <div v-if="formData.limitaciones" class="summary-item-expanded">
+                    <strong>Limitaciones:</strong>
+                    <span>{{ formData.limitaciones }}</span>
+                  </div>
+                  <div class="summary-item-expanded">
+                    <strong>Contacto Emergencia:</strong>
+                    <span>{{ formData.contactoEmergenciaNombre }} - +56 {{ formData.contactoEmergenciaTelefono }}</span>
+                  </div>
+                  <div v-if="formData.fichaMedica" class="summary-item-expanded">
+                    <strong>Ficha Médica:</strong>
+                    <span>{{ formData.fichaMedica.name }}</span>
+                  </div>
                 </div>
-                <div class="summary-item-expanded">
-                  <strong>Provincia:</strong>
-                  <span>{{ getProvinciaLabel(formData.provincia) }}</span>
-                </div>
-                <div class="summary-item-expanded">
-                  <strong>Comuna:</strong>
-                  <span>{{ getComunaLabel(formData.comuna) }}</span>
-                </div>
-                <div class="summary-item-expanded">
-                  <strong>Dirección:</strong>
-                  <span>{{ formData.direccion }}</span>
-                </div>
-                <div class="summary-item-expanded">
-                  <strong>Email:</strong>
-                  <span>{{ formData.email }}</span>
-                </div>
-                <div class="summary-item-expanded">
-                  <strong>Rama:</strong>
-                  <span>{{ getRamaLabel(formData.rama) }}</span>
-                </div>
-                <div class="summary-item-expanded">
-                  <strong>Rol:</strong>
-                  <span>{{ getRolLabel(formData.rol) }}</span>
-                </div>
-                <div class="summary-item-expanded">
-                  <strong>Nivel:</strong>
-                  <span>{{ getNivelLabel(formData.nivel) }}</span>
-                </div>
-                <div v-if="formData.fichaMedica" class="summary-item-expanded">
-                  <strong>Ficha Médica:</strong>
-                  <span>{{ formData.fichaMedica.name }}</span>
+
+                <!-- Sección Información Adicional -->
+                <div class="summary-category-expanded">
+                  <h4 class="category-title-expanded">Información Adicional</h4>
+                  <div v-if="formData.profesion" class="summary-item-expanded">
+                    <strong>Profesión:</strong>
+                    <span>{{ formData.profesion }}</span>
+                  </div>
+                  <div v-if="formData.apodo" class="summary-item-expanded">
+                    <strong>Apodo:</strong>
+                    <span>{{ formData.apodo }}</span>
+                  </div>
+                  <div class="summary-item-expanded">
+                    <strong>Beneficiario:</strong>
+                    <span>{{ formData.beneficiario ? 'Sí' : 'No' }}</span>
+                  </div>
+                  <div v-if="formData.beneficiario && formData.tiempoBeneficiario" class="summary-item-expanded">
+                    <strong>Tiempo como beneficiario:</strong>
+                    <span>{{ formData.tiempoBeneficiario }}</span>
+                  </div>
+                  <div class="summary-item-expanded">
+                    <strong>Trabaja con NNAJ:</strong>
+                    <span>{{ formData.trabajaConNNAJ ? 'Sí' : 'No' }}</span>
+                  </div>
+                  <div v-if="formData.trabajaConNNAJ && formData.rangoEdadNNAJ" class="summary-item-expanded">
+                    <strong>Rango de edad NNAJ:</strong>
+                    <span>{{ formData.rangoEdadNNAJ }}</span>
+                  </div>
+                  <div class="summary-item-expanded">
+                    <strong>Vehículo disponible:</strong>
+                    <span>{{ formData.tieneVehiculo ? 'Sí' : 'No' }}</span>
+                  </div>
+                  <div class="summary-item-expanded">
+                    <strong>Requiere alojamiento:</strong>
+                    <span>{{ formData.requiereAlojamiento ? 'Sí' : 'No' }}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -579,15 +724,15 @@
           </div>
         </div>
 
-        <!-- Navegación del Formulario CORREGIDA -->
+        <!-- Navegación del Formulario MEJORADA con estilos de Gestión Personas -->
         <div class="form-navigation-expanded">
           <BaseButton
             v-if="currentStep > 0"
             type="button"
-            variant="secondary"
+            variant="outline"
             @click="previousStep"
             :disabled="submitting || isNavigating"
-            class="nav-button-expanded"
+            class="nav-button-expanded nav-button-outline"
           >
             ← Anterior
           </BaseButton>
@@ -600,7 +745,7 @@
             variant="primary"
             @click="nextStep"
             :disabled="!isStepValid(currentStep) || submitting || isNavigating"
-            class="nav-button-expanded"
+            class="nav-button-expanded nav-button-primary"
           >
             {{ currentStep === 4 ? 'Revisar' : 'Siguiente' }} →
           </BaseButton>
@@ -611,7 +756,7 @@
             variant="success"
             :disabled="!isFormValid || submitting || isNavigating"
             :loading="submitting"
-            class="nav-button-expanded submit-button-expanded"
+            class="nav-button-expanded nav-button-success"
           >
             {{ submitting ? 'Enviando a SSB...' : '✅ Confirmar Pre-Inscripción en SSB' }}
           </BaseButton>
@@ -677,7 +822,6 @@ export default {
     const showSuccessModal = ref(false)
     const showFinalAlert = ref(true)
     const mostrarCampoMMAA = ref(false)
-    const mostrarEducacionFormador = ref(false)
     const telefonoPlaceholder = ref('8 1234 5678')
     const isNavigating = ref(false)
     const cursosDisponibles = ref([])
@@ -714,15 +858,17 @@ export default {
       fotoParticipante: null,
       religion: '', // NUEVO CAMPO
       
-      // Paso 3 - Información Asociación Scout
+      // Paso 3 - Información Asociación Scout (AHORA CON MÚLTIPLES ROLES)
       zona: '',
       distrito: '',
       grupo: '',
       rama: '',
-      rol: '',
-      nivel: '',
+      // Roles y niveles ahora son arrays para soportar múltiples
+      rolesNiveles: [
+        { rol: '', nivel: '' }
+      ],
       numeroMMAA: '',
-      nivelEducacion: '',
+      // Campo nivelEducacion ELIMINADO según requerimiento
       
       // Paso 4 - Salud (CON VALORES POR DEFECTO)
       alimentacion: '',
@@ -730,7 +876,7 @@ export default {
       limitaciones: '',
       contactoEmergenciaNombre: '',
       contactoEmergenciaTelefono: '',
-      fichaMedica: null, // NUEVO CAMPO
+      fichaMedica: null, // AHORA ES OBLIGATORIO
       
       // Paso 5 - Adicional (CON NUEVOS CAMPOS)
       profesion: '',
@@ -742,8 +888,9 @@ export default {
       requiereAlojamiento: false,
       trabajaConNNAJ: false,
       rangoEdadNNAJ: '',
-      beneficiario: false, // NUEVO CAMPO
-      observaciones: '' // NUEVO CAMPO
+      beneficiario: false,
+      tiempoBeneficiario: '', // NUEVO CAMPO: tiempo como beneficiario
+      observaciones: ''
     })
 
     // DATOS DE LOCALIDAD DE CHILE COMPLETOS
@@ -874,17 +1021,20 @@ export default {
           )
         
         case 2: // Información Asociación Scout
+          // Validar que al menos el primer rol y nivel estén completos
+          const primerRolNivel = formData.rolesNiveles[0]
           return !!(
             formData.rama &&
-            formData.rol &&
-            formData.nivel
+            primerRolNivel.rol &&
+            primerRolNivel.nivel
           )
         
-        case 3: // Salud - La ficha médica es OPCIONAL, no se incluye en validación
+        case 3: // Salud - La ficha médica ahora es OBLIGATORIA
           return !!(
             formData.alimentacion &&
             formData.contactoEmergenciaNombre?.trim() &&
-            formData.contactoEmergenciaTelefono?.trim()
+            formData.contactoEmergenciaTelefono?.trim() &&
+            formData.fichaMedica // AHORA ES OBLIGATORIO
           )
         
         case 4: // Adicional - Todos los campos son opcionales
@@ -929,6 +1079,22 @@ export default {
       }
     }
 
+    // NUEVO: Formatear RUT automáticamente
+    const formatRut = (event) => {
+      let rut = event.target.value.replace(/[^0-9kK]/g, '');
+      
+      if (rut.length > 1) {
+        const body = rut.slice(0, -1);
+        const checkDigit = rut.slice(-1).toUpperCase();
+        
+        // Formatear con puntos
+        let formattedBody = body.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        formData.rut = formattedBody + '-' + checkDigit;
+      } else {
+        formData.rut = rut;
+      }
+    }
+
     const selectCurso = (curso) => {
       console.log(`📚 Curso seleccionado: ${curso.nombre} (id=${curso.id})`)
       formData.cursoId = Number(curso.id || curso.CUR_ID)
@@ -948,6 +1114,26 @@ export default {
           nextStep()
         }
       }
+    }
+
+    // NUEVO: Funciones para agregar y eliminar roles y niveles
+    const addRolNivel = () => {
+      formData.rolesNiveles.push({ rol: '', nivel: '' })
+    }
+
+    const removeRolNivel = (index) => {
+      if (formData.rolesNiveles.length > 1) {
+        formData.rolesNiveles.splice(index, 1)
+      }
+    }
+
+    // NUEVO: Descargar ficha médica
+    const descargarFichaMedica = () => {
+      // Crear un enlace temporal para descargar la plantilla
+      const link = document.createElement('a')
+      link.href = '/plantillas/ficha-medica-scouts.pdf' // Ruta a la plantilla
+      link.download = 'ficha-medica-scouts-plantilla.pdf'
+      link.click()
     }
 
     // FUNCIONES para mostrar etiquetas en el resumen
@@ -985,6 +1171,18 @@ export default {
       if (!value) return ''
       const nivel = niveles.value.find(n => n.value === value)
       return nivel ? nivel.label : value
+    }
+
+    const getEstadoCivilLabel = (value) => {
+      if (!value) return ''
+      const estado = estadosCiviles.value.find(e => e.value === value)
+      return estado ? estado.label : value
+    }
+
+    const getAlimentacionLabel = (value) => {
+      if (!value) return ''
+      const alimentacion = tiposAlimentacion.value.find(a => a.value === value)
+      return alimentacion ? alimentacion.label : value
     }
 
     // Navegación CORREGIDA - Con protección contra navegación rápida
@@ -1101,12 +1299,15 @@ export default {
         // Crear inscripción (Persona_Curso) en SSB - Usar directamente la sección por defecto
         const cusIdToUse = formData.cusId || 1
 
+        // Usar el primer rol para la inscripción principal
+        const rolPrincipal = formData.rolesNiveles[0]?.rol || ''
+
         const personaCursoPayload = {
           PER_ID: personaId,
           CUS_ID: cusIdToUse,
-          ROL_ID: formData.rol ? Number(formData.rol) : null,
+          ROL_ID: rolPrincipal ? Number(rolPrincipal) : null,
           ALI_ID: formData.alimentacion ? Number(formData.alimentacion) : null,
-          NIV_ID: formData.nivel ? Number(formData.nivel) : null,
+          NIV_ID: formData.rolesNiveles[0]?.nivel ? Number(formData.rolesNiveles[0].nivel) : null,
           PEC_OBSERVACION: formData.observaciones || null,
           PEC_REGISTRO: true,
           PEC_ACREDITACION: false,
@@ -1150,19 +1351,21 @@ export default {
           }
         }
 
-        // 3. Guardar en Persona_Nivel (RAM_ID, NIV_ID)
-        if (formData.rama || formData.nivel) {
-          try {
-            const personaNivelPayload = {
-              PER_ID: personaId,
-              RAM_ID: formData.rama ? Number(formData.rama) : null,
-              NIV_ID: formData.nivel ? Number(formData.nivel) : null
+        // 3. Guardar en Persona_Nivel para cada rol y nivel
+        for (const rolNivel of formData.rolesNiveles) {
+          if (rolNivel.rama || rolNivel.nivel) {
+            try {
+              const personaNivelPayload = {
+                PER_ID: personaId,
+                RAM_ID: formData.rama ? Number(formData.rama) : null,
+                NIV_ID: rolNivel.nivel ? Number(rolNivel.nivel) : null
+              }
+              console.log('📤 Registrando Persona_Nivel en SSB:', personaNivelPayload)
+              await personaNivelesApi.create(personaNivelPayload)
+              console.log('✅ Persona_Nivel creada en SSB')
+            } catch (e) {
+              console.warn('⚠️ Error creando Persona_Nivel en SSB:', e?.response?.data || e?.message)
             }
-            console.log('📤 Registrando Persona_Nivel en SSB:', personaNivelPayload)
-            await personaNivelesApi.create(personaNivelPayload)
-            console.log('✅ Persona_Nivel creada en SSB')
-          } catch (e) {
-            console.warn('⚠️ Error creando Persona_Nivel en SSB:', e?.response?.data || e?.message)
           }
         }
 
@@ -1192,6 +1395,8 @@ export default {
           formData[key] = 'movil'
         } else if (key === 'fotoParticipante' || key === 'fichaMedica') {
           formData[key] = null
+        } else if (key === 'rolesNiveles') {
+          formData[key] = [{ rol: '', nivel: '' }]
         } else {
           formData[key] = ''
         }
@@ -1213,15 +1418,13 @@ export default {
     }
 
     // Watchers para campos condicionales
-    watch(() => formData.nivel, (newVal) => {
-      // Mostrar número MMAA solo para niveles Medio (2) y Avanzado (3)
-      mostrarCampoMMAA.value = (newVal === '2' || newVal === '3')
-    })
-
-    watch(() => formData.rol, (newVal) => {
-      // Mostrar nivel de educación solo para el rol Formador (2)
-      mostrarEducacionFormador.value = (newVal === '2')
-    })
+    watch(() => formData.rolesNiveles, (newVal) => {
+      // Mostrar número MMAA solo para niveles Medio (2) y Avanzado (3) en cualquier rol
+      const tieneNivelMedioAvanzado = newVal.some(rn => 
+        rn.nivel === '2' || rn.nivel === '3'
+      )
+      mostrarCampoMMAA.value = tieneNivelMedioAvanzado
+    }, { deep: true })
 
     onMounted(async () => {
       console.log('Formulario de pre-inscripción Scouts Biobío montado - Iniciando carga de datos desde SSB...')
@@ -1360,7 +1563,6 @@ export default {
       showSuccessModal,
       showFinalAlert,
       mostrarCampoMMAA,
-      mostrarEducacionFormador,
       telefonoPlaceholder,
       isNavigating,
       estadosCiviles,
@@ -1381,6 +1583,7 @@ export default {
       actualizarProvincias,
       actualizarComunas,
       actualizarPlaceholderTelefono,
+      formatRut,
       selectCurso,
       getCursoSeleccionado,
       getRegionLabel,
@@ -1389,7 +1592,12 @@ export default {
       getRamaLabel,
       getRolLabel,
       getNivelLabel,
+      getEstadoCivilLabel,
+      getAlimentacionLabel,
       handleObservacionesEnter,
+      addRolNivel,
+      removeRolNivel,
+      descargarFichaMedica,
       nextStep,
       previousStep,
       submitForm,
@@ -1400,7 +1608,7 @@ export default {
 </script>
 
 <style scoped>
-/* Todos los estilos CSS permanecen iguales */
+/* Todos los estilos CSS mejorados según requerimientos */
 .formulario-scouts {
   min-height: 100vh;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
@@ -1644,7 +1852,45 @@ export default {
   width: 100%;
 }
 
-/* Selectores expandidos */
+/* NUEVO: Campo RUT con estilo específico */
+.rut-input-expanded {
+  width: 100%;
+  height: 44px;
+  padding: 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.5px;
+}
+
+.rut-input-expanded:focus {
+  border-color: #2c5aa0;
+  outline: none;
+  box-shadow: 0 0 0 0.2rem rgba(44, 90, 160, 0.25);
+}
+
+/* NUEVO: Campo fecha más compacto */
+.compact-date-field {
+  max-width: 200px;
+}
+
+.date-input-expanded {
+  width: 100%;
+  height: 44px;
+  padding: 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.date-input-expanded:focus {
+  border-color: #2c5aa0;
+  outline: none;
+  box-shadow: 0 0 0 0.2rem rgba(44, 90, 160, 0.25);
+}
+
+/* Selectores expandidos - AHORA CON ALTURA UNIFORME */
 .select-field-expanded {
   min-height: 44px;
 }
@@ -1674,6 +1920,7 @@ export default {
   border: 1px solid #ced4da;
   border-radius: 4px;
   font-size: 1rem;
+  height: 44px; /* ALTURA UNIFORME */
 }
 
 .textarea-field-expanded :deep(textarea):focus {
@@ -1707,6 +1954,21 @@ export default {
   font-style: italic;
 }
 
+/* NUEVO: Enlace de descarga para ficha médica */
+.download-link-expanded {
+  color: #2c5aa0;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.download-link-expanded:hover {
+  text-decoration: underline;
+}
+
+.ficha-medica-section-expanded {
+  margin-top: 1rem;
+}
+
 /* GRUPO DE TELÉFONO EXPANDIDO */
 .telefono-group-expanded {
   display: grid;
@@ -1738,7 +2000,7 @@ export default {
   border-radius: 4px;
   overflow: hidden;
   background: white;
-  height: 44px;
+  height: 44px; /* ALTURA UNIFORME */
 }
 
 .telefono-prefijo-expanded {
@@ -1783,6 +2045,15 @@ export default {
   margin-bottom: 0;
 }
 
+/* NUEVO: Tiempo como beneficiario */
+.beneficiario-time-expanded {
+  margin-left: 1.5rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border-left: 3px solid #2c5aa0;
+}
+
 /* Info de vehículo expandido */
 .vehicle-info-expanded {
   margin-left: 1rem;
@@ -1791,6 +2062,61 @@ export default {
   border-radius: 8px;
   border-left: 4px solid #2c5aa0;
   margin-top: 0.5rem;
+}
+
+/* ========== ESTILOS PARA ROLES Y NIVELES MÚLTIPLES ========== */
+.rol-nivel-item-expanded {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.remove-rol-container-expanded {
+  display: flex;
+  align-items: flex-end;
+}
+
+.remove-rol-button-expanded {
+  width: 44px;
+  height: 44px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.remove-rol-button-expanded:hover {
+  background: #c82333;
+}
+
+.add-rol-container-expanded {
+  margin-top: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.add-rol-button-expanded {
+  width: 100%;
+  height: 44px;
+  background: transparent;
+  border: 2px dashed #2c5aa0;
+  color: #2c5aa0;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.add-rol-button-expanded:hover {
+  background: #2c5aa0;
+  color: white;
 }
 
 /* ========== ESTILOS PARA SELECCIÓN DE CURSOS EXPANDIDO ========== */
@@ -1886,7 +2212,7 @@ export default {
   color: #856404;
 }
 
-/* ========== ESTILOS PARA RESUMEN EXPANDIDO ========== */
+/* ========== ESTILOS PARA RESUMEN EXPANDIDO MEJORADO ========== */
 .summary-container-expanded {
   display: flex;
   flex-direction: column;
@@ -1901,30 +2227,61 @@ export default {
 
 .summary-title-expanded {
   color: #2c5aa0;
-  font-size: 1.3rem;
-  margin-bottom: 1rem;
-  border-bottom: 2px solid #2c5aa0;
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 3px solid #2c5aa0;
   padding-bottom: 0.5rem;
+  font-weight: 700;
 }
 
 .summary-grid-expanded {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.summary-category-expanded {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.category-title-expanded {
+  color: #2c5aa0;
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  border-bottom: 2px solid #e9ecef;
+  padding-bottom: 0.5rem;
 }
 
 .summary-item-expanded {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   padding: 0.75rem;
-  background: white;
+  margin-bottom: 0.5rem;
   border-radius: 6px;
-  border-left: 4px solid #2c5aa0;
+  transition: background-color 0.2s;
+}
+
+.summary-item-expanded:hover {
+  background: #f8f9fa;
 }
 
 .summary-item-expanded strong {
+  color: #2c5aa0;
+  font-weight: 700;
+  min-width: 200px;
+  font-size: 1rem;
+}
+
+.summary-item-expanded span {
   color: #495057;
+  text-align: right;
+  flex: 1;
+  font-size: 1rem;
 }
 
 /* Alerta final expandida */
@@ -1932,7 +2289,7 @@ export default {
   margin-top: 2rem;
 }
 
-/* ========== NAVEGACIÓN EXPANDIDA ========== */
+/* ========== NAVEGACIÓN EXPANDIDA MEJORADA (ESTILOS GESTIÓN PERSONAS) ========== */
 .form-navigation-expanded {
   display: flex;
   justify-content: space-between;
@@ -1945,16 +2302,71 @@ export default {
 
 .nav-button-expanded {
   min-width: 160px;
-  height: 48px;
+  height: 44px; /* ALTURA UNIFORME */
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
 }
 
-.submit-button-expanded {
-  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-  border: none;
+/* Botón Outline (Anterior) - Estilo Gestión Personas */
+.nav-button-outline {
+  background: white;
+  border-color: #2c5aa0;
+  color: #2c5aa0;
+}
+
+.nav-button-outline:hover:not(:disabled) {
+  background: #2c5aa0;
+  color: white;
+}
+
+.nav-button-outline:disabled {
+  background: #e9ecef;
+  border-color: #ced4da;
+  color: #6c757d;
+  cursor: not-allowed;
+}
+
+/* Botón Primary (Siguiente) - Estilo Gestión Personas */
+.nav-button-primary {
+  background: #2c5aa0;
+  border-color: #2c5aa0;
+  color: white;
+}
+
+.nav-button-primary:hover:not(:disabled) {
+  background: #1e3a8a;
+  border-color: #1e3a8a;
+}
+
+.nav-button-primary:disabled {
+  background: #6c757d;
+  border-color: #6c757d;
+  cursor: not-allowed;
+}
+
+/* Botón Success (Confirmar) - Estilo Gestión Personas */
+.nav-button-success {
+  background: #28a745;
+  border-color: #28a745;
+  color: white;
+}
+
+.nav-button-success:hover:not(:disabled) {
+  background: #1e7e34;
+  border-color: #1e7e34;
+}
+
+.nav-button-success:disabled {
+  background: #6c757d;
+  border-color: #6c757d;
+  cursor: not-allowed;
 }
 
 .nav-spacer-expanded {
@@ -2075,6 +2487,27 @@ export default {
   .summary-grid-expanded {
     grid-template-columns: 1fr;
   }
+  
+  .summary-item-expanded {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .summary-item-expanded strong,
+  .summary-item-expanded span {
+    min-width: auto;
+    text-align: left;
+  }
+  
+  .rol-nivel-item-expanded .form-row-expanded {
+    grid-template-columns: 1fr;
+  }
+  
+  .remove-rol-container-expanded {
+    justify-content: flex-start;
+    margin-top: 0.5rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -2088,12 +2521,6 @@ export default {
     flex-direction: column;
     gap: 0.5rem;
     align-items: flex-start;
-  }
-  
-  .summary-item-expanded {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
   }
   
   .telefono-input-wrapper-expanded {
@@ -2119,6 +2546,10 @@ export default {
   .success-icon-expanded {
     font-size: 3rem;
   }
+  
+  .compact-date-field {
+    max-width: 100%;
+  }
 }
 
 /* Estilos para estados de deshabilitado */
@@ -2142,5 +2573,25 @@ export default {
 .nav-button-expanded {
   transition: all 0.2s ease-in-out;
 }
+
+/* Mejora visual para campos con límite de caracteres */
+input[maxlength], textarea[maxlength] {
+  font-family: inherit;
+}
+
+/* Ajuste de altura uniforme para todos los campos de entrada */
+.form-field-expanded :deep(input),
+.form-field-expanded :deep(select),
+.telefono-input-expanded,
+.rut-input-expanded,
+.date-input-expanded {
+  height: 44px !important;
+  box-sizing: border-box;
+}
+
+/* Ajuste específico para textareas (no aplicar altura fija) */
+.form-field-expanded :deep(textarea) {
+  height: auto !important;
+  min-height: 44px;
+}
 </style>
-[file content end]
