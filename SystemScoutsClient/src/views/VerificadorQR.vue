@@ -31,6 +31,8 @@ const {
   padding: 1.5rem;
   width: 100%;
   box-sizing: border-box;
+  /* Evita que el contenedor cause scroll horizontal */
+  overflow-x: hidden;
 }
 
 /* Título */
@@ -43,6 +45,8 @@ h2 {
   padding-bottom: 1rem; 
   border-bottom: 2px solid #e0e0e0; 
   text-align: left; 
+  /* Ajuste responsivo para el texto */
+  word-wrap: break-word;
 }
 
 /* Caja del Lector */
@@ -50,6 +54,7 @@ h2 {
   background: #fff; 
   border-radius: 8px; 
   box-shadow: 0 2px 8px rgba(0,0,0,.08); 
+  /* Overflow hidden recorta cualquier cosa que se salga */
   overflow: hidden; 
   padding: 1rem;
   border: 1px solid #e0e0e0; 
@@ -59,6 +64,11 @@ h2 {
   align-items: center;
   gap: 0.75rem; 
   min-height: 250px;
+  
+  /* Asegura que el lector nunca sea más ancho que su padre */
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* Caja de Resultado */
@@ -78,41 +88,48 @@ h2 {
   text-align: center;
   box-shadow: 0 2px 8px rgba(0,0,0,.1); 
   border: 1px solid transparent;
+  /* Ajuste responsivo */
+  width: 100%;
+  box-sizing: border-box;
 }
 
-/* Estilo Resultado Negativo */
 .rojo {
   background-color: #e74c3c; 
   border-color: #c0392b;
 }
 
-/* Estilo Resultado Positivo */
 .verde {
   background-color: #27ae60;
   border-color: #229954;
 }
 
-/* Texto de ID Escaneado */
 #texto_escaneado {
   margin-top: 1rem;
   font-size: 14px; 
   text-align: center;
   color: #6b7280; 
   font-style: normal; 
+  /* Evita que un ID muy largo rompa el diseño */
+  word-break: break-all;
 }
 
-/* Estilos :deep() para la librería */
-
-/* Video y Canvas */
+/* Forzamos que video, imagen y canvas nunca excedan el 100% */
 #lector :deep(video),
-#lector :deep(canvas) {
-  width: 100% !important;
+#lector :deep(canvas),
+#lector :deep(img) {
+  max-width: 100% !important;
   height: auto !important;
   order: 1;
   border-radius: 6px; 
+  object-fit: cover; /* Asegura que el video llene el espacio sin estirarse */
 }
 
-/* Texto de estado (ej: "Scanning") */
+/* Esto lo fuerza a adaptarse a la pantalla */
+#lector :deep(div) {
+  max-width: 100% !important;
+  box-sizing: border-box;
+}
+
 #lector :deep(span) {
   text-align: center;
   font-size: 0.9em;
@@ -121,23 +138,23 @@ h2 {
   padding: 5px;
   order: 2; 
   width: 100%;
+  display: block;
 }
 
 /* Estilo para el selector de cámara */
 #lector :deep(select) {
-  /* Oculta la apariencia nativa del navegador */
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
-  
-  /* Agrega un fondo con flecha personalizada */
+
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 0.75rem center; /* Posición de la flecha */
-  background-size: 1.25em; /* Tamaño de la flecha */
-  padding-right: 2.5rem !important; /* Espacio extra para que el texto no se ponga debajo de la flecha */
+  background-position: right 0.75rem center; 
+  background-size: 1.25em; 
+  padding-right: 2.5rem !important; 
 
-  width: 98%; 
+  /* Cambiado width fijo por 100% relativo al padre */
+  width: 100%; 
   max-width: 400px;
   padding: 0.75rem 1rem; 
   margin-top: 0.5rem; 
@@ -152,6 +169,10 @@ h2 {
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); 
+  /* Evita que el texto largo se salga */
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 #lector :deep(select:hover) {
@@ -161,7 +182,8 @@ h2 {
 
 /* Estilo para los botones */
 #lector :deep(button) {
-  width: 98%; 
+  /* Cambiado width fijo por 100% relativo al padre */
+  width: 100%; 
   max-width: 400px;
   padding: 0.75rem 1rem; 
   margin-top: 0.5rem; 
@@ -184,21 +206,31 @@ h2 {
   transform: translateY(-1px); 
 }
 
-/* Media Query */
+/* Media Query - Ajustes para móviles pequeños */
 @media (max-width: 480px) {
+  .verificador-container {
+    padding: 1rem; /* Menos padding en bordes */
+  }
+
   .verification-result {
     font-size: 1.1em;
     min-height: 60px;
-  }
-  h2 {
-    font-size: 1.2em; 
+    padding: 1rem;
   }
   
+  h2 {
+    font-size: 1.2em; 
+    margin-bottom: 1.5rem;
+  }
+  
+  #lector {
+    padding: 0.5rem; /* Menos espacio interno en móvil para aprovechar pantalla */
+  }
+
   #lector :deep(button),
   #lector :deep(select) {
      font-size: 0.85em;
-     padding: 8px;
-     /* Ajuste para la flecha en móvil */
+     padding: 10px; /* Botones un poco más fáciles de presionar */
      padding-right: 2rem !important;
      background-position: right 0.5rem center;
   }
