@@ -80,6 +80,11 @@ CORS_ALLOW_HEADERS = [
     "x-requested-with",
 ]
 
+# Allow frontend dev server origins (vite default port 5173/5174) and enable
+# credentials so cookies or other credentialed requests work during development.
+CORS_ALLOW_CREDENTIALS = True
+
+
 ROOT_URLCONF = 'SystemScoutsApi.urls'
 
 TEMPLATES = [
@@ -178,8 +183,13 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CORS_ALLOW_ORIGINS = [
-    "http://localhost:5173"
+# Keep CORS allowed origins consistent. Include both localhost and 127.0.0.1
+# for ports used by the frontend dev server (5173, 5174).
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
 ]
 
 REST_FRAMEWORK = {
