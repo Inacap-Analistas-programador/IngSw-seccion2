@@ -38,7 +38,7 @@
             >
               <option value="" disabled selected hidden></option>
               <option v-for="seccion in listaSeccionesApi" :key="seccion.CUS_ID" :value="seccion.CUS_ID">
-                {{ seccion.CUS_SECCION }}
+                seccion {{ seccion.CUS_SECCION }} - rama {{ obtenerDescripcionRama(seccion.RAM_ID) }}
               </option>
             </select>
             <label for="seccionCurso">
@@ -181,7 +181,7 @@
       <label for="ciudad">Ciudad:</label>
       <select id="ciudad" v-model="ciudadSeleccionada">
         <option disabled value="">Seleccione una ciudad</option>
-        <option v-for="ciudad in Object.keys(ciudadesDisponibles)" :key="ciudad" :value="ciudad">
+        <option v-for="ciudad in Object.keys(ciudadesDisponibles || {})" :key="ciudad" :value="ciudad">
           {{ ciudad }}
         </option>
       </select>
@@ -958,6 +958,15 @@ const listaRegionApi = ref([]);
 import { watch } from 'vue';
 // :::::::::::::::::: IMPORTS Y WEAS :::::::::::::::::::::::::
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+// Lista de ramas para mostrar el nombre
+const listaRamas = ref([]);
+
+// Devuelve la descripción de la rama por su ID
+const obtenerDescripcionRama = (ramaId) => {
+  const rama = listaRamas.value.find(r => r.RAM_ID === ramaId);
+  return rama ? rama.RAM_DESCRIPCION : ramaId;
+};
+
 import { cursos as cursosApi, secciones as seccionesApi } from '../services/cursosService';
 import { estadoCivilApi } from '../services/estadoCivilService';
 import { provinciaApi } from '../services/provinciaService';
@@ -967,11 +976,22 @@ import { provinciaApi } from '../services/provinciaService';
 const listaCursosApi = ref([]);
 // Lista vacía para secciones, igual que cursos
 const listaSeccionesApi = ref([]);
+// Lista de comunas para el selector
+const listaComunaApi = ref([]);
 // Estado civil desde API
 const listaEstadoCivilApi = ref([]);
 const listaProvinciaApi = ref([]);
 
 onMounted(async () => {
+  // Cargar ramas
+  try {
+    const respRamas = await import('../services/ramasService');
+    const ramasApi = respRamas.ramas;
+    const ramasResp = await ramasApi.list({ page_size: 200 });
+    listaRamas.value = ramasResp.results || ramasResp || [];
+  } catch (error) {
+    listaRamas.value = [];
+  }
       // Región
       try {
         const regionResp = await regionApi.list();
@@ -979,11 +999,11 @@ onMounted(async () => {
       } catch (error) {
         listaRegionApi.value = [];
       }
-    // Cargar comunas cuando cambia la provincia seleccionada
-    watch(provinciaSeleccionada, async (newVal) => {
+    // Cargar comunas cuando cambia la región seleccionada
+    watch(regionSeleccionada, async (newVal) => {
       if (newVal) {
         try {
-          const comunaResp = await comunaApi.list({ provincia: newVal });
+          const comunaResp = await comunaApi.list({ region: newVal });
           listaComunaApi.value = comunaResp.results || comunaResp || [];
         } catch (error) {
           listaComunaApi.value = [];
@@ -993,9 +1013,11 @@ onMounted(async () => {
       }
     });
   try {
-    const respuesta = await cursosApi.list();
-    // Captura todos los valores de la API en la lista vacía (DRF paginado)
-    listaCursosApi.value = (respuesta.results || []).map(curso => ({ ...curso }));
+    // Solicita todos los cursos con un page_size grande
+    const respuesta = await cursosApi.list({ page_size: 2000 });
+    listaCursosApi.value = (respuesta.results || respuesta || [])
+      .map(curso => ({ ...curso }))
+      .sort((a, b) => a.CUR_ID - b.CUR_ID);
   } catch (error) {
     console.error('Error al obtener cursos:', error);
   }
@@ -1024,9 +1046,8 @@ const handleCursoChange = async () => {
   }
 
   try {
-    // La API espera el parámetro curso_id
-    const respuestaSecciones = await seccionesApi.list({ curso_id: cursoSeleccionado.value });
-    // Si la respuesta está paginada, usa .results, si no, usa el array directo
+    // La API espera el parámetro CUR_ID
+    const respuestaSecciones = await seccionesApi.list({ CUR_ID: cursoSeleccionado.value });
     listaSeccionesApi.value = respuestaSecciones.results || respuestaSecciones || [];
     console.log('Secciones obtenidas para el curso:', listaSeccionesApi.value);
   } catch (error) {
