@@ -1,3 +1,5 @@
+[file name]: mantenedores.vue
+[file content begin]
 <template>
   <div class="mantenedores-scouts">
     <!-- Error Alert -->
@@ -2201,12 +2203,27 @@ export default {
 
 <style scoped>
 .mantenedores-scouts {
-  min-height: 100vh;
-  background: #f5f5f5;
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(60,60,60,0.08);
+  padding: 24px;
+  margin-bottom: 24px;
+  color: #111;
   display: flex;
   flex-direction: column;
+  font-family: Arial, sans-serif;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  position: relative;
+  min-height: calc(100vh - var(--navbar-height, 64px));
+  margin-top: 0px;
+  border-radius: 6px;
+  overflow: hidden;
 }
 
 /* Error Alert */
@@ -2403,7 +2420,7 @@ export default {
 .main-content-expanded {
   flex: 1;
   padding: 0;
-  min-height: calc(100vh - 80px);
+  min-height: calc(100vh - var(--navbar-height, 64px) - 80px);
   width: 100%;
   margin: 0;
 }
@@ -2457,7 +2474,7 @@ export default {
 }
 
 .btn-primary {
-  background: #3949ab;
+  background: linear-gradient(180deg,#2b6cb0,#154c8c);
   color: white;
   border: none;
   padding: 12px 24px;
@@ -2471,10 +2488,11 @@ export default {
   white-space: nowrap;
   font-size: 14px;
   min-height: 44px;
+  box-shadow: 0 6px 18px rgba(33,78,156,0.12);
 }
 
 .btn-primary:hover {
-  background: #1a237e;
+  background: linear-gradient(180deg,#1e40af,#1e3a8a);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(57, 73, 171, 0.3);
 }
@@ -2560,8 +2578,8 @@ export default {
 }
 
 .status-active {
-  background: #d4edda;
-  color: #155724;
+  background: #d1fae5;
+  color: #065f46;
 }
 
 .status-inactive {
@@ -2828,4 +2846,87 @@ export default {
 ::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }
+
+/* Estilos adaptados de message.txt */
+.btn-standard {
+  min-width: 160px !important;
+  padding: 10px 16px !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(40,92,168,0.08) !important;
+  border: none !important;
+  transition: all 0.3s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.btn-standard:hover {
+  filter: brightness(0.95) !important;
+  box-shadow: 0 4px 16px rgba(40,92,168,0.13) !important;
+  transform: translateY(-1px) !important;
+}
+
+.estado { 
+  padding: 6px 12px; 
+  border-radius: 12px; 
+  font-size: 12px; 
+  white-space: nowrap;
+  font-weight: 600;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.estado.activo { 
+  background: #d1fae5; 
+  color: #065f46;
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.estado.inactivo { 
+  background: #fee2e2; 
+  color: #991b1b;
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.estado.vigente { background:#d1fae5; color:#065f46 }
+.estado.no-vigente { background:#fbbf24; color:#1f2937 }
+.estado.anulado { background:#e5e7eb; color:#374151; text-decoration: line-through; }
+
+/* Mejoras responsivas adicionales */
+@media (max-width: 480px) {
+  .mantenedores-scouts {
+    padding: 16px;
+  }
+  
+  .mantenedor-section-expanded {
+    padding: 20px 16px;
+  }
+  
+  .btn-primary, .btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .btn-action {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 1024px) {
+  .mantenedores-scouts {
+    margin: 12px;
+    width: calc(100% - 24px);
+  }
+}
 </style>
+[file content end]
