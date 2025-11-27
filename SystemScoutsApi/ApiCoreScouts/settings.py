@@ -2,6 +2,7 @@ from pathlib import Path
 from datetime import timedelta
 import os
 from dotenv import load_dotenv
+from decouple import config, Csv
 
 load_dotenv()
 
@@ -19,11 +20,11 @@ REST_FRAMEWORK = {
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv("SECRET_KEY")
+SECRET_KEY = config('DJANGO_SECRET_KEY', default='fallback-secret-key')
 
-DEBUG = True
+DEBUG = config('DJANGO_DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', default='', cast=Csv())
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -49,6 +50,9 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'ApiCoreScouts.security_middleware.SecurityHeadersMiddleware',
+    'ApiCoreScouts.security_middleware.XSSProtectionMiddleware',
+    'ApiCoreScouts.security_middleware.SecurityLoggingMiddleware',
 ]
 
 CORS_ALLOWED_ORIGINS = [
