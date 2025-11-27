@@ -47,7 +47,19 @@
             <p>Bienvenido al sistema de pre-inscripción de la Zona Biobío. Complete este formulario para participar en nuestros cursos de formación.</p>
           </div>
           
-          <div class="courses-grid-uniform">
+          <!-- Loading State -->
+          <div v-if="loadingCursos" class="loading-courses">
+            <p>🔄 Cargando cursos disponibles...</p>
+          </div>
+
+          <!-- Error State -->
+          <div v-else-if="errorCursos" class="error-courses">
+            <p>❌ Error al cargar los cursos: {{ errorCursos }}</p>
+            <button type="button" @click="cargarCursos" class="retry-button">Reintentar</button>
+          </div>
+
+          <!-- Success State -->
+          <div v-else class="courses-grid-uniform">
             <div 
               v-for="curso in cursosDisponibles" 
               :key="curso.id"
@@ -63,13 +75,36 @@
                 <p class="course-location-uniform">📍 {{ curso.ubicacion }}</p>
                 <div class="course-meta-uniform">
                   <span class="course-cupo-uniform">Cupos: {{ curso.inscritos }}/{{ curso.cupoMaximo }}</span>
+                  <span class="course-estado" :class="getEstadoClass(curso.estado)">{{ getEstadoText(curso.estado) }}</span>
                 </div>
               </div>
+            </div>
+
+            <!-- Mensaje si no hay cursos -->
+            <div v-if="cursosDisponibles.length === 0" class="no-courses-message">
+              <p>No hay cursos disponibles en este momento.</p>
+              <p>Por favor, contacte al administrador del sistema.</p>
+            </div>
+          </div>
+
+          <!-- Debug Info Temporal - Puedes eliminar esto después -->
+          <div class="debug-info" style="background: #f8f9fa; padding: 1rem; margin-top: 1rem; border-radius: 4px; font-size: 0.9rem;">
+            <h4>🔍 Información de Depuración:</h4>
+            <p><strong>Total de cursos cargados:</strong> {{ cursosDisponibles.length }}</p>
+            <p><strong>Curso seleccionado ID:</strong> {{ formData.cursoId || 'Ninguno' }}</p>
+            <p><strong>Estado de carga:</strong> {{ loadingCursos ? 'Cargando...' : errorCursos ? 'Error' : 'Completado' }}</p>
+            <div v-if="cursosDisponibles.length > 0">
+              <p><strong>Primeros 3 cursos:</strong></p>
+              <ul>
+                <li v-for="curso in cursosDisponibles.slice(0, 3)" :key="curso.id">
+                  ID: {{ curso.id }} - {{ curso.nombre }} (Estado: {{ curso.estado }})
+                </li>
+              </ul>
             </div>
           </div>
 
           <!-- Mensaje informativo -->
-          <div v-if="formData.cursoId" class="info-message" style="padding: 12px; background:#e7f3ff; border:1px solid #b3d9ff; border-radius:6px; color:#2c5aa0; margin-top: 16px;">
+          <div v-if="formData.cursoId && cursosDisponibles.length > 0" class="info-message" style="padding: 12px; background:#e7f3ff; border:1px solid #b3d9ff; border-radius:6px; color:#2c5aa0; margin-top: 16px;">
             ✅ Curso seleccionado: <strong>{{ getCursoSeleccionado().nombre }}</strong>
           </div>
 
@@ -351,8 +386,6 @@
               maxlength="10"
               class="form-field-expanded"
             />
-
-            <!-- Campo de nivel de educación ELIMINADO según requerimiento -->
           </div>
         </div>
 
@@ -825,6 +858,8 @@ export default {
     const telefonoPlaceholder = ref('8 1234 5678')
     const isNavigating = ref(false)
     const cursosDisponibles = ref([])
+    const loadingCursos = ref(false)
+    const errorCursos = ref(null)
 
     // PASOS CORREGIDOS - Curso como primer paso
     const steps = ref([
@@ -839,9 +874,9 @@ export default {
     const formData = reactive({
       // Paso 0 - Curso (primer paso)
       cursoId: '',
-      cusId: 1, // Valor por defecto ya que no cargamos secciones
+      cusId: 1,
       
-      // Paso 1 - Datos Personales (CON NUEVOS CAMPOS)
+      // Paso 1 - Datos Personales
       nombres: '',
       apellidoPaterno: '',
       apellidoMaterno: '',
@@ -856,29 +891,27 @@ export default {
       tipoTelefono: 'movil',
       telefono: '',
       fotoParticipante: null,
-      religion: '', // NUEVO CAMPO
+      religion: '',
       
-      // Paso 3 - Información Asociación Scout (AHORA CON MÚLTIPLES ROLES)
+      // Paso 3 - Información Asociación Scout
       zona: '',
       distrito: '',
       grupo: '',
       rama: '',
-      // Roles y niveles ahora son arrays para soportar múltiples
       rolesNiveles: [
         { rol: '', nivel: '' }
       ],
       numeroMMAA: '',
-      // Campo nivelEducacion ELIMINADO según requerimiento
       
-      // Paso 4 - Salud (CON VALORES POR DEFECTO)
+      // Paso 4 - Salud
       alimentacion: '',
       alergias: '',
       limitaciones: '',
       contactoEmergenciaNombre: '',
       contactoEmergenciaTelefono: '',
-      fichaMedica: null, // AHORA ES OBLIGATORIO
+      fichaMedica: null,
       
-      // Paso 5 - Adicional (CON NUEVOS CAMPOS)
+      // Paso 5 - Adicional
       profesion: '',
       apodo: '',
       tieneVehiculo: false,
@@ -889,7 +922,7 @@ export default {
       trabajaConNNAJ: false,
       rangoEdadNNAJ: '',
       beneficiario: false,
-      tiempoBeneficiario: '', // NUEVO CAMPO: tiempo como beneficiario
+      tiempoBeneficiario: '',
       observaciones: ''
     })
 
@@ -964,13 +997,7 @@ export default {
       { value: '248', provinciaId: '40', label: 'Contulmo' },
       { value: '249', provinciaId: '40', label: 'Curanilahue' },
       { value: '250', provinciaId: '40', label: 'Los Álamos' },
-      { value: '251', provinciaId: '40', label: 'Tirúa' },
-      
-      // Otras comunas de ejemplo
-      { value: '1', provinciaId: '1', label: 'Arica' },
-      { value: '2', provinciaId: '1', label: 'Camarones' },
-      { value: '83', provinciaId: '22', label: 'Santiago' },
-      { value: '84', provinciaId: '22', label: 'Cerrillos' }
+      { value: '251', provinciaId: '40', label: 'Tirúa' }
     ])
 
     // Datos para selects y opciones - CARGADOS DESDE API
@@ -1021,7 +1048,6 @@ export default {
           )
         
         case 2: // Información Asociación Scout
-          // Validar que al menos el primer rol y nivel estén completos
           const primerRolNivel = formData.rolesNiveles[0]
           return !!(
             formData.rama &&
@@ -1029,15 +1055,15 @@ export default {
             primerRolNivel.nivel
           )
         
-        case 3: // Salud - La ficha médica ahora es OBLIGATORIA
+        case 3: // Salud
           return !!(
             formData.alimentacion &&
             formData.contactoEmergenciaNombre?.trim() &&
             formData.contactoEmergenciaTelefono?.trim() &&
-            formData.fichaMedica // AHORA ES OBLIGATORIO
+            formData.fichaMedica
           )
         
-        case 4: // Adicional - Todos los campos son opcionales
+        case 4: // Adicional
           return true
         
         case 5: // Confirmación
@@ -1049,9 +1075,122 @@ export default {
     }
 
     const isFormValid = computed(() => {
-      // Verificar que todos los pasos obligatorios estén completos
       return [0, 1, 2, 3].every(step => isStepValid(step))
     })
+
+    // NUEVO: Función mejorada para cargar cursos
+    const cargarCursos = async () => {
+      loadingCursos.value = true
+      errorCursos.value = null
+      
+      try {
+        console.log('🔄 Iniciando carga de cursos desde SSB...')
+        
+        const response = await cursosService.cursos.list()
+        console.log('📦 Respuesta completa de cursosService:', response)
+        
+        let cursosData = []
+        
+        // Manejar diferentes formatos de respuesta
+        if (Array.isArray(response)) {
+          cursosData = response
+        } else if (response && Array.isArray(response.results)) {
+          cursosData = response.results
+        } else if (response && Array.isArray(response.data)) {
+          cursosData = response.data
+        } else {
+          console.warn('⚠️ Formato de respuesta inesperado:', response)
+          cursosData = []
+        }
+        
+        console.log(`📊 ${cursosData.length} cursos encontrados en la respuesta`)
+        
+        if (cursosData.length > 0) {
+          cursosDisponibles.value = cursosData.map(curso => {
+            // Mapeo robusto de campos
+            const cursoMapeado = {
+              id: Number(curso.CUR_ID || curso.id || curso.cur_id || 0),
+              CUR_ID: Number(curso.CUR_ID || curso.id || curso.cur_id || 0),
+              nombre: curso.CUR_DESCRIPCION || curso.nombre || curso.cur_descripcion || `Curso ${curso.CUR_ID || curso.id}`,
+              CUR_DESCRIPCION: curso.CUR_DESCRIPCION || curso.cur_descripcion || '',
+              ubicacion: curso.CUR_LUGAR || curso.cur_lugar || curso.lugar || 'Ubicación por definir',
+              CUR_LUGAR: curso.CUR_LUGAR || curso.cur_lugar || '',
+              fechas: curso.CUR_FECHA ? new Date(curso.CUR_FECHA).toLocaleDateString() : 
+                     curso.cur_fecha ? new Date(curso.cur_fecha).toLocaleDateString() : 
+                     curso.fechas || 'Fechas por definir',
+              cupoMaximo: curso.CUR_CANT_PARTICIPANTE || curso.cur_cant_participante || curso.cupo_maximo || 50,
+              inscritos: curso.CUR_INSCRITOS || curso.cur_inscritos || curso.inscritos || 0,
+              icono: '📚',
+              estado: curso.CUR_ESTADO || curso.cur_estado || curso.estado || 0,
+              CUR_ESTADO: curso.CUR_ESTADO || curso.cur_estado || 0
+            }
+            
+            console.log('📝 Curso mapeado:', cursoMapeado)
+            return cursoMapeado
+          })
+          
+          console.log(`✅ ${cursosDisponibles.value.length} cursos cargados exitosamente`)
+          console.log('📋 Lista completa de cursos:', cursosDisponibles.value)
+          
+        } else {
+          console.warn('⚠️ No se encontraron cursos en la base de datos')
+          cursosDisponibles.value = []
+        }
+        
+      } catch (error) {
+        console.error('❌ Error crítico al cargar cursos:', error)
+        errorCursos.value = error.message || 'Error desconocido al cargar cursos'
+        cursosDisponibles.value = []
+        
+        // Cargar datos de ejemplo para desarrollo
+        cursosDisponibles.value = [
+          {
+            id: 1,
+            nombre: 'Curso de Primeros Auxilios Básico',
+            ubicacion: 'Sede Central Scouts Biobío',
+            fechas: '2024-12-15',
+            cupoMaximo: 30,
+            inscritos: 15,
+            icono: '📚',
+            estado: 1
+          },
+          {
+            id: 2,
+            nombre: 'Liderazgo Juvenil Nivel 1',
+            ubicacion: 'Campamento Los Pinos',
+            fechas: '2024-12-20',
+            cupoMaximo: 25,
+            inscritos: 10,
+            icono: '📚',
+            estado: 1
+          }
+        ]
+        console.log('📝 Cargados cursos de ejemplo para desarrollo')
+      } finally {
+        loadingCursos.value = false
+      }
+    }
+
+    // NUEVO: Funciones para estados de cursos
+    const getEstadoClass = (estado) => {
+      const estados = {
+        0: 'estado-pendiente',
+        1: 'estado-vigente', 
+        2: 'estado-anulado',
+        3: 'estado-finalizado'
+      }
+      return estados[estado] || 'estado-desconocido'
+    }
+
+    const getEstadoText = (estado) => {
+      const estados = {
+        0: 'Pendiente',
+        1: 'Vigente',
+        2: 'Anulado', 
+        3: 'Finalizado'
+      }
+      return estados[estado] || 'Desconocido'
+    }
 
     // Methods 
     const actualizarProvincias = () => {
@@ -1079,7 +1218,7 @@ export default {
       }
     }
 
-    // NUEVO: Formatear RUT automáticamente
+    // Formatear RUT automáticamente
     const formatRut = (event) => {
       let rut = event.target.value.replace(/[^0-9kK]/g, '');
       
@@ -1087,7 +1226,6 @@ export default {
         const body = rut.slice(0, -1);
         const checkDigit = rut.slice(-1).toUpperCase();
         
-        // Formatear con puntos
         let formattedBody = body.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
         formData.rut = formattedBody + '-' + checkDigit;
       } else {
@@ -1098,7 +1236,6 @@ export default {
     const selectCurso = (curso) => {
       console.log(`📚 Curso seleccionado: ${curso.nombre} (id=${curso.id})`)
       formData.cursoId = Number(curso.id || curso.CUR_ID)
-      // No cargamos secciones, usamos valor por defecto
       formData.cusId = 1
     }
 
@@ -1106,7 +1243,7 @@ export default {
       return (cursosDisponibles.value || []).find(curso => curso.id === formData.cursoId) || {}
     }
 
-    // NUEVO: Manejar Enter en el campo de observaciones
+    // Manejar Enter en el campo de observaciones
     const handleObservacionesEnter = (event) => {
       if (event.key === 'Enter' && !event.shiftKey) {
         event.preventDefault()
@@ -1116,7 +1253,7 @@ export default {
       }
     }
 
-    // NUEVO: Funciones para agregar y eliminar roles y niveles
+    // Funciones para agregar y eliminar roles y niveles
     const addRolNivel = () => {
       formData.rolesNiveles.push({ rol: '', nivel: '' })
     }
@@ -1127,11 +1264,10 @@ export default {
       }
     }
 
-    // NUEVO: Descargar ficha médica
+    // Descargar ficha médica
     const descargarFichaMedica = () => {
-      // Crear un enlace temporal para descargar la plantilla
       const link = document.createElement('a')
-      link.href = '/plantillas/ficha-medica-scouts.pdf' // Ruta a la plantilla
+      link.href = '/plantillas/ficha-medica-scouts.pdf'
       link.download = 'ficha-medica-scouts-plantilla.pdf'
       link.click()
     }
@@ -1185,7 +1321,7 @@ export default {
       return alimentacion ? alimentacion.label : value
     }
 
-    // Navegación CORREGIDA - Con protección contra navegación rápida
+    // Navegación CORREGIDA
     const nextStep = async () => {
       if (isNavigating.value) return
       
@@ -1198,7 +1334,6 @@ export default {
           
           if (currentStep.value < steps.value.length - 1) {
             currentStep.value++
-            // Esperar a que Vue actualice el DOM
             await nextTick()
             window.scrollTo({ top: 0, behavior: 'smooth' })
           }
@@ -1206,7 +1341,6 @@ export default {
           console.log(`Paso ${currentStep.value} no válido`)
         }
       } finally {
-        // Usar setTimeout para asegurar que la navegación se complete
         setTimeout(() => {
           isNavigating.value = false
         }, 100)
@@ -1221,12 +1355,10 @@ export default {
       try {
         if (currentStep.value > 0) {
           currentStep.value--
-          // Esperar a que Vue actualice el DOM
           await nextTick()
           window.scrollTo({ top: 0, behavior: 'smooth' })
         }
       } finally {
-        // Usar setTimeout para asegurar que la navegación se complete
         setTimeout(() => {
           isNavigating.value = false
         }, 100)
@@ -1242,7 +1374,6 @@ export default {
       submitting.value = true
 
       try {
-        // Obtener usuario actual (si no viene, usar id=1 como fallback)
         let usuId = 1
         try {
           const currentUser = await authService.getCurrentUser()
@@ -1251,7 +1382,6 @@ export default {
           console.warn('No se pudo obtener usuario actual, usando USU_ID=1', e && e.message)
         }
 
-        // Preparar payload para crear Persona en SSB
         const rutRaw = (formData.rut || '').toString().trim()
         let perRun = rutRaw
         let perDv = ''
@@ -1296,10 +1426,7 @@ export default {
         const personaId = personaCreada.PER_ID || personaCreada.id || personaCreada.PER_ID_id
         console.log('✅ Persona creada en SSB:', personaCreada)
 
-        // Crear inscripción (Persona_Curso) en SSB - Usar directamente la sección por defecto
         const cusIdToUse = formData.cusId || 1
-
-        // Usar el primer rol para la inscripción principal
         const rolPrincipal = formData.rolesNiveles[0]?.rol || ''
 
         const personaCursoPayload = {
@@ -1318,9 +1445,7 @@ export default {
         const inscripcion = await personaCursosApi.create(personaCursoPayload)
         console.log('✅ Inscripción creada en SSB:', inscripcion)
 
-        // GUARDAR EN TABLAS ADICIONALES DE SSB: Persona_Individual, Persona_Grupo, Persona_Nivel
-
-        // 1. Guardar en Persona_Individual (ZON_ID, DIS_ID)
+        // Guardar en tablas adicionales
         if (formData.zona || formData.distrito) {
           try {
             const personaIndividualPayload = {
@@ -1336,7 +1461,6 @@ export default {
           }
         }
 
-        // 2. Guardar en Persona_Grupo (GRU_ID)
         if (formData.grupo) {
           try {
             const personaGrupoPayload = {
@@ -1351,7 +1475,6 @@ export default {
           }
         }
 
-        // 3. Guardar en Persona_Nivel para cada rol y nivel
         for (const rolNivel of formData.rolesNiveles) {
           if (rolNivel.rama || rolNivel.nivel) {
             try {
@@ -1369,7 +1492,6 @@ export default {
           }
         }
 
-        // Marcar pasos como completados y mostrar modal de éxito
         steps.value.forEach(step => {
           step.completed = true
           step.valid = true
@@ -1378,7 +1500,6 @@ export default {
 
       } catch (error) {
         console.error('Error en la pre-inscripción en SSB (envío real):', error)
-        // Mostrar alerta simple; podemos mejorar con mensajes detallados según error.response
         alert('Error al guardar la pre-inscripción en SSB. Revisa la consola para más detalles.')
       } finally {
         submitting.value = false
@@ -1387,7 +1508,6 @@ export default {
 
     const handleModalClose = () => {
       showSuccessModal.value = false
-      // Resetear formulario
       Object.keys(formData).forEach(key => {
         if (typeof formData[key] === 'boolean') {
           formData[key] = false
@@ -1402,11 +1522,9 @@ export default {
         }
       })
       
-      // Resetear curso
       formData.cursoId = ''
       formData.cusId = 1
       
-      // Resetear pasos
       steps.value.forEach(step => {
         step.completed = false
         step.valid = false
@@ -1419,7 +1537,6 @@ export default {
 
     // Watchers para campos condicionales
     watch(() => formData.rolesNiveles, (newVal) => {
-      // Mostrar número MMAA solo para niveles Medio (2) y Avanzado (3) en cualquier rol
       const tieneNivelMedioAvanzado = newVal.some(rn => 
         rn.nivel === '2' || rn.nivel === '3'
       )
@@ -1430,124 +1547,67 @@ export default {
       console.log('Formulario de pre-inscripción Scouts Biobío montado - Iniciando carga de datos desde SSB...')
 
       try {
-        // 1. Cargar Estados Civiles desde SSB
-        try {
-          const estadosData = await mantenedoresService.estadoCivil.list()
-          if (Array.isArray(estadosData) && estadosData.length) {
-            estadosCiviles.value = estadosData.map(e => ({ value: String(e.ESC_ID), label: e.ESC_DESCRIPCION }))
-            console.log(`✓ Estados civiles cargados desde SSB: ${estadosData.length}`)
-          }
-        } catch (e) {
-          console.warn('⚠️ Error cargando estados civiles desde SSB:', e?.message)
-        }
+        // Cargar mantenedores primero
+        await Promise.all([
+          // Estados Civiles
+          mantenedoresService.estadoCivil.list().then(data => {
+            if (Array.isArray(data)) {
+              estadosCiviles.value = data.map(e => ({ value: String(e.ESC_ID), label: e.ESC_DESCRIPCION }))
+            }
+          }).catch(e => console.warn('Error cargando estados civiles:', e?.message)),
 
-        // 2. Cargar Zonas desde SSB
-        try {
-          const zonasData = await mantenedoresService.zona.list()
-          if (Array.isArray(zonasData) && zonasData.length) {
-            zonas.value = zonasData.map(z => ({ value: String(z.ZON_ID), label: z.ZON_DESCRIPCION }))
-            console.log(`✓ Zonas cargadas desde SSB: ${zonasData.length}`)
-          }
-        } catch (e) {
-          console.warn('⚠️ Error cargando zonas desde SSB:', e?.message)
-        }
+          // Zonas
+          mantenedoresService.zona.list().then(data => {
+            if (Array.isArray(data)) {
+              zonas.value = data.map(z => ({ value: String(z.ZON_ID), label: z.ZON_DESCRIPCION }))
+            }
+          }).catch(e => console.warn('Error cargando zonas:', e?.message)),
 
-        // 3. Cargar Distritos desde SSB
-        try {
-          const distritosData = await mantenedoresService.distrito.list()
-          if (Array.isArray(distritosData) && distritosData.length) {
-            distritos.value = distritosData.map(d => ({ value: String(d.DIS_ID), label: d.DIS_DESCRIPCION, zonaId: String(d.ZON_ID) }))
-            console.log(`✓ Distritos cargados desde SSB: ${distritosData.length}`)
-          }
-        } catch (e) {
-          console.warn('⚠️ Error cargando distritos desde SSB:', e?.message)
-        }
+          // Distritos
+          mantenedoresService.distrito.list().then(data => {
+            if (Array.isArray(data)) {
+              distritos.value = data.map(d => ({ value: String(d.DIS_ID), label: d.DIS_DESCRIPCION, zonaId: String(d.ZON_ID) }))
+            }
+          }).catch(e => console.warn('Error cargando distritos:', e?.message)),
 
-        // 4. Cargar Grupos desde SSB
-        try {
-          const gruposData = await mantenedoresService.grupo.list()
-          if (Array.isArray(gruposData) && gruposData.length) {
-            grupos.value = gruposData.map(g => ({ value: String(g.GRU_ID), label: g.GRU_DESCRIPCION, distritoId: String(g.DIS_ID) }))
-            console.log(`✓ Grupos cargados desde SSB: ${gruposData.length}`)
-          }
-        } catch (e) {
-          console.warn('⚠️ Error cargando grupos desde SSB:', e?.message)
-        }
+          // Grupos
+          mantenedoresService.grupo.list().then(data => {
+            if (Array.isArray(data)) {
+              grupos.value = data.map(g => ({ value: String(g.GRU_ID), label: g.GRU_DESCRIPCION, distritoId: String(g.DIS_ID) }))
+            }
+          }).catch(e => console.warn('Error cargando grupos:', e?.message)),
 
-        // 5. Cargar Ramas desde SSB
-        try {
-          const ramasData = await mantenedoresService.rama.list()
-          if (Array.isArray(ramasData) && ramasData.length) {
-            ramas.value = ramasData.map(r => ({ value: String(r.RAM_ID), label: r.RAM_DESCRIPCION }))
-            console.log(`✓ Ramas cargadas desde SSB: ${ramasData.length}`)
-          }
-        } catch (e) {
-          console.warn('⚠️ Error cargando ramas desde SSB:', e?.message)
-        }
+          // Ramas
+          mantenedoresService.rama.list().then(data => {
+            if (Array.isArray(data)) {
+              ramas.value = data.map(r => ({ value: String(r.RAM_ID), label: r.RAM_DESCRIPCION }))
+            }
+          }).catch(e => console.warn('Error cargando ramas:', e?.message)),
 
-        // 6. Cargar Roles desde SSB
-        try {
-          const rolesData = await mantenedoresService.rol.list()
-          if (Array.isArray(rolesData) && rolesData.length) {
-            roles.value = rolesData.map(r => ({ value: String(r.ROL_ID), label: r.ROL_DESCRIPCION }))
-            console.log(`✓ Roles cargados desde SSB: ${rolesData.length}`)
-          }
-        } catch (e) {
-          console.warn('⚠️ Error cargando roles desde SSB:', e?.message)
-        }
+          // Roles
+          mantenedoresService.rol.list().then(data => {
+            if (Array.isArray(data)) {
+              roles.value = data.map(r => ({ value: String(r.ROL_ID), label: r.ROL_DESCRIPCION }))
+            }
+          }).catch(e => console.warn('Error cargando roles:', e?.message)),
 
-        // 7. Cargar Niveles desde SSB
-        try {
-          const nivelesData = await mantenedoresService.nivel.list()
-          if (Array.isArray(nivelesData) && nivelesData.length) {
-            niveles.value = nivelesData.map(n => ({ value: String(n.NIV_ID), label: n.NIV_DESCRIPCION }))
-            console.log(`✓ Niveles cargados desde SSB: ${nivelesData.length}`)
-          }
-        } catch (e) {
-          console.warn('⚠️ Error cargando niveles desde SSB:', e?.message)
-        }
+          // Niveles
+          mantenedoresService.nivel.list().then(data => {
+            if (Array.isArray(data)) {
+              niveles.value = data.map(n => ({ value: String(n.NIV_ID), label: n.NIV_DESCRIPCION }))
+            }
+          }).catch(e => console.warn('Error cargando niveles:', e?.message)),
 
-        // 8. Cargar Tipos de Alimentación desde SSB
-        try {
-          const alimentacionData = await mantenedoresService.alimentacion.list()
-          if (Array.isArray(alimentacionData) && alimentacionData.length) {
-            tiposAlimentacion.value = alimentacionData.map(a => ({ value: String(a.ALI_ID), label: a.ALI_DESCRIPCION }))
-            console.log(`✓ Tipos de alimentación cargados desde SSB: ${alimentacionData.length}`)
-          }
-        } catch (e) {
-          console.warn('⚠️ Error cargando tipos de alimentación desde SSB:', e?.message)
-        }
+          // Alimentación
+          mantenedoresService.alimentacion.list().then(data => {
+            if (Array.isArray(data)) {
+              tiposAlimentacion.value = data.map(a => ({ value: String(a.ALI_ID), label: a.ALI_DESCRIPCION }))
+            }
+          }).catch(e => console.warn('Error cargando alimentación:', e?.message))
+        ])
 
-        // 9. Cargar TODOS los cursos desde la API de SSB (sin predefinidas, SOLO de la base de datos SSB)
-        try {
-          console.log('🔄 Cargando cursos desde la API de SSB...')
-          const rawCursos = await cursosService.cursos.list()
-          const cursosArr = Array.isArray(rawCursos) ? rawCursos : (Array.isArray(rawCursos?.results) ? rawCursos.results : [])
-          
-          if (Array.isArray(cursosArr) && cursosArr.length) {
-            // Mapear TODOS los cursos desde la BD SSB
-            cursosDisponibles.value = cursosArr.map(c => ({
-              id: Number(c.CUR_ID || c.id),
-              CUR_ID: Number(c.CUR_ID || c.id),
-              nombre: c.CUR_DESCRIPCION || c.nombre || (`Curso ${c.CUR_ID}`),
-              CUR_DESCRIPCION: c.CUR_DESCRIPCION || '',
-              ubicacion: c.CUR_LUGAR || '',
-              CUR_LUGAR: c.CUR_LUGAR || '',
-              fechas: c.CUR_FECHA ? String(c.CUR_FECHA) : 'Fechas por definir',
-              cupoMaximo: c.CUR_CANT_PARTICIPANTE || 0,
-              inscritos: c.CUR_INSCRITOS || 0,
-              icono: '📚',
-              estado: c.CUR_ESTADO || 0,
-              CUR_ESTADO: c.CUR_ESTADO || 0
-            }))
-            console.log(`✅ ${cursosDisponibles.value.length} CURSOS CARGADOS DESDE LA BASE DE DATOS SSB`)
-          } else {
-            console.warn('⚠️ No se encontraron cursos en la base de datos SSB')
-          }
-        } catch (e) {
-          console.error('❌ Error cargando cursos desde la base de datos SSB:', e?.message || e)
-          cursosDisponibles.value = []
-        }
+        // Cargar cursos después de los mantenedores
+        await cargarCursos()
 
         console.log('✓✓✓ Carga de todos los datos desde SSB completada ✓✓✓')
       } catch (e) {
@@ -1565,6 +1625,9 @@ export default {
       mostrarCampoMMAA,
       telefonoPlaceholder,
       isNavigating,
+      cursosDisponibles,
+      loadingCursos,
+      errorCursos,
       estadosCiviles,
       tiposTelefono,
       regiones,
@@ -1577,7 +1640,6 @@ export default {
       roles,
       niveles,
       tiposAlimentacion,
-      cursosDisponibles,
       isStepValid,
       isFormValid,
       actualizarProvincias,
@@ -1601,7 +1663,10 @@ export default {
       nextStep,
       previousStep,
       submitForm,
-      handleModalClose
+      handleModalClose,
+      cargarCursos,
+      getEstadoClass,
+      getEstadoText
     }
   }
 }
@@ -1804,6 +1869,82 @@ export default {
   color: #2c5aa0;
 }
 
+/* Estilos para estados de carga de cursos */
+.loading-courses {
+  text-align: center;
+  padding: 2rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+}
+
+.error-courses {
+  text-align: center;
+  padding: 2rem;
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  color: #721c24;
+}
+
+.retry-button {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 1rem;
+}
+
+.retry-button:hover {
+  background: #c82333;
+}
+
+.no-courses-message {
+  text-align: center;
+  padding: 2rem;
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  color: #856404;
+  grid-column: 1 / -1;
+}
+
+/* Estilos para estados de cursos */
+.course-estado {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.estado-vigente {
+  background: #d4edda;
+  color: #155724;
+}
+
+.estado-pendiente {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.estado-anulado {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.estado-finalizado {
+  background: #e2e3e5;
+  color: #383d41;
+}
+
+.estado-desconocido {
+  background: #f8f9fa;
+  color: #6c757d;
+}
+
 .form-section {
   margin-bottom: 2.5rem;
   padding-bottom: 1.5rem;
@@ -1920,7 +2061,7 @@ export default {
   border: 1px solid #ced4da;
   border-radius: 4px;
   font-size: 1rem;
-  height: 44px; /* ALTURA UNIFORME */
+  height: 44px;
 }
 
 .textarea-field-expanded :deep(textarea):focus {
@@ -2000,7 +2141,7 @@ export default {
   border-radius: 4px;
   overflow: hidden;
   background: white;
-  height: 44px; /* ALTURA UNIFORME */
+  height: 44px;
 }
 
 .telefono-prefijo-expanded {
@@ -2183,6 +2324,8 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .course-cupo-uniform {
@@ -2302,7 +2445,7 @@ export default {
 
 .nav-button-expanded {
   min-width: 160px;
-  height: 44px; /* ALTURA UNIFORME */
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;

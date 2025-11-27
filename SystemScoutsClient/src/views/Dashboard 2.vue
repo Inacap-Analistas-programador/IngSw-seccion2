@@ -240,8 +240,7 @@ import BaseAlert from '@/components/BaseAlert.vue'
 import DataCard from '@/components/DataCard.vue'
 
 // CORREGIDO: Importación correcta de servicios
-import cursosService from '@/services/cursosService'
-import { personasService, pagosService } from '@/services'
+import dashboardService_2 from '@/services/dashboardService_2'
 
 export default {
   name: 'DashboardScout',
@@ -450,7 +449,7 @@ export default {
         
         // Cargar cursos con manejo de error específico
         try {
-          const cursosData = await cursosService.cursos.list()
+          const cursosData = await dashboardService_2.cursos.list()
           if (cursosData && Array.isArray(cursosData)) {
             cursos.value = cursosData
             console.log(`✓ Cursos cargados: ${cursosData.length}`)
@@ -465,7 +464,7 @@ export default {
         
         // Cargar personas
         try {
-          const personasData = await personasService.personas.list()
+          const personasData = await dashboardService_2.personas.list()
           if (personasData && Array.isArray(personasData)) {
             personas.value = personasData
             console.log(`✓ Personas cargadas: ${personasData.length}`)
@@ -476,7 +475,7 @@ export default {
         
         // Cargar inscripciones
         try {
-          const personasCursoData = await personasService.personaCursos.list()
+          const personasCursoData = await dashboardService_2.personaCursos.list()
           if (personasCursoData && Array.isArray(personasCursoData)) {
             personasCurso.value = personasCursoData
             console.log(`✓ Inscripciones cargadas: ${personasCursoData.length}`)
@@ -487,7 +486,7 @@ export default {
         
         // Cargar pagos con manejo de error 404
         try {
-          const pagosData = await pagosService.pagoPersona.list()
+          const pagosData = await dashboardService_2.pagoPersona.list()
           if (pagosData && Array.isArray(pagosData)) {
             pagosPersona.value = pagosData
             console.log(`✓ Pagos cargados: ${pagosData.length}`)
@@ -500,7 +499,7 @@ export default {
         
         // Cargar coordinadores
         try {
-          const coordinadoresData = await cursosService.coordinadores.list()
+          const coordinadoresData = await dashboardService_2.coordinadores.list()
           if (coordinadoresData && Array.isArray(coordinadoresData)) {
             cursoCoordinadores.value = coordinadoresData
             console.log(`✓ Coordinadores cargados: ${coordinadoresData.length}`)
@@ -511,7 +510,7 @@ export default {
         
         // Cargar formadores
         try {
-          const formadoresData = await cursosService.formadores.list()
+          const formadoresData = await dashboardService_2.formadores.list()
           if (formadoresData && Array.isArray(formadoresData)) {
             cursoFormadores.value = formadoresData
             console.log(`✓ Formadores cargados: ${formadoresData.length}`)
