@@ -6,7 +6,7 @@ class PersonaFilter(django_filters.FilterSet):
         label='Filtrar por nombre')
     apellido = django_filters.CharFilter(field_name='PER_APELPTA',lookup_expr='icontains',
         label='Filtrar por apellido')
-    run = django_filters.CharFilter(field_name='PER_RUN',lookup_expr='exact',
+    run = django_filters.CharFilter(field_name='PER_RUN',lookup_expr='istartswith',
         label='Filtrar por RUN')
     dv = django_filters.CharFilter(field_name='PER_DV',lookup_expr='iexact',
         label='Filtrar por dígito verificador')
@@ -44,7 +44,7 @@ class PersonaCursoFilter(django_filters.FilterSet):
     # --- Filtros sobre Persona ---
     run = django_filters.CharFilter(
         field_name='PER_ID__PER_RUN',
-        lookup_expr='iexact',
+        lookup_expr='istartswith',
         label='Filtrar por RUN (sin DV)'
     )
     dv = django_filters.CharFilter(
@@ -122,7 +122,7 @@ class PersonaGrupoFilter(django_filters.FilterSet):
     """Filtros para Persona_Grupo"""
     persona_run = django_filters.CharFilter(
         field_name='PER_ID__PER_RUN',
-        lookup_expr='iexact',
+        lookup_expr='istartswith',
         label='Filtrar por RUN de persona'
     )
     grupo_id = django_filters.NumberFilter(
@@ -148,7 +148,7 @@ class PersonaFormadorFilter(django_filters.FilterSet):
     """Filtros para Persona_Formador"""
     persona_run = django_filters.CharFilter(
         field_name='PER_ID__PER_RUN',
-        lookup_expr='iexact',
+        lookup_expr='istartswith',
         label='Filtrar por RUN de persona'
     )
     persona_nombre = django_filters.CharFilter(
@@ -178,7 +178,7 @@ class PersonaIndividualFilter(django_filters.FilterSet):
     """Filtros para Persona_Individual"""
     persona_run = django_filters.CharFilter(
         field_name='PER_ID__PER_RUN',
-        lookup_expr='iexact',
+        lookup_expr='istartswith',
         label='Filtrar por RUN'
     )
     cargo_id = django_filters.NumberFilter(
@@ -212,7 +212,7 @@ class PersonaNivelFilter(django_filters.FilterSet):
     """Filtros para Persona_Nivel"""
     persona_run = django_filters.CharFilter(
         field_name='PER_ID__PER_RUN',
-        lookup_expr='iexact',
+        lookup_expr='istartswith',
         label='Filtrar por RUN'
     )
     nivel_id = django_filters.NumberFilter(
@@ -247,7 +247,7 @@ class PersonaEstadoCursoFilter(django_filters.FilterSet):
     )
     persona_run = django_filters.CharFilter(
         field_name='PEC_ID__PER_ID__PER_RUN',
-        lookup_expr='iexact',
+        lookup_expr='istartswith',
         label='Filtrar por RUN de persona'
     )
     curso_codigo = django_filters.CharFilter(
@@ -277,7 +277,7 @@ class PersonaVehiculoFilter(django_filters.FilterSet):
     """Filtros para Persona_Vehiculo"""
     persona_run = django_filters.CharFilter(
         field_name='PEC_ID__PER_ID__PER_RUN',
-        lookup_expr='iexact',
+        lookup_expr='istartswith',
         label='Filtrar por RUN de persona'
     )
     marca = django_filters.CharFilter(

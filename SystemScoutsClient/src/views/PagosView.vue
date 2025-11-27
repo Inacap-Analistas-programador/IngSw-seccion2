@@ -4,6 +4,7 @@
     <header class="header">
       <h2>Gestión de Pagos</h2>
     </header>
+    <NotificationToast v-if="toastVisible" :message="toastMessage" :icon="toastIcon" @close="toastVisible = false" />
 
     <!-- Tabs principales -->
     <div class="tabs">
@@ -155,10 +156,13 @@
           <BaseButton
             variant="success"
             class="btn-standard"
-            :disabled="!puedeRegistrarIndividual"
+            :disabled="!puedeRegistrarIndividual || submittingIndividual"
             @click="registrarPagoIndividual"
           >
-            <AppIcons name="save" :size="16" /> Registrar Pago
+            <AppIcons v-if="!submittingIndividual" name="save" :size="16" />
+            <AppIcons v-else name="spinner" :size="16" />
+            <span v-if="!submittingIndividual"> Registrar Pago</span>
+            <span v-else> Registrando...</span>
           </BaseButton>
           <BaseButton variant="secondary" class="btn-standard" @click="limpiarIndividual">
             <AppIcons name="x" :size="16" /> Limpiar
@@ -735,6 +739,8 @@ import pagosService from '@/services/pagosService.js'
 import personasService from '@/services/personasService.js'
 import cursosService from '@/services/cursosService.js'
 import mantenedoresService from '@/services/mantenedoresService.js'
+import authService from '@/services/authService.js'
+import NotificationToast from '@/components/NotificationToast.vue'
 import { format, parseISO } from 'date-fns'
 import jsPDF from 'jspdf'
 import * as XLSX from 'xlsx'
@@ -759,7 +765,7 @@ function dateCL (f) {
 
 export default {
   name: 'PagosView',
-  components: { InputBase, BaseSelect, BaseButton, BaseModal, AppIcons },
+  components: { AppIcons, InputBase, BaseSelect, BaseButton, BaseModal, NotificationToast },
   data () {
     return {
       tab: 'individual',
@@ -795,6 +801,7 @@ export default {
       cargandoParticipantes: false,
 
       filtroQ: '',
+      filtroEstado: '',
       filtroCurso: '',
       filtroGrupo: '',
       pagos: [],
@@ -846,7 +853,13 @@ export default {
         PAP_FECHA_PAGO: hoyISO(),
         observacion: '',
         file: null
-      }
+      },
+      // UI state
+      submittingIndividual: false,
+      toastVisible: false,
+      toastMessage: '',
+      toastIcon: '',
+      debounceTimer: null
     };
   },
   watch: {
@@ -967,6 +980,15 @@ export default {
       }
     },
 
+    // Helper expuesto para el template: formatea fechas para mostrar en CL
+    dateCL (f) {
+      try {
+        return dateCL(f)
+      } catch (e) {
+        return f || '-'
+      }
+    },
+
     // ===================================================================
     // MÉTODOS PARA REGISTRO INDIVIDUAL
     // ===================================================================
@@ -976,25 +998,39 @@ export default {
      * @param {string} q - El término de búsqueda.
      */
     async buscarPersonas (q) {
-      let searchTerm = (q || '').trim();
-      if (!searchTerm) {
+      const termRaw = (q || '').trim();
+      if (!termRaw) {
         this.personasEncontradas = []
         return
       }
-      // Formatear RUT si el usuario ingresa solo números
-      if (/^\d{7,8}$/.test(searchTerm)) {
-        searchTerm = this.formatRut(searchTerm);
+
+      // Normalizar entrada (quitar puntos, espacios)
+      const termClean = termRaw.replace(/\./g, '').replace(/\s+/g, '')
+      let params = {}
+
+      // Detectar si es solo dígitos (parcial o completo RUT)
+      if (/^\d+$/.test(termClean)) {
+        // Es un RUT parcial o completo: buscar por run
+        params = { run: termClean }
+      } else if (/^\d{7,8}[0-9kK]$/i.test(termClean)) {
+        // RUT con DV: separar y enviar ambos
+        const rutMatch = termClean.match(/^(\d{7,8})([0-9kK])$/i)
+        if (rutMatch) {
+          params = { run: rutMatch[1], dv: rutMatch[2].toUpperCase() }
+        }
+      } else {
+        // Buscar por nombre y/o apellido
+        const parts = termRaw.split(/\s+/)
+        if (parts.length === 1) params = { nombre: termRaw }
+        else params = { nombre: parts[0], apellido: parts.slice(1).join(' ') }
       }
 
       this.buscandoPersonas = true
       try {
-        const params = { search: q };
-        // The user wants to search by RUT, name, or last name. The backend should support this via the 'search' parameter.
-        // The placeholder already suggests this.
-        const response = await personasService.personas.list(params);
+        const response = await personasService.personas.list(params)
         const arr = Array.isArray(response) ? response : (response.results || [])
         this.personasEncontradas = arr.map(p => ({
-          id: p.PER_ID,
+          id: p.PER_ID || p.id,
           nombre: `${p.PER_NOMBRES || ''} ${p.PER_APELPTA || ''}`.trim(),
           rut: (p.PER_RUN && p.PER_DV) ? `${p.PER_RUN}-${p.PER_DV}` : (p.PER_RUN || ''),
           email: p.PER_MAIL || ''
@@ -1051,25 +1087,51 @@ export default {
      * Construye un FormData con los datos y el archivo del comprobante.
      */
     async registrarPagoIndividual () {
+      if (this.submittingIndividual) return
+      this.submittingIndividual = true
       try {
         const fd = new FormData()
+        // Campos esperados por el backend (modelo): PER_ID, CUR_ID, USU_ID, PAP_VALOR, PAP_FECHA_HORA, PAP_OBSERVACION, PAP_TIPO
         fd.append('PER_ID', this.formInd.personaId)
-        fd.append('CUR_ID', this.formInd.CUR_ID)
-        fd.append('PAP_MONTO', this.formInd.PAP_MONTO)
-        fd.append('COC_ID', this.formInd.COC_ID);
-        fd.append('PAP_FECHA_PAGO', this.formInd.PAP_FECHA_PAGO)
+        if (this.formInd.CUR_ID) fd.append('CUR_ID', this.formInd.CUR_ID)
+        // PAP_VALOR en vez de PAP_MONTO (modelo usa PAP_VALOR)
+        if (this.formInd.PAP_MONTO !== null && this.formInd.PAP_MONTO !== undefined) fd.append('PAP_VALOR', this.formInd.PAP_MONTO)
+        if (this.formInd.COC_ID) fd.append('COC_ID', this.formInd.COC_ID)
+        // En el backend se usa PAP_FECHA_HORA; enviar la fecha seleccionada como PAP_FECHA_HORA
+        if (this.formInd.PAP_FECHA_PAGO) fd.append('PAP_FECHA_HORA', this.formInd.PAP_FECHA_PAGO)
         if (this.formInd.observacion) {
           fd.append('PAP_OBSERVACION', this.formInd.observacion)
         }
-        fd.append('comprobante', this.formInd.file)
-        fd.append('MET_ID', 1) // Asumiendo 1 para Transferencia
-        await pagosService.pagos.create(fd)
+        if (this.formInd.file) fd.append('comprobante', this.formInd.file)
+        // PAP_TIPO: 1 = Ingreso, 2 = Egreso
+        fd.append('PAP_TIPO', this.formInd.tipoPago === 'egreso' ? 2 : 1)
+        // PAP_ESTADO: 1 = Pagado (al registrar pago individual asumimos pagado)
+        fd.append('PAP_ESTADO', 1)
 
-        alert('Pago individual registrado correctamente')
+        // Intentar resolver USU_ID desde el token para cumplir con el campo requerido en el modelo
+        try {
+          const current = await authService.getCurrentUser()
+          const usuId = current && (current.id || current.USU_ID || (current.payload && current.payload.USU_ID)) ? (current.id || current.USU_ID || current.payload?.USU_ID) : null
+          if (usuId) fd.append('USU_ID', usuId)
+        } catch (e) {
+          // no bloquear el envío si no se puede resolver el usuario; el backend puede inferirlo
+          console.warn('No se pudo resolver USU_ID localmente:', e && e.message)
+        }
+
+        await pagosService.pagos.create(fd)
+        // Mostrar toast exitoso
+        this.toastMessage = 'Pago individual registrado correctamente'
+        this.toastIcon = 'check'
+        this.toastVisible = true
         this.limpiarIndividual()
         this.cargarPagos()
       } catch (e) {
-        alert('Error registrando pago individual')
+        console.error('Error registrando pago individual', e)
+        this.toastMessage = 'Error registrando pago: ' + (e && e.message ? e.message : '')
+        this.toastIcon = 'x'
+        this.toastVisible = true
+      } finally {
+        this.submittingIndividual = false
       }
     },
 
@@ -1152,6 +1214,8 @@ export default {
         if (this.formMasivo.observacion) {
           fd.append('PAP_OBSERVACION', this.formMasivo.observacion)
         }
+        // PAP_TIPO: 1 = Ingreso, 2 = Egreso
+        fd.append('PAP_TIPO', this.formMasivo.tipoPago === 'egreso' ? 2 : 1)
         this.seleccionados.forEach(id =>
           fd.append('PER_IDS', id)
         )
@@ -1187,37 +1251,64 @@ export default {
      * @param {boolean} force - Si es true, fuerza la recarga aunque ya esté en proceso.
      */
     async cargarPagos (force = false) {
-      // Evita cargas múltiples si ya hay una en progreso.
       if (this.cargandoPagos && !force) return;
       this.cargandoPagos = true
       this.errorPagos = null
       try {
         let searchTerm = (this.filtroQ || '').trim();
-        // Formatear RUT si el usuario ingresa solo números
         if (/^\d{7,8}$/.test(searchTerm)) {
           searchTerm = this.formatRut(searchTerm);
         }
-        const params = {
-          search: searchTerm || undefined,
-          CUR_ID: this.filtroCurso || undefined,
-          GRU_ID: this.filtroGrupo || undefined,
-          estado: this.filtroEstado || undefined
+
+        const estadoMap = { pagado: 1, anulado: 2 }
+        const params = {}
+        if (searchTerm) params.search = searchTerm
+        if (this.filtroCurso) params.CUR_ID = this.filtroCurso
+        if (this.filtroGrupo) params.GRU_ID = this.filtroGrupo
+        if (this.filtroEstado) {
+          const mapped = estadoMap[this.filtroEstado]
+          if (mapped) params.estado = mapped
         }
+
         const response = await pagosService.pagos.list(params)
-        // Asegurarse de que la respuesta es un array, incluso si la API devuelve otra cosa.
-        if (Array.isArray(response)) {
-          this.pagos = response;
-        } else if (response && Array.isArray(response.results)) {
-          this.pagos = response.results;
-        } else {
-          console.warn('La respuesta de la API de pagos no es un array:', response);
-          this.pagos = []; // Previene errores si la respuesta no es un array
+        let rawList = []
+        if (Array.isArray(response)) rawList = response
+        else if (response && Array.isArray(response.results)) rawList = response.results
+        else {
+          console.warn('La respuesta de la API de pagos no es un array:', response)
+          rawList = []
         }
+
+        // Normalizar cada pago para que la plantilla use campos consistentes
+        this.pagos = rawList.map(r => {
+          const persona = r.persona || r.PER_ID || null
+          const personaNombre = persona && (persona.PER_NOMBRES || persona.name || persona.nombre)
+            ? `${persona.PER_NOMBRES || ''} ${persona.PER_APELPTA || persona.PER_APELLIDO || ''}`.trim()
+            : (r.persona_nombre || r.PER_NOMBRE || '')
+          const personaRut = persona && (persona.PER_RUN || persona.run)
+            ? `${persona.PER_RUN || persona.run}${persona.PER_DV ? ('-' + persona.PER_DV) : ''}`
+            : (r.persona_rut || r.PER_RUN || '')
+
+          const monto = r.PAP_VALOR !== undefined ? Number(r.PAP_VALOR) : (r.PAP_MONTO !== undefined ? Number(r.PAP_MONTO) : null)
+          const fecha = r.PAP_FECHA_HORA || r.PAP_FECHA_PAGO || r.PAP_FECHA || null
+
+          return {
+            // conservar campos originales por si otras funciones los usan
+            ...r,
+            id: r.PAP_ID || r.id,
+            PAP_ID: r.PAP_ID || r.id,
+            PAP_MONTO: monto,
+            PAP_VALOR: monto,
+            PAP_FECHA_PAGO: fecha,
+            persona_nombre: personaNombre || r.persona_nombre || '',
+            persona_rut: personaRut || r.persona_rut || '',
+            MET_DESCRIPCION: r.MET_DESCRIPCION || r.met_descripcion || r.METODO || 'Transferencia'
+          }
+        })
       } catch (e) {
-        console.error("Error al cargar pagos:", e);
+        console.error('Error al cargar pagos:', e)
         this.pagos = []
-        this.errorPagos =
-          'No fue posible cargar pagos. Verifica el backend.'
+        this.errorPagos = 'No fue posible cargar pagos. Verifica el backend.'
       } finally {
         this.cargandoPagos = false
       }
@@ -1341,25 +1432,42 @@ export default {
      * Busca una persona para realizar la transferencia de un pago.
      */
     async buscarPersonaParaTransferir() {
-      const q = (this.transferForm.q || '').trim();
-      if (!q) {
-        this.personasEncontradasTransferir = [];
-        return;
+      const qRaw = (this.transferForm.q || '').trim()
+      if (!qRaw) {
+        this.personasEncontradasTransferir = []
+        return
       }
-      this.buscandoPersonasTransferir = true;
+
+      // Reutilizar la lógica de búsqueda por RUT/nombre
+      const termClean = qRaw.replace(/\./g, '').replace(/\s+/g, '')
+      let params = {}
+      if (/^\d+$/.test(termClean)) {
+        params = { run: termClean }
+      } else if (/^\d{7,8}[0-9kK]$/i.test(termClean)) {
+        const rutMatch = termClean.match(/^(\d{7,8})([0-9kK])$/i)
+        if (rutMatch) {
+          params = { run: rutMatch[1], dv: rutMatch[2].toUpperCase() }
+        }
+      } else {
+        const parts = qRaw.split(/\s+/)
+        if (parts.length === 1) params = { nombre: qRaw }
+        else params = { nombre: parts[0], apellido: parts.slice(1).join(' ') }
+      }
+
+      this.buscandoPersonasTransferir = true
       try {
-        const response = await personasService.personas.list({ search: q });
-        const arr = Array.isArray(response) ? response : (response.results || []);
+        const response = await personasService.personas.list(params)
+        const arr = Array.isArray(response) ? response : (response.results || [])
         this.personasEncontradasTransferir = arr.map(p => ({
-          id: p.PER_ID,
+          id: p.PER_ID || p.id,
           nombre: `${p.PER_NOMBRES || ''} ${p.PER_APELPTA || ''}`.trim(),
-          rut: (p.PER_RUN && p.PER_DV) ? `${String(p.PER_RUN).replace(/\./g, '')}-${p.PER_DV}` : (p.PER_RUN || ''),
+          rut: (p.PER_RUN && p.PER_DV) ? `${p.PER_RUN}-${p.PER_DV}` : (p.PER_RUN || ''),
           email: p.PER_MAIL || ''
-        }));
+        }))
       } catch (e) {
-        this.personasEncontradasTransferir = [];
+        this.personasEncontradasTransferir = []
       } finally {
-        this.buscandoPersonasTransferir = false;
+        this.buscandoPersonasTransferir = false
       }
     },
     /**
@@ -1819,6 +1927,8 @@ label {
   margin-top: 4px;
   max-width: 480px;
   background: #ffffff;
+  max-height: 280px;
+  overflow-y: auto;
 }
 
 .resultado {
