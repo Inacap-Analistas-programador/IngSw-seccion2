@@ -48,10 +48,22 @@
           <span class="nav-icon"><AppIcons name="mail" :size="20" /></span>
           <span class="nav-text">Envío de Correos</span>
         </router-link>
-        <router-link to="/mantenedores" class="nav-item">
-          <span class="nav-icon"><AppIcons name="settings" :size="20" /></span>
-          <span class="nav-text">Mantenedores</span>
-        </router-link>
+          <!-- Apartado desplegable: Mantenedores (sub-tabs) -->
+          <div class="nav-item nav-collapsible" @click="toggleMantenedores" :class="{ 'router-link-exact-active': showMantenedores }">
+            <span class="nav-icon"><AppIcons name="settings" :size="20" /></span>
+            <span class="nav-collapsible-title">Mantenedores</span>
+            <span class="caret" :class="{ open: showMantenedores }">▾</span>
+          </div>
+          <Transition name="submenu-slide">
+            <div v-show="showMantenedores" class="submenu">
+              <router-link
+                v-for="t in mantenedoresTabs"
+                :key="t.id"
+                :to="{ path: '/mantenedores', query: { tab: t.id } }"
+                class="submenu-item"
+              >{{ t.label }}</router-link>
+            </div>
+          </Transition>
         <router-link to="/manual-acreditacion" class="nav-item">
           <span class="nav-icon"><AppIcons name="user-check" :size="20" /></span>
           <span class="nav-text">Acreditación Manual</span>

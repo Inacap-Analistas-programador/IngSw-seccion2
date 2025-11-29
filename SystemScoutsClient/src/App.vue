@@ -15,7 +15,7 @@ function toggleCollapsed() {
 	<div class="app-root">
 		<NavBar :collapsed="collapsed" @toggle-sidebar="toggleCollapsed" />
 		<div class="app-layout">
-			<SideBar v-model:collapsed="collapsed" />
+			<SideBar v-model="collapsed" />
 			<main class="main-content">
 				<router-view v-slot="{ Component, route }">
 					<Transition :name="route.meta.transition || 'fade'" mode="out-in">

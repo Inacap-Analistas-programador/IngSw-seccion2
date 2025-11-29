@@ -1,5 +1,6 @@
 # ApiCoreScouts/Views/Usuario_view.py
 from rest_framework import viewsets
+from rest_framework.permissions import AllowAny
 from ..Serializers import Usuario_serializer as MU_S
 from ..Models.usuario_model import *
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -13,8 +14,9 @@ class MyTokenObtainPairView(TokenObtainPairView):
 class UsuarioViewSet(viewsets.ModelViewSet):
     queryset = Usuario.objects.all()
     serializer_class = MU_S.UsuarioSerializer
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [PerfilPermission]
+    # Bypass temporal completo: sin auth ni perfil
+    authentication_classes = []
+    permission_classes = [AllowAny]
 
     # Envoltorio para capturar y loggear excepciones durante list (500s)
     def list(self, request, *args, **kwargs):
@@ -33,22 +35,19 @@ class UsuarioViewSet(viewsets.ModelViewSet):
 class PerfilViewSet(viewsets.ModelViewSet):
     queryset = Perfil.objects.all()
     serializer_class = MU_S.PerfilSerializer
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [PerfilPermission]
-    APP_NAME = "Perfiles"
+    authentication_classes = []
+    permission_classes = [AllowAny]
 
 class AplicacionViewSet(viewsets.ModelViewSet):
     queryset = Aplicacion.objects.all()
     serializer_class = MU_S.AplicacionSerializer
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [PerfilPermission]
-    APP_NAME = "Aplicaciones"
+    authentication_classes = []
+    permission_classes = [AllowAny]
 
 class PerfilAplicacionViewSet(viewsets.ModelViewSet):
     queryset = Perfil_Aplicacion.objects.all()
     serializer_class = MU_S.PerfilAplicacionSerializer
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [PerfilPermission]
-    APP_NAME = "PerfilAplicacion"
+    authentication_classes = []
+    permission_classes = [AllowAny]
 
 
