@@ -3,35 +3,52 @@ from dotenv import load_dotenv
 from pathlib import Path
 import os
 from pathlib import Path
+from decouple import Config, RepositoryEnv, Csv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-load_dotenv()
+FRONTEND_DIST = BASE_DIR / 'frontend' / 'dist'
+FRONTEND_DIST_EXISTS = (FRONTEND_DIST / 'index.html').exists()
 
-# Configurar PyMySQL como reemplazo de MySQLdb
-import pymysql
-pymysql.install_as_MySQLdb()
+# cargar los distintos archivos .env
+env_names = ['.env', 'env']
+env_path = None
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+for name in env_names:
+    candidate = BASE_DIR / name
+    if candidate.exists():
+        env_path = candidate
+        break
+    candidate = BASE_DIR.parent / name
+    if candidate.exists():
+        env_path = candidate
+        break
+
+if env_path.exists():
+    try:
+        config = Config(RepositoryEnv(env_path, encoding='utf-8'))
+    except UnicodeDecodeError:
+        # fallback al encoding
+        config = Config(RepositoryEnv(env_path, encoding='latin-1'))
+else:
+    print(f"Warning: .env file not found. Using environment variables.")
+    # usar os.environ directamente
+    from decouple import RepositoryEnv
+    # Crear un repositorio personalizado que lea de os.environ
+    class EnvRepository:
+        def __init__(self): self.data = os.environ
+        def __contains__(self, key): return key in os.environ
+        def __getitem__(self, key): return os.environ[key]
+    
+    config = Config(EnvRepository())
+
+# CONFIGURACION BASICA
+SECRET_KEY = config('DJANGO_SECRET_KEY', default='fallback-secret-key')
+DEBUG = config('DJANGO_DEBUG', default=False, cast=bool)
+ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', default='', cast=Csv())
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("SECRET_KEY")
-
-# SECURITY WARNING: don't run with debug turned on in production!
-# Read DEBUG from env, convert to boolean. Default to True for local dev.
-DEBUG = str(os.getenv("DEBUG_API", "True")).lower() in ("1", "true", "yes")
-
-# Allow localhost addresses by default for development. Can be overridden
-# by setting an environment variable named ALLOWED_HOSTS (comma-separated).
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
-
-
-# Application definition
+# APLICACIONES INSTALADAS
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -58,10 +75,14 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # 'scout_project.security_middleware.SecurityHeadersMiddleware',
+    # 'scout_project.security_middleware.XSSProtectionMiddleware',
+    # 'scout_project.security_middleware.SecurityLoggingMiddleware',
 ]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
+    "https://sistema.guiasyscoutsbiobio.cl",
 ]
 
 CORS_ALLOW_METHODS = [
@@ -84,8 +105,7 @@ CORS_ALLOW_HEADERS = [
     "x-requested-with",
 ]
 
-# Allow frontend dev server origins (vite default port 5173/5174) and enable
-# credentials so cookies or other credentialed requests work during development.
+# PERMITIR EL USO DE CREDENCIALES Y COOKIES 
 CORS_ALLOW_CREDENTIALS = True
 
 
@@ -94,7 +114,7 @@ ROOT_URLCONF = 'SystemScoutsApi.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [FRONTEND_DIST],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -115,11 +135,11 @@ WSGI_APPLICATION = 'SystemScoutsApi.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv("DATABASE"),
-        'USER': os.getenv("USER"),
-        'PASSWORD': os.getenv("PASSWORD_DB"),
-        'HOST': os.getenv("HOST"),
-        'PORT': os.getenv("PORT", "3306"),
+        'NAME': config("DATABASE", default=config("DB_NAME", default=None)),
+        'USER': config("USER", default=config("DB_USER", default=None)),
+        'PASSWORD': config("PASSWORD_DB", default=config("DB_PASSWORD", default=None)),
+        'HOST': config("HOST", default=config("DB_HOST", default=None)),
+        'PORT': config("PORT", default="3306"),
         'OPTIONS': {
             # Ensure connection uses utf8mb4 to correctly handle accents and ñ
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES', NAMES 'utf8mb4'",
@@ -181,6 +201,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -194,7 +215,13 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
     "http://localhost:5174",
     "http://127.0.0.1:5174",
+    "https://sistema.guiasyscoutsbiobio.cl",
 ]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://sistema.guiasyscoutsbiobio.cl",
+]
+
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (

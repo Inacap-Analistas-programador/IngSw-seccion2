@@ -3,7 +3,7 @@ import { Html5QrcodeScanner, Html5QrcodeScanType } from 'html5-qrcode'
 
 // La librería principal para escanear código QR y ScanType para limitar tipos de escaneo
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
+const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:8000').replace(/\/api\/?$/, '')
 
 export async function ObtenerDatos(rut, curso) {
 
@@ -18,7 +18,7 @@ export async function ObtenerDatos(rut, curso) {
   console.log('Solicitando a:', url)
 
   try {
-    const response = await fetch(url) 
+    const response = await fetch(url)
     if (!response.ok) {
       throw new Error(`Error HTTP: ${response.status}`)
     }
@@ -67,9 +67,9 @@ export function verificarUsuario() {
     })
   }
 
-async function Acreditacion(textoDelQR) {
+  async function Acreditacion(textoDelQR) {
     // 'textoDelQR' es el texto completo del QR, ej: "12345678-9,CURSO101"
-    
+
     resultadoClase.value = '' // Limpia el color (verde/rojo) anterior
     resultadoTexto.value = '🔄 Verificando QR...' // Muestra mensaje de carga
     idEscaneado.value = textoDelQR // Muestra el QR crudo primero
@@ -80,9 +80,9 @@ async function Acreditacion(textoDelQR) {
       const partes = textoDelQR.split(',');
       if (partes.length !== 2) {
         // Si el QR no tiene 2 partes (RUT y CURSO)
-        throw new Error('Formato de QR no válido.'); 
+        throw new Error('Formato de QR no válido.');
       }
-      
+
       const rut = partes[0].trim();
       const curso = partes[1].trim();
 
@@ -93,7 +93,7 @@ async function Acreditacion(textoDelQR) {
 
       // 3. Decidir si está acreditado (según tu nueva regla)
       // ASUMO que si 'datosRespuesta' trae algo, está acreditado.
-      if (datosRespuesta && datosRespuesta.acreditado === true) { 
+      if (datosRespuesta && datosRespuesta.acreditado === true) {
         // Éxito: Acreditado
         resultadoClase.value = 'verde'
         resultadoTexto.value = '✅ ACREDITADO' // <-- Texto simple
@@ -109,7 +109,7 @@ async function Acreditacion(textoDelQR) {
       // Manejo de errores (si la promesa falla, ej: error de red o formato)
       console.error('Error durante la acreditación:', error)
       resultadoClase.value = 'rojo'
-      
+
       // Diferenciar error de formato de error de API
       if (error.message === 'Formato de QR no válido.') {
         resultadoTexto.value = '⚠️ QR Inválido';
