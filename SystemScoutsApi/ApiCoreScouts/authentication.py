@@ -10,9 +10,22 @@ class UsuarioBackend(BaseBackend):
         if username is None or password is None:
             return None
         try:
-            user = Usuario.objects.get(usu_username=username)
-            if user.check_password(password) and user.is_active:
-                return user
+            # Usar iexact para búsqueda de nombre de usuario insensible a mayúsculas/minúsculas
+            user = Usuario.objects.get(usu_username__iexact=username)
+            
+            # 1. Verificar hash estándar de Django
+            if user.check_password(password):
+                if user.is_active:
+                    return user
+            
+            # 2. Respaldo: Verificar contraseña en texto plano (para datos importados heredados)
+            # Si coincide, actualizar al hash automáticamente
+            elif user.password == password:
+                if user.is_active:
+                    user.set_password(password)
+                    user.save()
+                    return user
+                    
         except Usuario.DoesNotExist:
             return None
 
