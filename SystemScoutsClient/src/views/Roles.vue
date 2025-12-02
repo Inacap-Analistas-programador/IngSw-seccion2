@@ -37,17 +37,17 @@
             <tr v-else v-for="rol in roles" :key="rol.id">
               <td>{{ getDescripcion(rol) }}</td>
               <td>
-                <span class="badge" :class="rol.PEL_VIGENTE === false ? 'estado-inactivo' : 'badge-activo'">
-                  {{ rol.PEL_VIGENTE === false ? 'Inactivo' : 'Activo' }}
+                <span class="badge" :class="!isVigente(rol) ? 'estado-inactivo' : 'badge-activo'">
+                  {{ !isVigente(rol) ? 'Inactivo' : 'Activo' }}
                 </span>
               </td>
-              <td class="row-actions">
+              <td class="actions-cell">
                 <BaseButton size="sm" variant="secondary" @click="abrirEditar(rol)">
                   <AppIcons name="edit" :size="14" /> Editar
                 </BaseButton>
                 <BaseButton size="sm" variant="secondary" @click="toggleVigente(rol)">
-                  <AppIcons :name="rol.PEL_VIGENTE === false ? 'check' : 'x'" :size="14" />
-                  {{ rol.PEL_VIGENTE === false ? 'Activar' : 'Desactivar' }}
+                  <AppIcons :name="!isVigente(rol) ? 'check' : 'x'" :size="14" />
+                  {{ !isVigente(rol) ? 'Activar' : 'Desactivar' }}
                 </BaseButton>
               </td>
             </tr>
@@ -104,17 +104,17 @@
                   <p>Cargando permisos...</p>
                 </div>
                 <div v-else class="permisos-container">
-                  <div v-for="app in aplicaciones" :key="app.APL_ID || app.id" class="aplicacion-section">
+                  <div v-for="app in aplicaciones" :key="app.apl_id || app.APL_ID || app.id" class="aplicacion-section">
                     <div class="aplicacion-header">
                       <div class="aplicacion-title-wrapper">
                         <AppIcons name="clipboard" :size="22" class="aplicacion-icon" />
-                        <h4 class="aplicacion-nombre">{{ app.APL_DESCRIPCION || app.descripcion }}</h4>
+                        <h4 class="aplicacion-nombre">{{ app.apl_descripcion || app.APL_DESCRIPCION || app.descripcion }}</h4>
                       </div>
                       <div class="permisos-quick-actions">
                         <button 
                           type="button" 
                           class="quick-action-btn"
-                          @click="toggleTodosPermisos(app.APL_ID || app.id, true)"
+                          @click="toggleTodosPermisos(app.apl_id || app.APL_ID || app.id, true)"
                           title="Seleccionar todos"
                         >
                           <AppIcons name="check" :size="14" /> Todos
@@ -122,7 +122,7 @@
                         <button 
                           type="button" 
                           class="quick-action-btn clear"
-                          @click="toggleTodosPermisos(app.APL_ID || app.id, false)"
+                          @click="toggleTodosPermisos(app.apl_id || app.APL_ID || app.id, false)"
                           title="Quitar todos"
                         >
                           <AppIcons name="x" :size="14" /> Ninguno
@@ -130,7 +130,7 @@
                       </div>
                     </div>
                     <div class="permisos-grid">
-                      <div class="permiso-item" @click="togglePermiso(app.APL_ID || app.id, 'consultar')">
+                      <div class="permiso-item" @click="togglePermiso(app.apl_id || app.APL_ID || app.id, 'consultar')">
                         <div class="permiso-content">
                           <div class="permiso-icon-wrapper">
                             <AppIcons name="view" :size="24" class="permiso-icon" />
@@ -141,10 +141,10 @@
                           </div>
                         </div>
                         <BaseSwitch 
-                          v-model="form.permisos[app.APL_ID || app.id].consultar"
+                          v-model="form.permisos[app.apl_id || app.APL_ID || app.id].consultar"
                         />
                       </div>
-                      <div class="permiso-item" @click="togglePermiso(app.APL_ID || app.id, 'ingresar')">
+                      <div class="permiso-item" @click="togglePermiso(app.apl_id || app.APL_ID || app.id, 'ingresar')">
                         <div class="permiso-content">
                           <div class="permiso-icon-wrapper">
                             <AppIcons name="add" :size="24" class="permiso-icon" />
@@ -155,10 +155,10 @@
                           </div>
                         </div>
                         <BaseSwitch 
-                          v-model="form.permisos[app.APL_ID || app.id].ingresar"
+                          v-model="form.permisos[app.apl_id || app.APL_ID || app.id].ingresar"
                         />
                       </div>
-                      <div class="permiso-item" @click="togglePermiso(app.APL_ID || app.id, 'modificar')">
+                      <div class="permiso-item" @click="togglePermiso(app.apl_id || app.APL_ID || app.id, 'modificar')">
                         <div class="permiso-content">
                           <div class="permiso-icon-wrapper">
                             <AppIcons name="modify" :size="24" class="permiso-icon" />
@@ -169,10 +169,10 @@
                           </div>
                         </div>
                         <BaseSwitch 
-                          v-model="form.permisos[app.APL_ID || app.id].modificar"
+                          v-model="form.permisos[app.apl_id || app.APL_ID || app.id].modificar"
                         />
                       </div>
-                      <div class="permiso-item" @click="togglePermiso(app.APL_ID || app.id, 'eliminar')">
+                      <div class="permiso-item" @click="togglePermiso(app.apl_id || app.APL_ID || app.id, 'eliminar')">
                         <div class="permiso-content">
                           <div class="permiso-icon-wrapper">
                             <AppIcons name="delete" :size="24" class="permiso-icon" />
@@ -183,7 +183,7 @@
                           </div>
                         </div>
                         <BaseSwitch 
-                          v-model="form.permisos[app.APL_ID || app.id].eliminar"
+                          v-model="form.permisos[app.apl_id || app.APL_ID || app.id].eliminar"
                         />
                       </div>
                     </div>
@@ -252,7 +252,14 @@ export default {
   methods: {
     getDescripcion(rol) {
       if (!rol) return ''
-      return rol.PEL_DESCRIPCION || rol.descripcion || rol.nombre || ''
+      return rol.pel_descripcion || rol.PEL_DESCRIPCION || rol.descripcion || rol.nombre || ''
+    },
+
+    isVigente(rol) {
+      if (rol.pel_vigente !== undefined) return rol.pel_vigente
+      if (rol.PEL_VIGENTE !== undefined) return rol.PEL_VIGENTE
+      if (rol.vigente !== undefined) return rol.vigente
+      return true
     },
     
     async cargarAplicaciones() {
@@ -272,7 +279,7 @@ export default {
     inicializarPermisos() {
       const permisos = {}
       this.aplicaciones.forEach(app => {
-        const appId = app.APL_ID || app.id
+        const appId = app.apl_id || app.APL_ID || app.id
         permisos[appId] = {
           consultar: false,
           ingresar: false,
@@ -286,17 +293,17 @@ export default {
     async cargarPermisosRol(rolId) {
       try {
         // Obtener permisos del rol desde perfil-aplicaciones
-        const resp = await perfilAplicacionesService.list({ PEL_ID: rolId })
+        const resp = await perfilAplicacionesService.list({ pel_id: rolId })
         const permisosList = Array.isArray(resp) ? resp : (resp.results || resp.data || [])
         
         const permisos = this.inicializarPermisos()
         permisosList.forEach(p => {
-          const appId = p.APL_ID?.APL_ID || p.APL_ID
+          const appId = p.apl_id || p.APL_ID?.APL_ID || p.APL_ID
           if (permisos[appId]) {
-            permisos[appId].consultar = p.PEA_CONSULTAR || false
-            permisos[appId].ingresar = p.PEA_INGRESAR || false
-            permisos[appId].modificar = p.PEA_MODIFICAR || false
-            permisos[appId].eliminar = p.PEA_ELIMINAR || false
+            permisos[appId].consultar = p.pea_consultar || p.PEA_CONSULTAR || false
+            permisos[appId].ingresar = p.pea_ingresar || p.PEA_INGRESAR || false
+            permisos[appId].modificar = p.pea_modificar || p.PEA_MODIFICAR || false
+            permisos[appId].eliminar = p.pea_eliminar || p.PEA_ELIMINAR || false
           }
         })
         return permisos
@@ -308,6 +315,8 @@ export default {
 
     payloadFromForm() {
       return {
+        pel_descripcion: this.form.descripcion,
+        pel_vigente: this.form.vigente,
         PEL_DESCRIPCION: this.form.descripcion,
         PEL_VIGENTE: this.form.vigente,
         descripcion: this.form.descripcion,
@@ -351,7 +360,7 @@ export default {
       this.form = {
         id: rolId,
         descripcion: this.getDescripcion(rol),
-        vigente: rol.PEL_VIGENTE !== false,
+        vigente: this.isVigente(rol),
         permisos: permisos
       }
       this.modalVisible = true
@@ -376,14 +385,33 @@ export default {
         
         try {
           // Buscar si ya existe una entrada perfil-aplicación
-          const existingResp = await perfilAplicacionesService.list({ 
-            PEL_ID: rolId, 
-            APL_ID: appId 
-          })
-          const existingList = Array.isArray(existingResp) ? existingResp : (existingResp.results || existingResp.data || [])
-          const existing = existingList[0]
+          // Intentamos buscar con ambos formatos de clave para asegurar compatibilidad
+          let existing = null
+          try {
+            const existingResp = await perfilAplicacionesService.list({ 
+              pel_id: rolId, 
+              apl_id: appId 
+            })
+            const existingList = Array.isArray(existingResp) ? existingResp : (existingResp.results || existingResp.data || [])
+            if (existingList.length > 0) existing = existingList[0]
+          } catch (err) {
+            // Fallback a mayúsculas si falla
+            const existingResp = await perfilAplicacionesService.list({ 
+              PEL_ID: rolId, 
+              APL_ID: appId 
+            })
+            const existingList = Array.isArray(existingResp) ? existingResp : (existingResp.results || existingResp.data || [])
+            if (existingList.length > 0) existing = existingList[0]
+          }
 
           const permisoData = {
+            pel_id: rolId,
+            apl_id: appId,
+            pea_consultar: perms.consultar,
+            pea_ingresar: perms.ingresar,
+            pea_modificar: perms.modificar,
+            pea_eliminar: perms.eliminar,
+            // Compatibilidad
             PEL_ID: rolId,
             APL_ID: appId,
             PEA_CONSULTAR: perms.consultar,
@@ -394,7 +422,7 @@ export default {
 
           if (existing) {
             // Actualizar
-            promises.push(perfilAplicacionesService.partialUpdate(existing.PEA_ID || existing.id, permisoData))
+            promises.push(perfilAplicacionesService.partialUpdate(existing.pea_id || existing.PEA_ID || existing.id, permisoData))
           } else {
             // Crear
             promises.push(perfilAplicacionesService.create(permisoData))
@@ -437,8 +465,9 @@ export default {
     async toggleVigente(rol) {
       try {
         const id = rol.PEL_ID || rol.id
-        const nuevo = !(rol.PEL_VIGENTE === false)
-        await perfilesService.partialUpdate(id, { PEL_VIGENTE: !nuevo, vigente: !nuevo })
+        const actual = this.isVigente(rol)
+        const nuevo = !actual
+        await perfilesService.partialUpdate(id, { pel_vigente: nuevo, PEL_VIGENTE: nuevo, vigente: nuevo })
         await this.cargar()
       } catch (e) {
         console.error('Error cambiando estado:', e)
@@ -482,6 +511,8 @@ export default {
 .usuarios-table thead { background: #3d4f5f; color: #fff; }
 .usuarios-table th { padding: .75rem .85rem; text-align:left; font-weight:600; text-transform: uppercase; font-size: .8rem; letter-spacing:.5px; }
 .usuarios-table td { padding: .75rem .85rem; border-bottom: 1px solid #e0e0e0; }
+
+.actions-cell { display:flex; gap: 0.5rem; }
 
 .row-actions { display:flex; gap:.4rem; }
 

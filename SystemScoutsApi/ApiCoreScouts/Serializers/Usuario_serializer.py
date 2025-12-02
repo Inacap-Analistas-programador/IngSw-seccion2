@@ -21,27 +21,32 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         if not perfil:
             return None, []
 
+        def to_bool(val):
+            if isinstance(val, bytes):
+                return val == b'\x01'
+            return bool(val)
+
         aplicaciones = []
         for perfil_aplicacion in (
             perfil.perfil_aplicacion_set.select_related('apl_id').all()
         ):
             app = perfil_aplicacion.apl_id
             aplicaciones.append({
-                'apl_id': app.apl_id,
+                'apl_id': int(app.apl_id),
                 'apl_descripcion': app.apl_descripcion,
-                'apl_vigente': app.apl_vigente,
+                'apl_vigente': to_bool(app.apl_vigente),
                 'permisos': {
-                    'pea_ingresar': perfil_aplicacion.pea_ingresar,
-                    'pea_modificar': perfil_aplicacion.pea_modificar,
-                    'pea_eliminar': perfil_aplicacion.pea_eliminar,
-                    'pea_consultar': perfil_aplicacion.pea_consultar,
+                    'pea_ingresar': to_bool(perfil_aplicacion.pea_ingresar),
+                    'pea_modificar': to_bool(perfil_aplicacion.pea_modificar),
+                    'pea_eliminar': to_bool(perfil_aplicacion.pea_eliminar),
+                    'pea_consultar': to_bool(perfil_aplicacion.pea_consultar),
                 },
             })
 
         perfil_payload = {
-            'pel_id': perfil.pel_id,
+            'pel_id': int(perfil.pel_id),
             'pel_descripcion': getattr(perfil, 'pel_descripcion', None),
-            'pel_vigente': getattr(perfil, 'pel_vigente', None),
+            'pel_vigente': to_bool(getattr(perfil, 'pel_vigente', None)),
         }
         return perfil_payload, aplicaciones
 
@@ -51,9 +56,9 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
         perfil_payload, aplicaciones = cls._build_perfil_payload(getattr(user, 'pel_id', None))
 
-        token['usu_id'] = user.usu_id
+        token['usu_id'] = int(user.usu_id)
         token['usu_username'] = user.usu_username
-        token['usu_vigente'] = user.usu_vigente
+        token['usu_vigente'] = user.usu_vigente == b'\x01' if isinstance(user.usu_vigente, bytes) else user.usu_vigente
         token['perfil'] = perfil_payload
         token['aplicaciones'] = aplicaciones
 
@@ -104,9 +109,9 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         perfil_payload, aplicaciones = self._build_perfil_payload(getattr(user, 'pel_id', None))
 
         data.update({
-            'usu_id': user.usu_id,
+            'usu_id': int(user.usu_id),
             'usu_username': user.usu_username,
-            'usu_vigente': user.usu_vigente,
+            'usu_vigente': user.usu_vigente == b'\x01' if isinstance(user.usu_vigente, bytes) else user.usu_vigente,
             'perfil': perfil_payload,
             'aplicaciones': aplicaciones,
         })
@@ -125,7 +130,7 @@ class UsuarioSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Usuario
-        fields = ['usu_id', 'pel_id', 'usu_username', 'usu_ruta_foto', 'usu_vigente', 'password', 'raw_password']
+        fields = ['usu_id', 'pel_id', 'usu_username', 'usu_email', 'usu_ruta_foto', 'usu_vigente', 'password', 'raw_password']
         read_only_fields = ('usu_id', 'raw_password')
 
     def create(self, validated_data):

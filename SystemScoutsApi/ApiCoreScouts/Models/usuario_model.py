@@ -33,6 +33,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     usu_id = models.BigAutoField(primary_key=True, db_column='usu_id')
     pel_id = models.ForeignKey('Perfil',on_delete=models.PROTECT, null=False, db_column='pel_id')
     usu_username = models.CharField(max_length=100, unique=True, null=False, db_column='usu_username')
+    usu_email = models.EmailField(max_length=255, null=True, db_column='usu_email')
     password = models.CharField(max_length=128, null=False, db_column='usu_password')
     last_login = None
     usu_ruta_foto = models.CharField(max_length=255, null=True, db_column='usu_ruta_foto')
@@ -66,6 +67,14 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
 
     def check_password(self, raw_password):
         return check_password(raw_password, self.password)
+
+    def save(self, *args, **kwargs):
+        # Fix for BIT fields returning bytes from MySQL
+        for field in ['usu_vigente', 'is_staff', 'is_superuser']:
+            val = getattr(self, field)
+            if isinstance(val, bytes):
+                setattr(self, field, val == b'\x01')
+        super().save(*args, **kwargs)
 
     class Meta:
         db_table = 'usuario'

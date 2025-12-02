@@ -9,11 +9,11 @@ class Persona(models.Model):
     per_fecha_hora = models.DateTimeField(auto_now_add=True, null=False, db_column='per_fecha_hora')
     per_run = models.CharField(max_length=9, unique=True, null=False, db_column='per_run')
     per_dv = models.CharField(max_length=1, null=False, db_column='per_dv')
-    per_apelpta = models.CharField(max_length=50, null=False, db_column='per_apelpta')
+    per_apelpta = models.CharField(max_length=50, null=False, db_column='per_apelpat')
     per_apelmat = models.CharField(max_length=50, null=True, db_column='per_apelmat')
     per_nombres = models.CharField(max_length=50, null=False, db_column='per_nombres')
-    per_mail = models.CharField(max_length=100, null=False, db_column='per_mail')
-    per_fecha_nac = models.DateField(null=False, db_column='per_fecha_nac')
+    per_mail = models.CharField(max_length=100, null=False, db_column='per_email')
+    per_fecha_nac = models.DateTimeField(null=False, db_column='per_fecha_nac')
     per_direccion = models.CharField(max_length=255, null=False, db_column='per_direccion')
     per_tipo_fono_options = [
         (1, 'Fono Fijo'),
@@ -28,7 +28,7 @@ class Persona(models.Model):
     per_nom_emergencia = models.CharField(max_length=50, null=True, db_column='per_nom_emergencia')
     per_fono_emergencia = models.CharField(max_length=15, null=True, db_column='per_fono_emergencia')
     per_otros = models.CharField(max_length=255, null=True, db_column='per_otros')
-    per_num_mma = models.IntegerField(null=True, db_column='per_num_mma')
+    per_num_mma = models.IntegerField(null=True, db_column='per_num_mmaa')
     per_profesion = models.CharField(max_length=100, null=True, db_column='per_profesion')
     per_tiempo_nnaj = models.CharField(max_length=100, null=True, db_column='per_tiempo_nnaj')
     per_tiempo_adulto = models.CharField(max_length=100, null=True, db_column='per_tiempo_adulto')
@@ -89,7 +89,7 @@ class Persona_Curso(models.Model):
     niv_id = models.ForeignKey(Nivel, on_delete=models.PROTECT, null=True, db_column='niv_id')
     pec_observacion = models.CharField(max_length=500, blank=True, null=True, db_column='pec_observacion')
     pec_registro = models.BooleanField(default=False, null=False, db_column='pec_registro')
-    pec_acreditacion = models.BooleanField(default=False, null=False, db_column='pec_acreditacion')
+    pec_acreditacion = models.BooleanField(default=False, null=False, db_column='pec_acreditado')
     pec_envio_correo_qr = models.BooleanField(default=False, null=False, db_column='pec_envio_correo_qr')
 
     class Meta:

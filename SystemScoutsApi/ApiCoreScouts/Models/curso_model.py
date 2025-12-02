@@ -11,7 +11,7 @@ class Curso(models.Model):
     car_id_responsable = models.ForeignKey(Cargo, on_delete=models.CASCADE, related_name='cargo_responsable', db_column='car_id_responsable')
     com_id_lugar = models.ForeignKey(Comuna, on_delete=models.CASCADE, related_name='comuna_lugar', db_column='com_id_lugar')
     cur_fecha_hora = models.DateTimeField(auto_now_add=True, db_column='cur_fecha_hora')
-    cur_fecha_solicitud = models.DateField(db_column='cur_fecha_solicitud')
+    cur_fecha_solicitud = models.DateTimeField(db_column='cur_fecha_solicitud')
     cur_codigo = models.CharField(max_length=20, unique=True, db_column='cur_codigo')
     cur_descripcion = models.CharField(max_length=255, db_column='cur_descripcion')
     cur_observacion = models.CharField(max_length=255, blank=True, null=True, db_column='cur_observacion')
@@ -20,8 +20,8 @@ class Curso(models.Model):
         (2, 'Distrito'),
     ]
     cur_administra = models.IntegerField(choices=cur_administra_opcion, null=False, db_column='cur_administra')
-    cur_cota_con_almuerzo = models.IntegerField(db_column='cur_cota_con_almuerzo')
-    cur_cota_sin_almuerzo = models.IntegerField(db_column='cur_cota_sin_almuerzo')
+    cur_cota_con_almuerzo = models.IntegerField(db_column='cur_cuota_con_almuerzo')
+    cur_cota_sin_almuerzo = models.IntegerField(db_column='cur_cuota_sin_almuerzo')
     cur_modalidad_options = [
         (1, 'Internado'),
         (2, 'Externado'),
@@ -56,7 +56,7 @@ class Curso_Cuota(models.Model):
         (2, 'Sin Almuerzo'),
     ]
     cuu_tipo = models.IntegerField(choices=cuu_tipo_opcion, null=False, db_column='cuu_tipo')
-    cuu_fecha = models.DateField(null=False, db_column='cuu_fecha')
+    cuu_fecha = models.DateTimeField(null=False, db_column='cuu_fecha')
     cuu_valor = models.DecimalField(max_digits=21,decimal_places=6, null=False, db_column='cuu_valor')
 
     class Meta:
@@ -65,8 +65,8 @@ class Curso_Cuota(models.Model):
 class Curso_Fecha(models.Model):
     cuf_id = models.BigAutoField(primary_key=True, db_column='cuf_id')
     cur_id = models.ForeignKey('Curso', on_delete=models.PROTECT, null=False, db_column='cur_id')
-    cuf_fecha_inicio = models.DateField(null=False, db_column='cuf_fecha_inicio')
-    cuf_fecha_termino = models.DateField(null=False, db_column='cuf_fecha_termino')
+    cuf_fecha_inicio = models.DateTimeField(null=False, db_column='cuf_fecha_inicio')
+    cuf_fecha_termino = models.DateTimeField(null=False, db_column='cuf_fecha_termino')
     cuf_tipo_opcion = [
         (1, 'Presencial'),
         (2, 'Online'),
@@ -81,7 +81,7 @@ class Curso_Alimentacion(models.Model):
     cua_id = models.BigAutoField(primary_key=True, db_column='cua_id')
     cur_id = models.ForeignKey('Curso', on_delete=models.PROTECT, null=False, db_column='cur_id')
     ali_id = models.ForeignKey(Alimentacion, on_delete=models.PROTECT, null=False, db_column='ali_id')
-    cua_fecha = models.DateField(db_column='cua_fecha')
+    cua_fecha = models.DateTimeField(db_column='cua_fecha')
     cua_tiempo_opcion = [
         (1, 'Desayuno'),
         (2, 'Almuerzo'),

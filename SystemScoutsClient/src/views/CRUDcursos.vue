@@ -54,7 +54,10 @@
             <td>{{ c.CUR_CODIGO || '-' }}</td>
             <td>{{ getTipoCursoName(c.TCU_ID) }}</td>
             <td>{{ formatDates(c) }}</td>
-            <td>{{ getPersonaName(c.PER_ID_RESPONSABLE) }}</td>
+            <td>
+              <div>{{ getPersonaName(c.PER_ID_RESPONSABLE) }}</div>
+              <div v-if="c.CAR_ID_RESPONSABLE" style="font-size: 0.85em; color: #666;">{{ getCargoName(c.CAR_ID_RESPONSABLE) }}</div>
+            </td>
             <td><span :class="['badge', getEstadoClass(c.CUR_ESTADO)]">{{ getEstadoText(c.CUR_ESTADO) }}</span></td>
             <td class="actions-cell">
               <BaseButton @click="abrirModalEditar(c)" variant="secondary" size="sm"><AppIcons name="edit" :size="14" /> Modificar</BaseButton>
@@ -623,6 +626,29 @@ import MapEmbed from '@/components/MapEmbed.vue'
 import AppIcons from '@/components/icons/AppIcons.vue'
 import { comunasCoords } from '@/data/comunasChile.js'
 
+// Helper to normalize keys to Uppercase (for frontend compatibility)
+const toUpperKeys = (obj) => {
+  if (!obj || typeof obj !== 'object') return obj
+  const newObj = Array.isArray(obj) ? [] : {}
+  for (const key in obj) {
+    const upperKey = key.toUpperCase()
+    newObj[upperKey] = obj[key]
+    // Keep original key if different
+    if (upperKey !== key) newObj[key] = obj[key]
+  }
+  return newObj
+}
+
+// Helper to normalize keys to Lowercase (for backend compatibility)
+const toLowerKeys = (obj) => {
+  if (!obj || typeof obj !== 'object') return obj
+  const newObj = Array.isArray(obj) ? [] : {}
+  for (const key in obj) {
+    newObj[key.toLowerCase()] = obj[key]
+  }
+  return newObj
+}
+
 // --- Estado y Reactividad ---
 const isLoading = ref(true)
 const isLoadingData = ref(false) // Guard para prevenir cargas duplicadas
@@ -824,10 +850,19 @@ async function cargarDatos({ page = 1, page_size = 100, search = '' } = {}) {
     const [personasApi, tiposApi, ramasApi, seccionesData, fechasData, comunasApi, cargosApi, rolesApi, alimentacionCat] = await Promise.all(fetchPromises)
 
     // Normalizar cursos (puede venir paginado)
-    const cursosArray = Array.isArray(cursosData) ? cursosData : (cursosData?.results || [])
+    let cursosArray = Array.isArray(cursosData) ? cursosData : (cursosData?.results || [])
+    cursosArray = cursosArray.map(toUpperKeys)
+
+    // Normalizar listas relacionadas
+    const fechasListNorm = (Array.isArray(fechasData) ? fechasData : (fechasData?.results || [])).map(toUpperKeys)
+    const seccionesListNorm = (Array.isArray(seccionesData) ? seccionesData : (seccionesData?.results || [])).map(toUpperKeys)
+    const formadoresListNorm = [] // Se cargan bajo demanda o si estuvieran aquí
+    const alimentacionListNorm = [] // Se cargan bajo demanda
+    const cuotasListNorm = [] // Se cargan bajo demanda
+    const coordinadoresListNorm = [] // Se cargan bajo demanda
 
     // Enlazar fechas a cada curso para mostrar rango en la tabla si tenemos fechas
-    const fechasByCurso = (fechasData || []).reduce((acc, f) => {
+    const fechasByCurso = fechasListNorm.reduce((acc, f) => {
       const id = f.CUR_ID
       if (!acc[id]) acc[id] = []
       acc[id].push(f)
@@ -840,15 +875,15 @@ async function cargarDatos({ page = 1, page_size = 100, search = '' } = {}) {
     }))
 
     // Asignar catálogos (normalizar resultados si vienen paginados)
-    personasList.value = Array.isArray(personasApi) ? personasApi : (personasApi?.results || [])
-    tiposCursoList.value = Array.isArray(tiposApi) ? tiposApi : (tiposApi?.results || [])
-    ramaslist.value = Array.isArray(ramasApi) ? ramasApi : (ramasApi?.results || [])
-    fechasCursoList.value = Array.isArray(fechasData) ? fechasData : (fechasData?.results || [])
-    seccionesList.value = Array.isArray(seccionesData) ? seccionesData : (seccionesData?.results || [])
-    comunasList.value = Array.isArray(comunasApi) ? comunasApi : (comunasApi?.results || [])
-    cargosList.value = Array.isArray(cargosApi) ? cargosApi : (cargosApi?.results || [])
-    rolesList.value = Array.isArray(rolesApi) ? rolesApi : (rolesApi?.results || [])
-    alimentacionCatalogo.value = Array.isArray(alimentacionCat) ? alimentacionCat : (alimentacionCat?.results || [])
+    personasList.value = (Array.isArray(personasApi) ? personasApi : (personasApi?.results || [])).map(toUpperKeys)
+    tiposCursoList.value = (Array.isArray(tiposApi) ? tiposApi : (tiposApi?.results || [])).map(toUpperKeys)
+    ramaslist.value = (Array.isArray(ramasApi) ? ramasApi : (ramasApi?.results || [])).map(toUpperKeys)
+    fechasCursoList.value = fechasListNorm
+    seccionesList.value = seccionesListNorm
+    comunasList.value = (Array.isArray(comunasApi) ? comunasApi : (comunasApi?.results || [])).map(toUpperKeys)
+    cargosList.value = (Array.isArray(cargosApi) ? cargosApi : (cargosApi?.results || [])).map(toUpperKeys)
+    rolesList.value = (Array.isArray(rolesApi) ? rolesApi : (rolesApi?.results || [])).map(toUpperKeys)
+    alimentacionCatalogo.value = (Array.isArray(alimentacionCat) ? alimentacionCat : (alimentacionCat?.results || [])).map(toUpperKeys)
 
     // Filtrado cliente como fallback; cuando uses búsqueda remota, pasar `search` hará que el servidor filtre
     aplicarFiltros()
@@ -991,10 +1026,10 @@ async function abrirModalEditar(curso) {
       cuotasApi.list({ CUR_ID: curso.CUR_ID }).catch(() => []),
       coordinadoresApi.list({ CUR_ID: curso.CUR_ID }).catch(() => []),
     ])
-    formadoresCurso.value = Array.isArray(forms?.results) ? forms.results : (forms || [])
-    alimentacionesCurso.value = Array.isArray(alims?.results) ? alims.results : (alims || [])
-    cuotasCurso.value = Array.isArray(cuots?.results) ? cuots.results : (cuots || [])
-    coordinadoresCurso.value = Array.isArray(coords?.results) ? coords.results : (coords || [])
+    formadoresCurso.value = (Array.isArray(forms?.results) ? forms.results : (forms || [])).map(toUpperKeys)
+    alimentacionesCurso.value = (Array.isArray(alims?.results) ? alims.results : (alims || [])).map(toUpperKeys)
+    cuotasCurso.value = (Array.isArray(cuots?.results) ? cuots.results : (cuots || [])).map(toUpperKeys)
+    coordinadoresCurso.value = (Array.isArray(coords?.results) ? coords.results : (coords || [])).map(toUpperKeys)
   } catch (e) { console.warn('No se pudo cargar datos relacionados:', e) }
   originalBuffersBackup.value = {
     fechas: JSON.parse(JSON.stringify(fechasCurso.value)),
@@ -1034,7 +1069,7 @@ async function cargarFechasDelCurso(cursoId) {
     // Solo cargar si aún no tenemos fechas en caché
     if (!Array.isArray(fechasCursoList.value) || fechasCursoList.value.length === 0) {
       const todas = await fechasApi.list()
-      fechasCursoList.value = todas || []
+      fechasCursoList.value = (todas || []).map(toUpperKeys)
     }
     fechasCurso.value = (fechasCursoList.value || []).filter(f => Number(f.CUR_ID) === Number(cursoId))
   } catch (e) {
@@ -1060,7 +1095,8 @@ async function agregarFecha() {
       // buffer temporal hasta guardar curso
       fechasCurso.value.push({ ...nuevoPeriodo.value, __tmpId: Date.now() })
     } else {
-      const creada = await fechasApi.create({ ...nuevoPeriodo.value, CUR_ID: form.value.CUR_ID })
+      const creadaRaw = await fechasApi.create(toLowerKeys({ ...nuevoPeriodo.value, CUR_ID: form.value.CUR_ID }))
+      const creada = toUpperKeys(creadaRaw)
       fechasCurso.value.push(creada)
       fechasCursoList.value.push(creada) // Actualizar caché
     }
@@ -1091,7 +1127,7 @@ async function guardarEdicionFecha() {
       if (idx !== -1) fechasCurso.value[idx] = { ...nuevoPeriodo.value }
     } else {
       // Actualizar en API
-      await fechasApi.update(editandoFecha.value, nuevoPeriodo.value)
+      await fechasApi.update(editandoFecha.value, toLowerKeys(nuevoPeriodo.value))
       const idx = fechasCurso.value.findIndex(f => f.CUF_ID === editandoFecha.value)
       if (idx !== -1) fechasCurso.value[idx] = { ...nuevoPeriodo.value, CUF_ID: editandoFecha.value }
       // Actualizar caché
@@ -1146,7 +1182,7 @@ async function cargarSeccionesDelCurso(cursoId) {
   try {
     if (!Array.isArray(seccionesList.value) || seccionesList.value.length === 0) {
       const all = await seccionesApi.list()
-      seccionesList.value = all || []
+      seccionesList.value = (all || []).map(toUpperKeys)
     }
     seccionesCurso.value = (seccionesList.value || []).filter(s => Number(s.CUR_ID) === Number(cursoId))
   } catch (e) {
@@ -1172,7 +1208,8 @@ async function agregarSeccion() {
     if (!form.value.CUR_ID) {
       seccionesCurso.value.push({ ...payload, __tmpId: Date.now() })
     } else {
-      const creada = await seccionesApi.create(payload)
+      const creadaRaw = await seccionesApi.create(toLowerKeys(payload))
+      const creada = toUpperKeys(creadaRaw)
       seccionesCurso.value.push(creada)
       seccionesList.value.push(creada)
     }
@@ -1198,7 +1235,7 @@ async function guardarEdicionSeccion() {
       const idx = seccionesCurso.value.findIndex(s => `tmp-${s.__tmpId}` === editandoSeccion.value)
       if (idx !== -1) seccionesCurso.value[idx] = { ...nuevaSeccion.value }
     } else {
-      await seccionesApi.update(editandoSeccion.value, nuevaSeccion.value)
+      await seccionesApi.update(editandoSeccion.value, toLowerKeys(nuevaSeccion.value))
       const idx = seccionesCurso.value.findIndex(s => s.CUS_ID === editandoSeccion.value)
       if (idx !== -1) seccionesCurso.value[idx] = { ...nuevaSeccion.value, CUS_ID: editandoSeccion.value }
       const cacheIdx = seccionesList.value.findIndex(s => s.CUS_ID === editandoSeccion.value)
@@ -1288,33 +1325,38 @@ async function guardarCurso() {
       payload.CUR_ESTADO = computeAutoEstadoFromFechas(fechasCurso.value)
     }
 
+    // Prepare payload for API (lowercase)
+    const apiPayload = toLowerKeys(payload)
+
     if (isTrulyNew.value) {
       // Obtener usuario actual para USU_ID
       try {
         const perfil = await request('auth/perfil')
         if (perfil?.usuario?.user_id) {
-          payload.USU_ID = perfil.usuario.user_id
+          apiPayload.usu_id = perfil.usuario.user_id
         } else {
-          payload.USU_ID = 1 // Fallback
+          apiPayload.usu_id = 1 // Fallback
         }
       } catch (e) {
         console.warn('No se pudo obtener USU_ID, usando default:', e)
-        payload.USU_ID = 1 // Default fallback
+        apiPayload.usu_id = 1 // Default fallback
       }
 
-      const creado = await cursosApi.create(payload)
+      const creadoRaw = await cursosApi.create(apiPayload)
+      const creado = toUpperKeys(creadoRaw)
       cursosList.value.unshift(creado)
       // Persistir buffers (fechas, secciones, formadores, alimentación)
       // Fechas
       for (const f of (fechasCurso.value || [])) {
         if (!f.CUF_ID) {
           try {
-            const createdF = await fechasApi.create({
+            const createdFRaw = await fechasApi.create(toLowerKeys({
               CUR_ID: creado.CUR_ID,
               CUF_FECHA_INICIO: f.CUF_FECHA_INICIO,
               CUF_FECHA_TERMINO: f.CUF_FECHA_TERMINO,
               CUF_TIPO: f.CUF_TIPO,
-            })
+            }))
+            const createdF = toUpperKeys(createdFRaw)
             Object.assign(f, createdF)
             fechasCursoList.value.push(createdF)
           } catch (e) { console.warn('No se pudo crear período post-curso:', e) }
@@ -1324,12 +1366,13 @@ async function guardarCurso() {
       for (const s of (seccionesCurso.value || [])) {
         if (!s.CUS_ID) {
           try {
-            const createdS = await seccionesApi.create({
+            const createdSRaw = await seccionesApi.create(toLowerKeys({
               CUR_ID: creado.CUR_ID,
               CUS_SECCION: s.CUS_SECCION,
               RAM_ID: s.RAM_ID,
               CUS_CANT_PARTICIPANTE: s.CUS_CANT_PARTICIPANTE,
-            })
+            }))
+            const createdS = toUpperKeys(createdSRaw)
             Object.assign(s, createdS)
             seccionesList.value.push(createdS)
           } catch (e) { console.warn('No se pudo crear sección post-curso:', e) }
@@ -1348,13 +1391,14 @@ async function guardarCurso() {
               const matched = seccionesCurso.value.find(s => s.__tmpId === tmpNumeric)
               if (matched && matched.CUS_ID) resolvedCusId = matched.CUS_ID
             }
-            const createdFm = await formadoresApi.create({
+            const createdFmRaw = await formadoresApi.create(toLowerKeys({
               CUR_ID: creado.CUR_ID,
               PER_ID: fm.PER_ID,
               ROL_ID: fm.ROL_ID,
               CUS_ID: resolvedCusId,
               CUO_DIRECTOR: !!fm.CUO_DIRECTOR,
-            })
+            }))
+            const createdFm = toUpperKeys(createdFmRaw)
             Object.assign(fm, createdFm)
           } catch (e) { console.warn('No se pudo crear formador post-curso:', e) }
         }
@@ -1363,14 +1407,15 @@ async function guardarCurso() {
       for (const al of (alimentacionesCurso.value || [])) {
         if (!al.CUA_ID) {
           try {
-            const createdAl = await alimentacionesApi.create({
+            const createdAlRaw = await alimentacionesApi.create(toLowerKeys({
               CUR_ID: creado.CUR_ID,
               ALI_ID: al.ALI_ID,
               CUA_FECHA: al.CUA_FECHA,
               CUA_TIEMPO: al.CUA_TIEMPO,
               CUA_DESCRIPCION: al.CUA_DESCRIPCION,
               CUA_CANTIDAD_ADICIONAL: Number(al.CUA_CANTIDAD_ADICIONAL || 0),
-            })
+            }))
+            const createdAl = toUpperKeys(createdAlRaw)
             Object.assign(al, createdAl)
           } catch (e) { console.warn('No se pudo crear alimentación post-curso:', e) }
         }
@@ -1379,12 +1424,13 @@ async function guardarCurso() {
       for (const cuota of (cuotasCurso.value || [])) {
         if (!cuota.CUU_ID) {
           try {
-            const createdCuota = await cuotasApi.create({
+            const createdCuotaRaw = await cuotasApi.create(toLowerKeys({
               CUR_ID: creado.CUR_ID,
               CUU_TIPO: Number(cuota.CUU_TIPO),
               CUU_FECHA: cuota.CUU_FECHA,
               CUU_VALOR: Number(cuota.CUU_VALOR),
-            })
+            }))
+            const createdCuota = toUpperKeys(createdCuotaRaw)
             Object.assign(cuota, createdCuota)
           } catch (e) { console.warn('No se pudo crear cuota post-curso:', e) }
         }
@@ -1393,11 +1439,12 @@ async function guardarCurso() {
       for (const coord of (coordinadoresCurso.value || [])) {
         if (!coord.CUC_ID) {
           try {
-            const createdCoord = await coordinadoresApi.create({
+            const createdCoordRaw = await coordinadoresApi.create(toLowerKeys({
               CUR_ID: creado.CUR_ID,
               PER_ID: coord.PER_ID,
               CAR_ID: coord.CAR_ID,
-            })
+            }))
+            const createdCoord = toUpperKeys(createdCoordRaw)
             Object.assign(coord, createdCoord)
           } catch (e) { console.warn('No se pudo crear coordinador post-curso:', e) }
         }
@@ -1414,7 +1461,8 @@ async function guardarCurso() {
         alert('No hay cambios para guardar.')
         return
       }
-      const actualizado = await cursosApi.update(payload.CUR_ID, payload)
+      const actualizadoRaw = await cursosApi.update(payload.CUR_ID, apiPayload)
+      const actualizado = toUpperKeys(actualizadoRaw)
       const index = cursosList.value.findIndex(c => c.CUR_ID === payload.CUR_ID)
       if (index !== -1) {
         // preservar fechas y secciones ya cargadas en memoria si existen
@@ -1492,7 +1540,8 @@ async function guardarCambioEstado() {
   isDisabling.value = true
   
   try {
-    const actualizado = await cursosApi.partialUpdate(cursoParaCambioEstado.value.CUR_ID, { CUR_ESTADO: Number(nuevoEstado.value) })
+    const actualizadoRaw = await cursosApi.partialUpdate(cursoParaCambioEstado.value.CUR_ID, toLowerKeys({ CUR_ESTADO: Number(nuevoEstado.value) }))
+    const actualizado = toUpperKeys(actualizadoRaw)
     Object.assign(cursoParaCambioEstado.value, actualizado)
     aplicarFiltros()
     alert('Estado actualizado exitosamente.')
@@ -1560,7 +1609,14 @@ function formatDateSimple(dateStr) {
 
 function getPersonaName(id) {
   const p = personasList.value.find(x => x.PER_ID === id)
-  return p ? `${p.PER_NOMBRE} ${p.PER_APELLIDO_PATERNO}` : 'No asignado'
+  const nombre = p?.PER_NOMBRES || p?.PER_NOMBRE || ''
+  const apellido = p?.PER_APELPTA || p?.PER_APELLIDO_PATERNO || ''
+  return p ? `${nombre} ${apellido}`.trim() : 'No asignado'
+}
+
+function getCargoName(id) {
+  const c = cargosList.value.find(x => x.CAR_ID === id)
+  return c ? c.CAR_DESCRIPCION : ''
 }
 
 function getTipoCursoName(id) {
@@ -1598,13 +1654,14 @@ async function agregarFormador() {
     if (!form.value.CUR_ID) {
       formadoresCurso.value.push({ ...f, __tmpId: Date.now() })
     } else {
-      const creado = await formadoresApi.create({
+      const creadoRaw = await formadoresApi.create(toLowerKeys({
         CUR_ID: form.value.CUR_ID,
         PER_ID: f.PER_ID,
         ROL_ID: f.ROL_ID,
         CUS_ID: typeof f.CUS_ID === 'number' ? f.CUS_ID : null,
         CUO_DIRECTOR: !!f.CUO_DIRECTOR,
-      })
+      }))
+      const creado = toUpperKeys(creadoRaw)
       formadoresCurso.value.push(creado)
     }
     nuevaFormador.value = { PER_ID: null, ROL_ID: null, CUS_ID: null, CUO_DIRECTOR: false }
@@ -1627,13 +1684,13 @@ async function guardarEdicionFormador() {
       const idx = formadoresCurso.value.findIndex(x => `tmp-${x.__tmpId}` === editandoFormador.value)
       if (idx !== -1) formadoresCurso.value[idx] = { ...f }
     } else {
-      await formadoresApi.update(editandoFormador.value, {
+      await formadoresApi.update(editandoFormador.value, toLowerKeys({
         CUR_ID: form.value.CUR_ID,
         PER_ID: f.PER_ID,
         ROL_ID: f.ROL_ID,
         CUS_ID: typeof f.CUS_ID === 'number' ? f.CUS_ID : null,
         CUO_DIRECTOR: !!f.CUO_DIRECTOR,
-      })
+      }))
       const idx = formadoresCurso.value.findIndex(x => x.CUF_ID === editandoFormador.value)
       if (idx !== -1) formadoresCurso.value[idx] = { ...f, CUF_ID: editandoFormador.value }
     }
@@ -1687,14 +1744,15 @@ async function agregarAlimentacion() {
     if (!form.value.CUR_ID) {
       alimentacionesCurso.value.push({ ...a, __tmpId: Date.now() })
     } else {
-      const creado = await alimentacionesApi.create({
+      const creadoRaw = await alimentacionesApi.create(toLowerKeys({
         CUR_ID: form.value.CUR_ID,
         ALI_ID: a.ALI_ID,
         CUA_FECHA: a.CUA_FECHA,
         CUA_TIEMPO: a.CUA_TIEMPO,
         CUA_DESCRIPCION: a.CUA_DESCRIPCION,
         CUA_CANTIDAD_ADICIONAL: Number(a.CUA_CANTIDAD_ADICIONAL || 0),
-      })
+      }))
+      const creado = toUpperKeys(creadoRaw)
       alimentacionesCurso.value.push(creado)
     }
     nuevaAlimentacion.value = { ALI_ID: null, CUA_FECHA: '', CUA_TIEMPO: null, CUA_DESCRIPCION: '', CUA_CANTIDAD_ADICIONAL: 0 }
@@ -1717,14 +1775,14 @@ async function guardarEdicionAlimentacion() {
       const idx = alimentacionesCurso.value.findIndex(x => `tmp-${x.__tmpId}` === editandoAlimentacion.value)
       if (idx !== -1) alimentacionesCurso.value[idx] = { ...a }
     } else {
-      await alimentacionesApi.update(editandoAlimentacion.value, {
+      await alimentacionesApi.update(editandoAlimentacion.value, toLowerKeys({
         CUR_ID: form.value.CUR_ID,
         ALI_ID: a.ALI_ID,
         CUA_FECHA: a.CUA_FECHA,
         CUA_TIEMPO: a.CUA_TIEMPO,
         CUA_DESCRIPCION: a.CUA_DESCRIPCION,
         CUA_CANTIDAD_ADICIONAL: Number(a.CUA_CANTIDAD_ADICIONAL || 0),
-      })
+      }))
       const idx = alimentacionesCurso.value.findIndex(x => x.CUA_ID === editandoAlimentacion.value)
       if (idx !== -1) alimentacionesCurso.value[idx] = { ...a, CUA_ID: editandoAlimentacion.value }
     }
@@ -1770,12 +1828,13 @@ async function agregarCuota() {
     if (!form.value.CUR_ID) {
       cuotasCurso.value.push({ ...c, __tmpId: Date.now() })
     } else {
-      const creado = await cuotasApi.create({
+      const creadoRaw = await cuotasApi.create(toLowerKeys({
         CUR_ID: form.value.CUR_ID,
         CUU_TIPO: Number(c.CUU_TIPO),
         CUU_FECHA: c.CUU_FECHA,
         CUU_VALOR: Number(c.CUU_VALOR),
-      })
+      }))
+      const creado = toUpperKeys(creadoRaw)
       cuotasCurso.value.push(creado)
     }
     nuevaCuota.value = { CUU_TIPO: 1, CUU_FECHA: '', CUU_VALOR: '' }
@@ -1811,11 +1870,12 @@ async function agregarCoordinador() {
     if (!form.value.CUR_ID) {
       coordinadoresCurso.value.push({ ...coord, __tmpId: Date.now() })
     } else {
-      const creado = await coordinadoresApi.create({
+      const creadoRaw = await coordinadoresApi.create(toLowerKeys({
         CUR_ID: form.value.CUR_ID,
         PER_ID: coord.PER_ID,
         CAR_ID: coord.CAR_ID,
-      })
+      }))
+      const creado = toUpperKeys(creadoRaw)
       coordinadoresCurso.value.push(creado)
     }
     nuevoCoordinador.value = { PER_ID: null, CAR_ID: null }
@@ -1857,10 +1917,10 @@ async function abrirModalVer(curso) {
       coordinadoresApi.list({ CUR_ID: curso.CUR_ID, page_size: 500 }).catch(() => []),
     ])
     
-    formadoresCurso.value = Array.isArray(forms?.results) ? forms.results : (forms || [])
-    alimentacionesCurso.value = Array.isArray(alims?.results) ? alims.results : (alims || [])
-    cuotasCurso.value = Array.isArray(cuots?.results) ? cuots.results : (cuots || [])
-    coordinadoresCurso.value = Array.isArray(coords?.results) ? coords.results : (coords || [])
+    formadoresCurso.value = (Array.isArray(forms?.results) ? forms.results : (forms || [])).map(toUpperKeys)
+    alimentacionesCurso.value = (Array.isArray(alims?.results) ? alims.results : (alims || [])).map(toUpperKeys)
+    cuotasCurso.value = (Array.isArray(cuots?.results) ? cuots.results : (cuots || [])).map(toUpperKeys)
+    coordinadoresCurso.value = (Array.isArray(coords?.results) ? coords.results : (coords || [])).map(toUpperKeys)
     
     // Cargar catálogo de alimentación solo si es necesario
     if (!alimentacionCatalogo.value.length) {

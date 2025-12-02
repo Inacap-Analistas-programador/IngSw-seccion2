@@ -79,6 +79,7 @@
             <tr>
               <th></th>
               <th>Usuario</th>
+              <th>Correo</th>
               <th>Contraseña</th>
               <th>Perfil</th>
               <th>Estado</th>
@@ -108,6 +109,7 @@
                 </div>
               </td>
               <td data-label="Usuario">{{ usuario.username }}</td>
+              <td data-label="Correo">{{ usuario.email || '-' }}</td>
               <td data-label="Contraseña">••••••••</td>
               <td data-label="Perfil">
                 <span class="badge rol-badge" :class="rolClass(usuario)">
@@ -240,6 +242,20 @@
                           :options="rolesOptions"
                           placeholder="Seleccionar rol"
                           required
+                          :disabled="procesando"
+                        />
+                      </div>
+                    </div>
+
+                    <!-- Correo Electrónico -->
+                    <div class="form-row" style="margin-top: 1rem;">
+                      <div class="form-group flex-1">
+                        <label for="email">Correo Electrónico</label>
+                        <InputBase 
+                          id="email"
+                          v-model="usuarioForm.email" 
+                          type="email"
+                          placeholder="ejemplo@correo.com"
                           :disabled="procesando"
                         />
                       </div>
@@ -412,6 +428,7 @@ export default {
       usuarioForm: {
         id: null,
         username: '',
+        email: '',
         rol: '',
         password: '',
         confirmPassword: '',
@@ -585,8 +602,8 @@ export default {
         const perfilesResponse = await perfilesService.list()
         const perfilesList = Array.isArray(perfilesResponse) ? perfilesResponse : (perfilesResponse.results || perfilesResponse.data || [])
         const roles = perfilesList.map(p => ({
-          value: p.PEL_ID || p.id,
-          label: p.PEL_DESCRIPCION || p.descripcion || p.nombre || `Perfil ${p.PEL_ID || p.id}`
+          value: p.pel_id || p.PEL_ID || p.id,
+          label: p.pel_descripcion || p.PEL_DESCRIPCION || p.descripcion || p.nombre || `Perfil ${p.pel_id || p.PEL_ID || p.id}`
         }))
         this.rolesOptions = [{ value: '', label: 'Todos los perfiles' }, ...roles]
 
@@ -627,13 +644,14 @@ export default {
 
         // Map to internal shape
         this.usuarios = usuariosList.map(u => ({
-          id: u.USU_ID || u.id,
-          nombre: u.USU_USERNAME || u.nombre || u.username || '',
-          username: u.USU_USERNAME || u.username || '',
-          perfil_id: u.PEL_ID || u.perfil_id || u.perfil || null,
-          rol: this.getRolLabelById(u.PEL_ID || u.perfil_id || u.perfil, roles),
-          activo: u.USU_VIGENTE !== undefined ? u.USU_VIGENTE : (u.vigente !== undefined ? u.vigente : true),
-          foto: u.USU_RUTA_FOTO || u.foto || null,
+          id: u.usu_id || u.USU_ID || u.id,
+          nombre: u.usu_username || u.USU_USERNAME || u.nombre || u.username || '',
+          username: u.usu_username || u.USU_USERNAME || u.username || '',
+          email: u.usu_email || u.USU_EMAIL || u.email || '',
+          perfil_id: u.pel_id || u.PEL_ID || u.perfil_id || u.perfil || null,
+          rol: this.getRolLabelById(u.pel_id || u.PEL_ID || u.perfil_id || u.perfil, roles),
+          activo: u.usu_vigente !== undefined ? u.usu_vigente : (u.USU_VIGENTE !== undefined ? u.USU_VIGENTE : (u.vigente !== undefined ? u.vigente : true)),
+          foto: u.usu_ruta_foto || u.USU_RUTA_FOTO || u.foto || null,
           password_hash: u.USU_PASSWORD || u.password || null
         }))
 
@@ -708,6 +726,7 @@ export default {
       return {
         id: null,
         username: '',
+        email: '',
         rol: '',
         password: '',
         confirmPassword: '',
@@ -767,6 +786,7 @@ export default {
       this.usuarioForm = {
         id: usuario.id,
         username: usuario.username,
+        email: usuario.email,
         rol: usuario.perfil_id,
         password: '',
         confirmPassword: '',
@@ -794,10 +814,16 @@ export default {
         
         // Preparar datos para la API
         const usuarioData = {
+          usu_username: this.usuarioForm.username,
+          usu_email: this.usuarioForm.email,
+          pel_id: this.usuarioForm.rol,
+          usu_vigente: this.usuarioForm.activo,
+          usu_ruta_foto: this.usuarioForm.fotoPreview || this.defaultFoto,
+          // Compatibilidad
           USU_USERNAME: this.usuarioForm.username,
+          USU_EMAIL: this.usuarioForm.email,
           PEL_ID: this.usuarioForm.rol,
           USU_VIGENTE: this.usuarioForm.activo,
-          // Si no hay foto, enviar una URL por defecto (el backend requiere que no sea vacío)
           USU_RUTA_FOTO: this.usuarioForm.fotoPreview || this.defaultFoto
         }
 
@@ -819,6 +845,7 @@ export default {
               id: usuarioActualizado.USU_ID || usuarioActualizado.id || this.usuarioForm.id,
               nombre: usuarioActualizado.USU_USERNAME || this.usuarioForm.username,
               username: usuarioActualizado.USU_USERNAME || this.usuarioForm.username,
+              email: usuarioActualizado.USU_EMAIL || usuarioActualizado.usu_email || this.usuarioForm.email,
               perfil_id: usuarioActualizado.PEL_ID || this.usuarioForm.rol,
               rol: roleOpt ? roleOpt.label : '',
               activo: usuarioActualizado.USU_VIGENTE !== undefined ? usuarioActualizado.USU_VIGENTE : this.usuarioForm.activo,
@@ -836,6 +863,7 @@ export default {
             id: nuevoUsuario.USU_ID || nuevoUsuario.id,
             nombre: nuevoUsuario.USU_USERNAME || this.usuarioForm.username,
             username: nuevoUsuario.USU_USERNAME || this.usuarioForm.username,
+            email: nuevoUsuario.USU_EMAIL || nuevoUsuario.usu_email || this.usuarioForm.email,
             perfil_id: nuevoUsuario.PEL_ID || this.usuarioForm.rol,
             rol: roleOpt ? roleOpt.label : '',
             activo: nuevoUsuario.USU_VIGENTE !== undefined ? nuevoUsuario.USU_VIGENTE : true,
@@ -870,6 +898,7 @@ export default {
       try {
         // Actualizar en el backend
         await usuariosService.partialUpdate(usuario.id, {
+          usu_vigente: nuevoEstado,
           USU_VIGENTE: nuevoEstado
         })
         
@@ -986,7 +1015,7 @@ export default {
         // Actualizar en el backend
         const promesas = this.selectedIds.map(async (id) => {
           try {
-            await usuariosService.partialUpdate(id, { USU_VIGENTE: nuevoEstado })
+            await usuariosService.partialUpdate(id, { usu_vigente: nuevoEstado, USU_VIGENTE: nuevoEstado })
             return id
           } catch (err) {
             console.error(`Error al actualizar usuario ${id}:`, err)
@@ -1028,7 +1057,7 @@ export default {
           .map(async (u) => {
             try {
               const nuevoEstado = !u.activo
-              await usuariosService.partialUpdate(u.id, { USU_VIGENTE: nuevoEstado })
+              await usuariosService.partialUpdate(u.id, { usu_vigente: nuevoEstado, USU_VIGENTE: nuevoEstado })
               return { id: u.id, nuevoEstado }
             } catch (err) {
               console.error(`Error al actualizar usuario ${u.id}:`, err)

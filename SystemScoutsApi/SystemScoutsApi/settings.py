@@ -160,7 +160,7 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 SIMPLE_JWT = {
-    "USER_ID_FIELD": "USU_ID",
+    "USER_ID_FIELD": "usu_id",
     "USER_ID_CLAIM": "user_id",
 }
 
