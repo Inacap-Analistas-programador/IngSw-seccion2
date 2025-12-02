@@ -7,7 +7,7 @@ export default {
       headers: { 'Content-Type': 'application/json' },
       // Con AUTH_USER_MODEL=ApiCoreScouts.Usuario, el USERNAME_FIELD es 'USU_USERNAME'
       // SimpleJWT usa get_user_model().USERNAME_FIELD, por lo que el backend espera 'USU_USERNAME'
-      body: JSON.stringify({ USU_USERNAME: username, password })
+      body: JSON.stringify({ usu_username: username, password })
     });
 
     // Leer el body una sola vez
