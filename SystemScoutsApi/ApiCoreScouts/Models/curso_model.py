@@ -4,126 +4,126 @@ from .persona_model import *
 from .usuario_model import *
 
 class Curso(models.Model):
-    CUR_ID = models.BigAutoField(primary_key=True, db_column='cur_id')
-    USU_ID = models.ForeignKey(Usuario, on_delete=models.CASCADE, db_column='usu_id')
-    TCU_ID = models.ForeignKey('Tipo_Curso', on_delete=models.CASCADE, db_column='tcu_id')
-    PER_ID_RESPONSABLE = models.ForeignKey(Persona, on_delete=models.CASCADE, db_column='per_id_responsable')
-    CAR_ID_RESPONSABLE = models.ForeignKey(Cargo, on_delete=models.CASCADE, related_name='cargo_responsable', db_column='car_id_responsable')
-    COM_ID_LUGAR = models.ForeignKey(Comuna, on_delete=models.CASCADE, related_name='comuna_lugar', db_column='com_id_lugar')
-    CUR_FECHA_HORA = models.DateTimeField(auto_now_add=True, db_column='cur_fecha_hora')
-    CUR_FECHA_SOLICITUD = models.DateField(db_column='cur_fecha_solicitud')
-    CUR_CODIGO = models.CharField(max_length=20, unique=True, db_column='cur_codigo')
-    CUR_DESCRIPCION = models.CharField(max_length=255, db_column='cur_descripcion')
-    CUR_OBSERVACION = models.CharField(max_length=255, blank=True, null=True, db_column='cur_observacion')
-    CUR_ADMINISTRA_OPCION = [
+    cur_id = models.BigAutoField(primary_key=True, db_column='cur_id')
+    usu_id = models.ForeignKey(Usuario, on_delete=models.CASCADE, db_column='usu_id')
+    tcu_id = models.ForeignKey('Tipo_Curso', on_delete=models.CASCADE, db_column='tcu_id')
+    per_id_responsable = models.ForeignKey(Persona, on_delete=models.CASCADE, db_column='per_id_responsable')
+    car_id_responsable = models.ForeignKey(Cargo, on_delete=models.CASCADE, related_name='cargo_responsable', db_column='car_id_responsable')
+    com_id_lugar = models.ForeignKey(Comuna, on_delete=models.CASCADE, related_name='comuna_lugar', db_column='com_id_lugar')
+    cur_fecha_hora = models.DateTimeField(auto_now_add=True, db_column='cur_fecha_hora')
+    cur_fecha_solicitud = models.DateField(db_column='cur_fecha_solicitud')
+    cur_codigo = models.CharField(max_length=20, unique=True, db_column='cur_codigo')
+    cur_descripcion = models.CharField(max_length=255, db_column='cur_descripcion')
+    cur_observacion = models.CharField(max_length=255, blank=True, null=True, db_column='cur_observacion')
+    cur_administra_opcion = [
         (1, 'Zona'),
         (2, 'Distrito'),
     ]
-    CUR_ADMINISTRA = models.IntegerField(choices=CUR_ADMINISTRA_OPCION, null=False, db_column='cur_administra')
-    CUR_COTA_CON_ALMUERZO = models.IntegerField(db_column='cur_cota_con_almuerzo')
-    CUR_COTA_SIN_ALMUERZO = models.IntegerField(db_column='cur_cota_sin_almuerzo')
-    CUR_MODALIDAD_OPTIONS = [
+    cur_administra = models.IntegerField(choices=cur_administra_opcion, null=False, db_column='cur_administra')
+    cur_cota_con_almuerzo = models.IntegerField(db_column='cur_cota_con_almuerzo')
+    cur_cota_sin_almuerzo = models.IntegerField(db_column='cur_cota_sin_almuerzo')
+    cur_modalidad_options = [
         (1, 'Internado'),
         (2, 'Externado'),
         (3, 'Internado/Externado'),
     ]
-    CUR_MODALIDAD = models.IntegerField(choices=CUR_MODALIDAD_OPTIONS, null=False, db_column='cur_modalidad')
-    CUR_TIPO_CURSO_OPTIONS = [
+    cur_modalidad = models.IntegerField(choices=cur_modalidad_options, null=False, db_column='cur_modalidad')
+    cur_tipo_curso_options = [
         (1, 'Presencial'),
         (2, 'Online'),
         (3, 'Hibrido'),
     ]
-    CUR_TIPO_CURSO = models.IntegerField(choices=CUR_TIPO_CURSO_OPTIONS, null=False, db_column='cur_tipo_curso')
-    CUR_LUGAR = models.CharField(max_length=100, db_column='cur_lugar')
-    CUR_COORD_LATITUD = models.CharField(max_length=50, null=True, db_column='cur_coord_latitud')
-    CUR_COORD_LONGITUD = models.CharField(max_length=50, null=True, db_column='cur_coord_longitud')
-    CUR_ESTADO_OPTIONS = [
+    cur_tipo_curso = models.IntegerField(choices=cur_tipo_curso_options, null=False, db_column='cur_tipo_curso')
+    cur_lugar = models.CharField(max_length=100, db_column='cur_lugar')
+    cur_coord_latitud = models.CharField(max_length=50, null=True, db_column='cur_coord_latitud')
+    cur_coord_longitud = models.CharField(max_length=50, null=True, db_column='cur_coord_longitud')
+    cur_estado_options = [
         (0, 'Pendiente'),
         (1, 'Vigente'),
         (2, 'Anulado'),
         (3, 'Finalizado'),
     ]
-    CUR_ESTADO = models.IntegerField(choices=CUR_ESTADO_OPTIONS, null=False, db_column='cur_estado')
+    cur_estado = models.IntegerField(choices=cur_estado_options, null=False, db_column='cur_estado')
 
     class Meta:
         db_table = 'curso'
 
 class Curso_Cuota(models.Model):
-    CUU_ID = models.BigAutoField(primary_key=True, db_column='cuu_id')
-    CUR_ID = models.ForeignKey('Curso', on_delete=models.PROTECT, null=False, db_column='cur_id')
-    CUU_TIPO_OPCION = [
+    cuu_id = models.BigAutoField(primary_key=True, db_column='cuu_id')
+    cur_id = models.ForeignKey('Curso', on_delete=models.PROTECT, null=False, db_column='cur_id')
+    cuu_tipo_opcion = [
         (1, 'Con Almuerzo'),
         (2, 'Sin Almuerzo'),
     ]
-    CUU_TIPO = models.IntegerField(choices=CUU_TIPO_OPCION, null=False, db_column='cuu_tipo')
-    CUU_FECHA = models.DateField(null=False, db_column='cuu_fecha')
-    CUU_VALOR = models.DecimalField(max_digits=21,decimal_places=6, null=False, db_column='cuu_valor')
+    cuu_tipo = models.IntegerField(choices=cuu_tipo_opcion, null=False, db_column='cuu_tipo')
+    cuu_fecha = models.DateField(null=False, db_column='cuu_fecha')
+    cuu_valor = models.DecimalField(max_digits=21,decimal_places=6, null=False, db_column='cuu_valor')
 
     class Meta:
         db_table = 'curso_cuota'
 
 class Curso_Fecha(models.Model):
-    CUF_ID = models.BigAutoField(primary_key=True, db_column='cuf_id')
-    CUR_ID = models.ForeignKey('Curso', on_delete=models.PROTECT, null=False, db_column='cur_id')
-    CUF_FECHA_INICIO = models.DateField(null=False, db_column='cuf_fecha_inicio')
-    CUF_FECHA_TERMINO = models.DateField(null=False, db_column='cuf_fecha_termino')
-    CUF_TIPO_OPCION = [
+    cuf_id = models.BigAutoField(primary_key=True, db_column='cuf_id')
+    cur_id = models.ForeignKey('Curso', on_delete=models.PROTECT, null=False, db_column='cur_id')
+    cuf_fecha_inicio = models.DateField(null=False, db_column='cuf_fecha_inicio')
+    cuf_fecha_termino = models.DateField(null=False, db_column='cuf_fecha_termino')
+    cuf_tipo_opcion = [
         (1, 'Presencial'),
         (2, 'Online'),
         (3, 'Hibrido'),
     ]
-    CUF_TIPO = models.IntegerField(choices=CUF_TIPO_OPCION, null=False, db_column='cuf_tipo')
+    cuf_tipo = models.IntegerField(choices=cuf_tipo_opcion, null=False, db_column='cuf_tipo')
 
     class Meta:
         db_table = 'curso_fecha'
 
 class Curso_Alimentacion(models.Model):
-    CUA_ID = models.BigAutoField(primary_key=True, db_column='cua_id')
-    CUR_ID = models.ForeignKey('Curso', on_delete=models.PROTECT, null=False, db_column='cur_id')
-    ALI_ID = models.ForeignKey(Alimentacion, on_delete=models.PROTECT, null=False, db_column='ali_id')
-    CUA_FECHA = models.DateField(db_column='cua_fecha')
-    CUA_TIEMPO_OPCION = [
+    cua_id = models.BigAutoField(primary_key=True, db_column='cua_id')
+    cur_id = models.ForeignKey('Curso', on_delete=models.PROTECT, null=False, db_column='cur_id')
+    ali_id = models.ForeignKey(Alimentacion, on_delete=models.PROTECT, null=False, db_column='ali_id')
+    cua_fecha = models.DateField(db_column='cua_fecha')
+    cua_tiempo_opcion = [
         (1, 'Desayuno'),
         (2, 'Almuerzo'),
         (3, 'Once'),
         (4, 'Cena'),
         (5, 'Once/Cena'),
     ]
-    CUA_TIEMPO = models.IntegerField(choices=CUA_TIEMPO_OPCION, null=False, db_column='cua_tiempo')
-    CUA_DESCRIPCION = models.CharField(max_length=100, null=False, db_column='cua_descripcion')
-    CUA_CANTIDAD_ADICIONAL = models.IntegerField(default=0, null=False, db_column='cua_cantidad_adicional')
-    CUA_VIGENTE = models.BooleanField(default=True, null=False, db_column='cua_vigente')
+    cua_tiempo = models.IntegerField(choices=cua_tiempo_opcion, null=False, db_column='cua_tiempo')
+    cua_descripcion = models.CharField(max_length=100, null=False, db_column='cua_descripcion')
+    cua_cantidad_adicional = models.IntegerField(default=0, null=False, db_column='cua_cantidad_adicional')
+    cua_vigente = models.BooleanField(default=True, null=False, db_column='cua_vigente')
 
     class Meta:
         db_table = 'curso_alimentacion'
 
 class Curso_Coordinador(models.Model):
-    CUC_ID = models.BigAutoField(primary_key=True, db_column='cuc_id')
-    CUR_ID = models.ForeignKey('Curso', on_delete=models.PROTECT, null=False, db_column='cur_id')
-    PER_ID = models.ForeignKey(Persona, on_delete=models.PROTECT, null=False, db_column='per_id')
-    CAR_ID = models.ForeignKey(Cargo, on_delete=models.PROTECT, null=False, db_column='car_id')
-    CUC_CARGO = models.CharField(max_length=100, null=True, db_column='cuc_cargo')
+    cuc_id = models.BigAutoField(primary_key=True, db_column='cuc_id')
+    cur_id = models.ForeignKey('Curso', on_delete=models.PROTECT, null=False, db_column='cur_id')
+    per_id = models.ForeignKey(Persona, on_delete=models.PROTECT, null=False, db_column='per_id')
+    car_id = models.ForeignKey(Cargo, on_delete=models.PROTECT, null=False, db_column='car_id')
+    cuc_cargo = models.CharField(max_length=100, null=True, db_column='cuc_cargo')
 
     class Meta:
         db_table = 'curso_coordinador'
 
 class Curso_Seccion(models.Model):
-    CUS_ID = models.BigAutoField(primary_key=True, db_column='cus_id')
-    CUR_ID = models.ForeignKey('Curso', on_delete=models.PROTECT, null=False, db_column='cur_id')
-    RAM_ID = models.ForeignKey(Rama, on_delete=models.PROTECT, null=True, db_column='ram_id')
-    CUS_SECCION = models.IntegerField(null=False, db_column='cus_seccion')
-    CUS_CANT_PARTICIPANTE = models.IntegerField(null=False, db_column='cus_cant_participante')
+    cus_id = models.BigAutoField(primary_key=True, db_column='cus_id')
+    cur_id = models.ForeignKey('Curso', on_delete=models.PROTECT, null=False, db_column='cur_id')
+    ram_id = models.ForeignKey(Rama, on_delete=models.PROTECT, null=True, db_column='ram_id')
+    cus_seccion = models.IntegerField(null=False, db_column='cus_seccion')
+    cus_cant_participante = models.IntegerField(null=False, db_column='cus_cant_participante')
 
     class Meta:
         db_table = 'curso_seccion'
 
 class Curso_Formador(models.Model):
-    CUF_ID = models.BigAutoField(primary_key=True, db_column='cuf_id')
-    CUR_ID = models.ForeignKey('Curso', on_delete=models.PROTECT, null=False, db_column='cur_id')
-    PER_ID = models.ForeignKey(Persona, on_delete=models.PROTECT, null=False, db_column='per_id')
-    ROL_ID = models.ForeignKey(Rol, on_delete=models.PROTECT, null=False, db_column='rol_id')
-    CUS_ID = models.ForeignKey('Curso_Seccion', on_delete=models.PROTECT, null=False, db_column='cus_id')
-    CUO_DIRECTOR = models.BooleanField(default=False, null=False, db_column='cuo_director')
+    cuf_id = models.BigAutoField(primary_key=True, db_column='cuf_id')
+    cur_id = models.ForeignKey('Curso', on_delete=models.PROTECT, null=False, db_column='cur_id')
+    per_id = models.ForeignKey(Persona, on_delete=models.PROTECT, null=False, db_column='per_id')
+    rol_id = models.ForeignKey(Rol, on_delete=models.PROTECT, null=False, db_column='rol_id')
+    cus_id = models.ForeignKey('Curso_Seccion', on_delete=models.PROTECT, null=False, db_column='cus_id')
+    cuo_director = models.BooleanField(default=False, null=False, db_column='cuo_director')
 
     class Meta:
         db_table = 'curso_formador'

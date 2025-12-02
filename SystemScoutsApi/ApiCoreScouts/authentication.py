@@ -6,7 +6,7 @@ class UsuarioBackend(BaseBackend):
         if username is None or password is None:
             return None
         try:
-            user = Usuario.objects.get(USU_USERNAME=username)
+            user = Usuario.objects.get(usu_username=username)
             if user.check_password(password) and user.is_active:
                 return user
         except Usuario.DoesNotExist:

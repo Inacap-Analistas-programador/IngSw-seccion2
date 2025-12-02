@@ -3,11 +3,11 @@ from ..Models.archivo_model import *
 
 
 class ArchivoFilter(django_filters.FilterSet):
-	descripcion = django_filters.CharFilter(field_name='ARC_DESCRIPCION', lookup_expr='icontains')
-	tipo_descripcion = django_filters.CharFilter(field_name='TAR_ID__TAR_DESCRIPCION', lookup_expr='icontains')
-	usuario_crea = django_filters.CharFilter(field_name='USU_ID_CREA__USU_USERNAME', lookup_expr='icontains')
-	fecha = django_filters.DateFromToRangeFilter(field_name='ARC_FECHA_HORA')
-	vigente = django_filters.BooleanFilter(field_name='ARC_VIGENTE')
+	descripcion = django_filters.CharFilter(field_name='arc_descripcion', lookup_expr='icontains')
+	tipo_descripcion = django_filters.CharFilter(field_name='tar_id__tar_descripcion', lookup_expr='icontains')
+	usuario_crea = django_filters.CharFilter(field_name='usu_id_crea__usu_username', lookup_expr='icontains')
+	fecha = django_filters.DateFromToRangeFilter(field_name='arc_fecha_hora')
+	vigente = django_filters.BooleanFilter(field_name='arc_vigente')
 
 	class Meta:
 		model = Archivo
@@ -15,8 +15,8 @@ class ArchivoFilter(django_filters.FilterSet):
 
 
 class ArchivoCursoFilter(django_filters.FilterSet):
-	archivo_id = django_filters.NumberFilter(field_name='ARC_ID__ARC_ID')
-	seccion_id = django_filters.NumberFilter(field_name='CUS_ID__CUS_ID')
+	archivo_id = django_filters.NumberFilter(field_name='arc_id__arc_id')
+	seccion_id = django_filters.NumberFilter(field_name='cus_id__cus_id')
 
 	class Meta:
 		model = Archivo_Curso
@@ -24,9 +24,9 @@ class ArchivoCursoFilter(django_filters.FilterSet):
 
 
 class ArchivoPersonaFilter(django_filters.FilterSet):
-	archivo_id = django_filters.NumberFilter(field_name='ARC_ID__ARC_ID')
-	persona_id = django_filters.NumberFilter(field_name='PER_ID__PER_ID')
-	seccion_id = django_filters.NumberFilter(field_name='CUS_ID__CUS_ID')
+	archivo_id = django_filters.NumberFilter(field_name='arc_id__arc_id')
+	persona_id = django_filters.NumberFilter(field_name='per_id__per_id')
+	seccion_id = django_filters.NumberFilter(field_name='cus_id__cus_id')
 
 	class Meta:
 		model = Archivo_Persona

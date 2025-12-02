@@ -11,12 +11,12 @@ class ArchivoViewSet(viewsets.ModelViewSet):
     permission_classes = [PerfilPermission]
     APP_NAME = "Archivos"
     ACTION_PERMISSIONS = {
-        'list': ('PEA_CONSULTAR',),
-        'retrieve': ('PEA_CONSULTAR',),
-        'create': ('PEA_INGRESAR',),
-        'update': ('PEA_MODIFICAR',),
-        'partial_update': ('PEA_MODIFICAR',),
-        'destroy': ('PEA_ELIMINAR',),
+        'list': ('pea_consultar',),
+        'retrieve': ('pea_consultar',),
+        'create': ('pea_ingresar',),
+        'update': ('pea_modificar',),
+        'partial_update': ('pea_modificar',),
+        'destroy': ('pea_eliminar',),
     }
 
 class ArchivoCursoViewSet(viewsets.ModelViewSet):

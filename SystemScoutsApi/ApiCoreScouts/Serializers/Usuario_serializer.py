@@ -4,10 +4,10 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
-    username_field = 'USU_USERNAME'
-    # Aceptar ambos nombres en el payload para compatibilidad (frontend puede enviar 'username' o 'USU_USERNAME')
+    username_field = 'usu_username'
+    # Aceptar ambos nombres en el payload para compatibilidad (frontend puede enviar 'username' o 'usu_username')
     username = serializers.CharField(write_only=True, required=False)
-    USU_USERNAME = serializers.CharField(write_only=True, required=False)
+    usu_username = serializers.CharField(write_only=True, required=False)
 
     @staticmethod
     def _build_perfil_payload(perfil):
@@ -23,25 +23,25 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
         aplicaciones = []
         for perfil_aplicacion in (
-            perfil.perfil_aplicacion_set.select_related('APL_ID').all()
+            perfil.perfil_aplicacion_set.select_related('apl_id').all()
         ):
-            app = perfil_aplicacion.APL_ID
+            app = perfil_aplicacion.apl_id
             aplicaciones.append({
-                'APL_ID': app.APL_ID,
-                'APL_DESCRIPCION': app.APL_DESCRIPCION,
-                'APL_VIGENTE': app.APL_VIGENTE,
+                'apl_id': app.apl_id,
+                'apl_descripcion': app.apl_descripcion,
+                'apl_vigente': app.apl_vigente,
                 'permisos': {
-                    'PEA_INGRESAR': perfil_aplicacion.PEA_INGRESAR,
-                    'PEA_MODIFICAR': perfil_aplicacion.PEA_MODIFICAR,
-                    'PEA_ELIMINAR': perfil_aplicacion.PEA_ELIMINAR,
-                    'PEA_CONSULTAR': perfil_aplicacion.PEA_CONSULTAR,
+                    'pea_ingresar': perfil_aplicacion.pea_ingresar,
+                    'pea_modificar': perfil_aplicacion.pea_modificar,
+                    'pea_eliminar': perfil_aplicacion.pea_eliminar,
+                    'pea_consultar': perfil_aplicacion.pea_consultar,
                 },
             })
 
         perfil_payload = {
-            'PEL_ID': perfil.PEL_ID,
-            'PEL_DESCRIPCION': getattr(perfil, 'PEL_DESCRIPCION', None),
-            'PEL_VIGENTE': getattr(perfil, 'PEL_VIGENTE', None),
+            'pel_id': perfil.pel_id,
+            'pel_descripcion': getattr(perfil, 'pel_descripcion', None),
+            'pel_vigente': getattr(perfil, 'pel_vigente', None),
         }
         return perfil_payload, aplicaciones
 
@@ -49,11 +49,11 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     def get_token(cls, user):
         token = super().get_token(user)
 
-        perfil_payload, aplicaciones = cls._build_perfil_payload(getattr(user, 'PEL_ID', None))
+        perfil_payload, aplicaciones = cls._build_perfil_payload(getattr(user, 'pel_id', None))
 
-        token['USU_ID'] = user.USU_ID
-        token['USU_USERNAME'] = user.USU_USERNAME
-        token['USU_VIGENTE'] = user.USU_VIGENTE
+        token['usu_id'] = user.usu_id
+        token['usu_username'] = user.usu_username
+        token['usu_vigente'] = user.usu_vigente
         token['perfil'] = perfil_payload
         token['aplicaciones'] = aplicaciones
 
@@ -65,7 +65,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         Añadimos registros adicionales para depuración y soporte para ambos nombres de campo.
         """
 
-        # Compatibilidad: permitir que el cliente envíe 'username' o 'USU_USERNAME'
+        # Compatibilidad: permitir que el cliente envíe 'username' o 'usu_username'
         if self.username_field not in attrs and 'username' in attrs:
             attrs[self.username_field] = attrs.get('username')
 
@@ -87,8 +87,8 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
             if auth_user is None:
                 # inspeccionar posible causa
                 try:
-                    u = Usuario.objects.get(USU_USERNAME=uname)
-                    print(f"[Auth] Found user USU_VIGENTE={u.USU_VIGENTE}, password_hash={u.password[:60]}...")
+                    u = Usuario.objects.get(usu_username=uname)
+                    print(f"[Auth] Found user usu_vigente={u.usu_vigente}, password_hash={u.password[:60]}...")
                     try:
                         print(f"[Auth] check_password => {u.check_password(pwd)}")
                     except Exception as e:
@@ -101,19 +101,19 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         data = super().validate(attrs)
         user = self.user
 
-        perfil_payload, aplicaciones = self._build_perfil_payload(getattr(user, 'PEL_ID', None))
+        perfil_payload, aplicaciones = self._build_perfil_payload(getattr(user, 'pel_id', None))
 
         data.update({
-            'USU_ID': user.USU_ID,
-            'USU_USERNAME': user.USU_USERNAME,
-            'USU_VIGENTE': user.USU_VIGENTE,
+            'usu_id': user.usu_id,
+            'usu_username': user.usu_username,
+            'usu_vigente': user.usu_vigente,
             'perfil': perfil_payload,
             'aplicaciones': aplicaciones,
         })
         return data
 
 class LoginSerializer(serializers.Serializer):
-    USU_USERNAME = serializers.CharField(min_length=3, max_length=150)
+    usu_username = serializers.CharField(min_length=3, max_length=150)
     password = serializers.CharField(write_only=True, min_length=3)
 
 
@@ -125,8 +125,8 @@ class UsuarioSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Usuario
-        fields = ['USU_ID', 'PEL_ID', 'USU_USERNAME', 'USU_RUTA_FOTO', 'USU_VIGENTE', 'password', 'raw_password']
-        read_only_fields = ('USU_ID', 'raw_password')
+        fields = ['usu_id', 'pel_id', 'usu_username', 'usu_ruta_foto', 'usu_vigente', 'password', 'raw_password']
+        read_only_fields = ('usu_id', 'raw_password')
 
     def create(self, validated_data):
         password = validated_data.pop('password', None)

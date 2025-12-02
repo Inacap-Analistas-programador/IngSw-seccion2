@@ -29,14 +29,13 @@ class PagoPersonaViewSet(viewsets.ModelViewSet):
     filterset_class = PagoPersonaFilter
     # Allow searching by persona name, last name, run and email via `search` query param
     search_fields = [
-        'PER_ID__PER_NOMBRES',
-        'PER_ID__PER_APELPTA',
-        'PER_ID__PER_RUN',
-        'PER_ID__PER_MAIL'
+        'per_id__per_nombres',
+        'per_id__per_apelpta',
+        'per_id__per_run',
+        'per_id__per_mail'
     ]
-    ordering_fields = ['PAP_FECHA_HORA', 'PAP_VALOR']
+    ordering_fields = ['pap_fecha_hora', 'pap_valor']
 
 class PrepagoViewSet(viewsets.ModelViewSet):
     queryset = Prepago.objects.all()
     serializer_class = MP_S.PrepagoSerializer
-

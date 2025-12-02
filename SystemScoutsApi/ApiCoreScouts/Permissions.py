@@ -6,7 +6,7 @@ from .Models.usuario_model import Perfil_Aplicacion
 class PerfilPermission(BasePermission):
     """
     Permite acceso según el perfil y la aplicación.
-    Se puede extender para revisar PEA_INGRESAR, MODIFICAR, etc.
+    Se puede extender para revisar pea_ingresar, modificar, etc.
     """
     def has_permission(self, request, view):
         # Debe estar autenticado
@@ -14,31 +14,31 @@ class PerfilPermission(BasePermission):
             return False
 
         # Debe estar vigente
-        if not getattr(request.user, 'USU_VIGENTE', False):
+        if not getattr(request.user, 'usu_vigente', False):
             return False
 
-        # Bypass: si es superuser (USU_IS_SUPERUSER True) permitir todo sin revisar flags.
+        # Bypass: si es superuser (usu_is_superuser True) permitir todo sin revisar flags.
         # Se mantiene estricto para otros usuarios (staff no bypass).
-        if getattr(request.user, 'USU_IS_SUPERUSER', False):
+        if getattr(request.user, 'usu_is_superuser', False):
             return True
 
-        perfil = getattr(request.user, 'PEL_ID', None)
+        perfil = getattr(request.user, 'pel_id', None)
         if not perfil:
             return False
 
-        app_name = getattr(view, 'APP_NAME', None)
+        app_name = getattr(view, 'app_name', None)
         # Si la vista no tiene APP_NAME, permitir (solo valida autenticación básica)
         if not app_name:
             return True
 
         try:
-            perfil_aplicacion = perfil.perfil_aplicacion_set.select_related('APL_ID').get(
-                APL_ID__APL_DESCRIPCION=app_name
+            perfil_aplicacion = perfil.perfil_aplicacion_set.select_related('apl_id').get(
+                apl_id__apl_descripcion=app_name
             )
         except Perfil_Aplicacion.DoesNotExist:
             # Debug: no existe relación perfil-aplicación
             try:
-                print(f"[PerfilPermission] Perfil_Aplicacion missing for perfil={perfil.PEL_ID} app={app_name}")
+                print(f"[PerfilPermission] Perfil_Aplicacion missing for perfil={perfil.pel_id} app={app_name}")
             except Exception:
                 pass
             return False
@@ -60,13 +60,13 @@ class PerfilPermission(BasePermission):
             else:
                 # Fallback por método: métodos de sólo lectura usan CONSULTAR
                 if request.method in ('GET', 'HEAD', 'OPTIONS'):
-                    required_permissions = ('PEA_CONSULTAR',)
+                    required_permissions = ('pea_consultar',)
                 elif request.method == 'POST':
-                    required_permissions = ('PEA_INGRESAR',)
+                    required_permissions = ('pea_ingresar',)
                 elif request.method in ('PUT', 'PATCH'):
-                    required_permissions = ('PEA_MODIFICAR',)
+                    required_permissions = ('pea_modificar',)
                 elif request.method == 'DELETE':
-                    required_permissions = ('PEA_ELIMINAR',)
+                    required_permissions = ('pea_eliminar',)
                 else:
                     # Método desconocido: denegar
                     return False
@@ -78,11 +78,11 @@ class PerfilPermission(BasePermission):
         # Validar flags en Perfil_Aplicacion
         for perm_name in required_permissions:
             if not hasattr(perfil_aplicacion, perm_name):
-                try: print(f"[PerfilPermission] perm flag '{perm_name}' missing on Perfil_Aplicacion id={getattr(perfil_aplicacion,'PEA_ID',None)}")
+                try: print(f"[PerfilPermission] perm flag '{perm_name}' missing on Perfil_Aplicacion id={getattr(perfil_aplicacion,'pea_id',None)}")
                 except Exception: pass
                 return False
             if not getattr(perfil_aplicacion, perm_name):
-                try: print(f"[PerfilPermission] perm flag '{perm_name}'=False for perfil_aplicacion id={getattr(perfil_aplicacion,'PEA_ID',None)}")
+                try: print(f"[PerfilPermission] perm flag '{perm_name}'=False for perfil_aplicacion id={getattr(perfil_aplicacion,'pea_id',None)}")
                 except Exception: pass
                 return False
 

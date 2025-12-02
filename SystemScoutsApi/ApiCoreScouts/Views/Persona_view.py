@@ -26,7 +26,7 @@ class PersonaViewSet(viewsets.ModelViewSet):
         """Obtener todos los cursos de una persona"""
         try:
             persona = self.get_object()
-            cursos_persona = Persona_Curso.objects.filter(PER_ID=persona.PER_ID)
+            cursos_persona = Persona_Curso.objects.filter(per_id=persona.per_id)
             serializer = MU_S.PersonaCursoSerializer(cursos_persona, many=True)
             return Response(serializer.data)
         except Exception as e:

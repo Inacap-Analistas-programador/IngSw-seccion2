@@ -21,7 +21,7 @@ class UsuarioManager(BaseUserManager):
         extra_fields.setdefault('usu_vigente', True)
 
         if 'pel_id' not in extra_fields or extra_fields['pel_id'] is None:
-            perfil_admin, _ = Perfil.objects.get_or_create(PEL_DESCRIPCION='Administrador', defaults={'pel_vigente': True})
+            perfil_admin, _ = Perfil.objects.get_or_create(pel_descripcion='Administrador', defaults={'pel_vigente': True})
             extra_fields['pel_id'] = perfil_admin
 
         return self.create_user(usu_username, password, **extra_fields)
@@ -31,7 +31,7 @@ class UsuarioManager(BaseUserManager):
 
 class Usuario(AbstractBaseUser, PermissionsMixin):
     usu_id = models.BigAutoField(primary_key=True, db_column='usu_id')
-    pel_id = models.ForeignKey('Perfil', on_delete=models.PROTECT, null=False, db_column='pel_id')
+    pel_id = models.ForeignKey('Perfil',on_delete=models.PROTECT, null=False, db_column='pel_id')
     usu_username = models.CharField(max_length=100, unique=True, null=False, db_column='usu_username')
     password = models.CharField(max_length=128, null=False, db_column='usu_password')
     last_login = None
@@ -48,7 +48,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     @property
     def is_active(self):
         return self.usu_vigente
-
+    
     @property
     def id(self):
         return self.usu_id
@@ -71,29 +71,29 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         db_table = 'usuario'
 
 class Perfil(models.Model):
-    PEL_ID = models.BigAutoField(primary_key=True, db_column='pel_id')
-    PEL_DESCRIPCION = models.CharField(max_length=50, null=False, db_column='pel_descripcion')
-    PEL_VIGENTE = models.BooleanField(default=True, null=False, db_column='pel_vigente')
+    pel_id = models.BigAutoField(primary_key=True, db_column='pel_id')
+    pel_descripcion = models.CharField(max_length=50, null=False, db_column='pel_descripcion')
+    pel_vigente = models.BooleanField(default=True, null=False, db_column='pel_vigente')
 
     class Meta:
         db_table = 'perfil'
 
 class Perfil_Aplicacion(models.Model):
-    PEA_ID = models.BigAutoField(primary_key=True, db_column='pea_id')
-    PEL_ID = models.ForeignKey('Perfil',on_delete=models.PROTECT, null=False, db_column='pel_id')
-    APL_ID = models.ForeignKey('Aplicacion',on_delete=models.PROTECT, null=False, db_column='apl_id')
-    PEA_INGRESAR = models.BooleanField(default=False, null=False, db_column='pea_ingresar')
-    PEA_MODIFICAR = models.BooleanField(default=False, null=False, db_column='pea_modificar')
-    PEA_ELIMINAR = models.BooleanField(default=False, null=False, db_column='pea_eliminar')
-    PEA_CONSULTAR = models.BooleanField(default=False, null=False, db_column='pea_consultar')
+    pea_id = models.BigAutoField(primary_key=True, db_column='pea_id')
+    pel_id = models.ForeignKey('Perfil',on_delete=models.PROTECT, null=False, db_column='pel_id')
+    apl_id = models.ForeignKey('Aplicacion',on_delete=models.PROTECT, null=False, db_column='apl_id')
+    pea_ingresar = models.BooleanField(default=False, null=False, db_column='pea_ingresar')
+    pea_modificar = models.BooleanField(default=False, null=False, db_column='pea_modificar')
+    pea_eliminar = models.BooleanField(default=False, null=False, db_column='pea_eliminar')
+    pea_consultar = models.BooleanField(default=False, null=False, db_column='pea_consultar')
 
     class Meta:
         db_table = 'perfil_aplicacion'
 
 class Aplicacion(models.Model):
-    APL_ID = models.BigAutoField(primary_key=True, db_column='apl_id')
-    APL_DESCRIPCION = models.CharField(max_length=50, null=False, db_column='apl_descripcion')
-    APL_VIGENTE = models.BooleanField(default=True, null=False, db_column='apl_vigente')
+    apl_id = models.BigAutoField(primary_key=True, db_column='apl_id')
+    apl_descripcion = models.CharField(max_length=50, null=False, db_column='apl_descripcion')
+    apl_vigente = models.BooleanField(default=True, null=False, db_column='apl_vigente')
 
     class Meta:
         db_table = 'aplicacion'

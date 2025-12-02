@@ -3,13 +3,13 @@ from ..Models.pago_model import *
 
 
 class PagoPersonaFilter(django_filters.FilterSet):
-	persona_run = django_filters.CharFilter(field_name='PER_ID__PER_RUN', lookup_expr='iexact', label='RUN de la persona')
-	curso_id = django_filters.NumberFilter(field_name='CUR_ID__CUR_ID', label='ID del curso')
-	usuario_id = django_filters.NumberFilter(field_name='USU_ID__USU_ID', label='ID de usuario')
-	tipo = django_filters.NumberFilter(field_name='PAP_TIPO', label='Tipo de pago (1=Ingreso,2=Egreso)')
-	estado = django_filters.NumberFilter(field_name='PAP_ESTADO', label='Estado de pago')
-	fecha = django_filters.DateFromToRangeFilter(field_name='PAP_FECHA_HORA', label='Rango de fecha/hora')
-	valor = django_filters.RangeFilter(field_name='PAP_VALOR', label='Rango de valor')
+	persona_run = django_filters.CharFilter(field_name='per_id__per_run', lookup_expr='iexact', label='RUN de la persona')
+	curso_id = django_filters.NumberFilter(field_name='cur_id__cur_id', label='ID del curso')
+	usuario_id = django_filters.NumberFilter(field_name='usu_id__usu_id', label='ID de usuario')
+	tipo = django_filters.NumberFilter(field_name='pap_tipo', label='Tipo de pago (1=Ingreso,2=Egreso)')
+	estado = django_filters.NumberFilter(field_name='pap_estado', label='Estado de pago')
+	fecha = django_filters.DateFromToRangeFilter(field_name='pap_fecha_hora', label='Rango de fecha/hora')
+	valor = django_filters.RangeFilter(field_name='pap_valor', label='Rango de valor')
 
 	class Meta:
 		model = Pago_Persona
@@ -17,11 +17,11 @@ class PagoPersonaFilter(django_filters.FilterSet):
 
 
 class ComprobantePagoFilter(django_filters.FilterSet):
-	usuario_id = django_filters.NumberFilter(field_name='USU_ID__USU_ID')
-	curso_id = django_filters.NumberFilter(field_name='PEC_ID__CUR_ID')
-	numero = django_filters.NumberFilter(field_name='CPA_NUMERO')
-	fecha = django_filters.DateFromToRangeFilter(field_name='CPA_FECHA', label='Rango de fecha')
-	valor = django_filters.RangeFilter(field_name='CPA_VALOR')
+	usuario_id = django_filters.NumberFilter(field_name='usu_id__usu_id')
+	curso_id = django_filters.NumberFilter(field_name='pec_id__cur_id')
+	numero = django_filters.NumberFilter(field_name='cpa_numero')
+	fecha = django_filters.DateFromToRangeFilter(field_name='cpa_fecha', label='Rango de fecha')
+	valor = django_filters.RangeFilter(field_name='cpa_valor')
 
 	class Meta:
 		model = Comprobante_Pago
@@ -29,8 +29,8 @@ class ComprobantePagoFilter(django_filters.FilterSet):
 
 
 class PagoComprobanteFilter(django_filters.FilterSet):
-	pago_persona_id = django_filters.NumberFilter(field_name='PAP_ID__PAP_ID', label='ID de pago de persona')
-	comprobante_pago_id = django_filters.NumberFilter(field_name='CPA_ID__CPA_ID', label='ID de comprobante de pago')
+	pago_persona_id = django_filters.NumberFilter(field_name='pap_id__pap_id', label='ID de pago de persona')
+	comprobante_pago_id = django_filters.NumberFilter(field_name='cpa_id__cpa_id', label='ID de comprobante de pago')
 
 	class Meta:
 		model = Pago_Comprobante
@@ -38,10 +38,10 @@ class PagoComprobanteFilter(django_filters.FilterSet):
 
 
 class PrepagoFilter(django_filters.FilterSet):
-	persona_id = django_filters.NumberFilter(field_name='PER_ID__PER_ID')
-	curso_id = django_filters.NumberFilter(field_name='CUR_ID__CUR_ID')
-	valor = django_filters.RangeFilter(field_name='PPA_VALOR')
-	vigente = django_filters.BooleanFilter(field_name='PPA_VIGENTE')
+	persona_id = django_filters.NumberFilter(field_name='per_id__per_id')
+	curso_id = django_filters.NumberFilter(field_name='cur_id__cur_id')
+	valor = django_filters.RangeFilter(field_name='ppa_valor')
+	vigente = django_filters.BooleanFilter(field_name='ppa_vigente')
 
 	class Meta:
 		model = Prepago
@@ -49,8 +49,8 @@ class PrepagoFilter(django_filters.FilterSet):
 
 
 class ProveedorFilter(django_filters.FilterSet):
-	descripcion = django_filters.CharFilter(field_name='PRV_DESCRIPCION', lookup_expr='icontains')
-	vigente = django_filters.BooleanFilter(field_name='PRV_VIGENTE')
+	descripcion = django_filters.CharFilter(field_name='prv_descripcion', lookup_expr='icontains')
+	vigente = django_filters.BooleanFilter(field_name='prv_vigente')
 
 	class Meta:
 		model = Proveedor

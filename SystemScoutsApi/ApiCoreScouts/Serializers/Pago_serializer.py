@@ -20,13 +20,13 @@ class PagoComprobanteSerializer(serializers.ModelSerializer):
     
 class PagoPersonaSerializer(serializers.ModelSerializer):
     # Nested, read-only representations for convenience in the frontend
-    persona = PersonaSerializer(source='PER_ID', read_only=True)
-    curso = CursoSerializer(source='CUR_ID', read_only=True)
+    persona = PersonaSerializer(source='per_id', read_only=True)
+    curso = CursoSerializer(source='cur_id', read_only=True)
 
     class Meta:
         model = Pago_Persona
         fields = '__all__'
-        # Keep default PK-related fields (PER_ID, CUR_ID, USU_ID) for writes
+        # Keep default PK-related fields (per_id, cur_id, usu_id) for writes
         # and expose nested read-only fields (persona, curso) for reads.
     
 class PrepagoSerializer(serializers.ModelSerializer):

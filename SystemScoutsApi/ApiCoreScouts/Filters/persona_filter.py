@@ -2,23 +2,23 @@ import django_filters
 from ..Models.persona_model import *
 
 class PersonaFilter(django_filters.FilterSet):
-    nombre = django_filters.CharFilter(field_name='PER_NOMBRES',lookup_expr='icontains',
+    nombre = django_filters.CharFilter(field_name='per_nombres',lookup_expr='icontains',
         label='Filtrar por nombre')
-    apellido = django_filters.CharFilter(field_name='PER_APELPTA',lookup_expr='icontains',
+    apellido = django_filters.CharFilter(field_name='per_apelpta',lookup_expr='icontains',
         label='Filtrar por apellido')
-    run = django_filters.CharFilter(field_name='PER_RUN',lookup_expr='exact',
+    run = django_filters.CharFilter(field_name='per_run',lookup_expr='exact',
         label='Filtrar por RUN')
-    dv = django_filters.CharFilter(field_name='PER_DV',lookup_expr='iexact',
+    dv = django_filters.CharFilter(field_name='per_dv',lookup_expr='iexact',
         label='Filtrar por dígito verificador')
-    comuna_nombre = django_filters.CharFilter(field_name='COM_ID__COM_DESCRIPCION',lookup_expr='icontains',
+    comuna_nombre = django_filters.CharFilter(field_name='com_id__com_descripcion',lookup_expr='icontains',
         label='Filtrar por nombre de comuna')
-    comuna_id = django_filters.NumberFilter(field_name='COM_ID__COM_ID',
+    comuna_id = django_filters.NumberFilter(field_name='com_id__com_id',
         label='Filtrar por ID de comuna')
-    usuario_nombre = django_filters.CharFilter(field_name='USU_ID__USU_USERNAME',lookup_expr='icontains',
+    usuario_nombre = django_filters.CharFilter(field_name='usu_id__usu_username',lookup_expr='icontains',
         label='Filtrar por nombre de usuario')
-    usuario_id = django_filters.NumberFilter(field_name='USU_ID__USU_ID',
+    usuario_id = django_filters.NumberFilter(field_name='usu_id__usu_id',
         label='Filtrar por ID de usuario')
-    vigente = django_filters.BooleanFilter(field_name='PER_VIGENTE',
+    vigente = django_filters.BooleanFilter(field_name='per_vigente',
         label='Filtrar por vigencia')
 
     class Meta:
@@ -43,61 +43,61 @@ class PersonaCursoFilter(django_filters.FilterSet):
 
     # --- Filtros sobre Persona ---
     run = django_filters.CharFilter(
-        field_name='PER_ID__PER_RUN',
+        field_name='per_id__per_run',
         lookup_expr='iexact',
         label='Filtrar por RUN (sin DV)'
     )
     dv = django_filters.CharFilter(
-        field_name='PER_ID__PER_DV',
+        field_name='per_id__per_dv',
         lookup_expr='iexact',
         label='Filtrar por dígito verificador'
     )
     nombre_persona = django_filters.CharFilter(
-        field_name='PER_ID__PER_NOMBRES',
+        field_name='per_id__per_nombres',
         lookup_expr='icontains',
         label='Filtrar por nombre de persona'
     )
     apellido_persona = django_filters.CharFilter(
-        field_name='PER_ID__PER_APELPTA',
+        field_name='per_id__per_apelpta',
         lookup_expr='icontains',
         label='Filtrar por apellido de persona'
     )
 
     # --- Filtro sobre Curso ---
     curso_codigo = django_filters.CharFilter(
-        field_name='CUS_ID__CUR_ID__CUR_CODIGO',
+        field_name='cus_id__cur_id__cur_codigo',
         lookup_expr='iexact',
         label='Filtrar por código de curso (ej: CUR-0778)'
     )
 
     # --- Filtros sobre relaciones directas ---
     rol_nombre = django_filters.CharFilter(
-        field_name='ROL_ID__ROL_DESCRIPCION',
+        field_name='rol_id__rol_descripcion',
         lookup_expr='icontains',
         label='Filtrar por nombre de rol'
     )
     alimentacion_nombre = django_filters.CharFilter(
-        field_name='ALI_ID__ALI_DESCRIPCION',
+        field_name='ali_id__ali_descripcion',
         lookup_expr='icontains',
         label='Filtrar por tipo de alimentación'
     )
     nivel_nombre = django_filters.CharFilter(
-        field_name='NIV_ID__NIV_DESCRIPCION',
+        field_name='niv_id__niv_descripcion',
         lookup_expr='icontains',
         label='Filtrar por nivel'
     )
 
     # --- Filtros booleanos ---
     registrado = django_filters.BooleanFilter(
-        field_name='PEC_REGISTRO',
+        field_name='pec_registro',
         label='Filtrar por registro completado'
     )
     acreditado = django_filters.BooleanFilter(
-        field_name='PEC_ACREDITACION',
+        field_name='pec_acreditacion',
         label='Filtrar por acreditación'
     )
     correo_qr_enviado = django_filters.BooleanFilter(
-        field_name='PEC_ENVIO_CORREO_QR',
+        field_name='pec_envio_correo_qr',
         label='Filtrar por correo QR enviado'
     )
 
@@ -121,21 +121,21 @@ class PersonaCursoFilter(django_filters.FilterSet):
 class PersonaGrupoFilter(django_filters.FilterSet):
     """Filtros para Persona_Grupo"""
     persona_run = django_filters.CharFilter(
-        field_name='PER_ID__PER_RUN',
+        field_name='per_id__per_run',
         lookup_expr='iexact',
         label='Filtrar por RUN de persona'
     )
     grupo_id = django_filters.NumberFilter(
-        field_name='GRU_ID__GRU_ID',
+        field_name='gru_id__gru_id',
         label='Filtrar por ID de grupo'
     )
     grupo_nombre = django_filters.CharFilter(
-        field_name='GRU_ID__GRU_DESCRIPCION',
+        field_name='gru_id__gru_descripcion',
         lookup_expr='icontains',
         label='Filtrar por nombre de grupo'
     )
     vigente = django_filters.BooleanFilter(
-        field_name='PEG_VIGENTE',
+        field_name='peg_vigente',
         label='Filtrar por vigencia'
     )
 
@@ -147,25 +147,25 @@ class PersonaGrupoFilter(django_filters.FilterSet):
 class PersonaFormadorFilter(django_filters.FilterSet):
     """Filtros para Persona_Formador"""
     persona_run = django_filters.CharFilter(
-        field_name='PER_ID__PER_RUN',
+        field_name='per_id__per_run',
         lookup_expr='iexact',
         label='Filtrar por RUN de persona'
     )
     persona_nombre = django_filters.CharFilter(
-        field_name='PER_ID__PER_NOMBRES',
+        field_name='per_id__per_nombres',
         lookup_expr='icontains',
         label='Filtrar por nombre'
     )
     habilidad_1 = django_filters.BooleanFilter(
-        field_name='PEF_HAB_1',
+        field_name='pef_hab_1',
         label='Tiene habilidad 1'
     )
     habilidad_2 = django_filters.BooleanFilter(
-        field_name='PEF_HAB_2',
+        field_name='pef_hab_2',
         label='Tiene habilidad 2'
     )
     verificado = django_filters.BooleanFilter(
-        field_name='PEF_VERIF',
+        field_name='pef_verif',
         label='Filtrar por verificación'
     )
 
@@ -177,29 +177,29 @@ class PersonaFormadorFilter(django_filters.FilterSet):
 class PersonaIndividualFilter(django_filters.FilterSet):
     """Filtros para Persona_Individual"""
     persona_run = django_filters.CharFilter(
-        field_name='PER_ID__PER_RUN',
+        field_name='per_id__per_run',
         lookup_expr='iexact',
         label='Filtrar por RUN'
     )
     cargo_id = django_filters.NumberFilter(
-        field_name='CAR_ID__CAR_ID',
+        field_name='car_id__car_id',
         label='Filtrar por ID de cargo'
     )
     cargo_nombre = django_filters.CharFilter(
-        field_name='CAR_ID__CAR_DESCRIPCION',
+        field_name='car_id__car_descripcion',
         lookup_expr='icontains',
         label='Filtrar por nombre de cargo'
     )
     distrito_id = django_filters.NumberFilter(
-        field_name='DIS_ID__DIS_ID',
+        field_name='dis_id__dis_id',
         label='Filtrar por ID de distrito'
     )
     zona_id = django_filters.NumberFilter(
-        field_name='ZON_ID__ZON_ID',
+        field_name='zon_id__zon_id',
         label='Filtrar por ID de zona'
     )
     vigente = django_filters.BooleanFilter(
-        field_name='PEI_VIGENTE',
+        field_name='pei_vigente',
         label='Filtrar por vigencia'
     )
 
@@ -211,25 +211,25 @@ class PersonaIndividualFilter(django_filters.FilterSet):
 class PersonaNivelFilter(django_filters.FilterSet):
     """Filtros para Persona_Nivel"""
     persona_run = django_filters.CharFilter(
-        field_name='PER_ID__PER_RUN',
+        field_name='per_id__per_run',
         lookup_expr='iexact',
         label='Filtrar por RUN'
     )
     nivel_id = django_filters.NumberFilter(
-        field_name='NIV_ID__NIV_ID',
+        field_name='niv_id__niv_id',
         label='Filtrar por ID de nivel'
     )
     nivel_nombre = django_filters.CharFilter(
-        field_name='NIV_ID__NIV_DESCRIPCION',
+        field_name='niv_id__niv_descripcion',
         lookup_expr='icontains',
         label='Filtrar por nombre de nivel'
     )
     rama_id = django_filters.NumberFilter(
-        field_name='RAM_ID__RAM_ID',
+        field_name='ram_id__ram_id',
         label='Filtrar por ID de rama'
     )
     rama_nombre = django_filters.CharFilter(
-        field_name='RAM_ID__RAM_DESCRIPCION',
+        field_name='ram_id__ram_descripcion',
         lookup_expr='icontains',
         label='Filtrar por nombre de rama'
     )
@@ -242,29 +242,29 @@ class PersonaNivelFilter(django_filters.FilterSet):
 class PersonaEstadoCursoFilter(django_filters.FilterSet):
     """Filtros para Persona_Estado_Curso"""
     usuario_id = django_filters.NumberFilter(
-        field_name='USU_ID__USU_ID',
+        field_name='usu_id__usu_id',
         label='Filtrar por ID de usuario'
     )
     persona_run = django_filters.CharFilter(
-        field_name='PEC_ID__PER_ID__PER_RUN',
+        field_name='pec_id__per_id__per_run',
         lookup_expr='iexact',
         label='Filtrar por RUN de persona'
     )
     curso_codigo = django_filters.CharFilter(
-        field_name='PEC_ID__CUS_ID__CUR_ID__CUR_CODIGO',
+        field_name='pec_id__cus_id__cur_id__cur_codigo',
         lookup_expr='iexact',
         label='Filtrar por código de curso'
     )
     estado = django_filters.NumberFilter(
-        field_name='PEU_ESTADO',
+        field_name='peu_estado',
         label='Filtrar por estado'
     )
     fecha = django_filters.DateFromToRangeFilter(
-        field_name='PEU_FECHA_HORA',
+        field_name='peu_fecha_hora',
         label='Rango de fecha/hora'
     )
     vigente = django_filters.BooleanFilter(
-        field_name='PEU_VIGENTE',
+        field_name='peu_vigente',
         label='Filtrar por vigencia'
     )
 
@@ -276,22 +276,22 @@ class PersonaEstadoCursoFilter(django_filters.FilterSet):
 class PersonaVehiculoFilter(django_filters.FilterSet):
     """Filtros para Persona_Vehiculo"""
     persona_run = django_filters.CharFilter(
-        field_name='PEC_ID__PER_ID__PER_RUN',
+        field_name='pec_id__per_id__per_run',
         lookup_expr='iexact',
         label='Filtrar por RUN de persona'
     )
     marca = django_filters.CharFilter(
-        field_name='PEV_MARCA',
+        field_name='pev_marca',
         lookup_expr='icontains',
         label='Filtrar por marca'
     )
     modelo = django_filters.CharFilter(
-        field_name='PEV_MODELO',
+        field_name='pev_modelo',
         lookup_expr='icontains',
         label='Filtrar por modelo'
     )
     patente = django_filters.CharFilter(
-        field_name='PEV_PATENTE',
+        field_name='pev_patente',
         lookup_expr='icontains',
         label='Filtrar por patente'
     )

@@ -3,64 +3,64 @@ from ..Models.curso_model import *
 
 
 class CursoFilter(django_filters.FilterSet):
-	codigo = django_filters.CharFilter(field_name='CUR_CODIGO', lookup_expr='icontains')
-	estado = django_filters.NumberFilter(field_name='CUR_ESTADO')
-	fecha_solicitud = django_filters.DateFromToRangeFilter(field_name='CUR_FECHA_SOLICITUD')
-	lugar_comuna = django_filters.CharFilter(field_name='COM_ID_LUGAR__COM_DESCRIPCION', lookup_expr='icontains')
-	tipo_curso = django_filters.NumberFilter(field_name='TCU_ID__TCU_ID')
-	administra = django_filters.NumberFilter(field_name='CUR_ADMINISTRA')
+	codigo = django_filters.CharFilter(field_name='cur_codigo', lookup_expr='icontains')
+	estado = django_filters.NumberFilter(field_name='cur_estado')
+	fecha_solicitud = django_filters.DateFromToRangeFilter(field_name='cur_fecha_solicitud')
+	lugar_comuna = django_filters.CharFilter(field_name='com_id_lugar__com_descripcion', lookup_expr='icontains')
+	tipo_curso = django_filters.NumberFilter(field_name='tcu_id__tcu_id')
+	administra = django_filters.NumberFilter(field_name='cur_administra')
 
 	class Meta:
 		model = Curso
 		fields = ['codigo', 'estado', 'fecha_solicitud', 'lugar_comuna', 'tipo_curso', 'administra']
 
 class CursoCuotaFilter(django_filters.FilterSet):
-	CUR_ID = django_filters.NumberFilter(field_name='CUR_ID')
-	tipo = django_filters.NumberFilter(field_name='CUU_TIPO')
-	fecha = django_filters.DateFromToRangeFilter(field_name='CUU_FECHA')
-	valor = django_filters.RangeFilter(field_name='CUU_VALOR')
+	cur_id = django_filters.NumberFilter(field_name='cur_id')
+	tipo = django_filters.NumberFilter(field_name='cuu_tipo')
+	fecha = django_filters.DateFromToRangeFilter(field_name='cuu_fecha')
+	valor = django_filters.RangeFilter(field_name='cuu_valor')
 
 	class Meta:
 		model = Curso_Cuota
-		fields = ['CUR_ID', 'tipo', 'fecha', 'valor']
+		fields = ['cur_id', 'tipo', 'fecha', 'valor']
 
 class CursoFechaFilter(django_filters.FilterSet):
-	CUR_ID = django_filters.NumberFilter(field_name='CUR_ID')
-	fecha_inicio = django_filters.DateFromToRangeFilter(field_name='CUF_FECHA_INICIO')
-	fecha_termino = django_filters.DateFromToRangeFilter(field_name='CUF_FECHA_TERMINO')
-	tipo = django_filters.NumberFilter(field_name='CUF_TIPO')
+	cur_id = django_filters.NumberFilter(field_name='cur_id')
+	fecha_inicio = django_filters.DateFromToRangeFilter(field_name='cuf_fecha_inicio')
+	fecha_termino = django_filters.DateFromToRangeFilter(field_name='cuf_fecha_termino')
+	tipo = django_filters.NumberFilter(field_name='cuf_tipo')
 
 	class Meta:
 		model = Curso_Fecha
-		fields = ['CUR_ID', 'fecha_inicio', 'fecha_termino', 'tipo']
+		fields = ['cur_id', 'fecha_inicio', 'fecha_termino', 'tipo']
 
 class CursoAlimentacionFilter(django_filters.FilterSet):
-	CUR_ID = django_filters.NumberFilter(field_name='CUR_ID')
+	cur_id = django_filters.NumberFilter(field_name='cur_id')
 
 	class Meta:
 		model = Curso_Alimentacion
-		fields = ['CUR_ID']
+		fields = ['cur_id']
 
 class CursoCoordinadorFilter(django_filters.FilterSet):
-	CUR_ID = django_filters.NumberFilter(field_name='CUR_ID')
-	persona_id = django_filters.NumberFilter(field_name='PER_ID__PER_ID')
-	cargo_id = django_filters.NumberFilter(field_name='CAR_ID__CAR_ID')
+	cur_id = django_filters.NumberFilter(field_name='cur_id')
+	persona_id = django_filters.NumberFilter(field_name='per_id__per_id')
+	cargo_id = django_filters.NumberFilter(field_name='car_id__car_id')
 
 	class Meta:
 		model = Curso_Coordinador
-		fields = ['CUR_ID', 'persona_id', 'cargo_id']
+		fields = ['cur_id', 'persona_id', 'cargo_id']
 
 class CursoSeccionFilter(django_filters.FilterSet):
-	CUR_ID = django_filters.NumberFilter(field_name='CUR_ID')
-	seccion = django_filters.NumberFilter(field_name='CUS_SECCION')
+	cur_id = django_filters.NumberFilter(field_name='cur_id')
+	seccion = django_filters.NumberFilter(field_name='cus_seccion')
 
 	class Meta:
 		model = Curso_Seccion
-		fields = ['CUR_ID', 'seccion']
+		fields = ['cur_id', 'seccion']
 	
 class CursoFormadorFilter(django_filters.FilterSet):
-	CUR_ID = django_filters.NumberFilter(field_name='CUR_ID')
+	cur_id = django_filters.NumberFilter(field_name='cur_id')
 
 	class Meta:
 		model = Curso_Formador
-		fields = ['CUR_ID']
+		fields = ['cur_id']

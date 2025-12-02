@@ -114,7 +114,7 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 SIMPLE_JWT = {
-    "USER_ID_FIELD": "USU_ID",
+    "USER_ID_FIELD": "usu_id",
     "USER_ID_CLAIM": "user_id",
 }
 
@@ -148,6 +148,6 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CORS_ALLOW_ORIGINS = [
+CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173"
 ]

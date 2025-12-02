@@ -11,7 +11,7 @@ class StandardResultsSetPagination(PageNumberPagination):
     max_page_size = 1000
 
 class CursoViewSet(viewsets.ModelViewSet):
-    queryset = Curso.objects.all().order_by('CUR_ESTADO', 'CUR_DESCRIPCION')
+    queryset = Curso.objects.all().order_by('cur_estado', 'cur_descripcion')
     serializer_class = MC_S.CursoSerializer
     filterset_class = CF.CursoFilter
     pagination_class = StandardResultsSetPagination
@@ -19,16 +19,16 @@ class CursoViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
     APP_NAME = "Cursos"
     ACTION_PERMISSIONS = {
-        'list': ('PEA_CONSULTAR',),
-        'retrieve': ('PEA_CONSULTAR',),
-        'create': ('PEA_INGRESAR',),
-        'update': ('PEA_MODIFICAR',),
-        'partial_update': ('PEA_MODIFICAR',),
-        'destroy': ('PEA_ELIMINAR',),
+        'list': ('pea_consultar',),
+        'retrieve': ('pea_consultar',),
+        'create': ('pea_ingresar',),
+        'update': ('pea_modificar',),
+        'partial_update': ('pea_modificar',),
+        'destroy': ('pea_eliminar',),
     }
 
 class CursoCuotaViewSet(viewsets.ModelViewSet):
-    queryset = Curso_Cuota.objects.all().order_by('CUU_FECHA', 'CUU_ID')
+    queryset = Curso_Cuota.objects.all().order_by('cuu_fecha', 'cuu_id')
     serializer_class = MC_S.CursoCuotaSerializer
     filterset_class = CF.CursoCuotaFilter
     pagination_class = StandardResultsSetPagination
@@ -46,7 +46,7 @@ class CursoFechaViewSet(viewsets.ModelViewSet):
     ACTION_PERMISSIONS = CursoViewSet.ACTION_PERMISSIONS
 
 class CursoAlimentacionViewSet(viewsets.ModelViewSet):
-    queryset = Curso_Alimentacion.objects.all().order_by('CUA_FECHA', 'CUA_TIEMPO', 'CUA_ID')
+    queryset = Curso_Alimentacion.objects.all().order_by('cua_fecha', 'cua_tiempo', 'cua_id')
     serializer_class = MC_S.CursoAlimentacionSerializer
     filterset_class = CF.CursoAlimentacionFilter
     pagination_class = StandardResultsSetPagination
@@ -56,7 +56,7 @@ class CursoAlimentacionViewSet(viewsets.ModelViewSet):
     ACTION_PERMISSIONS = CursoViewSet.ACTION_PERMISSIONS
 
 class CursoCoordinadorViewSet(viewsets.ModelViewSet):
-    queryset = Curso_Coordinador.objects.all().order_by('CUC_ID')
+    queryset = Curso_Coordinador.objects.all().order_by('cuc_id')
     serializer_class = MC_S.CursoCoordinadorSerializer
     filterset_class = CF.CursoCoordinadorFilter
     pagination_class = StandardResultsSetPagination
@@ -66,7 +66,7 @@ class CursoCoordinadorViewSet(viewsets.ModelViewSet):
     ACTION_PERMISSIONS = CursoViewSet.ACTION_PERMISSIONS
 
 class CursoSeccionViewSet(viewsets.ModelViewSet):
-    queryset = Curso_Seccion.objects.all().order_by('CUS_SECCION', 'CUS_ID')
+    queryset = Curso_Seccion.objects.all().order_by('cus_seccion', 'cus_id')
     serializer_class = MC_S.CursoSeccionSerializer
     filterset_class = CF.CursoSeccionFilter
     pagination_class = StandardResultsSetPagination
@@ -76,7 +76,7 @@ class CursoSeccionViewSet(viewsets.ModelViewSet):
     ACTION_PERMISSIONS = CursoViewSet.ACTION_PERMISSIONS
 
 class CursoFormadorViewSet(viewsets.ModelViewSet):
-    queryset = Curso_Formador.objects.all().order_by('CUF_ID')
+    queryset = Curso_Formador.objects.all().order_by('cuf_id')
     serializer_class = MC_S.CursoFormadorSerializer
     filterset_class = CF.CursoFormadorFilter
     pagination_class = StandardResultsSetPagination
