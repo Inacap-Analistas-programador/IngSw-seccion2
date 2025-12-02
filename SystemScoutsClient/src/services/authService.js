@@ -5,8 +5,8 @@ export default {
     const response = await fetch(`${API_URL}/login/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      // Con AUTH_USER_MODEL=ApiCoreScouts.Usuario, el USERNAME_FIELD es 'usu_username'
-      // SimpleJWT usa get_user_model().USERNAME_FIELD, por lo que el backend espera 'usu_username'
+      // Con AUTH_USER_MODEL=ApiCoreScouts.Usuario, el USERNAME_FIELD es 'USU_USERNAME'
+      // SimpleJWT usa get_user_model().USERNAME_FIELD, por lo que el backend espera 'USU_USERNAME'
       body: JSON.stringify({ usu_username: username, password })
     });
 
