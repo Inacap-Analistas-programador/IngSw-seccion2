@@ -1485,44 +1485,71 @@ export default {
     const tiposArchivo = ref([])
 
     // Carga inicial de todos los mantenedores
+    // Carga inicial de todos los mantenedores
     const cargarDatos = async () => {
       cargando.value = true
+      error.value = null // Limpiar errores previos
       try {
+        // Función auxiliar para extraer el array de datos, venga con paginación o sin ella
+        const getData = (resp) => {
+          if (!resp) return []
+          if (Array.isArray(resp)) return resp
+          return resp.results || resp.data || []
+        }
+
         // Obtener raw desde API
-        const rawZonas = await mantenedoresService.zona.list().catch(() => [])
-        const rawDistritos = await mantenedoresService.distrito.list().catch(() => [])
-        const rawGrupos = await mantenedoresService.grupo.list().catch(() => [])
-        const rawRamas = await mantenedoresService.rama.list().catch(() => [])
-        const rawTiposCurso = await mantenedoresService.tipoCursos.list().catch(() => [])
-        const rawCargos = await mantenedoresService.cargo.list().catch(() => [])
-        const rawAlimentacion = await mantenedoresService.alimentacion.list().catch(() => [])
-        const rawComunas = await mantenedoresService.comuna.list().catch(() => [])
-        const rawProvincias = await mantenedoresService.provincia.list().catch(() => [])
-        const rawRegiones = await mantenedoresService.region.list().catch(() => [])
-        const rawNiveles = await mantenedoresService.nivel.list().catch(() => [])
-        const rawEstadosCiviles = await mantenedoresService.estadoCivil.list().catch(() => [])
-        const rawRoles = await mantenedoresService.rol.list().catch(() => [])
-        const rawConceptos = await mantenedoresService.conceptoContable.list().catch(() => [])
-        const rawTiposArchivo = await mantenedoresService.tipoArchivos.list().catch(() => [])
+        const respZonas = await mantenedoresService.zona.list().catch(e => { console.error('Zonas:', e); return [] })
+        const respDistritos = await mantenedoresService.distrito.list().catch(e => { console.error('Distritos:', e); return [] })
+        const respGrupos = await mantenedoresService.grupo.list().catch(e => { console.error('Grupos:', e); return [] })
+        const respRamas = await mantenedoresService.rama.list().catch(e => { console.error('Ramas:', e); return [] })
+        const respTiposCurso = await mantenedoresService.tipoCursos.list().catch(e => { console.error('TiposCurso:', e); return [] })
+        const respCargos = await mantenedoresService.cargo.list().catch(e => { console.error('Cargos:', e); return [] })
+        const respAlimentacion = await mantenedoresService.alimentacion.list().catch(e => { console.error('Alimentacion:', e); return [] })
+        const respComunas = await mantenedoresService.comuna.list().catch(e => { console.error('Comunas:', e); return [] })
+        const respProvincias = await mantenedoresService.provincia.list().catch(e => { console.error('Provincias:', e); return [] })
+        const respRegiones = await mantenedoresService.region.list().catch(e => { console.error('Regiones:', e); return [] })
+        const respNiveles = await mantenedoresService.nivel.list().catch(e => { console.error('Niveles:', e); return [] })
+        const respEstadosCiviles = await mantenedoresService.estadoCivil.list().catch(e => { console.error('EstadosCiviles:', e); return [] })
+        const respRoles = await mantenedoresService.rol.list().catch(e => { console.error('Roles:', e); return [] })
+        const respConceptos = await mantenedoresService.conceptoContable.list().catch(e => { console.error('Conceptos:', e); return [] })
+        const respTiposArchivo = await mantenedoresService.tipoArchivos.list().catch(e => { console.error('TiposArchivo:', e); return [] })
+
+        // Extraer los arrays seguros
+        const rawZonas = getData(respZonas)
+        const rawDistritos = getData(respDistritos)
+        const rawGrupos = getData(respGrupos)
+        const rawRamas = getData(respRamas)
+        const rawTiposCurso = getData(respTiposCurso)
+        const rawCargos = getData(respCargos)
+        const rawAlimentacion = getData(respAlimentacion)
+        const rawComunas = getData(respComunas)
+        const rawProvincias = getData(respProvincias)
+        const rawRegiones = getData(respRegiones)
+        const rawNiveles = getData(respNiveles)
+        const rawEstadosCiviles = getData(respEstadosCiviles)
+        const rawRoles = getData(respRoles)
+        const rawConceptos = getData(respConceptos)
+        const rawTiposArchivo = getData(respTiposArchivo)
 
         // Normalizar campos de la API (mayúsculas/DB) a forma usada en la UI
-        zonas.value = (rawZonas || []).map(z => ({ id: z.ZON_ID ?? z.id, descripcion: z.ZON_DESCRIPCION ?? z.descripcion, unilateral: z.ZON_UNILATERAL ?? z.unilateral, vigente: z.ZON_VIGENTE ?? z.vigente }))
-        distritos.value = (rawDistritos || []).map(d => ({ id: d.DIS_ID ?? d.id, descripcion: d.DIS_DESCRIPCION ?? d.descripcion, zona_id: (d.ZON_ID?.ZON_ID) ?? d.ZON_ID ?? d.zona_id, vigente: d.DIS_VIGENTE ?? d.vigente }))
-        grupos.value = (rawGrupos || []).map(g => ({ id: g.GRU_ID ?? g.id, descripcion: g.GRU_DESCRIPCION ?? g.descripcion, distrito_id: (g.DIS_ID?.DIS_ID) ?? g.DIS_ID ?? g.distrito_id, vigente: g.GRU_VIGENTE ?? g.vigente }))
-        ramas.value = (rawRamas || []).map(r => ({ id: r.RAM_ID ?? r.id, descripcion: r.RAM_DESCRIPCION ?? r.descripcion, vigente: r.RAM_VIGENTE ?? r.vigente }))
-        tiposCurso.value = (rawTiposCurso || []).map(t => ({ id: t.TCU_ID ?? t.id, descripcion: t.TCU_DESCRIPCION ?? t.descripcion, tipo: t.TCU_TIPO ?? t.tipo, cant_participante: t.TCU_CANT_PARTICIPANTE ?? t.cant_participante, vigente: t.TCU_VIGENTE ?? t.vigente }))
-        cargos.value = (rawCargos || []).map(c => ({ id: c.CAR_ID ?? c.id, descripcion: c.CAR_DESCRIPCION ?? c.descripcion, vigente: c.CAR_VIGENTE ?? c.vigente }))
-        alimentacion.value = (rawAlimentacion || []).map(a => ({ id: a.ALI_ID ?? a.id, descripcion: a.ALI_DESCRIPCION ?? a.descripcion, tipo: a.ALI_TIPO ?? a.tipo, vigente: a.ALI_VIGENTE ?? a.vigente }))
-        comunas.value = (rawComunas || []).map(c => ({ id: c.COM_ID ?? c.id, descripcion: c.COM_DESCRIPCION ?? c.descripcion, provincia_id: (c.PRO_ID?.PRO_ID) ?? c.PRO_ID ?? c.provincia_id, vigente: c.COM_VIGENTE ?? c.vigente }))
-        provincias.value = (rawProvincias || []).map(p => ({ id: p.PRO_ID ?? p.id, descripcion: p.PRO_DESCRIPCION ?? p.descripcion, region_id: (p.REG_ID?.REG_ID) ?? p.REG_ID ?? p.region_id, vigente: p.PRO_VIGENTE ?? p.vigente }))
-        regiones.value = (rawRegiones || []).map(rg => ({ id: rg.REG_ID ?? rg.id, descripcion: rg.REG_DESCRIPCION ?? rg.descripcion, vigente: rg.REG_VIGENTE ?? rg.vigente }))
-        niveles.value = (rawNiveles || []).map(n => ({ id: n.NIV_ID ?? n.id, descripcion: n.NIV_DESCRIPCION ?? n.descripcion, orden: n.NIV_ORDEN ?? n.orden, vigente: n.NIV_VIGENTE ?? n.vigente }))
-        estadosCiviles.value = (rawEstadosCiviles || []).map(e => ({ id: e.ESC_ID ?? e.id, descripcion: e.ESC_DESCRIPCION ?? e.descripcion, vigente: e.ESC_VIGENTE ?? e.vigente }))
-        roles.value = (rawRoles || []).map(r => ({ id: r.ROL_ID ?? r.id, descripcion: r.ROL_DESCRIPCION ?? r.descripcion, tipo: r.ROL_TIPO ?? r.tipo, vigente: r.ROL_VIGENTE ?? r.vigente }))
-        conceptosContables.value = (rawConceptos || []).map(c => ({ id: c.COC_ID ?? c.id, descripcion: c.COC_DESCRIPCION ?? c.descripcion, vigente: c.COC_VIGENTE ?? c.vigente }))
-        tiposArchivo.value = (rawTiposArchivo || []).map(t => ({ id: t.TAR_ID ?? t.id, descripcion: t.TAR_DESCRIPCION ?? t.descripcion, extension: t.TAR_EXTENSION ?? t.extension, vigente: t.TAR_VIGENTE ?? t.vigente }))
+        zonas.value = rawZonas.map(z => ({ id: z.ZON_ID ?? z.id, descripcion: z.ZON_DESCRIPCION ?? z.descripcion, unilateral: z.ZON_UNILATERAL ?? z.unilateral, vigente: z.ZON_VIGENTE ?? z.vigente }))
+        distritos.value = rawDistritos.map(d => ({ id: d.DIS_ID ?? d.id, descripcion: d.DIS_DESCRIPCION ?? d.descripcion, zona_id: (d.ZON_ID?.ZON_ID) ?? d.ZON_ID ?? d.zona_id, vigente: d.DIS_VIGENTE ?? d.vigente }))
+        grupos.value = rawGrupos.map(g => ({ id: g.GRU_ID ?? g.id, descripcion: g.GRU_DESCRIPCION ?? g.descripcion, distrito_id: (g.DIS_ID?.DIS_ID) ?? g.DIS_ID ?? g.distrito_id, vigente: g.GRU_VIGENTE ?? g.vigente }))
+        ramas.value = rawRamas.map(r => ({ id: r.RAM_ID ?? r.id, descripcion: r.RAM_DESCRIPCION ?? r.descripcion, vigente: r.RAM_VIGENTE ?? r.vigente }))
+        tiposCurso.value = rawTiposCurso.map(t => ({ id: t.TCU_ID ?? t.id, descripcion: t.TCU_DESCRIPCION ?? t.descripcion, tipo: t.TCU_TIPO ?? t.tipo, cant_participante: t.TCU_CANT_PARTICIPANTE ?? t.cant_participante, vigente: t.TCU_VIGENTE ?? t.vigente }))
+        cargos.value = rawCargos.map(c => ({ id: c.CAR_ID ?? c.id, descripcion: c.CAR_DESCRIPCION ?? c.descripcion, vigente: c.CAR_VIGENTE ?? c.vigente }))
+        alimentacion.value = rawAlimentacion.map(a => ({ id: a.ALI_ID ?? a.id, descripcion: a.ALI_DESCRIPCION ?? a.descripcion, tipo: a.ALI_TIPO ?? a.tipo, vigente: a.ALI_VIGENTE ?? a.vigente }))
+        comunas.value = rawComunas.map(c => ({ id: c.COM_ID ?? c.id, descripcion: c.COM_DESCRIPCION ?? c.descripcion, provincia_id: (c.PRO_ID?.PRO_ID) ?? c.PRO_ID ?? c.provincia_id, vigente: c.COM_VIGENTE ?? c.vigente }))
+        provincias.value = rawProvincias.map(p => ({ id: p.PRO_ID ?? p.id, descripcion: p.PRO_DESCRIPCION ?? p.descripcion, region_id: (p.REG_ID?.REG_ID) ?? p.REG_ID ?? p.region_id, vigente: p.PRO_VIGENTE ?? p.vigente }))
+        regiones.value = rawRegiones.map(rg => ({ id: rg.REG_ID ?? rg.id, descripcion: rg.REG_DESCRIPCION ?? rg.descripcion, vigente: rg.REG_VIGENTE ?? rg.vigente }))
+        niveles.value = rawNiveles.map(n => ({ id: n.NIV_ID ?? n.id, descripcion: n.NIV_DESCRIPCION ?? n.descripcion, orden: n.NIV_ORDEN ?? n.orden, vigente: n.NIV_VIGENTE ?? n.vigente }))
+        estadosCiviles.value = rawEstadosCiviles.map(e => ({ id: e.ESC_ID ?? e.id, descripcion: e.ESC_DESCRIPCION ?? e.descripcion, vigente: e.ESC_VIGENTE ?? e.vigente }))
+        roles.value = rawRoles.map(r => ({ id: r.ROL_ID ?? r.id, descripcion: r.ROL_DESCRIPCION ?? r.descripcion, tipo: r.ROL_TIPO ?? r.tipo, vigente: r.ROL_VIGENTE ?? r.vigente }))
+        conceptosContables.value = rawConceptos.map(c => ({ id: c.COC_ID ?? c.id, descripcion: c.COC_DESCRIPCION ?? c.descripcion, vigente: c.COC_VIGENTE ?? c.vigente }))
+        tiposArchivo.value = rawTiposArchivo.map(t => ({ id: t.TAR_ID ?? t.id, descripcion: t.TAR_DESCRIPCION ?? t.descripcion, extension: t.TAR_EXTENSION ?? t.extension, vigente: t.TAR_VIGENTE ?? t.vigente }))
       } catch (err) {
         error.value = 'Error al cargar datos: ' + err.message
+        console.error(err)
       } finally {
         cargando.value = false
       }
