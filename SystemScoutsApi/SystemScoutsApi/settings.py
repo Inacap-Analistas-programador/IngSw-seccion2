@@ -45,7 +45,18 @@ else:
 # CONFIGURACION BASICA
 SECRET_KEY = config('DJANGO_SECRET_KEY', default='fallback-secret-key')
 DEBUG = config('DJANGO_DEBUG', default=False, cast=bool)
-ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', default='', cast=Csv())
+
+if not DEBUG:
+    # Configuraciones de seguridad para producción
+    SECURE_HSTS_SECONDS = 31536000  # 1 año
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    X_FRAME_OPTIONS = 'DENY'
+ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', default='sistema.guiasyscoutsbiobio.cl,www.sistema.guiasyscoutsbiobio.cl,localhost,127.0.0.1', cast=Csv())
 
 
 # APLICACIONES INSTALADAS

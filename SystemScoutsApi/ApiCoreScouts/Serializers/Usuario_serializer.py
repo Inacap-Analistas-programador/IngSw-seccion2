@@ -54,6 +54,10 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     def get_token(cls, user):
         token = super().get_token(user)
 
+        # Fix: Ensure standard user_id claim is int (not Decimal)
+        if 'user_id' in token:
+            token['user_id'] = int(token['user_id'])
+
         perfil_payload, aplicaciones = cls._build_perfil_payload(getattr(user, 'pel_id', None))
 
         token['usu_id'] = int(user.usu_id)
