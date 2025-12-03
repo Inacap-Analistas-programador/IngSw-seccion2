@@ -80,7 +80,6 @@
               <th></th>
               <th>Usuario</th>
               <th>Correo</th>
-              <th>Contraseña</th>
               <th>Perfil</th>
               <th>Estado</th>
             </tr>
@@ -110,7 +109,6 @@
               </td>
               <td data-label="Usuario">{{ usuario.username }}</td>
               <td data-label="Correo">{{ usuario.email || '-' }}</td>
-              <td data-label="Contraseña">••••••••</td>
               <td data-label="Perfil">
                 <span class="badge rol-badge" :class="rolClass(usuario)">
                   {{ getRolLabel(usuario.perfil_id) || usuario.rol }}
@@ -1944,115 +1942,209 @@ export default {
 @media (max-width: 768px) {
   .usuarios-roles {
     padding: 1rem;
+    background-color: #f8f9fa;
   }
 
   .page-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
     flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
+    align-items: center;
   }
 
   .filtros {
     grid-template-columns: 1fr;
-    gap: 0.75rem;
+    gap: 1rem;
+    padding: 1.25rem;
   }
 
+  /* Table Header & Actions */
   .table-header-bar {
     flex-direction: column;
-    align-items: flex-start;
     gap: 1rem;
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+    border: none;
+    margin-bottom: 1rem;
+  }
+
+  .table-title {
+    display: none;
   }
 
   .table-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
     width: 100%;
-    flex-direction: column;
   }
 
   .table-actions :deep(button) {
     width: 100%;
+    justify-content: center;
+    height: 44px;
+  }
+  
+  /* Make "Nuevo Usuario" full width */
+  .table-actions :deep(button):last-child {
+    grid-column: 1 / -1;
+    background-color: #2563eb;
+    color: white;
   }
 
+  /* Table as Cards */
   .table-wrapper {
-    overflow-y: auto;
-    overflow-x: auto;
-    max-height: calc(100vh - var(--navbar-height) - var(--card-top-offset));
+    background: transparent;
+    box-shadow: none;
+    max-height: none;
+    overflow: visible;
   }
 
   .usuarios-table {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
   }
 
   .usuarios-table thead {
     display: none;
   }
 
-  .usuarios-table tbody,
-  .usuarios-table tr,
-  .usuarios-table td {
-    display: block;
-    width: 100%;
+  .usuarios-table tbody {
+    display: contents;
   }
 
   .usuarios-table tr {
-    margin-bottom: 1rem;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    padding: 1.25rem;
+    border: 1px solid rgba(0,0,0,0.05);
+    position: relative;
+    margin-bottom: 0;
+  }
+  
+  .usuarios-table tr.row-selected {
+    border: 2px solid #3b82f6;
+    background-color: #eff6ff;
+    transform: scale(1.01);
   }
 
   .usuarios-table td {
-    padding: 0.5rem 0;
-    border: none;
-    text-align: left;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f1f5f9;
+    text-align: right;
+    width: 100%;
+  }
+  
+  .usuarios-table td:last-child {
+    border-bottom: none;
   }
 
   .usuarios-table td::before {
     content: attr(data-label);
     font-weight: 600;
-    display: inline-block;
-    width: 120px;
-    color: #34495e;
+    color: #64748b;
+    text-align: left;
+    font-size: 0.9rem;
+  }
+
+  /* Avatar Cell */
+  .usuarios-table .foto-cell {
+    justify-content: center;
+    padding-top: 0 !important;
+    padding-bottom: 1rem !important;
+    border-bottom: 1px solid #f1f5f9;
+    width: 100%;
   }
 
   .foto-cell::before {
     display: none;
   }
-
-  .foto-cell {
-    text-align: center;
-    padding: 0.75rem 0 !important;
+  
+  .user-avatar {
+    transform: scale(1.2);
   }
 
-  /* Modal responsive */
+  /* Modal Responsive */
   .modal-usuario {
+    width: 100%;
+    height: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+  
+  .modal-header {
+    border-radius: 0;
     padding: 1rem;
-    width: 95vw;
-    max-height: 85vh;
   }
 
-  .modal-header h3 {
-    font-size: 1.25rem;
+  .usuario-form {
+    padding: 1rem;
+    gap: 1.5rem;
   }
 
-  .form-row {
+  .form-section {
+    padding: 1rem;
+  }
+
+  .form-row, 
+  .form-row-triple {
+    display: flex;
     flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .form-row-triple {
+    grid-template-columns: none;
   }
 
-  .form-group.photo-group {
-    min-width: 100%;
+  .photo-upload-inline {
+    width: 100%;
+    flex-direction: row;
+    justify-content: center;
+    padding: 1rem;
   }
-
-  .photo-upload-compact {
-    flex-direction: column;
-    text-align: center;
+  
+  .photo-preview-inline {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .preview-image-inline,
+  .preview-placeholder-inline {
+    width: 80px;
+    height: 80px;
   }
 
   .form-actions {
-    flex-direction: column;
+    flex-direction: column-reverse;
+    gap: 0.75rem;
   }
 
   .form-actions :deep(button) {
     width: 100%;
+    padding: 0.875rem;
+  }
+  
+  /* Pagination */
+  .pagination-bar {
+    flex-direction: column;
+    gap: 1rem;
+    padding-bottom: 2rem;
+  }
+  
+  .pagination-left, .pagination-right {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
   }
 }
 

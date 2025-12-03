@@ -14,8 +14,8 @@ function toggleCollapsed() {
 <template>
 	<div class="app-root">
 		<NavBar :collapsed="collapsed" @toggle-sidebar="toggleCollapsed" />
-		<div class="app-layout">
-			<SideBar v-model="collapsed" />
+		<div class="app-layout" :class="{ 'is-collapsed': collapsed }">
+			<SideBar :collapsed="collapsed" @update:collapsed="collapsed = $event" />
 			<main class="main-content">
 				<router-view v-slot="{ Component, route }">
 					<Transition :name="route.meta.transition || 'fade'" mode="out-in">
@@ -60,24 +60,13 @@ body, html {
 
 .main-content {
 	flex: 1;
-	margin-left: var(--sidebar-width, 256px); /* Match sidebar width via variable */
 	overflow-y: auto;
-		/* Añadir offset superior igual a la altura de la navbar para evitar solapamiento */
-		padding: calc(var(--navbar-height, 64px) + 16px) 16px 16px 16px;
+	padding: 16px;
 	background: #f5f5f5;
 	position: relative;
-	transition: margin-left 180ms ease; /* Smooth transition when sidebar collapses */
 }
 
-/* If the sibling sidebar is collapsed, reduce the main content margin */
-.app-layout .sidebar.collapsed + .main-content {
-	margin-left: var(--sidebar-collapsed-width, 70px);
-}
 
-/* Asegurarse de que la barra lateral ocupe toda la altura */
-.sidebar {
-	height: 100vh;
-}
 
 /* ====== Animaciones de transición entre vistas ====== */
 
@@ -132,7 +121,7 @@ body, html {
 /* Responsive: ocultar sidebar en móviles */
 @media (max-width: 768px) {
 	.main-content {
-		margin-left: 0;
+		margin-left: 0 !important;
 	}
 }
 </style>

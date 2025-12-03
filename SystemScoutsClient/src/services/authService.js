@@ -60,14 +60,22 @@ export default {
       const json = atob(padded);
       const payload = JSON.parse(json);
 
-      // Preferir claims personalizados del backend (USU_ID, USU_USERNAME)
-      const id = payload.USU_ID || payload.user_id || payload.id || null;
-      const username = payload.USU_USERNAME || payload.username || payload.sub || null;
+      // Preferir claims personalizados del backend (usu_id, usu_username)
+      const id = payload.usu_id || payload.user_id || payload.id || null;
+      const username = payload.usu_username || payload.username || payload.sub || null;
       const name = payload.name || username || 'Usuario';
+      
       // Map role from token payload if backend includes 'perfil'
-      const role = (payload.perfil && payload.perfil.PEL_DESCRIPCION) ? payload.perfil.PEL_DESCRIPCION : (payload.perfil && payload.perfil.PEL_DESCRIPCION) || null;
-      // avatar may not be included in token; prefer USU_RUTA_FOTO if present
-      const avatarUrl = payload.USU_RUTA_FOTO || payload.avatarUrl || null;
+      // Backend sends 'perfil': { 'pel_id': ..., 'pel_descripcion': ... }
+      let role = 'Invitado';
+      if (payload.perfil && payload.perfil.pel_descripcion) {
+        role = payload.perfil.pel_descripcion;
+      } else if (payload.perfil && payload.perfil.PEL_DESCRIPCION) {
+        role = payload.perfil.PEL_DESCRIPCION;
+      }
+
+      // avatar may not be included in token; prefer usu_ruta_foto if present
+      const avatarUrl = payload.usu_ruta_foto || payload.USU_RUTA_FOTO || payload.avatarUrl || null;
 
       return {
         id,

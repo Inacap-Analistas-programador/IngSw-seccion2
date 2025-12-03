@@ -17,7 +17,7 @@ from ApiCoreScouts.Views.Usuario_view import MyTokenObtainPairView
 
 from ApiCoreScouts.Views.Verificador_view import verificar_acreditacion_qr
 
-FRONTEND_DIST_EXISTS = True #activar el renderizado
+# FRONTEND_DIST_EXISTS = True #activar el renderizado
 urlpatterns = [
     path('api/usuarios/', include(usuario_router.urls)),
     path('api/personas/', include(personas_router.urls)),
@@ -32,12 +32,13 @@ urlpatterns = [
 ]
 
 # Add catch-all route for SPA if frontend build exists
-if FRONTEND_DIST_EXISTS:
+if settings.FRONTEND_DIST_EXISTS:
     urlpatterns += [
         # Serve assets directly
         re_path(r'^assets/(?P<path>.*)$', serve, {
             'document_root': str(settings.FRONTEND_DIST / 'assets'),
         }),
         # Catch-all for SPA
-        re_path(r'^.*$', TemplateView.as_view(template_name='index.html'), name='spa'),
+        # Exclude api/ paths to allow CommonMiddleware to handle APPEND_SLASH redirects
+        re_path(r'^(?!api/).*$', TemplateView.as_view(template_name='index.html'), name='spa'),
     ]

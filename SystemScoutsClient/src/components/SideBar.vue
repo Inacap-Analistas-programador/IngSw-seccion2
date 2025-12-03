@@ -1,7 +1,5 @@
 <template>
   <div class="sidebar-wrapper">
-    <!-- Botón para abrir sidebar en móviles -->
-    <button v-if="!openMobile" class="mobile-open-btn" @click="openMobile = true" aria-label="Abrir menú" title="Abrir menú">☰</button>
     <div v-if="openMobile" class="sidebar-backdrop" @click="closeMobile"></div>
     <aside id="app-sidebar" :class="['sidebar', { collapsed, 'mobile-open': openMobile }]" @click.self="closeMobile">
       <button v-if="openMobile" class="mobile-close-btn" @click="closeMobile" aria-label="Cerrar menú">×</button>
@@ -88,12 +86,7 @@
       </div>
     </nav>
     
-    <div class="sidebar-footer" v-if="typeof props.collapsed === 'undefined'">
-      <button class="collapse-btn-bottom" @click="toggleCollapse" :title="collapsed ? 'Expandir sidebar' : 'Colapsar sidebar'" :aria-pressed="collapsed" :aria-expanded="!collapsed" aria-controls="app-sidebar">
-        <AppIcons :name="collapsed ? 'chevron-right' : 'chevron-left'" :size="16" />
-        <span v-if="!collapsed" class="collapse-text">Contraer</span>
-      </button>
-    </div>
+    <!-- Footer eliminado para evitar duplicidad con el botón de la navbar -->
   </aside>
   </div>
 </template>
@@ -280,13 +273,10 @@ function escHandler(e) {
 .sidebar {
   display: flex;
   flex-direction: column;
-  position: fixed;
-  height: calc(100vh - 64px);
+  height: 100%;
   width: var(--sidebar-width, 250px);
   background: var(--color-primary);
   color: #fff;
-  top: 64px; /* Altura ajustada de la navbar */
-  left: 0;
   box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
   z-index: 999;
   overflow-y: auto;
@@ -395,7 +385,7 @@ function escHandler(e) {
 /* 2. Navegación */
 .sidebar-nav {
   flex-grow: 1;
-  padding-top: 20px;
+  padding-top: 32px;
   padding-bottom: 8px;
 }
 .nav-section-title {
@@ -608,8 +598,13 @@ function escHandler(e) {
   color: #fff;
 }
 
+/* Por defecto ocultar botón móvil en escritorio */
+.mobile-open-btn {
+  display: none;
+}
+
 /* Responsive: transformar sidebar a panel deslizable en móviles */
-@media (max-width: 900px) {
+@media (max-width: 768px) {
   .sidebar-wrapper { position: relative; }
   .sidebar-backdrop {
     position: fixed;
@@ -660,20 +655,8 @@ function escHandler(e) {
   }
   /* Botón para abrir menú en móvil */
   .mobile-open-btn {
-    position: fixed;
-    top: 12px;
-    left: 12px;
-    z-index: 1300;
-    background: var(--color-primary);
-    color: #fff;
-    border: none;
-    padding: 10px 12px;
-    border-radius: 10px;
-    font-size: 18px;
-    box-shadow: 0 6px 18px rgba(2,6,23,0.35);
-    cursor: pointer;
+    display: none;
   }
-  .mobile-open-btn:hover { opacity: 0.95 }
 
   /* Ocultar footer dentro de móviles para ahorrar espacio */
   .sidebar-footer { display: none; }

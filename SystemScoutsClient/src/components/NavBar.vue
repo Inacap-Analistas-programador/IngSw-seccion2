@@ -140,13 +140,17 @@ function onLogoutImgError() {
   <nav class="navbar" ref="navRef">
     <!-- Logo -->
     <div class="navbar-left">
-      <button class="sidebar-toggle" @click="toggleSidebar" :title="props.collapsed ? 'Expandir sidebar' : 'Colapsar sidebar'" :aria-pressed="props.collapsed" :aria-expanded="!props.collapsed" aria-controls="app-sidebar">
-        <AppIcons :name="props.collapsed ? 'chevron-right' : 'chevron-left'" :size="18" />
+      <button class="sidebar-toggle" @click="toggleSidebar" aria-label="Alternar menú">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
       </button>
-      <router-link class="brand" to="/dashboard" aria-label="Ir al Dashboard">
+      <div class="brand">
         <img :src="logoSrc" alt="Logo Scouts" class="logo" />
         <span class="title">S.S.B</span>
-      </router-link>
+      </div>
       <router-link class="dash-link" to="/dashboard">Panel de Control</router-link>
     </div>
 
@@ -186,9 +190,7 @@ function onLogoutImgError() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  position: fixed;
-  top: 0;
-  left: 0;
+  position: relative; /* Changed from fixed to relative */
   width: 100%;
   z-index: 1100; /* mayor que la sidebar (999) para garantizar clicabilidad */
   font-family: "Segoe UI", Arial, sans-serif;
@@ -352,13 +354,30 @@ function onLogoutImgError() {
 
 /* ====== Responsive ====== */
 @media (max-width: 768px) {
+  .navbar {
+    padding: 8px 12px;
+  }
+  
+  .logo {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .title {
+    font-size: 0.85rem;
+  }
+  
+  .dash-link {
+    display: none; /* Ocultar texto "Panel de Control" en móviles para ahorrar espacio */
+  }
+
   .user-meta { display: none; }
 }
 
 /* Ocultar botón de toggle del sidebar en pantallas pequeñas (abrir via otra UI si se desea) */
-@media (max-width: 900px) {
+/* @media (max-width: 900px) {
   .sidebar-toggle { display: none; }
-}
+} */
 
 /* ====== Animación de entrada/salida del usuario ====== */
 .user-fade-enter-active,
