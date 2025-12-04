@@ -6,53 +6,58 @@
         <p class="page-description">Administra los perfiles del sistema y sus permisos.</p>
       </header>
 
-      <div class="table-header-bar">
-        <h3 class="table-title">Lista de Perfiles</h3>
-        <div class="table-actions">
-          <BaseButton variant="primary" @click="abrirCrear">
-            <AppIcons name="plus" :size="16" /> Nuevo Perfil
-          </BaseButton>
-        </div>
+      <!-- Indicador de carga -->
+      <div v-if="cargando" class="loading-container">
+        <div class="spinner"></div>
+        <p>Cargando perfiles...</p>
       </div>
 
-      <div class="table-wrapper">
-        <table class="usuarios-table">
-          <thead>
-            <tr>
-              <th>Descripción</th>
-              <th>Estado</th>
-              <th style="width:220px">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="cargando">
-              <td colspan="3">Cargando perfiles...</td>
-            </tr>
-            <tr v-else-if="error">
-              <td colspan="3" style="color: var(--color-danger)">{{ error }}</td>
-            </tr>
-            <tr v-else-if="!roles.length">
-              <td colspan="3">No hay perfiles registrados.</td>
-            </tr>
-            <tr v-else v-for="rol in roles" :key="rol.id">
-              <td>{{ getDescripcion(rol) }}</td>
-              <td>
-                <span class="badge" :class="!isVigente(rol) ? 'estado-inactivo' : 'badge-activo'">
-                  {{ !isVigente(rol) ? 'Inactivo' : 'Activo' }}
-                </span>
-              </td>
-              <td class="actions-cell">
-                <BaseButton size="sm" variant="secondary" @click="abrirEditar(rol)">
-                  <AppIcons name="edit" :size="14" /> Editar
-                </BaseButton>
-                <BaseButton size="sm" variant="secondary" @click="toggleVigente(rol)">
-                  <AppIcons :name="!isVigente(rol) ? 'check' : 'x'" :size="14" />
-                  {{ !isVigente(rol) ? 'Activar' : 'Desactivar' }}
-                </BaseButton>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <div v-else>
+        <div class="table-header-bar">
+          <h3 class="table-title">Lista de Perfiles</h3>
+          <div class="table-actions">
+            <BaseButton variant="primary" @click="abrirCrear">
+              <AppIcons name="plus" :size="16" /> Nuevo Perfil
+            </BaseButton>
+          </div>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="usuarios-table">
+            <thead>
+              <tr>
+                <th>Descripción</th>
+                <th>Estado</th>
+                <th style="width:220px">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="error">
+                <td colspan="3" style="color: var(--color-danger)">{{ error }}</td>
+              </tr>
+              <tr v-else-if="!roles.length">
+                <td colspan="3">No hay perfiles registrados.</td>
+              </tr>
+              <tr v-else v-for="rol in roles" :key="rol.id">
+                <td>{{ getDescripcion(rol) }}</td>
+                <td>
+                  <span class="badge" :class="!isVigente(rol) ? 'estado-inactivo' : 'badge-activo'">
+                    {{ !isVigente(rol) ? 'Inactivo' : 'Activo' }}
+                  </span>
+                </td>
+                <td class="actions-cell">
+                  <BaseButton size="sm" variant="secondary" @click="abrirEditar(rol)">
+                    <AppIcons name="edit" :size="14" /> Editar
+                  </BaseButton>
+                  <BaseButton size="sm" variant="secondary" @click="toggleVigente(rol)">
+                    <AppIcons :name="!isVigente(rol) ? 'check' : 'x'" :size="14" />
+                    {{ !isVigente(rol) ? 'Activar' : 'Desactivar' }}
+                  </BaseButton>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <!-- Modal Crear/Editar -->
@@ -189,6 +194,7 @@ import NotificationToast from '@/components/NotificationToast.vue'
 import AppIcons from '@/components/icons/AppIcons.vue'
 import ModernMainScrollbar from '@/components/ModernMainScrollbar.vue'
 import { perfiles as perfilesService, aplicaciones as aplicacionesService, perfilAplicaciones as perfilAplicacionesService } from '@/services/usuariosService'
+import { request } from '@/services/apiClient'
 
 export default {
   name: 'Roles',
@@ -386,62 +392,31 @@ export default {
         return;
       }
 
-      // Pre-fetch existing permissions if not new, to avoid N+1 queries
-      let existingMap = {};
-      if (!isNew) {
-        try {
-          const resp = await perfilAplicacionesService.list({ pel_id: rolId });
-          const list = Array.isArray(resp) ? resp : (resp.results || resp.data || []);
-          list.forEach(p => {
-            let aId = p.apl_id || p.APL_ID;
-            if (typeof aId === 'object' && aId !== null) {
-                 aId = aId.apl_id || aId.APL_ID || aId.id;
-            }
-            existingMap[aId] = p;
-          });
-        } catch (e) {
-          console.error("Error fetching existing permissions:", e);
-        }
-      }
-
-      // Guardar permisos por cada aplicación
-      const promises = []
+      // Preparar payload para envío masivo
+      const permisosPayload = [];
       
       for (const appId in this.form.permisos) {
         const perms = this.form.permisos[appId]
-        
-        try {
-          const existing = existingMap[appId];
-
-          const permisoData = {
-            pel_id: rolId,
-            apl_id: appId,
-            pea_consultar: perms.consultar,
-            pea_ingresar: perms.ingresar,
-            pea_modificar: perms.modificar,
-            pea_eliminar: perms.eliminar,
-            // Compatibilidad
-            PEL_ID: rolId,
-            APL_ID: appId,
-            PEA_CONSULTAR: perms.consultar,
-            PEA_INGRESAR: perms.ingresar,
-            PEA_MODIFICAR: perms.modificar,
-            PEA_ELIMINAR: perms.eliminar
-          }
-
-          if (existing) {
-            // Actualizar
-            promises.push(perfilAplicacionesService.partialUpdate(existing.pea_id || existing.PEA_ID || existing.id, permisoData))
-          } else {
-            // Crear
-            promises.push(perfilAplicacionesService.create(permisoData))
-          }
-        } catch (e) {
-          console.error(`Error procesando permisos para app ${appId}:`, e)
-        }
+        permisosPayload.push({
+          apl_id: appId,
+          pea_consultar: perms.consultar,
+          pea_ingresar: perms.ingresar,
+          pea_modificar: perms.modificar,
+          pea_eliminar: perms.eliminar
+        });
       }
 
-      await Promise.all(promises)
+      try {
+        // Usar el nuevo endpoint de actualización masiva
+        await request(`usuarios/perfiles/${rolId}/update-permissions/`, {
+          method: 'POST',
+          body: JSON.stringify({ permisos: permisosPayload })
+        });
+        
+      } catch (e) {
+        console.error("Error guardando permisos masivos:", e);
+        throw e; // Re-lanzar para que el toast de error se muestre
+      }
     },
 
     async guardar() {
@@ -508,6 +483,30 @@ export default {
 </script>
 
 <style scoped>
+/* Loading */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  gap: 0.75rem;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 .roles-view { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
 .page-description { margin: 0; color: #7f8c8d; font-size: 14px; }
 

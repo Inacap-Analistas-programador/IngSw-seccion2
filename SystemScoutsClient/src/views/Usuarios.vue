@@ -387,6 +387,7 @@ import AppIcons from '../components/icons/AppIcons.vue'
 import PermisosToggle from '../components/PermisosToggle.vue'
 import ModernMainScrollbar from '../components/ModernMainScrollbar.vue'
 import { usuarios as usuariosService, perfiles as perfilesService } from '@/services/usuariosService'
+import { request } from '@/services/apiClient'
 
 export default {
   name: 'UsuariosRoles',
@@ -596,15 +597,9 @@ export default {
       // Build params based on filters and pagination
       this.cargando = true
       try {
-        // Cargar perfiles (roles) desde la API (no paginado)
-        const perfilesResponse = await perfilesService.list()
-        const perfilesList = Array.isArray(perfilesResponse) ? perfilesResponse : (perfilesResponse.results || perfilesResponse.data || [])
-        const roles = perfilesList.map(p => ({
-          value: p.pel_id || p.PEL_ID || p.id,
-          label: p.pel_descripcion || p.PEL_DESCRIPCION || p.descripcion || p.nombre || `Perfil ${p.pel_id || p.PEL_ID || p.id}`
-        }))
-        this.rolesOptions = [{ value: '', label: 'Todos los perfiles' }, ...roles]
-
+        // Optimización: Carga paralela de perfiles y usuarios
+        const perfilesPromise = perfilesService.list()
+        
         // Build query params for users
         const params = {
           page: this.currentPage,
@@ -613,10 +608,23 @@ export default {
 
         if (this.searchQuery) params.search = this.searchQuery
         if (this.filtroRol) params.perfil = this.filtroRol
-        if (this.filtroEstado) params.estado = this.filtroEstado
+        // Mapear estado a vigente (true/false) para el backend
+        if (this.filtroEstado === 'activo') params.vigente = true
+        if (this.filtroEstado === 'inactivo') params.vigente = false
 
-        const usuariosResponse = await usuariosService.list(params)
+        const usuariosPromise = usuariosService.list(params)
 
+        const [perfilesResponse, usuariosResponse] = await Promise.all([perfilesPromise, usuariosPromise])
+
+        // Procesar Perfiles
+        const perfilesList = Array.isArray(perfilesResponse) ? perfilesResponse : (perfilesResponse.results || perfilesResponse.data || [])
+        const roles = perfilesList.map(p => ({
+          value: p.pel_id || p.PEL_ID || p.id,
+          label: p.pel_descripcion || p.PEL_DESCRIPCION || p.descripcion || p.nombre || `Perfil ${p.pel_id || p.PEL_ID || p.id}`
+        }))
+        this.rolesOptions = [{ value: '', label: 'Todos los perfiles' }, ...roles]
+
+        // Procesar Usuarios
         // Detect common paginated formats or full-array responses
         let usuariosList = []
         if (Array.isArray(usuariosResponse)) {
@@ -1009,23 +1017,19 @@ export default {
     async ejecutarCambioEstadoMasivo(nuevoEstado) {
       this.procesando = true
       try {
+        // Optimización: Usar endpoint de actualización masiva
+        await request('usuarios/bulk-update-status', {
+          method: 'POST',
+          body: JSON.stringify({
+            ids: this.selectedIds,
+            vigente: nuevoEstado
+          })
+        });
+        
+        // Actualizar en memoria
         let modificados = 0
-        // Actualizar en el backend
-        const promesas = this.selectedIds.map(async (id) => {
-          try {
-            await usuariosService.partialUpdate(id, { usu_vigente: nuevoEstado, USU_VIGENTE: nuevoEstado })
-            return id
-          } catch (err) {
-            console.error(`Error al actualizar usuario ${id}:`, err)
-            return null
-          }
-        })
-        
-        const resultados = await Promise.all(promesas)
-        
-        // Actualizar en memoria solo los que se actualizaron exitosamente
         this.usuarios.forEach(u => {
-          if (resultados.includes(u.id)) {
+          if (this.selectedIds.includes(u.id)) {
             if (u.activo !== nuevoEstado) {
               u.activo = nuevoEstado
               modificados++
@@ -1048,28 +1052,42 @@ export default {
     async ejecutarAlternanciaEstadoMasivo() {
       this.procesando = true
       try {
-        let modificados = 0
-        // Actualizar en el backend
-        const promesas = this.usuarios
-          .filter(u => this.selectedIds.includes(u.id))
-          .map(async (u) => {
-            try {
-              const nuevoEstado = !u.activo
-              await usuariosService.partialUpdate(u.id, { usu_vigente: nuevoEstado, USU_VIGENTE: nuevoEstado })
-              return { id: u.id, nuevoEstado }
-            } catch (err) {
-              console.error(`Error al actualizar usuario ${u.id}:`, err)
-              return null
-            }
-          })
+        // Separar en dos grupos para usar el endpoint masivo
+        const toActivate = []
+        const toDeactivate = []
         
-        const resultados = await Promise.all(promesas)
-        
-        // Actualizar en memoria solo los que se actualizaron exitosamente
         this.usuarios.forEach(u => {
-          const resultado = resultados.find(r => r && r.id === u.id)
-          if (resultado) {
-            u.activo = resultado.nuevoEstado
+          if (this.selectedIds.includes(u.id)) {
+            if (u.activo) {
+              toDeactivate.push(u.id)
+            } else {
+              toActivate.push(u.id)
+            }
+          }
+        })
+        
+        const promises = []
+        if (toActivate.length > 0) {
+          promises.push(request('usuarios/bulk-update-status', {
+            method: 'POST',
+            body: JSON.stringify({ ids: toActivate, vigente: true })
+          }))
+        }
+        
+        if (toDeactivate.length > 0) {
+          promises.push(request('usuarios/bulk-update-status', {
+            method: 'POST',
+            body: JSON.stringify({ ids: toDeactivate, vigente: false })
+          }))
+        }
+        
+        await Promise.all(promises)
+        
+        // Actualizar en memoria
+        let modificados = 0
+        this.usuarios.forEach(u => {
+          if (this.selectedIds.includes(u.id)) {
+            u.activo = !u.activo
             modificados++
           }
         })

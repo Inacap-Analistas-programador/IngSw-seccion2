@@ -499,7 +499,7 @@
             <tr v-for="f in formadoresCurso" :key="f.CUF_ID">
               <td>{{ getPersonaName(f.PER_ID) }}</td>
               <td>{{ rolesList.find(r => r.ROL_ID === f.ROL_ID)?.ROL_DESCRIPCION || '-' }}</td>
-              <td>{{ seccionesList.find(s => s.CUS_ID === f.CUS_ID)?.CUS_SECCION || '-' }}</td>
+              <td>{{ seccionesCurso.find(s => s.CUS_ID === f.CUS_ID)?.CUS_SECCION || '-' }}</td>
               <td>{{ f.CUO_DIRECTOR ? 'Sí' : 'No' }}</td>
             </tr>
           </tbody>
@@ -661,6 +661,9 @@ const fechasCursoList = ref([]) // Caché de todas las fechas
 const ramaslist = ref([])
 const seccionesList = ref([])
 const seccionesCurso = ref([])
+const comunasList = ref([])
+const cargosList = ref([])
+const isPersonasLoaded = ref(false)
 // Equipo y logística
 const rolesList = ref([])
 const formadoresCurso = ref([])
@@ -820,20 +823,15 @@ async function cargarDatos({ page = 1, page_size = 100, search = '' } = {}) {
     // Solo solicitar catálogos que aún no estén cargados en memoria.
     const fetchPromises = []
 
-    const personasPromise = (Array.isArray(personasList.value) && personasList.value.length) ? Promise.resolve(personasList.value) : personasService.personas.list()
-    fetchPromises.push(personasPromise)
+    // OPTIMIZACIÓN: No cargar personas masivamente. Se cargarán bajo demanda o solo las necesarias.
+    // const personasPromise = (Array.isArray(personasList.value) && personasList.value.length) ? Promise.resolve(personasList.value) : personasService.personas.list()
+    // fetchPromises.push(personasPromise)
 
     const tiposPromise = (Array.isArray(tiposCursoList.value) && tiposCursoList.value.length) ? Promise.resolve(tiposCursoList.value) : mantenedores.tipoCursos.list()
     fetchPromises.push(tiposPromise)
 
     const ramasPromise = (Array.isArray(ramaslist.value) && ramaslist.value.length) ? Promise.resolve(ramaslist.value) : mantenedores.rama.list()
     fetchPromises.push(ramasPromise)
-
-    const seccionesPromise = (Array.isArray(seccionesList.value) && seccionesList.value.length) ? Promise.resolve(seccionesList.value) : seccionesApi.list()
-    fetchPromises.push(seccionesPromise)
-
-    const fechasPromise = (Array.isArray(fechasCursoList.value) && fechasCursoList.value.length) ? Promise.resolve(fechasCursoList.value) : fechasApi.list()
-    fetchPromises.push(fechasPromise)
 
     const comunasPromise = (Array.isArray(comunasList?.value) && comunasList.value.length) ? Promise.resolve(comunasList.value) : mantenedores.comuna.list()
     fetchPromises.push(comunasPromise)
@@ -847,43 +845,49 @@ async function cargarDatos({ page = 1, page_size = 100, search = '' } = {}) {
     const alimentacionPromise = (Array.isArray(alimentacionCatalogo.value) && alimentacionCatalogo.value.length) ? Promise.resolve(alimentacionCatalogo.value) : mantenedores.alimentacion.list()
     fetchPromises.push(alimentacionPromise)
 
-    const [personasApi, tiposApi, ramasApi, seccionesData, fechasData, comunasApi, cargosApi, rolesApi, alimentacionCat] = await Promise.all(fetchPromises)
+    const [tiposApi, ramasApi, comunasApi, cargosApi, rolesApi, alimentacionCat] = await Promise.all(fetchPromises)
 
     // Normalizar cursos (puede venir paginado)
     let cursosArray = Array.isArray(cursosData) ? cursosData : (cursosData?.results || [])
     cursosArray = cursosArray.map(toUpperKeys)
 
     // Normalizar listas relacionadas
-    const fechasListNorm = (Array.isArray(fechasData) ? fechasData : (fechasData?.results || [])).map(toUpperKeys)
-    const seccionesListNorm = (Array.isArray(seccionesData) ? seccionesData : (seccionesData?.results || [])).map(toUpperKeys)
-    const formadoresListNorm = [] // Se cargan bajo demanda o si estuvieran aquí
-    const alimentacionListNorm = [] // Se cargan bajo demanda
-    const cuotasListNorm = [] // Se cargan bajo demanda
-    const coordinadoresListNorm = [] // Se cargan bajo demanda
-
-    // Enlazar fechas a cada curso para mostrar rango en la tabla si tenemos fechas
-    const fechasByCurso = fechasListNorm.reduce((acc, f) => {
-      const id = f.CUR_ID
-      if (!acc[id]) acc[id] = []
-      acc[id].push(f)
-      return acc
-    }, {})
-
+    // Se eliminó la carga masiva de fechas y secciones para optimizar rendimiento
+    
     cursosList.value = cursosArray.map(c => ({
       ...c,
-      fechas: fechasByCurso[c.CUR_ID] ? fechasByCurso[c.CUR_ID].sort((a,b) => new Date(a.CUF_FECHA_INICIO) - new Date(b.CUF_FECHA_INICIO)) : []
+      fechas: [] // Se cargarán bajo demanda o se mostrarán solo en detalle
     }))
 
     // Asignar catálogos (normalizar resultados si vienen paginados)
-    personasList.value = (Array.isArray(personasApi) ? personasApi : (personasApi?.results || [])).map(toUpperKeys)
+    // personasList.value = (Array.isArray(personasApi) ? personasApi : (personasApi?.results || [])).map(toUpperKeys)
     tiposCursoList.value = (Array.isArray(tiposApi) ? tiposApi : (tiposApi?.results || [])).map(toUpperKeys)
     ramaslist.value = (Array.isArray(ramasApi) ? ramasApi : (ramasApi?.results || [])).map(toUpperKeys)
-    fechasCursoList.value = fechasListNorm
-    seccionesList.value = seccionesListNorm
+    // fechasCursoList y seccionesList ya no se cargan masivamente
     comunasList.value = (Array.isArray(comunasApi) ? comunasApi : (comunasApi?.results || [])).map(toUpperKeys)
     cargosList.value = (Array.isArray(cargosApi) ? cargosApi : (cargosApi?.results || [])).map(toUpperKeys)
     rolesList.value = (Array.isArray(rolesApi) ? rolesApi : (rolesApi?.results || [])).map(toUpperKeys)
     alimentacionCatalogo.value = (Array.isArray(alimentacionCat) ? alimentacionCat : (alimentacionCat?.results || [])).map(toUpperKeys)
+
+    // Cargar personas faltantes (responsables de los cursos visibles)
+    const uniquePersonaIds = [...new Set(cursosList.value.map(c => c.PER_ID_RESPONSABLE).filter(id => id))]
+    const missingIds = uniquePersonaIds.filter(id => !personasList.value.find(p => p.PER_ID === id))
+    
+    if (missingIds.length > 0) {
+      try {
+        const newPersonas = await Promise.all(missingIds.map(id => personasService.personas.get(id).catch(() => null)))
+        const validPersonas = newPersonas.filter(p => p).map(toUpperKeys)
+        const currentIds = new Set(personasList.value.map(p => p.PER_ID))
+        for (const p of validPersonas) {
+          if (!currentIds.has(p.PER_ID)) {
+            personasList.value.push(p)
+            currentIds.add(p.PER_ID)
+          }
+        }
+      } catch (e) {
+        console.warn('Error cargando personas faltantes:', e)
+      }
+    }
 
     // Filtrado cliente como fallback; cuando uses búsqueda remota, pasar `search` hará que el servidor filtre
     aplicarFiltros()
@@ -979,6 +983,15 @@ function getRamaName(id) {
 
 
 // --- Lógica del Modal (Crear/Editar) ---
+async function ensurePersonasLoaded() {
+  if (isPersonasLoaded.value) return
+  try {
+    const personasApi = await personasService.personas.list()
+    personasList.value = (Array.isArray(personasApi) ? personasApi : (personasApi?.results || [])).map(toUpperKeys)
+    isPersonasLoaded.value = true
+  } catch (e) { console.warn('Error cargando personas:', e) }
+}
+
 async function abrirModalCrear() {
   form.value = inicializarFormulario()
   isTrulyNew.value = true
@@ -995,9 +1008,9 @@ async function abrirModalCrear() {
   nuevaAlimentacion.value = { ALI_ID: null, CUA_FECHA: '', CUA_TIEMPO: null, CUA_DESCRIPCION: '', CUA_CANTIDAD_ADICIONAL: 0 }
   nuevaCuota.value = { CUC_NUMERO: '', CUC_MONTO: '', CUC_FECHA_VENCIMIENTO: '' }
   nuevoCoordinador.value = { PER_ID: null, CAR_ID: null }
-  // Si aún no se han cargado catálogos (persona, tipos, comunas, cargos, ramas) forzar carga rápida
+  await ensurePersonasLoaded()
+  // Si aún no se han cargado catálogos (tipos, comunas, cargos, ramas) forzar carga rápida
   if (
-    personasList.value.length === 0 ||
     tiposCursoList.value.length === 0 ||
     comunasList.value?.length === 0 ||
     cargosList.value?.length === 0 ||
@@ -1016,6 +1029,7 @@ async function abrirModalEditar(curso) {
     CUR_FECHA_SOLICITUD: curso.CUR_FECHA_SOLICITUD ? curso.CUR_FECHA_SOLICITUD.split('T')[0] : '',
   }
   originalCursoBackup.value = JSON.parse(JSON.stringify(form.value))
+  await ensurePersonasLoaded()
   await cargarFechasDelCurso(curso.CUR_ID)
   await cargarSeccionesDelCurso(curso.CUR_ID)
   // Cargar equipo, alimentación, cuotas y coordinadores del curso
@@ -1066,12 +1080,10 @@ async function cargarFechasDelCurso(cursoId) {
     return
   }
   try {
-    // Solo cargar si aún no tenemos fechas en caché
-    if (!Array.isArray(fechasCursoList.value) || fechasCursoList.value.length === 0) {
-      const todas = await fechasApi.list()
-      fechasCursoList.value = (todas || []).map(toUpperKeys)
-    }
-    fechasCurso.value = (fechasCursoList.value || []).filter(f => Number(f.CUR_ID) === Number(cursoId))
+    // Cargar fechas específicas del curso desde la API
+    const fechasData = await fechasApi.list({ CUR_ID: cursoId })
+    const fechasNorm = (Array.isArray(fechasData) ? fechasData : (fechasData?.results || [])).map(toUpperKeys)
+    fechasCurso.value = fechasNorm.sort((a,b) => new Date(a.CUF_FECHA_INICIO) - new Date(b.CUF_FECHA_INICIO))
   } catch (e) {
     console.error('Error cargando fechas:', e)
     fechasCurso.value = []
@@ -1180,11 +1192,9 @@ const nuevaSeccion = ref({
 
 async function cargarSeccionesDelCurso(cursoId) {
   try {
-    if (!Array.isArray(seccionesList.value) || seccionesList.value.length === 0) {
-      const all = await seccionesApi.list()
-      seccionesList.value = (all || []).map(toUpperKeys)
-    }
-    seccionesCurso.value = (seccionesList.value || []).filter(s => Number(s.CUR_ID) === Number(cursoId))
+    // Cargar secciones específicas del curso desde la API
+    const seccionesData = await seccionesApi.list({ CUR_ID: cursoId })
+    seccionesCurso.value = (Array.isArray(seccionesData) ? seccionesData : (seccionesData?.results || [])).map(toUpperKeys)
   } catch (e) {
     console.error('Error cargando secciones:', e)
     seccionesCurso.value = []
@@ -1562,8 +1572,6 @@ const tiposCursoOptions = computed(() =>
   tiposCursoList.value.map(tc => ({ value: tc.TCU_ID, text: tc.TCU_DESCRIPCION }))
 )
 
-const comunasList = ref([])
-const cargosList = ref([])
 const comunasOptions = computed(() => comunasList.value.map(c => ({ value: c.COM_ID, text: c.COM_DESCRIPCION })))
 
 // Ubicar mapa según comuna seleccionada (coordenadas importadas de todas las comunas de Chile)
@@ -1907,7 +1915,7 @@ async function abrirModalVer(curso) {
   // Cargar datos en segundo plano
   try {
     await cargarFechasDelCurso(curso.CUR_ID)
-    seccionesCurso.value = seccionesList.value.filter(s => Number(s.CUR_ID) === Number(curso.CUR_ID))
+    await cargarSeccionesDelCurso(curso.CUR_ID)
     
     // Cargar formadores, alimentación, cuotas y coordinadores en paralelo pero sin bloquear UI
     const [forms, alims, cuots, coords] = await Promise.all([
@@ -1922,6 +1930,28 @@ async function abrirModalVer(curso) {
     cuotasCurso.value = (Array.isArray(cuots?.results) ? cuots.results : (cuots || [])).map(toUpperKeys)
     coordinadoresCurso.value = (Array.isArray(coords?.results) ? coords.results : (coords || [])).map(toUpperKeys)
     
+    // Cargar personas faltantes para formadores y coordinadores
+    const extraPersonaIds = new Set([
+      ...formadoresCurso.value.map(f => f.PER_ID),
+      ...coordinadoresCurso.value.map(c => c.PER_ID)
+    ].filter(id => id))
+    
+    const missingExtraIds = [...extraPersonaIds].filter(id => !personasList.value.find(p => p.PER_ID === id))
+    
+    if (missingExtraIds.length > 0) {
+      try {
+        const newPersonas = await Promise.all(missingExtraIds.map(id => personasService.personas.get(id).catch(() => null)))
+        const validPersonas = newPersonas.filter(p => p).map(toUpperKeys)
+        const currentIds = new Set(personasList.value.map(p => p.PER_ID))
+        for (const p of validPersonas) {
+          if (!currentIds.has(p.PER_ID)) {
+            personasList.value.push(p)
+            currentIds.add(p.PER_ID)
+          }
+        }
+      } catch (e) { console.warn('Error cargando personas extra:', e) }
+    }
+
     // Cargar catálogo de alimentación solo si es necesario
     if (!alimentacionCatalogo.value.length) {
       const cat = await mantenedores.alimentacion.list().catch(() => [])

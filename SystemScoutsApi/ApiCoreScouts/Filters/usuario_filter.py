@@ -30,9 +30,9 @@ class AplicacionFilter(django_filters.FilterSet):
         fields = ['descripcion', 'vigente']
 
 class PerfilAplicacionFilter(django_filters.FilterSet):
-    perfil_id = django_filters.NumberFilter(field_name='pel_id__pel_id')
-    aplicacion_id = django_filters.NumberFilter(field_name='apl_id__apl_id')
+    pel_id = django_filters.NumberFilter(field_name='pel_id')
+    apl_id = django_filters.NumberFilter(field_name='apl_id')
 
     class Meta:
         model = Perfil_Aplicacion
-        fields = ['perfil_id', 'aplicacion_id']
+        fields = ['pel_id', 'apl_id']
