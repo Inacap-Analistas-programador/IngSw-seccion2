@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import NavBar from './components/NavBar.vue'
 import SideBar from './components/SideBar.vue'
+import ModernMainScrollbar from './components/ModernMainScrollbar.vue'
 
 const collapsed = ref(false)
 function toggleCollapsed() {
@@ -17,13 +18,15 @@ function toggleCollapsed() {
 		<div class="app-layout" :class="{ 'is-collapsed': collapsed }">
 			<SideBar :collapsed="collapsed" @update:collapsed="collapsed = $event" />
 			<main class="main-content">
-				<router-view v-slot="{ Component, route }">
-					<Transition :name="route.meta.transition || 'fade'" mode="out-in">
-						<!-- Use fullPath as key so components remount when query/hash/params change -->
-						<!-- Use a composite key so remount triggers on name/params/query/hash changes -->
-						<component :is="Component" :key="(route.name || route.path) + '|' + (route.fullPath || '')" />
-					</Transition>
-				</router-view>
+				<ModernMainScrollbar>
+					<router-view v-slot="{ Component, route }">
+						<Transition :name="route.meta.transition || 'fade'" mode="out-in">
+							<!-- Use fullPath as key so components remount when query/hash/params change -->
+							<!-- Use a composite key so remount triggers on name/params/query/hash changes -->
+							<component :is="Component" :key="(route.name || route.path) + '|' + (route.fullPath || '')" />
+						</Transition>
+					</router-view>
+				</ModernMainScrollbar>
 			</main>
 		</div>
 	</div>
@@ -42,20 +45,21 @@ function toggleCollapsed() {
 
 body, html {
 	height: 100%;
-	/* Allow the page to scroll when necessary. Previously set to hidden which prevents
-	   the global scrollbar from appearing; main content already has internal scrolling. */
-	overflow: auto;
+	/* Prevent global scrollbar so only main content scrolls */
+	overflow: hidden;
 }
 
 .app-root {
 	display: flex;
 	flex-direction: column;
 	height: 100vh;
+	overflow: hidden;
 }
 
 .app-layout {
 	display: flex;
 	flex: 1;
+	overflow: hidden;
 }
 
 .main-content {

@@ -89,5 +89,38 @@ export default {
       console.warn('No se pudo decodificar token JWT en getCurrentUser:', e);
       return null;
     }
+  },
+
+  async hasPermission(moduleName, action = 'consultar') {
+    const user = await this.getCurrentUser();
+    if (!user) return false;
+
+    // Admin bypass: permitir todo a administradores
+    const role = (user.role || '').toLowerCase();
+    if (role.includes('admin') || role.includes('sistema')) {
+      return true;
+    }
+
+    if (!user.payload || !user.payload.aplicaciones) return false;
+    
+    // Normalize
+    const targetModule = String(moduleName).trim().toLowerCase();
+    const targetAction = `pea_${String(action).trim().toLowerCase()}`; // pea_consultar, pea_ingresar, etc.
+    
+    const app = user.payload.aplicaciones.find(a => {
+      const name = a.apl_descripcion || a.APL_DESCRIPCION || '';
+      return name.toLowerCase() === targetModule;
+    });
+    
+    if (!app) return false;
+    
+    // Check permissions object
+    if (app.permisos) {
+      if (app.permisos[targetAction] === true) return true;
+      // Fallback for uppercase keys
+      if (app.permisos[targetAction.toUpperCase()] === true) return true;
+    }
+    
+    return false;
   }
 };

@@ -15,7 +15,13 @@
         </div>
       </div>
 
-      <div class="table-wrapper">
+      <!-- Indicador de carga -->
+      <div v-if="cargando" class="loading-container">
+        <div class="spinner"></div>
+        <p>Cargando perfiles...</p>
+      </div>
+
+      <div v-else class="table-wrapper">
         <table class="usuarios-table">
           <thead>
             <tr>
@@ -25,10 +31,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-if="cargando">
-              <td colspan="3">Cargando perfiles...</td>
-            </tr>
-            <tr v-else-if="error">
+            <tr v-if="error">
               <td colspan="3" style="color: var(--color-danger)">{{ error }}</td>
             </tr>
             <tr v-else-if="!roles.length">
@@ -864,5 +867,31 @@ export default {
   color: #ffffff !important;
   transform: rotate(90deg);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* Loading Spinner */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  gap: 1rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 </style>

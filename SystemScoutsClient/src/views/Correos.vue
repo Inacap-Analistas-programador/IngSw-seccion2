@@ -53,10 +53,16 @@
 							</div>
 					</div>
 					<div class="correos-card-desc">
-						<span v-if="loading" style="color: var(--color-info); font-weight: 600;"> (Cargando...)</span>
 						<span v-if="error" style="color: var(--color-danger); font-weight: 600;"> ⚠️ {{ error }}</span>
 					</div>
-					<div class="datatable-visual">
+
+					<!-- Indicador de carga -->
+					<div v-if="loading" class="loading-container">
+						<div class="spinner"></div>
+						<p>Cargando participantes...</p>
+					</div>
+
+					<div v-else class="datatable-visual">
 						<table class="datatable-table">
 							<thead>
 								<tr>
@@ -69,8 +75,13 @@
 								</tr>
 							</thead>
 							<tbody>
-								<tr v-if="loading">
-									<td colspan="6" style="text-align: center; padding: 20px;">Cargando personas...</td>
+								<tr v-if="!hasSearched">
+									<td colspan="6" style="text-align: center; padding: 40px; color: var(--color-text-muted);">
+										<div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+											<AppIcons name="search" :size="48" style="opacity: 0.5;" />
+											<span>Seleccione filtros y presione <b>Buscar</b> para ver resultados</span>
+										</div>
+									</td>
 								</tr>
 								<tr v-else-if="error">
 									<td colspan="6" style="text-align: center; padding: 20px; color: var(--color-danger);">{{ error }}</td>
@@ -160,8 +171,9 @@ const USE_BACKEND_ESTADO_CORREO = true
 
 // Datos desde la API
 const rows = ref([])
-const loading = ref(true)
+const loading = ref(false)
 const error = ref(null)
+const hasSearched = ref(false)
 
 // Paginación
 const page = ref(1)
@@ -236,6 +248,7 @@ function notify(msg, icon = '') {
 
 // Cargar personas desde la API (centralizado)
 async function fetchRows(params = {}) {
+	hasSearched.value = true
 	loading.value = true
 	error.value = null
 	try {
@@ -440,9 +453,11 @@ async function loadOptions() {
 }
 
 onMounted(async () => {
+	loading.value = true
 	await loadOptions()
+	loading.value = false
 	lastQueryParams.value = {}
-	await fetchRows()
+	// await fetchRows() // No cargar al inicio, esperar a botón Buscar
 })
 
 const cursos = computed(() => {
@@ -1031,6 +1046,32 @@ input[type="checkbox"] {
 .pagination-range {
 	color: #6b7280;
 	font-size: 0.9rem;
+}
+
+/* Loading Spinner */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  gap: 1rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 </style>
 
