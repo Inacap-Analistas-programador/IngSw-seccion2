@@ -190,7 +190,10 @@ function onLogoutImgError() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  position: relative; /* Changed from fixed to relative */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
   width: 100%;
   z-index: 1100; /* mayor que la sidebar (999) para garantizar clicabilidad */
   font-family: "Segoe UI", Arial, sans-serif;

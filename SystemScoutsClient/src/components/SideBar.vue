@@ -270,10 +270,15 @@ function escHandler(e) {
 </script>
 
 <style scoped>
+.sidebar-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
 .sidebar {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: calc(100vh - var(--navbar-height, 64px));
   width: var(--sidebar-width, 250px);
   background: var(--color-primary);
   color: #fff;
@@ -287,6 +292,8 @@ function escHandler(e) {
   /* Ocultar scrollbar */
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE y Edge */
+  position: sticky;
+  top: var(--navbar-height, 64px);
 }
 
 .sidebar.collapsed {

@@ -35,35 +35,45 @@ function toggleCollapsed() {
 	padding: 0;
 	box-sizing: border-box;
 }
+
 :root {
 	--sidebar-width: 250px;
 	--sidebar-collapsed-width: 70px;
+	--navbar-height: 64px;
 }
 
 body, html {
 	height: 100%;
-	/* Allow the page to scroll when necessary. Previously set to hidden which prevents
-	   the global scrollbar from appearing; main content already has internal scrolling. */
-	overflow: auto;
+	background: #f5f5f5;
 }
 
 .app-root {
 	display: flex;
 	flex-direction: column;
-	height: 100vh;
+	min-height: 100vh;
+	background: #f5f5f5;
+	padding-top: var(--navbar-height);
 }
 
 .app-layout {
 	display: flex;
 	flex: 1;
+	min-height: calc(100vh - var(--navbar-height));
 }
 
 .main-content {
 	flex: 1;
+	height: calc(100vh - var(--navbar-height));
 	overflow-y: auto;
-	padding: 16px;
+	padding: 24px;
 	background: #f5f5f5;
 	position: relative;
+	/* Ocultar scrollbar manteniendo el scroll funcional */
+	scrollbar-width: none; /* Firefox */
+}
+
+.main-content::-webkit-scrollbar {
+	display: none; /* Chrome, Safari */
 }
 
 
