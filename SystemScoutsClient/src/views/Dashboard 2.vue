@@ -1,14 +1,13 @@
 <template>
   <div class="dashboard-scout">
     <!-- Bloque de alertas globales -->
-    <div v-if="alertas.length > 0" style="margin-bottom: 16px;">
-      <BaseAlert
+    <!-- Notification Toasts (bottom-right) -->
+    <div v-if="alertas.length > 0">
+      <NotificationToast
         v-for="alerta in alertas"
         :key="alerta.id"
-        :type="alerta.type"
-        :title="alerta.title"
-        :message="alerta.message"
-        :dismissible="true"
+        :message="alerta.title ? alerta.title + ' - ' + alerta.message : alerta.message"
+        :icon="(alerta.type || '').toLowerCase() === 'success' || (alerta.type || '').toLowerCase() === 'exito' ? 'check' : (alerta.type || '').toLowerCase() === 'error' ? 'x' : (alerta.type || '').toLowerCase() === 'advertencia' || (alerta.type || '').toLowerCase() === 'warning' ? 'alert-triangle' : 'info'"
         @close="removerAlerta(alerta.id)"
       />
     </div>
@@ -236,17 +235,22 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 // Componentes del sistema
-import BaseAlert from '@/components/BaseAlert.vue'
+import NotificationToast from '@/components/NotificationToast.vue'
 import DataCard from '@/components/DataCard.vue'
 
 // CORREGIDO: Importación correcta de servicios
+// CORREGIDO: Importación correcta de servicios
+// Prefer the 'cursos' + 'personas' services used by the original Dashboard.vue
+import cursosService from '@/services/cursosService.js'
+import personasService from '@/services/personasService.js'
+// keep dashboardService_2 as fallback for endpoints that may only be present there
 import dashboardService_2 from '@/services/dashboardService_2'
 
 export default {
   name: 'DashboardScout',
   
   components: {
-    BaseAlert,
+    NotificationToast,
     DataCard
   },
   
@@ -442,83 +446,134 @@ export default {
       router.push(`/cursos/editar/${curso.CUR_ID}`)
     }
 
-    // CORREGIDO: Mejor manejo de errores en la carga de datos
+    // Combined data loader: prefers cursosService/personasService like Dashboard.vue
+    // but falls back to dashboardService_2 endpoints if needed.
     const cargarDatosDesdeAPI = async () => {
       try {
         console.log('Cargando datos desde API...')
-        
-        // Cargar cursos con manejo de error específico
+
+        // Prefer the cursosService interface used by Dashboard.vue
         try {
-          const cursosData = await dashboardService_2.cursos.list()
+          const cursosData = await cursosService.cursos.list()
           if (cursosData && Array.isArray(cursosData)) {
             cursos.value = cursosData
-            console.log(`✓ Cursos cargados: ${cursosData.length}`)
+            console.log(`✓ Cursos cargados (cursosService): ${cursosData.length}`)
+          } else if (cursosData && cursosData.results && Array.isArray(cursosData.results)) {
+            cursos.value = cursosData.results
+            console.log(`✓ Cursos cargados (cursosService.results): ${cursos.value.length}`)
           } else {
-            console.warn('Respuesta de cursos no es un array:', cursosData)
+            console.warn('Respuesta de cursosService no es un array, fallback a dashboardService_2...')
+            // fallback
+            const cursosData2 = await dashboardService_2.cursos.list()
+            cursos.value = Array.isArray(cursosData2) ? cursosData2 : []
+            console.log(`✓ Cursos cargados (fallback): ${cursos.value.length}`)
+          }
+        } catch (e) {
+          console.warn('Error cargando cursos via cursosService, fallback a dashboardService_2:', e && e.message)
+          try {
+            const cursosData2 = await dashboardService_2.cursos.list()
+            cursos.value = Array.isArray(cursosData2) ? cursosData2 : []
+            console.log(`✓ Cursos cargados (fallback): ${cursos.value.length}`)
+          } catch (err2) {
+            console.error('Error cargando cursos (fallback):', err2 && err2.message)
             cursos.value = []
           }
-        } catch (e) {
-          console.error('Error cargando cursos:', e.message)
-          // No lanzar error aquí, continuar con otros datos
         }
-        
-        // Cargar personas
+
+        // Cargar personas: prefer personasService.personasCompletas
         try {
-          const personasData = await dashboardService_2.personas.list()
+          let personasData = []
+          // first try personasService.personasCompletas
+          if (personasService && personasService.personasCompletas && personasService.personasCompletas.list) {
+            personasData = await personasService.personasCompletas.list()
+          } else if (personasService && personasService.personas && personasService.personas.list) {
+            personasData = await personasService.personas.list()
+          }
+
           if (personasData && Array.isArray(personasData)) {
             personas.value = personasData
-            console.log(`✓ Personas cargadas: ${personasData.length}`)
+            console.log(`✓ Personas cargadas (personasService): ${personasData.length}`)
+          } else {
+            // Fallback to dashboardService_2
+            const p2 = await dashboardService_2.personas.list()
+            personas.value = Array.isArray(p2) ? p2 : []
+            console.log(`✓ Personas cargadas (fallback): ${personas.value.length}`)
           }
         } catch (e) {
-          console.warn('Error cargando personas:', e.message)
+          console.warn('Error cargando personas, fallback to dashboardService_2:', e && e.message)
+          try {
+            const p2 = await dashboardService_2.personas.list()
+            personas.value = Array.isArray(p2) ? p2 : []
+          } catch (_) {
+            personas.value = []
+          }
         }
-        
-        // Cargar inscripciones
+
+        // Cargar inscripciones (personaCursos): try dashboardService_2 first, otherwise try cursosService if available
         try {
-          const personasCursoData = await dashboardService_2.personaCursos.list()
-          if (personasCursoData && Array.isArray(personasCursoData)) {
-            personasCurso.value = personasCursoData
-            console.log(`✓ Inscripciones cargadas: ${personasCursoData.length}`)
+          if (dashboardService_2 && dashboardService_2.personaCursos && dashboardService_2.personaCursos.list) {
+            const personasCursoData = await dashboardService_2.personaCursos.list()
+            personasCurso.value = Array.isArray(personasCursoData) ? personasCursoData : []
+            console.log(`✓ Inscripciones cargadas (dashboardService_2): ${personasCurso.value.length}`)
+          } else if (cursosService && cursosService.personaCursos && cursosService.personaCursos.list) {
+            const personasCursoData = await cursosService.personaCursos.list()
+            personasCurso.value = Array.isArray(personasCursoData) ? personasCursoData : []
+            console.log(`✓ Inscripciones cargadas (cursosService): ${personasCurso.value.length}`)
+          } else {
+            personasCurso.value = []
+            console.warn('No se encontró endpoint personaCursos; personasCurso quedará vacío')
           }
         } catch (e) {
-          console.warn('Error cargando inscripciones:', e.message)
+          console.warn('Error cargando personaCursos:', e && e.message)
+          personasCurso.value = []
         }
-        
-        // Cargar pagos con manejo de error 404
+
+        // Cargar pagos (pagoPersona): try dashboardService_2, else cursosService.pagos or similar
         try {
-          const pagosData = await dashboardService_2.pagoPersona.list()
-          if (pagosData && Array.isArray(pagosData)) {
-            pagosPersona.value = pagosData
-            console.log(`✓ Pagos cargados: ${pagosData.length}`)
+          let pagosData = []
+          if (dashboardService_2 && dashboardService_2.pagoPersona && dashboardService_2.pagoPersona.list) {
+            pagosData = await dashboardService_2.pagoPersona.list()
+          } else if (cursosService && cursosService.pagoPersona && cursosService.pagoPersona.list) {
+            pagosData = await cursosService.pagoPersona.list()
           }
+
+          pagosPersona.value = Array.isArray(pagosData) ? pagosData : []
+          console.log(`✓ Pagos cargados: ${pagosPersona.value.length}`)
         } catch (e) {
-          console.warn('Error cargando pagos (puede ser ruta no implementada):', e.message)
-          // Inicializar array vacío para evitar errores
+          console.warn('Error cargando pagos (ruta no implementada o error):', e && e.message)
           pagosPersona.value = []
         }
-        
-        // Cargar coordinadores
+
+        // Cargar coordinadores: prefer cursosService.coordinadores, fallback to dashboardService_2
         try {
-          const coordinadoresData = await dashboardService_2.coordinadores.list()
-          if (coordinadoresData && Array.isArray(coordinadoresData)) {
-            cursoCoordinadores.value = coordinadoresData
-            console.log(`✓ Coordinadores cargados: ${coordinadoresData.length}`)
+          let coordData = []
+          if (cursosService && cursosService.coordinadores && cursosService.coordinadores.list) {
+            coordData = await cursosService.coordinadores.list()
+          } else {
+            coordData = await dashboardService_2.coordinadores.list()
           }
+          cursoCoordinadores.value = Array.isArray(coordData) ? coordData : []
+          console.log(`✓ Coordinadores cargados: ${cursoCoordinadores.value.length}`)
         } catch (e) {
-          console.warn('Error cargando coordinadores:', e.message)
+          console.warn('Error cargando coordinadores:', e && e.message)
+          cursoCoordinadores.value = []
         }
-        
-        // Cargar formadores
+
+        // Cargar formadores: prefer cursosService.formadores, fallback to dashboardService_2
         try {
-          const formadoresData = await dashboardService_2.formadores.list()
-          if (formadoresData && Array.isArray(formadoresData)) {
-            cursoFormadores.value = formadoresData
-            console.log(`✓ Formadores cargados: ${formadoresData.length}`)
+          let fmData = []
+          if (cursosService && cursosService.formadores && cursosService.formadores.list) {
+            fmData = await cursosService.formadores.list()
+          } else if (dashboardService_2 && dashboardService_2.formadores && dashboardService_2.formadores.list) {
+            fmData = await dashboardService_2.formadores.list()
           }
+          cursoFormadores.value = Array.isArray(fmData) ? fmData : []
+          console.log(`✓ Formadores cargados: ${cursoFormadores.value.length}`)
         } catch (e) {
-          console.warn('Error cargando formadores:', e.message)
+          console.warn('Error cargando formadores:', e && e.message)
+          cursoFormadores.value = []
         }
-        
+
         console.log('✓ Carga de datos completada')
       } catch (error) {
         console.error('Error general cargando datos:', error)

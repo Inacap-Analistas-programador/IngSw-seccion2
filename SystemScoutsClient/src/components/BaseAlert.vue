@@ -6,18 +6,18 @@
       role="alert"
       aria-live="polite"
     >
-      <div class="shrink-0 mt-0.5" aria-hidden>
-        <svg v-if="type === 'exito'" class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+      <div class="shrink-0 mt-0.5" aria-hidden v-if="showIcon && normalizedType">
+        <svg v-if="normalizedType === 'success'" class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
           <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.707a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
         </svg>
-        <svg v-else-if="type === 'error'" class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+        <svg v-else-if="normalizedType === 'error'" class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
           <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.72-1.36 3.485 0l6.518 11.59c.75 1.334-.213 2.998-1.742 2.998H3.481c-1.53 0-2.492-1.664-1.742-2.998L8.257 3.1zM11 14a1 1 0 10-2 0 1 1 0 002 0zm-1-3a1 1 0 01-1-1V6a1 1 0 112 0v4a1 1 0 01-1 1z" clip-rule="evenodd"/>
         </svg>
-        <svg v-else-if="type === 'Advertencia'" class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+        <svg v-else-if="normalizedType === 'warning'" class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
           <path d="M8.257 3.099c.765-1.36 2.72-1.36 3.485 0l6.518 11.59c.75 1.334-.213 2.998-1.742 2.998H3.481c-1.53 0-2.492-1.664-1.742-2.998L8.257 3.1z"/>
         </svg>
-        <svg v-else class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-          <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016.918 3H3.082a2 2 0 00-1.079 2.884zM18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
+        <svg v-else-if="normalizedType === 'info'" class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M9 2a7 7 0 100 14A7 7 0 009 2zm1 10a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-.993.883L8 5v4a1 1 0 001.993.117L10 9V5a1 1 0 00-1-1z"/>
         </svg>
       </div>
 
@@ -52,7 +52,12 @@ export default {
     type: {
       type: String,
       default: "info",
-      validator: v => ["exito", "error", "advertencia", "informacion"].includes(v)
+      // accept english and spanish tokens; we'll normalize later
+      validator: v => typeof v === 'string'
+    },
+    showIcon: {
+      type: Boolean,
+      default: true
     },
     title: {
       type: String,
@@ -82,16 +87,27 @@ export default {
     }
   },
   computed: {
+    normalizedType() {
+      if (!this.type) return null
+      const t = String(this.type).toLowerCase()
+      if (t === 'exito' || t === 'success') return 'success'
+      if (t === 'error') return 'error'
+      if (t === 'advertencia' || t === 'warning') return 'warning'
+      if (t === 'informacion' || t === 'información' || t === 'info') return 'info'
+      return null
+    },
     alertClasses() {
-      switch (this.type) {
+      switch (this.normalizedType) {
         case "success":
           return "bg-green-50 text-green-800 border border-green-200";
         case "error":
           return "bg-red-50 text-red-800 border border-red-200";
         case "warning":
           return "bg-yellow-50 text-yellow-800 border border-yellow-200";
-        default:
+        case "info":
           return "bg-blue-50 text-blue-800 border border-blue-200";
+        default:
+          return "bg-gray-50 text-gray-800 border border-gray-200";
       }
     }
   },
