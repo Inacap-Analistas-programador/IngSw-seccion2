@@ -17,6 +17,7 @@ const CursosCapacitaciones = () => import('@/views/CRUDcursos.vue')
 const Login = () => import('@/views/Login.vue')
 const FormularioPreInscripcion = () => import('@/views/Formulario.vue')
 const FormularioPreInscripcion2 = () => import('@/views/Formulario 2.vue')
+const Mantenedores2 = () => import('@/views/mantenedores 2.vue')
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -52,6 +53,12 @@ const router = createRouter({
       name: 'mantenedores', 
       component: Mantenedores, 
       props: true, 
+      meta: { requiresAuth: true, module: 'Mantenedores' } 
+    },
+    { 
+      path: '/mantenedores-2', 
+      name: 'mantenedores2', 
+      component: Mantenedores2, 
       meta: { requiresAuth: true, module: 'Mantenedores' } 
     },
     { 

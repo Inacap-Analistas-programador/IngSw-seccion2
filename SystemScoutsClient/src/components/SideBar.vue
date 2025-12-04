@@ -60,6 +60,20 @@
           <span class="nav-icon"><AppIcons name="qrcode" :size="20" /></span>
           <span class="nav-text">Verificador QR</span>
         </router-link>
+
+        <!-- Apartado desplegable: Mas Pantallas -->
+        <div class="nav-item nav-collapsible" @click="toggleMasPantallas" :class="{ 'router-link-exact-active': showMasPantallas }">
+          <span class="nav-icon"><AppIcons name="view" :size="20" /></span>
+          <span class="nav-collapsible-title">Mas Pantallas</span>
+          <span class="caret" :class="{ open: showMasPantallas }">▾</span>
+        </div>
+        <Transition name="submenu-slide">
+          <div v-show="showMasPantallas" class="submenu">
+            <router-link to="/dashboard" class="submenu-item"><span class="submenu-icon"><AppIcons name="chart-bar" :size="16" /></span>Dashboard</router-link>
+            <router-link to="/mantenedores-2" class="submenu-item"><span class="submenu-icon"><AppIcons name="settings" :size="16" /></span>Mantenedores 2</router-link>
+            <router-link to="/inscripciones-2" class="submenu-item"><span class="submenu-icon"><AppIcons name="file-text" :size="16" /></span>Formulario 2</router-link>
+          </div>
+        </Transition>
       </div>
     </nav>
     
@@ -192,6 +206,15 @@ function handleAuthChanged() {
 
 // Desplegable de Mantenedores
 const showUsuarios = ref(false)
+const showMasPantallas = ref(false)
+
+function toggleUsuarios() {
+  showUsuarios.value = !showUsuarios.value
+}
+
+function toggleMasPantallas() {
+  showMasPantallas.value = !showMasPantallas.value
+}
 
 // Sidebar can be either controlled by parent via `collapsed` prop or operate in uncontrolled mode using localStorage
 const props = defineProps({
@@ -216,10 +239,6 @@ const collapsed = computed({
     try { localStorage.setItem('sidebar-collapsed', v ? '1' : '0') } catch (e) { /* ignore */ }
   }
 })
-
-function toggleUsuarios() {
-  showUsuarios.value = !showUsuarios.value
-}
 
 function toggleCollapse() {
   const val = !collapsed.value
