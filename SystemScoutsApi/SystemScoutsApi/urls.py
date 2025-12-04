@@ -16,9 +16,11 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from ApiCoreScouts.Views.Usuario_view import MyTokenObtainPairView
 
 from ApiCoreScouts.Views.Verificador_view import verificar_acreditacion_qr
+from ApiCoreScouts.Views.Health_view import CheckView as cv
 
 # FRONTEND_DIST_EXISTS = True #activar el renderizado
 urlpatterns = [
+    path('api/health/', cv.as_view(), name='health_check'),
     path('api/usuarios/', include(usuario_router.urls)),
     path('api/personas/', include(personas_router.urls)),
     path('api/cursos/', include(curso_router.urls)),
