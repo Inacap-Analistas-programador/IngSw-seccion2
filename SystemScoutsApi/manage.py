@@ -3,6 +3,9 @@
 import os
 import sys
 from pathlib import Path
+import pymysql
+
+pymysql.install_as_MySQLdb()
 
 
 def main():
