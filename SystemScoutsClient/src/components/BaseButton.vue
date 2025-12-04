@@ -3,6 +3,7 @@
     class="base-button"
     :class="[sizeClass, variantClass, { 'is-disabled': disabled, 'is-block': block }]"
     :disabled="disabled"
+    :type="type"
     @click="handleClick"
   >
     <slot />
@@ -14,6 +15,11 @@
 export default {
   name: "BaseButton",
   props: {
+    type: {
+      type: String,
+      default: 'button',
+      validator: (val) => ['button', 'submit', 'reset'].includes(val),
+    },
     variant: {
       type: String,
       default: "primary",

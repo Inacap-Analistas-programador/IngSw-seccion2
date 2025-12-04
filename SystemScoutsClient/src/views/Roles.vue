@@ -239,6 +239,7 @@ export default {
       try {
         const resp = await aplicacionesService.list()
         this.aplicaciones = Array.isArray(resp) ? resp : (resp.results || resp.data || [])
+        this.syncPermisosConAplicaciones()
       } catch (e) {
         console.error('Error cargando aplicaciones:', e)
         this.mostrarToast('No se pudieron cargar los módulos', 'warning')
@@ -318,13 +319,14 @@ export default {
         vigente: true,
         permisos: this.inicializarPermisos()
       }
+      this.syncPermisosConAplicaciones()
       this.modalVisible = true
     },
 
     async abrirEditar(rol) {
       this.editando = true
       this.rolSeleccionado = rol
-      const rolId = rol.PEL_ID || rol.id
+      const rolId = rol.pel_id || rol.PEL_ID || rol.id
       
       // Cargar permisos existentes
       const permisos = await this.cargarPermisosRol(rolId)
@@ -335,7 +337,37 @@ export default {
         vigente: this.isVigente(rol),
         permisos: permisos
       }
+      this.syncPermisosConAplicaciones()
       this.modalVisible = true
+    },
+
+    syncPermisosConAplicaciones() {
+      if (!this.form.permisos || typeof this.form.permisos !== 'object') {
+        this.form.permisos = {}
+      }
+
+      const next = { ...this.form.permisos }
+      this.aplicaciones.forEach(app => {
+        const appId = app.apl_id || app.APL_ID || app.id
+        if (!appId) return
+        if (!next[appId]) {
+          next[appId] = {
+            consultar: false,
+            ingresar: false,
+            modificar: false,
+            eliminar: false
+          }
+        } else {
+          next[appId] = {
+            consultar: !!next[appId].consultar,
+            ingresar: !!next[appId].ingresar,
+            modificar: !!next[appId].modificar,
+            eliminar: !!next[appId].eliminar
+          }
+        }
+      })
+
+      this.form.permisos = next
     },
 
     cerrarModal() {
@@ -348,7 +380,30 @@ export default {
       }
     },
 
-    async guardarPermisos(rolId) {
+    async guardarPermisos(rolId, isNew = false) {
+      if (!rolId) {
+        console.error("No rolId provided to guardarPermisos");
+        return;
+      }
+
+      // Pre-fetch existing permissions if not new, to avoid N+1 queries
+      let existingMap = {};
+      if (!isNew) {
+        try {
+          const resp = await perfilAplicacionesService.list({ pel_id: rolId });
+          const list = Array.isArray(resp) ? resp : (resp.results || resp.data || []);
+          list.forEach(p => {
+            let aId = p.apl_id || p.APL_ID;
+            if (typeof aId === 'object' && aId !== null) {
+                 aId = aId.apl_id || aId.APL_ID || aId.id;
+            }
+            existingMap[aId] = p;
+          });
+        } catch (e) {
+          console.error("Error fetching existing permissions:", e);
+        }
+      }
+
       // Guardar permisos por cada aplicación
       const promises = []
       
@@ -356,25 +411,7 @@ export default {
         const perms = this.form.permisos[appId]
         
         try {
-          // Buscar si ya existe una entrada perfil-aplicación
-          // Intentamos buscar con ambos formatos de clave para asegurar compatibilidad
-          let existing = null
-          try {
-            const existingResp = await perfilAplicacionesService.list({ 
-              pel_id: rolId, 
-              apl_id: appId 
-            })
-            const existingList = Array.isArray(existingResp) ? existingResp : (existingResp.results || existingResp.data || [])
-            if (existingList.length > 0) existing = existingList[0]
-          } catch (err) {
-            // Fallback a mayúsculas si falla
-            const existingResp = await perfilAplicacionesService.list({ 
-              PEL_ID: rolId, 
-              APL_ID: appId 
-            })
-            const existingList = Array.isArray(existingResp) ? existingResp : (existingResp.results || existingResp.data || [])
-            if (existingList.length > 0) existing = existingList[0]
-          }
+          const existing = existingMap[appId];
 
           const permisoData = {
             pel_id: rolId,
@@ -419,8 +456,8 @@ export default {
           this.mostrarToast('Perfil y permisos actualizados', 'success')
         } else {
           const resp = await perfilesService.create(this.payloadFromForm())
-          rolId = resp.PEL_ID || resp.id
-          await this.guardarPermisos(rolId)
+          rolId = resp.pel_id || resp.PEL_ID || resp.id
+          await this.guardarPermisos(rolId, true)
           this.mostrarToast('Perfil y permisos creados', 'success')
         }
         
@@ -436,7 +473,7 @@ export default {
 
     async toggleVigente(rol) {
       try {
-        const id = rol.PEL_ID || rol.id
+        const id = rol.pel_id || rol.PEL_ID || rol.id
         const actual = this.isVigente(rol)
         const nuevo = !actual
         await perfilesService.partialUpdate(id, { pel_vigente: nuevo, PEL_VIGENTE: nuevo, vigente: nuevo })

@@ -69,6 +69,11 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         return check_password(raw_password, self.password)
 
     def save(self, *args, **kwargs):
+        # Auto-generate ID if not present (fix for missing AUTO_INCREMENT in DB)
+        if not self.usu_id:
+            max_id = self.__class__.objects.aggregate(models.Max('usu_id'))['usu_id__max']
+            self.usu_id = (max_id or 0) + 1
+
         # Fix for BIT fields returning bytes from MySQL
         for field in ['usu_vigente', 'is_staff', 'is_superuser']:
             val = getattr(self, field)
@@ -83,6 +88,19 @@ class Perfil(models.Model):
     pel_id = models.BigAutoField(primary_key=True, db_column='pel_id')
     pel_descripcion = models.CharField(max_length=50, null=False, db_column='pel_descripcion')
     pel_vigente = models.BooleanField(default=True, null=False, db_column='pel_vigente')
+
+    def save(self, *args, **kwargs):
+        # Auto-generate ID if not present (fix for missing AUTO_INCREMENT in DB)
+        if not self.pel_id:
+            max_id = self.__class__.objects.aggregate(models.Max('pel_id'))['pel_id__max']
+            self.pel_id = (max_id or 0) + 1
+
+        # Fix for BIT fields returning bytes from MySQL
+        for field in ['pel_vigente']:
+            val = getattr(self, field)
+            if isinstance(val, bytes):
+                setattr(self, field, val == b'\x01')
+        super().save(*args, **kwargs)
 
     class Meta:
         db_table = 'perfil'
