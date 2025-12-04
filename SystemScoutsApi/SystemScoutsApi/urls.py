@@ -17,10 +17,18 @@ from ApiCoreScouts.Views.Usuario_view import MyTokenObtainPairView
 
 from ApiCoreScouts.Views.Verificador_view import verificar_acreditacion_qr
 from ApiCoreScouts.Views.Health_view import CheckView as cv
+from ApiCoreScouts.Views.Security_view import SLVS, SCV
+from rest_framework.routers import DefaultRouter
 
-# FRONTEND_DIST_EXISTS = True #activar el renderizado
+sec_rt = DefaultRouter()
+sec_rt.register(r'logs', SLVS)
+
+# activar el renderizado si existe el frontend
+# FRONTEND_DIST_EXISTS = True 
 urlpatterns = [
     path('api/health/', cv.as_view(), name='health_check'),
+    path('api/security/', include(sec_rt.urls)),
+    path('api/security/check/', SCV.as_view(), name='security_check'),
     path('api/usuarios/', include(usuario_router.urls)),
     path('api/personas/', include(personas_router.urls)),
     path('api/cursos/', include(curso_router.urls)),
