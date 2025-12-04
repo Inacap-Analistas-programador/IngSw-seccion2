@@ -651,29 +651,46 @@ async function enviarPorCorreo() {
 		return
 	}
 
-		try {
-			const payload = {
-				ids: selIds.map(id => Number(id)),
-				tipo: 'correo-enviado',
-				expSeconds: 24 * 3600,
-				usuId: 1
-			}
-			const result = await authViewsService.qr_email(payload)
+	// Open modal to compose email
+	// For now, we'll use a simple prompt (you can enhance this with BaseModal later)
+	const subject = prompt('Asunto del correo:', 'Información del Curso')
+	if (!subject) return
 
-			// Marcar como enviados localmente
-			for (const r of rows.value) {
-				if (selIds.includes(String(r.id)) && r.vigente && r.email) {
-					r.estadoCorreo = 'Enviado'
-				}
-			}
+	const message = prompt('Mensaje del correo:', 'Estimado/a participante,\n\nTe enviamos la información del curso.')
+	if (!message) return
 
-			notify(`Envío completado. Enviados: ${result.enviados}/${result.solicitados}`, 'send')
-		} catch (e) {
-			console.error('Error enviando correos:', e)
-			notify('No se pudieron enviar los correos: ' + (e?.message || e), 'x-circle')
+	// Get curso_id from filters if selected
+	let cursoId = null
+	if (filters.curso && filters.curso !== 'Todos') {
+		// Find curso ID from cursoOptions
+		const cursoOpt = cursoOptions.value.find(c => c.label === filters.curso || c.value === filters.curso)
+		if (cursoOpt) cursoId = cursoOpt.value
+	}
+
+	try {
+		const correosService = (await import('@/services/correosService.js')).default
+		const payload = {
+			recipient_ids: selIds.map(id => Number(id)),
+			subject,
+			message,
+			...(cursoId && { curso_id: cursoId })
+		}
+		const result = await correosService.sendEmail(payload)
+
+		// Mark as sent locally
+		for (const r of rows.value) {
+			if (selIds.includes(String(r.id)) && r.vigente && r.email) {
+				r.estadoCorreo = 'Enviado'
+			}
 		}
 
-	// Persistir en backend PEC_ENVIO_CORREO_QR = true (si tenemos pecId) - sólo si está habilitado el backend
+		notify(`Envío completado. Enviados: ${result.sent}/${result.sent + result.failed}`, 'send')
+	} catch (e) {
+		console.error('Error enviando correos:', e)
+		notify('No se pudieron enviar los correos: ' + (e?.message || e), 'x-circle')
+	}
+
+	// Persist in backend PEC_ENVIO_CORREO_QR = true (if we have pecId) - only if backend is enabled
 	if (USE_BACKEND_ESTADO_CORREO) {
 		try {
 			const targets = rows.value.filter(r => selIds.includes(String(r.id)) && r.pecId)

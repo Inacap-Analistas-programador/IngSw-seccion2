@@ -11,6 +11,7 @@ from ApiCoreScouts.Routers.Archivo_router import router as archivo_router
 from ApiCoreScouts.Routers.Pago_router import router as pago_router
 from ApiCoreScouts.Routers.Mantenedor_router import router as mantenedor_router
 from ApiCoreScouts.Routers.Persona_router import router as personas_router
+from ApiCoreScouts.Routers.Correos_router import router as correos_router
 
 from rest_framework_simplejwt.views import TokenRefreshView
 from ApiCoreScouts.Views.Usuario_view import MyTokenObtainPairView
@@ -25,6 +26,7 @@ urlpatterns = [
     path('api/archivos/', include(archivo_router.urls)),
     path('api/mantenedores/', include(mantenedor_router.urls)),
     path('api/pagos/', include(pago_router.urls)),
+    path('api/correos/', include(correos_router.urls)),
     path('api/verificar-qr/', verificar_acreditacion_qr, name='verificar_qr'),
     # Authentication
     path('login/', MyTokenObtainPairView.as_view(), name='auth_login'),
