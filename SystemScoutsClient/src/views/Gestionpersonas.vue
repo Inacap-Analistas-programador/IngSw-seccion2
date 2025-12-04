@@ -15,6 +15,7 @@
         <InputBase v-model="searchQuery" placeholder="Buscar por nombre, RUT, email..." @keydown.enter.prevent="filtrar" />
         <BaseSelect v-model="selectedRole" :options="roleOptions" placeholder="Todos los roles" />
         <BaseSelect v-model="selectedCourse" :options="courseOptions" placeholder="Todos los grupos" />
+        <BaseSelect v-model="selectedCurso" :options="cursosOptions" placeholder="Seleccione Curso" />
         <BaseSelect v-model="selectedRama" :options="ramaOptions" placeholder="Todas las ramas" />
         <BaseButton class="btn-search btn-standard" variant="primary" @click="filtrar"><AppIcons name="search" :size="16" /> Buscar</BaseButton>
       </div>
@@ -24,9 +25,9 @@
              block only for desktop (v-if on the buttons) so mobile collapse
              still hides filter controls. -->
         <div class="acciones-top-desktop" v-if="!isMobile">
-          <BaseButton v-if="canCreate" class="btn-add btn-standard" variant="primary" @click="abrirModalCrear"><AppIcons name="plus" :size="16" /> Nueva Persona</BaseButton>
+          <BaseButton v-if="canCreate" class="btn-add btn-standard" variant="primary" @click="abrirRutPopup"><AppIcons name="plus" :size="16" /> Nueva Persona</BaseButton>
           <BaseButton v-if="canCreate" class="btn-import btn-standard" variant="secondary" @click="abrirModalImportar"><AppIcons name="download" :size="16" /> Importar Excel</BaseButton>
-          <BaseButton class="btn-export btn-standard" variant="secondary" @click="exportarExcel"><AppIcons name="upload" :size="16" /> Exportar</BaseButton>
+          <BaseButton class="btn-export btn-standard" variant="secondary" @click="abrirModalExportar"><AppIcons name="upload" :size="16" /> Exportar</BaseButton>
 
           <!-- Pagination removed (not used) -->
         </div>
@@ -38,9 +39,9 @@
 
     <!-- Acciones principales para mobile: se muestran debajo de los filtros cuando están visibles o colapsadas -->
     <div class="acciones-top" v-if="isMobile">
-      <BaseButton v-if="canCreate" class="btn-add btn-standard" variant="primary" @click="abrirModalCrear"><AppIcons name="plus" :size="16" /> Nueva Persona</BaseButton>
+      <BaseButton v-if="canCreate" class="btn-add btn-standard" variant="primary" @click="abrirRutPopup"><AppIcons name="plus" :size="16" /> Nueva Persona</BaseButton>
       <BaseButton v-if="canCreate" class="btn-import btn-standard" variant="secondary" @click="abrirModalImportar"><AppIcons name="download" :size="16" /> Importar Excel</BaseButton>
-      <BaseButton class="btn-export btn-standard" variant="secondary" @click="exportarExcel"><AppIcons name="upload" :size="16" /> Exportar</BaseButton>
+      <BaseButton class="btn-export btn-standard" variant="secondary" @click="abrirModalExportar"><AppIcons name="upload" :size="16" /> Exportar</BaseButton>
     </div>
 
     <!-- Mensaje informativo de permisos limitados -->
@@ -140,10 +141,10 @@
       </table>
     </div>
 
-      <!-- Si no hay personas cargadas, mostrar mensaje instructivo -->
-      <div v-if="!personas || personas.length === 0" class="no-filtro" style="padding:32px; text-align:center; color:#666;">
-        Aplica filtros y presiona "Buscar" para ver la lista de personas.
-      </div>
+        <!-- Mostrar mensaje instructivo hasta que el usuario aplique el filtro -->
+        <div v-if="!filtroAplicado" class="no-filtro" style="padding:16px; text-align:center; color:#666;">
+              Aplica filtros y presiona "Buscar" para ver la lista de personas.
+            </div>
 
   <!-- Ver/Editar persona -->
   <BaseModal v-model="editModalVisible" @close="cancelarEdicion" class="persona-modal modal-editar-mejorado">
@@ -1180,6 +1181,36 @@
         </template>
       </BaseModal>
 
+      <!-- Small RUT Search Popup (opened before full 'Nueva Persona' modal) -->
+      <BaseModal v-model="rutModalVisible" @close="cancelarRutPopup" class="persona-modal rut-search-modal">
+        <template #default>
+          <div class="modal-crear">
+            <header class="modal-header-crear">
+              <div class="header-title">
+                <h2>Buscar por RUT</h2>
+                <p class="subtitle">Ingrese RUT y presione Buscar. Si existe, irá a editar; si no, podrá crear una nueva persona.</p>
+              </div>
+              <div class="header-actions">
+                <BaseButton class="btn-cancel btn-modal-header" type="button" variant="secondary" @click="cancelarRutPopup">
+                  <AppIcons name="x" :size="16" /> Cancelar
+                </BaseButton>
+              </div>
+            </header>
+
+            <form @submit.prevent="buscarRutPopup" class="rut-form" style="padding:16px;">
+              <div class="rut-row">
+                <InputBase class="rut-input" v-model="rutPopup.run" placeholder="12345678" @input="rutPopup.run = rutPopup.run.replace(/[^0-9]/g,'')" />
+                <span class="rut-separator">-</span>
+                <InputBase class="rut-dv" v-model="rutPopup.dv" placeholder="9" maxlength="1" />
+                <BaseButton class="btn-search" type="submit" variant="primary" :disabled="rutPopup.searching || !rutPopup.run">
+                  <AppIcons name="search" :size="14" /> Buscar
+                </BaseButton>
+              </div>
+            </form>
+          </div>
+        </template>
+      </BaseModal>
+
       <!-- Modal de Importar Excel -->
       <BaseModal v-model="importarModalVisible" @close="cerrarModalImportar" class="persona-modal modal-importar-mejorado">
         <template #default>
@@ -1309,6 +1340,34 @@
           </div>
         </template>
       </BaseModal>
+
+      <!-- Modal de Exportación -->
+      <BaseModal v-model="exportarModalVisible" @close="cerrarModalExportar" class="persona-modal modal-exportar-opciones">
+        <template #default>
+          <div class="modal-exportar">
+            <header class="modal-header-exportar">
+              <div class="header-title">
+                <h2>Exportar Lista</h2>
+                <p class="subtitle">Selecciona qué quieres exportar</p>
+              </div>
+              <div class="header-actions">
+                <BaseButton class="btn-cancel btn-modal-header" type="button" variant="secondary" @click="cerrarModalExportar">
+                  <AppIcons name="x" :size="16" /> Cerrar
+                </BaseButton>
+              </div>
+            </header>
+            <div class="export-options">
+              <BaseButton class="btn-standard" variant="primary" @click="exportarExcel('todos')">
+                <AppIcons name="table" :size="16" /> Exportar todos los datos
+              </BaseButton>
+              <BaseButton class="btn-standard" variant="secondary" @click="exportarExcel('emails')" style="margin-left:8px;">
+                <AppIcons name="mail" :size="16" /> Solo correos electrónicos
+              </BaseButton>
+              <p class="hint">Se exporta la lista actualmente visible (según filtros).</p>
+            </div>
+          </div>
+        </template>
+      </BaseModal>
     </div>
   </div>
 </template>
@@ -1394,6 +1453,7 @@ export default {
       selectedRole: '',
       selectedRama: '',
   selectedCourse: '',
+  selectedCurso: '',
       roleOptions: [
         { value: '', label: 'Todos los roles' }
       ],
@@ -1436,8 +1496,11 @@ export default {
   crearModalVisible: false,
   personaNueva: null,
   guardandoPersona: false,
+  rutModalVisible: false,
+  rutPopup: { run: '', dv: '', searching: false },
   
   importarModalVisible: false,
+  exportarModalVisible: false,
   importandoPersonas: false,
   seleccionandoArchivo: false,
   archivoSeleccionado: null,
@@ -1482,6 +1545,11 @@ export default {
         filtros.push(`Curso: ${cursoLabel}`);
       }
       
+      if (this.selectedCurso) {
+        const cursoLabel2 = this.cursosOptions.find(c => c.value === this.selectedCurso)?.label || this.selectedCurso;
+        filtros.push(`Inscrito: ${cursoLabel2}`);
+      }
+      
       return filtros;
     },
     
@@ -1505,6 +1573,16 @@ export default {
     }
   },
   methods: {
+    abrirModalExportar() {
+      if (!this.filtroAplicado || this.personasFiltradas.length === 0) {
+        alert('No hay datos para exportar. Usa los filtros y presiona "Buscar" primero.');
+        return;
+      }
+      this.exportarModalVisible = true;
+    },
+    cerrarModalExportar() {
+      this.exportarModalVisible = false;
+    },
     seleccionar(persona) {
       this.abrirModal(persona);
     },
@@ -1559,27 +1637,41 @@ export default {
       
       if (this.personaEditada.COM_ID && (!this.personaEditada.REG_ID || !this.personaEditada.PRO_ID)) {
         try {
-          const comunas = await mantenedoresService.comuna.list();
-          const comunaActual = comunas.find(c => c.COM_ID === this.personaEditada.COM_ID);
+          // Prefer existing cached options; fallback to API only if empty
+          let comunas = Array.isArray(this.comunaOptionsEditar) && this.comunaOptionsEditar.length
+            ? this.comunaOptionsEditar.map(c => ({ COM_ID: c.value, PRO_ID: c.PRO_ID }))
+            : null;
+          if (!comunas || comunas.length === 0) {
+            try { comunas = await mantenedoresService.comuna.list(); } catch (_) { comunas = []; }
+          }
+          const comunaActual = (comunas || []).find(c => c.COM_ID === this.personaEditada.COM_ID);
           if (comunaActual) {
             this.personaEditada.PRO_ID = comunaActual.PRO_ID;
-            
-            const provincias = await mantenedoresService.provincia.list();
-            const provinciaActual = provincias.find(p => p.PRO_ID === comunaActual.PRO_ID);
+            // Provincias: use cached options only; skip backend calls to avoid 500
+            let provincias = Array.isArray(this.provinciaOptionsEditar) && this.provinciaOptionsEditar.length
+              ? this.provinciaOptionsEditar.map(p => ({ PRO_ID: p.value, REG_ID: p.REG_ID }))
+              : (Array.isArray(this.provinciaOptions) && this.provinciaOptions.length
+                  ? this.provinciaOptions.map(p => ({ PRO_ID: p.value, REG_ID: p.REG_ID }))
+                  : []);
+            const provinciaActual = (provincias || []).find(p => p.PRO_ID === comunaActual.PRO_ID);
             if (provinciaActual) {
               this.personaEditada.REG_ID = provinciaActual.REG_ID;
             }
           }
         } catch (error) {
-          console.error('Error derivando región/provincia de comuna:', error);
+          console.warn('No se pudo derivar región/provincia de la comuna. Continuando en modo lectura.', error);
         }
       }
       
-      if (this.personaEditada.REG_ID) {
-        await this.cargarProvinciasPorRegionEditar();
-      }
-      if (this.personaEditada.PRO_ID) {
-        await this.cargarComunasPorProvinciaEditar();
+      try {
+        if (this.personaEditada.REG_ID) {
+          await this.cargarProvinciasPorRegionEditar();
+        }
+        if (this.personaEditada.PRO_ID) {
+          await this.cargarComunasPorProvinciaEditar();
+        }
+      } catch (_) {
+        // If backend fails (500), avoid blocking the modal
       }
     },
 
@@ -1616,9 +1708,9 @@ export default {
         return;
       }
       this.filtrandoEnProceso = true;
-      
-      setTimeout(() => {
-        this.ejecutarFiltrado();
+
+      setTimeout(async () => {
+        await this.ejecutarFiltrado();
         // En móviles, al buscar colapsamos automáticamente los filtros para ahorrar espacio
         try {
           if (this.isMobile) {
@@ -1633,13 +1725,14 @@ export default {
         this.filtrandoEnProceso = false;
       }, 10);
     },
-    ejecutarFiltrado() {
+    async ejecutarFiltrado() {
       const q = (this.searchQuery || '').toLowerCase().trim();
       const selectedRoleNorm = (this.selectedRole || '').toString().trim();
       const selectedRamaNorm = (this.selectedRama || '').toString().trim();
       const selectedCourseNorm = (this.selectedCourse || '').toString().trim();
+      const selectedCursoNorm = (this.selectedCurso || '').toString().trim();
 
-      const tieneAlgunFiltro = q || selectedRoleNorm || selectedRamaNorm || selectedCourseNorm;
+      const tieneAlgunFiltro = q || selectedRoleNorm || selectedRamaNorm || selectedCourseNorm || selectedCursoNorm;
       
       if (!tieneAlgunFiltro) {
         alert('Debe usar al menos un filtro para buscar (nombre/RUT/email, rol, rama o grupo).');
@@ -1653,9 +1746,64 @@ export default {
         busqueda: q,
         rol: selectedRoleNorm,
         rama: selectedRamaNorm,
-        grupo: selectedCourseNorm
+        grupo: selectedCourseNorm,
+        curso: selectedCursoNorm
       });
       console.log('📊 Total personas disponibles:', this.personas.length);
+
+      // Debug: show a small sample of persona IDs to help diagnosis
+      try {
+        console.log('🔢 Muestra personas (primeros 10):', this.personas.slice(0, 10).map(p => ({ PER_ID: p.PER_ID, PER_RUN: p.PER_RUN, PER_NOMBRES: p.PER_NOMBRES })));
+      } catch (e) {
+        console.warn('No se pudo mostrar muestra de personas:', e);
+      }
+
+      // If a specific course enrollment filter is selected, use the persona-cursos relation
+      // as the authoritative source. Some backend endpoints may ignore CUS_ID on the persons
+      // endpoint and return the full list, which produced the bug where any course showed all persons.
+      let personaIdsEnCurso = null;
+      if (selectedCursoNorm) {
+        try {
+          let personaCursosResp = await personasService.personaCursos.list({ CUS_ID: selectedCursoNorm });
+          console.log('📡 Respuesta personaCursos.list():', Array.isArray(personaCursosResp) ? `array(${personaCursosResp.length})` : personaCursosResp && personaCursosResp.results ? `paginated(results=${personaCursosResp.results.length})` : typeof personaCursosResp);
+          let arr = Array.isArray(personaCursosResp) ? personaCursosResp : (personaCursosResp && Array.isArray(personaCursosResp.results) ? personaCursosResp.results : []);
+
+          // Debug: show sample of relation rows (raw)
+          try { console.log('📋 Muestra persona_curso (raw, primeros 8):', arr.slice(0, 8).map(x => ({ PEC_ID: x.PEC_ID, PER_ID: x.PER_ID, CUS_ID: x.CUS_ID }))); } catch(e){}
+
+          // Ensure we only keep rows that match the requested CUS_ID. Some backend
+          // implementations return the full table ignoring query params, so always
+          // filter client-side by CUS_ID.
+          const beforeFilterCount = arr.length;
+          try {
+            arr = arr.filter(x => String(x.CUS_ID) === String(selectedCursoNorm));
+          } catch (e) {
+            console.warn('Error filtrando arr por CUS_ID:', e);
+          }
+
+          if (!arr.length) {
+            // If after filtering we have nothing, try a fallback: fetch all rows
+            // and filter (best-effort). This handles servers that paginate or
+            // ignore the query param on the filtered call.
+            try {
+              const allResp = await personasService.personaCursos.list();
+              const allArr = Array.isArray(allResp) ? allResp : (allResp && Array.isArray(allResp.results) ? allResp.results : []);
+              arr = allArr.filter(x => String(x.CUS_ID) === String(selectedCursoNorm));
+              console.log('🔁 Fallback: personaCursos.list() total rows=', allArr.length, ' -> matched=', arr.length);
+            } catch (innerErr) {
+              console.warn('Fallback: no fue posible recuperar todas las inscripciones de cursos:', innerErr);
+            }
+          } else {
+            console.log('🔎 personaCursos.list() devolvió', beforeFilterCount, 'filas; tras filtrar por CUS_ID quedan', arr.length);
+          }
+
+          personaIdsEnCurso = new Set(arr.map(x => Number(x.PER_ID)).filter(v => !Number.isNaN(v)));
+          console.log('🔎 Personas (relation) inscritas en curso', selectedCursoNorm, '->', personaIdsEnCurso.size);
+        } catch (error) {
+          console.warn('No fue posible cargar inscripciones de curso para filtrar (error):', error);
+          personaIdsEnCurso = new Set();
+        }
+      }
 
       this.filteredPersonas = this.personas.filter((p) => {
         const nombre = (p.PER_NOMBRES || '').toLowerCase();
@@ -1674,8 +1822,10 @@ export default {
         const coincideRol = !selectedRoleNorm || pRol === selectedRoleNorm;
         const coincideRama = !selectedRamaNorm || pRama === selectedRamaNorm;
         const coincideGrupo = !selectedCourseNorm || pGrupo === selectedCourseNorm;
+        const pIdNum = Number(p.PER_ID || p.PER_RUN || p.PER_ID);
+        const coincideCurso = !selectedCursoNorm || (personaIdsEnCurso ? personaIdsEnCurso.has(pIdNum) : true);
 
-        return coincideBusqueda && coincideRol && coincideRama && coincideGrupo;
+        return coincideBusqueda && coincideRol && coincideRama && coincideGrupo && coincideCurso;
       });
       
       console.log('✅ Personas filtradas:', this.filteredPersonas.length);
@@ -1688,54 +1838,79 @@ export default {
     enrichPersonas() {
       const now = new Date().toISOString();
       this.personas = (this.personas || []).map((p, idx) => {
-        const rawRut = (p.rut || '').toString().trim();
+        // Prefer existing PER_* fields from the API payload. Only compute
+        // fallback values when the canonical PER_* fields are missing.
+        const existingPerId = p.PER_ID !== undefined && p.PER_ID !== null ? Number(p.PER_ID) : null;
+
+        // Parse RUT from known keys if PER_RUN is absent
         let per_run = null;
         let per_dv = '';
-        const m = rawRut.match(/([0-9\.]+)-?([0-9kK])/);
-        if (m) {
-          per_run = Number(m[1].replace(/\./g, '')) || null;
-          per_dv = m[2] || '';
+        if (p.PER_RUN !== undefined && p.PER_RUN !== null && String(p.PER_RUN).trim() !== '') {
+          per_run = Number(String(p.PER_RUN).toString().replace(/\./g, '')) || null;
+          per_dv = (p.PER_DV !== undefined && p.PER_DV !== null) ? String(p.PER_DV) : '';
+        } else {
+          const rawRut = (p.rut || '').toString().trim();
+          const m = rawRut.match(/([0-9\.]+)-?([0-9kK])/);
+          if (m) {
+            per_run = Number(m[1].replace(/\./g, '')) || null;
+            per_dv = m[2] || '';
+          }
         }
 
-        const nameParts = (p.nombre || '').toString().trim().split(/\s+/);
-        let apelpat = '';
-        let apelmat = '';
-        let nombres = p.nombre || '';
-        if (nameParts.length >= 2) {
-          apelpat = nameParts[nameParts.length - 2] || '';
-          apelmat = nameParts[nameParts.length - 1] || '';
-          nombres = nameParts.slice(0, nameParts.length - 2).join(' ') || nombres;
+        // Names: prefer explicit PER_NOMBRES / PER_APELPTA / PER_APELMAT if present
+        let per_nombres = p.PER_NOMBRES;
+        let per_apelpat = p.PER_APELPTA;
+        let per_apelmat = p.PER_APELMAT;
+
+        if (!per_nombres && p.nombre) {
+          // Try to split legacy `nombre` field into parts
+          const nameParts = String(p.nombre || '').trim().split(/\s+/);
+          if (nameParts.length >= 3) {
+            per_apelmat = per_apelmat || nameParts.pop();
+            per_apelpat = per_apelpat || nameParts.pop();
+            per_nombres = nameParts.join(' ');
+          } else if (nameParts.length === 2) {
+            per_apelpat = per_apelpat || nameParts.pop();
+            per_nombres = nameParts.join(' ');
+          } else {
+            per_nombres = per_nombres || String(p.nombre || '');
           }
+        }
+
+        // Email and phone: preserve canonical keys if present
+        const per_mail = (p.PER_MAIL !== undefined && p.PER_MAIL !== null && String(p.PER_MAIL).trim() !== '') ? p.PER_MAIL : (p.PER_EMAIL || p.email || '');
+        const per_fono = (p.PER_FONO !== undefined && p.PER_FONO !== null && String(p.PER_FONO).trim() !== '') ? p.PER_FONO : (p.telefono || p.PER_CEL || '');
 
         const enriched = Object.assign({}, p, {
-          PER_ID: idx + 1,
-          ESC_ID: null,
-          COM_ID: null,
-          USU_ID: null,
-          PER_FECHA_HORA: now,
-          PER_RUN: per_run,
-          PER_DV: per_dv,
-          PER_APELPAT: apelpat,
-          PER_APELMAT: apelmat,
-          PER_NOMBRES: nombres || p.nombre,
-          PER_EMAIL: p.email || '',
-          PER_FECHA_NAC: p.fecha_nac || '1990-01-01',
-          PER_DIRECCION: p.direccion || '',
-          PER_TIPO_FONO: 'Móvil',
-          PER_FONO: p.telefono || '',
-          PER_ALERGIA_ENFERMEDAD: p.alergias || '',
-          PER_LIMITACION: p.limitacion || '',
-          PER_NOM_EMERGENCIA: p.contacto_emergencia || '',
-          PER_FONO_EMERGENCIA: p.telefono_emergencia || '',
-          PER_OTROS: p.otros || '',
-          PER_NUM_MMAA: p.num_mmaa || 0,
-          PER_PROFESION: p.profesion || '',
-          PER_TIEMPO_NNAJ: p.tiempo_nnaj || '',
-          PER_TIEMPO_ADULTO: p.tiempo_adulto || '',
-          PER_RELIGION: p.religion || '',
-          PER_APODO: p.apodo || '',
-          PER_FOTO: p.foto || null,
-          PER_VIGENTE: p.vigente === undefined ? true : !!p.vigente,
+          // PER_ID: prefer canonical PER_ID, then any provided PER_RUN value, then stable index
+          PER_ID: Number(existingPerId || per_run || (idx + 1)),
+          ESC_ID: p.ESC_ID !== undefined ? p.ESC_ID : null,
+          COM_ID: p.COM_ID !== undefined ? p.COM_ID : null,
+          USU_ID: p.USU_ID !== undefined ? p.USU_ID : null,
+          PER_FECHA_HORA: p.PER_FECHA_HORA || now,
+          PER_RUN: per_run !== null ? per_run : (p.PER_RUN || null),
+          PER_DV: per_dv || (p.PER_DV || ''),
+          PER_APELPAT: per_apelpat || p.PER_APELPTA || p.PER_APELPAT || '',
+          PER_APELMAT: per_apelmat || p.PER_APELMAT || p.PER_APELMAT || '',
+          PER_NOMBRES: per_nombres || p.PER_NOMBRES || p.PER_NOMBRES || '',
+          PER_MAIL: per_mail,
+          PER_FECHA_NAC: p.PER_FECHA_NAC || p.fecha_nac || '1990-01-01',
+          PER_DIRECCION: p.PER_DIRECCION || p.direccion || '',
+          PER_TIPO_FONO: p.PER_TIPO_FONO !== undefined ? p.PER_TIPO_FONO : 'Móvil',
+          PER_FONO: per_fono,
+          PER_ALERGIA_ENFERMEDAD: p.PER_ALERGIA_ENFERMEDAD || p.alergias || '',
+          PER_LIMITACION: p.PER_LIMITACION || p.limitacion || '',
+          PER_NOM_EMERGENCIA: p.PER_NOM_EMERGENCIA || p.contacto_emergencia || '',
+          PER_FONO_EMERGENCIA: p.PER_FONO_EMERGENCIA || p.telefono_emergencia || '',
+          PER_OTROS: p.PER_OTROS || p.otros || '',
+          PER_NUM_MMAA: p.PER_NUM_MMAA || p.num_mmaa || 0,
+          PER_PROFESION: p.PER_PROFESION || p.profesion || '',
+          PER_TIEMPO_NNAJ: p.PER_TIEMPO_NNAJ || p.tiempo_nnaj || '',
+          PER_TIEMPO_ADULTO: p.PER_TIEMPO_ADULTO || p.tiempo_adulto || '',
+          PER_RELIGION: p.PER_RELIGION || p.religion || '',
+          PER_APODO: p.PER_APODO || p.apodo || '',
+          PER_FOTO: p.PER_FOTO || p.foto || null,
+          PER_VIGENTE: p.PER_VIGENTE !== undefined ? !!p.PER_VIGENTE : (p.vigente === undefined ? true : !!p.vigente),
           cursos: p.cursos || [],
           historial: p.historial || []
         });
@@ -1743,7 +1918,7 @@ export default {
         return enriched;
       });
     },
-    exportarExcel() {
+    exportarExcel(tipo = 'todos') {
       const datos = this.personasFiltradas.map((p) => {
         // Buscar nombres descriptivos
         const regionNombre = this.regionOptions.find(r => r.value === p.REG_ID)?.label || '';
@@ -1751,7 +1926,13 @@ export default {
         const comunaNombre = this.comunaOptions.find(c => c.value === p.COM_ID)?.label || '';
         const estadoCivilNombre = this.estadoCivilOptions.find(ec => ec.value === p.ESC_ID)?.label || '';
         const grupoNombre = this.gruposOptions.find(g => g.value === p.GRU_ID)?.label || '';
-        
+        if (tipo === 'emails') {
+          return {
+            'ID': p.PER_ID || '',
+            'Nombre': `${p.PER_NOMBRES || ''} ${p.PER_APELPTA || ''} ${p.PER_APELMAT || ''}`.trim(),
+            'Email': p.PER_MAIL || ''
+          };
+        }
         return {
           'ID': p.PER_ID || '',
           'Nombres': p.PER_NOMBRES || '',
@@ -1793,10 +1974,12 @@ export default {
 
       const ws = XLSX.utils.json_to_sheet(datos);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Personas');
+      XLSX.utils.book_append_sheet(wb, ws, tipo === 'emails' ? 'Emails' : 'Personas');
       
       const fecha = new Date().toISOString().split('T')[0];
-      XLSX.writeFile(wb, `Personas_${fecha}.xlsx`);
+      const nombre = tipo === 'emails' ? `Emails_${fecha}.xlsx` : `Personas_${fecha}.xlsx`;
+      XLSX.writeFile(wb, nombre);
+      this.cerrarModalExportar();
     }
     ,
     guardarEdicion() {
@@ -2463,6 +2646,12 @@ export default {
           this.personas = [];
         }
 
+        // Normalize/enrich personas so PER_ID and PER_RUN exist consistently
+        try {
+          this.enrichPersonas();
+        } catch (e) {
+          console.warn('No fue posible enriquecer personas automáticamente:', e);
+        }
         console.log('✅ Personas cargadas:', this.personas.length);
         // Cargar opciones de filtros (desde mantenedores). No derivamos filtros desde personas paginadas.
         await this.cargarOpcionesFiltros();
@@ -2650,19 +2839,31 @@ export default {
           console.warn('No se pudieron cargar niveles:', error.message);
         }
         try {
-          const cursos = await cursosService.cursos.list();
-          // Manejar respuesta paginada (DRF) o lista simple
-          const cursosArray = Array.isArray(cursos) ? cursos : (cursos && Array.isArray(cursos.results) ? cursos.results : []);
+          // Use course sections (secciones) as the source for enrollment selects (CUS_ID)
+          const seccionesResp = await cursosService.secciones.list();
+          const seccionesArray = Array.isArray(seccionesResp) ? seccionesResp : (seccionesResp && Array.isArray(seccionesResp.results) ? seccionesResp.results : []);
           this.cursosOptions = [
             { value: '', label: 'Seleccione Curso' },
-            ...cursosArray.map(c => ({
-              value: c.CUS_ID || c.CUR_ID || c.id,
-              label: c.CUR_DESCRIPCION || c.CUR_NOMBRE || c.CUS_SECCION || (`Curso ${c.CUS_ID || c.CUR_ID || c.id}`)
+            ...seccionesArray.map(s => ({
+              value: s.CUS_ID || s.id || s.CUR_ID,
+              label: s.CUR_DESCRIPCION ? `${s.CUR_DESCRIPCION} — Sección ${s.CUS_SECCION}` : (`Sección ${s.CUS_SECCION} (ID ${s.CUS_ID || s.id})`)
             }))
           ];
-          console.log('Cursos cargados para formulario:', this.cursosOptions.length - 1);
+          console.log('Secciones (cursos) cargadas para formulario:', this.cursosOptions.length - 1);
         } catch (error) {
-          console.warn('No se pudieron cargar cursos:', error.message);
+          console.warn('No se pudieron cargar secciones de cursos:', error.message);
+          // Fallback: intentar cargar cursos principales si secciones no están disponibles
+          try {
+            const cursos = await cursosService.cursos.list();
+            const cursosArray = Array.isArray(cursos) ? cursos : (cursos && Array.isArray(cursos.results) ? cursos.results : []);
+            this.cursosOptions = [
+              { value: '', label: 'Seleccione Curso' },
+              ...cursosArray.map(c => ({ value: c.CUR_ID || c.id, label: c.CUR_DESCRIPCION || c.CUR_NOMBRE || (`Curso ${c.CUR_ID || c.id}`) }))
+            ];
+            console.log('Cursos cargados para formulario (fallback):', this.cursosOptions.length - 1);
+          } catch (err2) {
+            console.warn('Fallback también falló al cargar cursos:', err2.message);
+          }
         }
         
         // Cargar opciones de Alimentación (mantenedor)
@@ -2751,15 +2952,23 @@ export default {
       
       try {
         console.log(`🔍 [${modo}] Cargando provincias para región:`, persona.REG_ID);
-        const provincias = await mantenedoresService.provincia.list();
+        // Try cached province options if they carry REG_ID metadata
+        let provincias = null;
+        if (Array.isArray(this.provinciaOptions) && this.provinciaOptions.some(p => 'REG_ID' in p)) {
+          provincias = this.provinciaOptions.map(p => ({ PRO_ID: p.value, PRO_DESCRIPCION: p.label, REG_ID: p.REG_ID, PRO_VIGENTE: true }));
+        }
+        if (!provincias) {
+          try {
+            provincias = await mantenedoresService.provincia.list();
+          } catch (_) {
+            provincias = [];
+          }
+        }
         const regionIdSeleccionada = Number(persona.REG_ID);
-        
-        this[optionsKey] = provincias
+        this[optionsKey] = (provincias || [])
           .filter(prov => Number(prov.REG_ID) === regionIdSeleccionada && prov.PRO_VIGENTE !== false)
           .map(prov => ({ value: prov.PRO_ID, label: prov.PRO_DESCRIPCION }));
-        
         console.log(`✅ [${modo}] Provincias filtradas:`, this[optionsKey].length);
-        
         if (modo === 'editar' && persona.PRO_ID) {
           const provinciaExiste = this[optionsKey].some(p => p.value === persona.PRO_ID);
           if (!provinciaExiste) {
@@ -2772,8 +2981,9 @@ export default {
           persona.COM_ID = '';
           this[comunasKey] = [];
         }
-      } catch (error) {
-        console.error('Error cargando provincias:', error);
+      } catch (_) {
+        // Avoid throwing/logging noisy errors when backend returns 500
+        this[optionsKey] = [];
       }
     },
 
@@ -2789,15 +2999,23 @@ export default {
       
       try {
         console.log(`🔍 [${modo}] Cargando comunas para provincia:`, persona.PRO_ID);
-        const comunas = await mantenedoresService.comuna.list();
+        // Try cached comuna options if they carry PRO_ID metadata
+        let comunas = null;
+        if (Array.isArray(this.comunaOptions) && this.comunaOptions.some(c => 'PRO_ID' in c)) {
+          comunas = this.comunaOptions.map(c => ({ COM_ID: c.value, COM_DESCRIPCION: c.label, PRO_ID: c.PRO_ID, COM_VIGENTE: true }));
+        }
+        if (!comunas) {
+          try {
+            comunas = await mantenedoresService.comuna.list();
+          } catch (_) {
+            comunas = [];
+          }
+        }
         const provinciaIdSeleccionada = Number(persona.PRO_ID);
-        
-        this[optionsKey] = comunas
+        this[optionsKey] = (comunas || [])
           .filter(com => Number(com.PRO_ID) === provinciaIdSeleccionada && com.COM_VIGENTE !== false)
           .map(com => ({ value: com.COM_ID, label: com.COM_DESCRIPCION }));
-        
         console.log(`✅ [${modo}] Comunas filtradas:`, this[optionsKey].length);
-        
         if (modo === 'editar' && persona.COM_ID) {
           const comunaExiste = this[optionsKey].some(c => c.value === persona.COM_ID);
           if (!comunaExiste) {
@@ -2806,8 +3024,8 @@ export default {
         } else {
           persona.COM_ID = '';
         }
-      } catch (error) {
-        console.error('Error cargando comunas:', error);
+      } catch (_) {
+        this[optionsKey] = [];
       }
     },
 
@@ -2891,6 +3109,111 @@ export default {
     cerrarModalCrear() {
       this.crearModalVisible = false;
       this.personaNueva = null;
+    },
+
+    abrirRutPopup() {
+      this.rutPopup.run = '';
+      this.rutPopup.dv = '';
+      this.rutPopup.searching = false;
+      this.rutModalVisible = true;
+    },
+
+    cancelarRutPopup() {
+      this.rutModalVisible = false;
+      this.rutPopup.run = '';
+      this.rutPopup.dv = '';
+      this.rutPopup.searching = false;
+    },
+
+    async buscarRutPopup() {
+      if (!this.rutPopup.run) {
+        alert('Ingresa un RUT para buscar.');
+        return;
+      }
+      this.rutPopup.searching = true;
+      const run = String(this.rutPopup.run).replace(/[^0-9]/g, '').trim();
+      const dv = this.rutPopup.dv ? String(this.rutPopup.dv).trim() : '';
+
+      let encontrados = [];
+      try {
+        encontrados = await personasService.personas.list({ PER_RUN: run });
+      } catch (err) {
+        console.warn('Busqueda por PER_RUN falló, intentando obtener lista completa:', err && err.message ? err.message : err);
+        try {
+          const all = await personasService.personas.list();
+          encontrados = Array.isArray(all) ? all.filter(p => String(p.PER_RUN).replace(/[^0-9]/g, '') === run) : [];
+        } catch (err2) {
+          console.error('No se pudo obtener lista de personas para buscar RUT:', err2);
+          encontrados = [];
+        }
+      }
+
+      this.rutPopup.searching = false;
+
+      if (encontrados && encontrados.length > 0) {
+        // Normalize and filter by run exactly
+        const matchesRun = encontrados.filter(p => String(p.PER_RUN).replace(/[^0-9]/g, '') === run);
+
+        if (dv) {
+          // If DV provided, require exact RUN+DV match
+          const exact = matchesRun.filter(p => String(p.PER_DV || '').toUpperCase() === String(dv).toUpperCase());
+          if (exact.length === 1) {
+            this.rutModalVisible = false;
+            this.abrirModalPersona(exact[0], false);
+            return;
+          } else if (exact.length > 1) {
+            alert('Se encontraron múltiples registros con el mismo RUT y DV — contacta al administrador.');
+            return;
+          } else {
+            // No exact match with DV: treat as not found
+            // (do not open another person's edit modal)
+            alert('No existe una persona con ese RUT + DV. Puedes crear un nuevo registro.');
+            this.rutModalVisible = false;
+            this.abrirModalCrear();
+            this.$nextTick(() => {
+              if (this.personaNueva) {
+                this.personaNueva.PER_RUN = run;
+                if (dv) this.personaNueva.PER_DV = dv;
+                this.personaNueva.busquedaOnly = false;
+              }
+            });
+            return;
+          }
+        } else {
+          // No DV provided: only proceed if there is exactly one matching RUN
+          if (matchesRun.length === 1) {
+            this.rutModalVisible = false;
+            this.abrirModalPersona(matchesRun[0], false);
+            return;
+          } else if (matchesRun.length > 1) {
+            alert('Se encontraron varios registros con ese RUT. Ingresa el dígito verificador (DV) para identificar la persona.');
+            return;
+          } else {
+            // No matches after normalization -> proceed to create
+            this.rutModalVisible = false;
+            this.abrirModalCrear();
+            this.$nextTick(() => {
+              if (this.personaNueva) {
+                this.personaNueva.PER_RUN = run;
+                this.personaNueva.busquedaOnly = false;
+              }
+            });
+            return;
+          }
+        }
+      }
+
+      // Not found: close rut popup and open full create modal prefilled with RUT
+      this.rutModalVisible = false;
+      // Initialize new person then prefill run/dv and reveal full form
+      this.abrirModalCrear();
+      this.$nextTick(() => {
+        if (this.personaNueva) {
+          this.personaNueva.PER_RUN = run;
+          if (dv) this.personaNueva.PER_DV = dv;
+          this.personaNueva.busquedaOnly = false;
+        }
+      });
     },
 
     abrirModalImportar() {
@@ -3975,29 +4298,27 @@ export default {
 .gestion-personas {
   box-sizing: border-box;
   margin: 0;
-  padding: 0;
+    /* The outer layout (`.main-content`) already applies a top padding
+      to account for the navbar height. Avoid adding an extra margin
+      here which caused double spacing on desktop. */
+    margin-top: 0;
   background: #fff;
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 4px 24px rgba(60,60,60,0.08);
-    padding: 24px;
-    margin-bottom: 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(60,60,60,0.08);
+  padding: 24px;
+  margin-bottom: 24px;
   color: #111;
   display: flex;
   flex-direction: column;
   font-family: Arial, sans-serif;
   width: 100%;
-  height: 100%;
+  /* Let the container size naturally; do not force full-viewport
+     absolute sizing which conflicted with the navbar and sticky filters. */
+  height: auto;
+  max-width: 100%;
   overflow: hidden;
   transition: all 0.3s ease;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  /* Restaurar esquinas redondeadas del fondo blanco */
-  border-radius: 12px;
-  overflow: hidden;
+  position: relative;
 }
 
 .header h2 {
@@ -4016,13 +4337,13 @@ export default {
 
 .filtros {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
   flex: 0 0 auto;
-  padding: 16px 40px 12px 40px;
-  min-height: 56px;
+  padding: 10px 24px;
+  min-height: 44px;
   max-height: none;
-  flex-wrap: wrap; 
+  flex-wrap: wrap;
   box-sizing: border-box;
   background: #fff;
   z-index: 10;
@@ -4035,10 +4356,10 @@ export default {
 /* Acciones principales (siempre visibles) */
 .acciones-top {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
   justify-content: flex-start;
-  padding: 12px 40px;
+  padding: 8px 24px;
   box-sizing: border-box;
 }
 
@@ -4399,14 +4720,44 @@ export default {
   }
 }
 
+/* Sidebar-aware adjustments: ensure this view adapts when the sidebar
+   is expanded or collapsed. App layout sets `margin-left` on `.main-content`
+   using `--sidebar-width` / `--sidebar-collapsed-width`, so we only need
+   to tweak internal padding and table sizing to avoid overflow. */
+@media (min-width: 769px) {
+  .app-layout .sidebar + .main-content .gestion-personas {
+    /* keep full width inside main content but add comfortable padding */
+    padding-left: 24px;
+    padding-right: 24px;
+    box-sizing: border-box;
+  }
+
+  .app-layout .sidebar.collapsed + .main-content .gestion-personas {
+    /* slightly reduce horizontal padding when sidebar is collapsed */
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .app-layout .sidebar + .main-content .gestion-personas .table-wrapper {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  /* When sidebar is collapsed we can show full button labels more often. */
+  .app-layout .sidebar.collapsed + .main-content .gestion-personas .acciones-buttons .btn-label {
+    display: inline !important;
+  }
+}
+
 .editar { padding: 6px 10px; }
 
 .filtro-activo {
   background-color: var(--color-background-mute);
   color: #115e26;
-  padding: 8px;
+  padding: 6px 8px;
   border-radius: 4px;
   flex: 0 0 auto;
+  font-size: 13px;
 }
 
 .table-wrapper {
@@ -4425,8 +4776,8 @@ export default {
   overflow: hidden;
   min-height: 0;
   height: 100%;
-  padding: 12px 24px;
-  gap: 16px;
+  padding: 8px 16px;
+  gap: 12px;
 }
 
 table {
@@ -5481,6 +5832,48 @@ td[data-label="RUT"] {
 </style>
 
 <style scoped>
+/* Export modal improved styles */
+.modal-exportar-opciones .modal-exportar {
+  padding: 16px;
+}
+.modal-exportar-opciones .modal-header-exportar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 8px 0 12px;
+}
+.modal-exportar-opciones .modal-header-exportar .header-title h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+.modal-exportar-opciones .modal-header-exportar .subtitle {
+  margin: 2px 0 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+.modal-exportar-opciones .export-options {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 14px;
+}
+.modal-exportar-opciones .export-options .hint {
+  width: 100%;
+  margin-top: 8px;
+  color: #6b7280;
+  font-size: 12px;
+}
+/* Make modal compact and centered */
+.modal-exportar-opciones .persona-modal {
+  max-width: 520px;
+}
+/* Button emphasis: primary for full export, secondary for emails */
+.modal-exportar-opciones .btn-standard {
+  min-width: 180px;
+}
 /* Modal específico para personas - centrado completo */
 .persona-modal :deep(.modal-overlay) {
   position: fixed !important;
@@ -6850,6 +7243,123 @@ td[data-label="RUT"] {
     display: inline-block !important;
     max-width: 70% !important;
   }
+}
+</style>
+
+<style>
+/* DEBUG LAYOUT HELPERS (temporary)
+   Add class `debug-layout` to the body to enable outlines.
+   Example (in browser console): document.body.classList.add('debug-layout')
+   Remove with: document.body.classList.remove('debug-layout') */
+.debug-layout .app-layout .sidebar {
+  outline: 3px dashed rgba(220, 38, 38, 0.85) !important;
+  background: rgba(220, 38, 38, 0.03) !important;
+}
+.debug-layout .app-layout .main-content {
+  outline: 3px dashed rgba(16, 185, 129, 0.85) !important;
+  background: rgba(16, 185, 129, 0.02) !important;
+}
+.debug-layout .gestion-personas {
+  outline: 3px dashed rgba(37, 99, 235, 0.85) !important;
+  background: rgba(37, 99, 235, 0.02) !important;
+}
+.debug-layout .table-wrapper {
+  outline: 3px dashed rgba(245, 158, 11, 0.85) !important;
+  background: rgba(245, 158, 11, 0.02) !important;
+}
+
+</style>
+
+<style scoped>
+/* RUT popup sizing and layout tweaks (scoped, high specificity) */
+.rut-search-modal .rut-row,
+.persona-modal.rut-search-modal .rut-row {
+  display: flex !important;
+  gap: 12px !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+}
+.rut-search-modal .rut-input,
+.persona-modal.rut-search-modal .rut-input {
+  flex: 0 0 30% !important; /* occupy ~30% of the popup width */
+  min-width: 140px !important;
+  max-width: 420px !important;
+}
+.rut-search-modal .rut-input input,
+.persona-modal.rut-search-modal .rut-input input {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+.rut-search-modal .rut-dv,
+.rut-search-modal .rut-dv input,
+.persona-modal.rut-search-modal .rut-dv,
+.persona-modal.rut-search-modal .rut-dv input {
+  width: 60px !important;
+  min-width: 60px !important;
+  max-width: 60px !important;
+  text-align: center !important;
+  box-sizing: border-box !important;
+  /* Match form input appearance */
+  padding: 12px 15px !important;
+  border: 1px solid #e6e6e6 !important;
+  border-radius: 6px !important;
+  background: #fff !important;
+  font-size: 13px !important;
+  line-height: 1 !important;
+}
+.rut-search-modal .btn-search,
+.persona-modal.rut-search-modal .btn-search {
+  white-space: nowrap !important;
+}
+
+@media (max-width: 520px) {
+  .rut-search-modal .rut-input,
+  .persona-modal.rut-search-modal .rut-input {
+    flex: 0 0 48vw !important;
+    max-width: 320px !important;
+    min-width: 120px !important;
+  }
+  .rut-search-modal .rut-row,
+  .persona-modal.rut-search-modal .rut-row {
+    justify-content: center !important;
+    flex-wrap: nowrap !important;
+  }
+}
+
+.persona-modal.rut-search-modal :deep(.modal-overlay) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 24px !important;
+  background: rgba(2,6,23,0.45) !important;
+}
+.persona-modal.rut-search-modal :deep(.modal-content) {
+  width: auto !important;
+  max-width: 720px !important; /* constrain the BaseModal content */
+  box-sizing: border-box !important;
+  margin: 0 auto !important;
+  border-radius: 12px !important;
+  overflow: visible !important;
+  background: transparent !important; /* allow inner .modal-crear to provide card background */
+}
+.persona-modal.rut-search-modal :deep(.modal-content) .modal-crear {
+  width: 100% !important;
+  max-width: 720px !important;
+  background: #fff !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+}
+.persona-modal.rut-search-modal :deep(.modal-overlay) .modal-crear > * {
+  box-sizing: border-box !important;
+}
+/* Ensure the RUT popup modal-crear does not inherit global full-width rules */
+.persona-modal.rut-search-modal .modal-crear {
+  width: auto !important;
+  max-width: 820px !important;
+  box-sizing: border-box !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  margin: 16px auto !important;
 }
 </style>
 

@@ -105,13 +105,13 @@ class Comuna(models.Model):
 
 class Alimentacion(models.Model):
     ali_id = models.BigAutoField(primary_key=True, db_column='ali_id')
-    ali_descripcion = models.CharField(max_length=100, null=False, db_column='ali_descripcion')
+    ali_descripcion = models.CharField(max_length=100, null=True, db_column='ali_descripcion')
     ali_tipo_opcion = [
         (1, 'Con Almuerzo'),
         (2, 'Sin Almuerzo'),
     ]
-    ali_tipo = models.IntegerField(choices=ali_tipo_opcion, null=False, db_column='ali_tipo')
-    ali_vigente = models.BooleanField(default=True, null=False, db_column='ali_vigente')
+    ali_tipo = models.IntegerField(choices=ali_tipo_opcion, null=True, db_column='ali_tipo')
+    ali_vigente = models.BooleanField(default=True, null=True, db_column='ali_vigente')
 
     class Meta:
         db_table = 'alimentacion'
