@@ -42,12 +42,13 @@ else:
     
     config = Config(EnvRepository())
 
-# CONFIGURACION BASICA
+# configuracion basica
 SECRET_KEY = config('DJANGO_SECRET_KEY', default='fallback-secret-key')
-DEBUG = config('DJANGO_DEBUG', default=False, cast=bool)
+# ponemos debug en true por defecto para que no falle en local
+DEBUG = config('DJANGO_DEBUG', default=True, cast=bool)
 
 if not DEBUG:
-    # Configuraciones de seguridad para producción
+    # configuraciones de seguridad para produccion
     SECURE_HSTS_SECONDS = 31536000  # 1 año
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
@@ -86,9 +87,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # 'scout_project.security_middleware.SecurityHeadersMiddleware',
-    # 'scout_project.security_middleware.XSSProtectionMiddleware',
-    # 'scout_project.security_middleware.SecurityLoggingMiddleware',
+    'ApiCoreScouts.Middleware.sec_mid.SecMid',
 ]
 
 CORS_ALLOWED_ORIGINS = [
@@ -241,4 +240,12 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': (
         'django_filters.rest_framework.DjangoFilterBackend',
     ),
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle'
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/day',
+        'user': '1000/day'
+    }
 }
