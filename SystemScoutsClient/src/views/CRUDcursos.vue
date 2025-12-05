@@ -588,8 +588,6 @@
       </template>
     </BaseModal>
 
-  </div>
-
   <!-- Dashboard del Curso - Overlay completo -->
   <Teleport to="body">
     <div v-if="mostrarDashboard" class="dashboard-overlay">
@@ -599,6 +597,7 @@
       />
     </div>
   </Teleport>
+  </div>
 </template>
 
 <script setup>

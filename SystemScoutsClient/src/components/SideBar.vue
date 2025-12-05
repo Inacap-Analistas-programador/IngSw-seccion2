@@ -260,12 +260,14 @@ onMounted(() => {
     // Abrir automáticamente si se navega a /mantenedores o /usuarios
     if (route && route.path) {
       showUsuarios.value = route.path.startsWith('/usuarios') || route.path.startsWith('/roles')
+      showMasPantallas.value = route.path.startsWith('/dashboard-2') || route.path.startsWith('/mantenedores-2') || route.path.startsWith('/inscripciones-2')
     }
 
     // Watch para actualizar estado al cambiar de ruta
     watch(() => route && route.path, async (p) => {
       if (p) {
         showUsuarios.value = p.startsWith('/usuarios') || p.startsWith('/roles')
+        showMasPantallas.value = p.startsWith('/dashboard-2') || p.startsWith('/mantenedores-2') || p.startsWith('/inscripciones-2')
       }
       // No actualizamos estado de autenticación ni consultamos authService en modo UI-only
     })

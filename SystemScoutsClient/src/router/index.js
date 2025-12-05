@@ -4,7 +4,7 @@ import authService from '@/services/authService'
 // Lazy-load views to keep bundle small
 const Dashboard = () => import('@/views/Dashboard.vue')
 // Variantes alternativas (pantallas 2)
-const Dashboard2 = () => import('@/views/Dashboard 2.vue')
+const Dashboard2 = () => import('@/views/Dashboard2.vue')
 const Mantenedores = () => import('@/views/mantenedores.vue')
 const Gestionpersonas = () => import('@/views/Gestionpersonas.vue')
 const PagosView = () => import('@/views/PagosView.vue')
@@ -16,8 +16,8 @@ const Roles = () => import('@/views/Roles.vue')
 const CursosCapacitaciones = () => import('@/views/CRUDcursos.vue')
 const Login = () => import('@/views/Login.vue')
 const FormularioPreInscripcion = () => import('@/views/Formulario.vue')
-const FormularioPreInscripcion2 = () => import('@/views/Formulario 2.vue')
-const Mantenedores2 = () => import('@/views/mantenedores 2.vue')
+const FormularioPreInscripcion2 = () => import('@/views/Formulario2.vue')
+const Mantenedores2 = () => import('@/views/mantenedores2.vue')
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -33,7 +33,7 @@ const router = createRouter({
       path: '/dashboard-2', 
       name: 'dashboard2', 
       component: Dashboard2, 
-      meta: { requiresAuth: true, module: 'Pantallas2' } 
+      meta: { requiresAuth: true } 
     },
     { 
       path: '/usuarios', 
@@ -59,7 +59,7 @@ const router = createRouter({
       path: '/mantenedores-2', 
       name: 'mantenedores2', 
       component: Mantenedores2, 
-      meta: { requiresAuth: true, module: 'Mantenedores' } 
+      meta: { requiresAuth: true } 
     },
     { 
       path: '/gestionpersonas', 
@@ -99,7 +99,7 @@ const router = createRouter({
     },
     { path: '/inscripciones', name: 'formularioPreInscripcion', component: FormularioPreInscripcion },
     // CORRECCIÓN: Esta ruta debe coincidir exactamente con el enlace en SideBar.vue
-    { path: '/inscripciones-2', name: 'formularioPreInscripcion2', component: FormularioPreInscripcion2, meta: { requiresAuth: true, module: 'Pantallas2' } },
+    { path: '/inscripciones-2', name: 'formularioPreInscripcion2', component: FormularioPreInscripcion2, meta: { requiresAuth: true } },
     // fallback
     { path: '/:catchAll(.*)', redirect: '/pagos' },
   ],
