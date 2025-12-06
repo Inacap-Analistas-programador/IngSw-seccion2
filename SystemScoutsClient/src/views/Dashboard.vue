@@ -98,7 +98,7 @@ async function cargarDatos() {
     loadError.value = null
     // 1. Cargar todos los catálogos en paralelo
     const [cursosResponse, cuotasResponse, coordinadoresResponse, personasResponse] = await Promise.all([
-      cursosService.cursos.list(),
+      cursosService.cursos.list({ page_size: 20 }),
       cursosService.cuotas.list(),
       cursosService.coordinadores.list(),
       personasService.personasCompletas.list()

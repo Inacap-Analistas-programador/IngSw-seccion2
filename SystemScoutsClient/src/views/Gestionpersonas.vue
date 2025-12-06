@@ -12,11 +12,11 @@
         </button>
       </div>
       <div class="filtros-left" v-if="!isMobile || !filtrosColapsados">
-        <InputBase v-model="searchQuery" placeholder="Buscar por nombre, RUT, email..." @keydown.enter.prevent="filtrar" />
-        <BaseSelect v-model="selectedRole" :options="roleOptions" placeholder="Todos los roles" />
-        <BaseSelect v-model="selectedCourse" :options="courseOptions" placeholder="Todos los grupos" />
-        <BaseSelect v-model="selectedCurso" :options="cursosOptions" placeholder="Seleccione Curso" />
-        <BaseSelect v-model="selectedRama" :options="ramaOptions" placeholder="Todas las ramas" />
+        <InputBase v-model="searchQuery" placeholder="Buscar por nombre, RUT, email..." @keydown.enter.prevent="filtrar" @focus="ensureFiltrosLoaded" />
+        <BaseSelect v-model="selectedRole" :options="roleOptions" placeholder="Todos los roles" @click="ensureFiltrosLoaded" />
+        <BaseSelect v-model="selectedCourse" :options="courseOptions" placeholder="Todos los grupos" @click="ensureFiltrosLoaded" />
+        <BaseSelect v-model="selectedCurso" :options="cursosOptions" placeholder="Seleccione Curso" @click="ensureFiltrosLoaded" />
+        <BaseSelect v-model="selectedRama" :options="ramaOptions" placeholder="Todas las ramas" @click="ensureFiltrosLoaded" />
         <BaseButton class="btn-search btn-standard" variant="primary" @click="filtrar"><AppIcons name="search" :size="16" /> Buscar</BaseButton>
       </div>
       <div class="filtros-right" v-if="!isMobile || !filtrosColapsados">
@@ -1520,6 +1520,7 @@ export default {
     filtersCachedAt: null,
     filtersCacheTTL: 1000 * 60 * 60 * 24 // 24 hours
     ,_cargandoPersonasInFlight: false
+    ,_cargandoFiltrosInFlight: false
     };
   },
   computed: {
@@ -1579,6 +1580,12 @@ export default {
         return;
       }
       this.exportarModalVisible = true;
+    },
+    ensureFiltrosLoaded() {
+      if (this.filtersCachedAt && (Date.now() - this.filtersCachedAt) < this.filtersCacheTTL) return;
+      if (this._cargandoFiltrosInFlight) return;
+      this._cargandoFiltrosInFlight = true;
+      this.cargarOpcionesFiltros().catch(err => { console.warn('Error cargando filtros:', err) }).finally(() => { this._cargandoFiltrosInFlight = false; });
     },
     cerrarModalExportar() {
       this.exportarModalVisible = false;
@@ -2330,8 +2337,8 @@ export default {
           }
         }
         
-        console.log('🔄 Recargando lista de personas...');
-        await this.cargarPersonas();
+        console.log('🔄 Recargando lista de personas... (forzada)');
+        await this.cargarPersonas(true);
         // Forzar recarga de filtros para actualizar cache inmediatamente
         try { await this.cargarOpcionesFiltros(true); } catch(e){ console.warn('No se pudo forzar recarga de filtros tras actualización:', e); }
         
@@ -2435,8 +2442,8 @@ export default {
       }
       
       try {
-        console.log('🔄 Recargando lista de personas...');
-        await this.cargarPersonas();
+        console.log('🔄 Recargando lista de personas... (forzada)');
+        await this.cargarPersonas(true);
         
         if (this.filtroAplicado) {
           console.log('🔍 Reaplicando filtros...');
@@ -2493,8 +2500,8 @@ export default {
       }
       
       try {
-        console.log('🔄 Recargando lista de personas...');
-        await this.cargarPersonas();
+        console.log('🔄 Recargando lista de personas... (forzada)');
+        await this.cargarPersonas(true);
         
         if (this.filtroAplicado) {
           console.log('🔍 Reaplicando filtros...');
@@ -2623,7 +2630,14 @@ export default {
       }
     },
 
-    async cargarPersonas() {
+    async cargarPersonas(force = false) {
+      // Only load persons if explicitly forced or if filters were applied.
+      if (!force && !this.filtroAplicado) {
+        console.log('Carga de personas omitida: no se aplicaron filtros y no se forzó la carga');
+        this.personas = [];
+        return;
+      }
+
       if (this._cargandoPersonasInFlight) {
         console.log('Carga de personas ya en curso — omitiendo llamada duplicada');
         return;
@@ -2854,7 +2868,7 @@ export default {
           console.warn('No se pudieron cargar secciones de cursos:', error.message);
           // Fallback: intentar cargar cursos principales si secciones no están disponibles
           try {
-            const cursos = await cursosService.cursos.list();
+            const cursos = await cursosService.cursos.list({ page_size: 20 });
             const cursosArray = Array.isArray(cursos) ? cursos : (cursos && Array.isArray(cursos.results) ? cursos.results : []);
             this.cursosOptions = [
               { value: '', label: 'Seleccione Curso' },
@@ -4211,8 +4225,8 @@ export default {
           }
         }
         
-        console.log('🔄 Recargando lista de personas...');
-        await this.cargarPersonas();
+        console.log('🔄 Recargando lista de personas... (forzada)');
+        await this.cargarPersonas(true);
         // Forzar recarga de filtros para actualizar cache inmediatamente
         try { await this.cargarOpcionesFiltros(true); } catch(e){ console.warn('No se pudo forzar recarga de filtros tras creación:', e); }
         
@@ -4289,7 +4303,13 @@ export default {
   },
   
   async mounted() {
-    await this.cargarPersonas();
+    // Auto-load filter options on view entry so selects are ready for the user.
+    try {
+      this.ensureFiltrosLoaded();
+    } catch (e) {
+      console.warn('Error cargando filtros en mounted:', e);
+    }
+    // Do not auto-load personas here; users must apply filters first.
   }
 };
 </script>
@@ -5388,6 +5408,7 @@ th {
   .acciones-buttons .base-button,
   .acciones-buttons button {
     display: inline-flex !important;
+  }
 
   /* Desktop action placement: style buttons to match original desktop look */
   .acciones-top-desktop .btn-standard {
@@ -5415,8 +5436,6 @@ th {
 
   /* Ensure top actions outside the collapsible filters keep their labels */
   .acciones-top-desktop .btn-label { display: inline !important; }
-    vertical-align: middle;
-  }
 
   /* Position desktop actions to the right of the filters visually. We keep
      the markup outside the filters (so mobile collapse won't hide them),

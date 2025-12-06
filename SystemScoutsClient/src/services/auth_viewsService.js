@@ -11,11 +11,14 @@ export default {
     return request('personas/qr-email', { method: 'POST', body: JSON.stringify(payload) })
   },
 
-  // Extras: manual accreditation endpoints (same names as backend views)
-  async acreditacion_manual_search(payload = {}) {
-    return request('personas/acreditacion_manual_search', { method: 'POST', body: JSON.stringify(payload) })
+  // Extras: manual accreditation endpoints
+  // Use the generic personas list endpoint for search (GET /api/personas/personas?search=term)
+  async acreditacion_manual_search(term = '') {
+    const q = encodeURIComponent(String(term || '').trim())
+    return request(`personas/personas${q ? `?search=${q}` : ''}`)
   },
 
+  // Keep acreditar endpoint as POST (existing backend view)
   async acreditacion_manual_acreditar(payload = {}) {
     return request('personas/acreditacion_manual_acreditar', { method: 'POST', body: JSON.stringify(payload) })
   }

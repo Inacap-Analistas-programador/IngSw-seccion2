@@ -6,6 +6,16 @@ class PersonaSerializer(serializers.ModelSerializer):
         model = Persona
         fields = '__all__'
 
+class PersonaSearchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Persona
+        fields = (
+            'per_id',
+            'per_rut',
+            'per_nombres',
+            'per_apellidos',
+        )
+
 class PersonaCompletaSerializer(serializers.ModelSerializer):
     """Serializer que incluye datos relacionados de rol, rama y grupo"""
     per_rol = serializers.SerializerMethodField()

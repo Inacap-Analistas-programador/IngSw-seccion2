@@ -101,7 +101,7 @@ const router = createRouter({
     // CORRECCIÓN: Esta ruta debe coincidir exactamente con el enlace en SideBar.vue
     { path: '/inscripciones-2', name: 'formularioPreInscripcion2', component: FormularioPreInscripcion2, meta: { requiresAuth: true } },
     // fallback
-    { path: '/:catchAll(.*)', redirect: '/pagos' },
+    { path: '/:catchAll(.*)', redirect: '/dashboard-2' },
   ],
 })
 

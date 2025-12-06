@@ -1086,7 +1086,7 @@ export default {
       try {
         console.log('🔄 Iniciando carga de cursos desde SSB...')
         
-        const response = await cursosService.cursos.list()
+        const response = await cursosService.cursos.list({ page_size: 20 })
         console.log('📦 Respuesta completa de cursosService:', response)
         
         let cursosData = []

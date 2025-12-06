@@ -12,6 +12,8 @@ from ApiCoreScouts.Routers.Pago_router import router as pago_router
 from ApiCoreScouts.Routers.Mantenedor_router import router as mantenedor_router
 from ApiCoreScouts.Routers.Persona_router import router as personas_router
 from ApiCoreScouts.Routers.Correos_router import router as correos_router
+from ApiCoreScouts.Views.persona_search_view import persona_search
+from ApiCoreScouts.Views.min_views import personas_min, tipos_curso_min, roles_min, cargos_min, ramas_min
 
 from rest_framework_simplejwt.views import TokenRefreshView
 from ApiCoreScouts.Views.Usuario_view import MyTokenObtainPairView
@@ -28,6 +30,14 @@ urlpatterns = [
     path('api/pagos/', include(pago_router.urls)),
     path('api/correos/', include(correos_router.urls)),
     path('api/verificar-qr/', verificar_acreditacion_qr, name='verificar_qr'),
+    # Lightweight persona search
+    path('api/personas/search', persona_search),
+    # Minimal catalogs for fast UI
+    path('api/personas/min', personas_min),
+    path('api/mantenedores/tipo-curso/min', tipos_curso_min),
+    path('api/mantenedores/roles/min', roles_min),
+    path('api/mantenedores/cargos/min', cargos_min),
+    path('api/mantenedores/ramas/min', ramas_min),
     # Authentication
     path('login/', MyTokenObtainPairView.as_view(), name='auth_login'),
     path('refresh/', TokenRefreshView.as_view(), name='auth_perfil'),

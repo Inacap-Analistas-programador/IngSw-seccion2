@@ -1,5 +1,3 @@
-[file name]: mantenedores.vue
-[file content begin]
 <template>
   <div class="mantenedores-scouts">
     <!-- Error Alert -->
@@ -2929,4 +2927,3 @@ export default {
   }
 }
 </style>
-[file content end]

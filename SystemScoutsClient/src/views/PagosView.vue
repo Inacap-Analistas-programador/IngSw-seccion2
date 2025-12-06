@@ -1052,7 +1052,7 @@ export default {
      */
     async cargarCatalogos () {
       try {
-        const cursosResponse = await cursosService.cursos.list()
+        const cursosResponse = await cursosService.cursos.list({ page_size: 20 })
         const cursos = Array.isArray(cursosResponse)
           ? cursosResponse
           : cursosResponse.results || []
