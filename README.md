@@ -82,10 +82,11 @@ asegurate de estar posicionado en manage.py con
 # Hacer migraciones en el backend: 
 
 1. **Debes estar en esta ruta (cd IngSw-seccion2/SystemScoutsApi):**
+```powershell
 python manage.py makemigrations
-
+```
 2. **Ejecutar migraciones:**
-```shell
+```powershell
 python manage.py migrate
 ```
 ---
@@ -93,17 +94,21 @@ python manage.py migrate
 # En caso de tener problemas al migrar los datos, haz estos pasos:
 
 1. **Revertir todas las migraciones de la app:**
+```powershell
 python manage.py migrate ApiCoreScouts zero
-
-2. **Eliminar archivos de migración conflictivos**
+```
+3. **Eliminar archivos de migración conflictivos**
+```powershell
 rm ApiCoreScouts/migrations/0002_*.py
-
-3. **Crear migraciones limpias**
+```
+4. **Crear migraciones limpias**
+```powershell
 python manage.py makemigrations ApiCoreScouts
-
-4. **Aplicar migraciones**
+```
+5. **Aplicar migraciones**
+```powershell
 python manage.py migrate
-
+```
 # Crear super usuario (si aún no lo haz creado)
 
 ---
@@ -126,11 +131,11 @@ print(f"Perfil ID creado: {perfil_admin.PEL_ID}")
 ######################################################
 
 # Salir de la shell con:
-```shell
+```powershell
 exit()
 ```
 # Crear el superusuario con el comando:
-```shell
+```powershell
 python manage.py createsuperuser
 ```
 # Introducir datos para crear el super usuario con el perfil "Administrador"
