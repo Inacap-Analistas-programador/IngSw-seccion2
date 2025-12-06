@@ -85,8 +85,9 @@ asegurate de estar posicionado en manage.py con
 python manage.py makemigrations
 
 2. **Ejecutar migraciones:**
+```shell
 python manage.py migrate
-
+```
 ---
 
 # En caso de tener problemas al migrar los datos, haz estos pasos:
@@ -125,11 +126,13 @@ print(f"Perfil ID creado: {perfil_admin.PEL_ID}")
 ######################################################
 
 # Salir de la shell con:
+```shell
 exit()
-
+```
 # Crear el superusuario con el comando:
+```shell
 python manage.py createsuperuser
-
+```
 # Introducir datos para crear el super usuario con el perfil "Administrador"
 USU USERNAME, Password (x2)
 
@@ -154,8 +157,10 @@ from django.core.management.utils import get_random_secret_key
 print(get_random_secret_key())
 
 <<<<<<< HEAD
-o:
 
+```
+o:
+```bash
 =======
 >>>>>>> 7d2932d2f785da8bc0444f20a0b8b9f0563f914c
 =======
