@@ -24,7 +24,7 @@ for name in env_names:
         env_path = candidate
         break
 
-if env_path.exists():
+if env_path and env_path.exists():
     try:
         config = Config(RepositoryEnv(env_path, encoding='utf-8'))
     except UnicodeDecodeError:

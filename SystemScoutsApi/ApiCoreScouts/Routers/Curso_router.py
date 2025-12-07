@@ -3,8 +3,6 @@ from rest_framework.routers import DefaultRouter
 from ..Views.Curso_view import *
 
 router = DefaultRouter()
-
-router = DefaultRouter()
 router.register(r'cursos', CursoViewSet, basename='curso')
 router.register(r'cuotas', CursoCuotaViewSet, basename='curso-cuota')
 router.register(r'fechas', CursoFechaViewSet, basename='curso-fecha')
