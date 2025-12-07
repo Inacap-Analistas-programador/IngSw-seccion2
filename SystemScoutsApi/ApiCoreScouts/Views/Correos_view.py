@@ -70,7 +70,9 @@ class CorreosViewSet(viewsets.ViewSet):
                         logger.warning(f"Could not find persona_curso for PER_ID={persona.per_id}, CUR_ID={curso_id}: {e}")
 
                 # Generate QR code
-                qr_data = f"{settings.ALLOWED_HOSTS[0]}/api/correos/correos/verify/?token={token}&per_id={persona.per_id}"
+                # Use full URL with protocol for QR code
+                base_url = getattr(settings, 'SITE_URL', f"https://{settings.ALLOWED_HOSTS[0]}")
+                qr_data = f"{base_url}/api/correos/correos/verify/?token={token}&per_id={persona.per_id}"
                 if curso_id:
                     qr_data += f"&curso_id={curso_id}"
                 

@@ -237,6 +237,9 @@ EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=False, cast=bool)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 
+# Site URL for QR codes and external links
+SITE_URL = config('SITE_URL', default='https://sistema.guiasyscoutsbiobio.cl')
+
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (

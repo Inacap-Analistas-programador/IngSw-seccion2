@@ -4,9 +4,9 @@ from .Persona_serializer import PersonaSerializer
 from .Curso_serializer import CursoSerializer
 
 class ProveedorSerializer(serializers.ModelSerializer):
-        class Meta:
-            model = Proveedor
-            fields = '__all__'
+    class Meta:
+        model = Proveedor
+        fields = '__all__'
 
 class ComprobantePagoSerializer(serializers.ModelSerializer):
     class Meta:
