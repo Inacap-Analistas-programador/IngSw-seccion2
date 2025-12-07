@@ -799,7 +799,7 @@ const lastController = { ctrl: null }
 async function cargarDatos({ page = 1, page_size = 20, search = '' } = {}) {
   if (isLoadingData.value) return
   // Requerir al menos un filtro antes de cargar
-  if (!hasAnyFilter) {
+  if (!hasAnyFilter.value) {
     cursosList.value = []
     cursosFiltrados.value = []
     return
@@ -1001,7 +1001,7 @@ watch(() => filtros.value.searchQuery, (v) => {
     // No cargar sin filtros
     return
   }
-  if (hasAnyFilter) _debouncedLoad(v)
+  if (hasAnyFilter.value) _debouncedLoad(v)
 })
 
 // Listener de almacenamiento (multi-tab / login en otra pestaña)
@@ -1021,7 +1021,7 @@ if (typeof window !== 'undefined') {
 function aplicarFiltros() {
   let items = [...cursosList.value]
   const { searchQuery, estado, tipoCurso, responsable } = filtros.value
-  if (!hasAnyFilter) {
+  if (!hasAnyFilter.value) {
     cursosFiltrados.value = []
     return
   }

@@ -482,7 +482,7 @@ const rowsFiltered = computed(() => {
 	// aplicar filtro por estadoPersona si está activo
 	if (appliedFilters.estadoPersona && appliedFilters.estadoPersona !== 'Todos') {
 		if (appliedFilters.estadoPersona === 'Vigente') list = list.filter(r => Boolean(r.vigente))
-		else if (appliedFilters.estadoPersona === 'No vigente') list = list.filter(r => !Boolean(r.vigente))
+		else if (appliedFilters.estadoPersona === 'No vigente') list = list.filter(r => !r.vigente)
 	}
 	return list
 })
@@ -494,7 +494,7 @@ const marcarButtonLabel = computed(() => {
 	const targets = rows.value.filter(r => selIds.includes(String(r.id)))
 	if (!targets.length) return 'Marcar Enviado'
 	const allSent = targets.every(t => Boolean(t.pecEnvioCorreoQR))
-	const allPending = targets.every(t => !Boolean(t.pecEnvioCorreoQR))
+	const allPending = targets.every(t => !t.pecEnvioCorreoQR)
 	if (allSent) return 'Marcar Pendiente'
 	if (allPending) return 'Marcar Enviado'
 	return 'Alternar estado'
@@ -644,7 +644,7 @@ async function marcarEnviado() {
 
 	// Toggle local-only rows
 	for (const t of localOnly) {
-		const newVal = !Boolean(t.pecEnvioCorreoQR)
+		const newVal = !t.pecEnvioCorreoQR
 		t.pecEnvioCorreoQR = newVal
 		t.estadoCorreo = newVal ? 'Enviado' : 'Pendiente'
 	}
