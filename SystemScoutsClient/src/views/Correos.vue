@@ -154,18 +154,15 @@
 </template>
 
 <script setup>
-import { reactive, computed, ref, onMounted, nextTick } from 'vue'
+import { reactive, computed, ref, onMounted } from 'vue'
 import BaseButton from '../components/BaseButton.vue'
 import AppIcons from '@/components/icons/AppIcons.vue'
 import NotificationToast from '@/components/NotificationToast.vue'
 import ModernMainScrollbar from '@/components/ModernMainScrollbar.vue'
-import QRCode from 'qrcode'
 import { personas as personasService, personaCursos as personaCursosService } from '@/services/personasService'
 import { cursos as cursosService } from '@/services/cursosService'
-import authViewsService from '@/services/auth_viewsService.js'
 import { rol } from '@/services/mantenedoresService'
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
 // Flag temporal: cuando es true, 'Estado correo' se determina desde persona-cursos (PEC_ENVIO_CORREO_QR)
 const USE_BACKEND_ESTADO_CORREO = true
 
@@ -460,11 +457,7 @@ onMounted(async () => {
 	// await fetchRows() // No cargar al inicio, esperar a botón Buscar
 })
 
-const cursos = computed(() => {
-	const s = new Set()
-	rows.value.forEach(r => s.add(r.curso))
-	return Array.from(s)
-})
+// Computed for available unique courses removed (was unused)
 
 // Rows shown in the table: server may apply some filters, but provide
 // a client-side layer so filters like `curso`, `rol` and `estadoPersona`
@@ -482,7 +475,7 @@ const rowsFiltered = computed(() => {
 	// aplicar filtro por estadoPersona si está activo
 	if (appliedFilters.estadoPersona && appliedFilters.estadoPersona !== 'Todos') {
 		if (appliedFilters.estadoPersona === 'Vigente') list = list.filter(r => Boolean(r.vigente))
-		else if (appliedFilters.estadoPersona === 'No vigente') list = list.filter(r => !Boolean(r.vigente))
+		else if (appliedFilters.estadoPersona === 'No vigente') list = list.filter(r => !r.vigente)
 	}
 	return list
 })
@@ -494,7 +487,7 @@ const marcarButtonLabel = computed(() => {
 	const targets = rows.value.filter(r => selIds.includes(String(r.id)))
 	if (!targets.length) return 'Marcar Enviado'
 	const allSent = targets.every(t => Boolean(t.pecEnvioCorreoQR))
-	const allPending = targets.every(t => !Boolean(t.pecEnvioCorreoQR))
+	const allPending = targets.every(t => !t.pecEnvioCorreoQR)
 	if (allSent) return 'Marcar Pendiente'
 	if (allPending) return 'Marcar Enviado'
 	return 'Alternar estado'
@@ -559,21 +552,6 @@ function vigenteClass(row) {
 function estadoPagoClass(row) {
 	// Pagado: verde; Pendiente: amarillo
 	return row.estadoPago === 'Pagado' ? 'badge-success' : 'badge-warning'
-}
-
-function estadoPersonaClass(row) {
-	switch (row.estadoPersona) {
-		case 'Confirmado':
-			return 'badge-success'
-		case 'Inscrito':
-			return 'badge-warning'
-		case 'Preinscrito':
-			return 'badge-warning'
-		case 'Rechazado':
-			return 'badge-danger'
-		default:
-			return 'badge-warning'
-	}
 }
 
 function estadoCorreoClass(row) {
@@ -644,7 +622,7 @@ async function marcarEnviado() {
 
 	// Toggle local-only rows
 	for (const t of localOnly) {
-		const newVal = !Boolean(t.pecEnvioCorreoQR)
+		const newVal = !t.pecEnvioCorreoQR
 		t.pecEnvioCorreoQR = newVal
 		t.estadoCorreo = newVal ? 'Enviado' : 'Pendiente'
 	}
@@ -675,12 +653,13 @@ async function enviarPorCorreo() {
 	if (!message) return
 
 	// Get curso_id from filters if selected
+	// Note: curso_id lookup not currently available as cursosOpts only contains names
 	let cursoId = null
-	if (filters.curso && filters.curso !== 'Todos') {
-		// Find curso ID from cursoOptions
-		const cursoOpt = cursoOptions.value.find(c => c.label === filters.curso || c.value === filters.curso)
-		if (cursoOpt) cursoId = cursoOpt.value
-	}
+	// if (filters.curso && filters.curso !== 'Todos') {
+	// 	// Find curso ID from cursoOptions
+	// 	const cursoOpt = cursoOptions.value.find(c => c.label === filters.curso || c.value === filters.curso)
+	// 	if (cursoOpt) cursoId = cursoOpt.value
+	// }
 
 	try {
 		const correosService = (await import('@/services/correosService.js')).default

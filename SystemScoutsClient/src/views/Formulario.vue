@@ -970,6 +970,7 @@ const obtenerDescripcionRama = (ramaId) => {
 import { cursos as cursosApi, secciones as seccionesApi } from '../services/cursosService';
 import { estadoCivilApi } from '../services/estadoCivilService';
 import { provinciaApi } from '../services/provinciaService';
+import { comunaApi } from '../services/comunaService';
 
 // :::::::::::::::::: MANEJO DE SELECCIÓN DE CURSO Y SECCIÓN :::::::::::::::::::::::::
 // :::::::::::::::::: CURSOS DESDE API :::::::::::::::::::::::::
@@ -989,14 +990,14 @@ onMounted(async () => {
     const ramasApi = respRamas.ramas;
     const ramasResp = await ramasApi.list({ page_size: 200 });
     listaRamas.value = ramasResp.results || ramasResp || [];
-  } catch (error) {
+  } catch {
     listaRamas.value = [];
   }
       // Región
       try {
         const regionResp = await regionApi.list();
         listaRegionApi.value = regionResp.results || regionResp || [];
-      } catch (error) {
+      } catch {
         listaRegionApi.value = [];
       }
     // Cargar comunas cuando cambia la región seleccionada
@@ -1005,7 +1006,7 @@ onMounted(async () => {
         try {
           const comunaResp = await comunaApi.list({ region: newVal });
           listaComunaApi.value = comunaResp.results || comunaResp || [];
-        } catch (error) {
+        } catch {
           listaComunaApi.value = [];
         }
       } else {
@@ -1021,18 +1022,18 @@ onMounted(async () => {
   } catch (error) {
     console.error('Error al obtener cursos:', error);
   }
-  // Estado civil
+    // Estado civil
   try {
     const estadoCivilResp = await estadoCivilApi.list();
     listaEstadoCivilApi.value = estadoCivilResp.results || estadoCivilResp || [];
-  } catch (error) {
+  } catch {
     listaEstadoCivilApi.value = [];
   }
   // Provincia
   try {
     const provinciaResp = await provinciaApi.list();
     listaProvinciaApi.value = provinciaResp.results || provinciaResp || [];
-  } catch (error) {
+  } catch {
     listaProvinciaApi.value = [];
   }
 });
@@ -1095,7 +1096,7 @@ const updateActiveNavItem = (sectionNumber) => {
 };
 
 // Detectar scroll y actualizar navegación automáticamente
-let intersectionObserver = null;
+// let intersectionObserver = null; // Unused for now
 
 onMounted(() => {
   // Función para detectar qué sección está en el centro de la pantalla
@@ -1236,9 +1237,9 @@ const mesesTiempoBeneficiario = ref("");
 
 const regionSeleccionada = ref("");
 const provinciaSeleccionada = ref("");
-const provinciaSeleccionadaValor = computed(() => {
-  return listaProvinciaApi.value.find(p => p.PRO_ID === provinciaSeleccionada.value) || null;
-});
+// const provinciaSeleccionadaValor = computed(() => {
+//   return listaProvinciaApi.value.find(p => p.PRO_ID === provinciaSeleccionada.value) || null;
+// });
 const ciudadSeleccionada = ref("");
 const comunaSeleccionada = ref("");
 
@@ -1251,7 +1252,7 @@ const comunaSeleccionada = ref("");
 
 // Variables para el formador
 const esFormador = ref("");
-const historialFormador = ref("");
+// const historialFormador = ref(""); // Unused for now
 const habilidad1 = ref("");
 const habilidad2 = ref("");
 const verificado = ref("");
@@ -1337,15 +1338,15 @@ function limpiarFormulario() {
 }
 
 // Validación del formato de patente chilena (ej: AB-CD-12)
-function validarPatentePropia() {
-  // Permite formato: AA-BB-11 o AB-CD-12 o similar
-  const formato = /^[A-Z]{2}-[A-Z]{2}-\d{2}$/;
-  if (patenteVehiculo.value && !formato.test(patenteVehiculo.value.toUpperCase())) {
-    patenteVehiculo.value = patenteVehiculo.value
-      .toUpperCase()
-      .replace(/[^A-Z0-9-]/g, ""); // limpia caracteres no válidos
-  }
-}
+// function validarPatentePropia() {
+//   // Permite formato: AA-BB-11 o AB-CD-12 o similar
+//   const formato = /^[A-Z]{2}-[A-Z]{2}-\d{2}$/;
+//   if (patenteVehiculo.value && !formato.test(patenteVehiculo.value.toUpperCase())) {
+//     patenteVehiculo.value = patenteVehiculo.value
+//       .toUpperCase()
+//       .replace(/[^A-Z0-9-]/g, ""); // limpia caracteres no válidos
+//   }
+// }
 
 const fotoUrl = ref(null)
 const mostrarCamara = ref(false)
@@ -1373,12 +1374,12 @@ function procesarFoto(event) {
 }
 
 async function abrirCamara() {
-  try {
+    try {
     mostrarCamara.value = true
     camaraActiva.value = true
     stream = await navigator.mediaDevices.getUserMedia({ video: true })
     video.value.srcObject = stream
-  } catch (error) {
+  } catch {
     alert('No se pudo acceder a la cámara. Verifica permisos o hardware disponible.')
   }
 }
@@ -1517,12 +1518,12 @@ const ciudadesDisponibles = computed(() => {
 });
 
 // Comunas disponibles según la ciudad elegida
-const comunasDisponibles = computed(() => {
-  if (regionSeleccionada.value && ciudadSeleccionada.value) {
-    return comunasPorRegion[regionSeleccionada.value][ciudadSeleccionada.value] || [];
-  }
-  return [];
-});
+// const comunasDisponibles = computed(() => {
+//   if (regionSeleccionada.value && ciudadSeleccionada.value) {
+//     return comunasPorRegion[regionSeleccionada.value][ciudadSeleccionada.value] || [];
+//   }
+//   return [];
+// });
 </script>
 
 

@@ -1377,7 +1377,6 @@
 import InputBase from '@/components/InputBase.vue'
 import BaseSelect from '@/components/BaseSelect.vue'
 import BaseButton from '@/components/BaseButton.vue'
-import BaseAlert from '@/components/BaseAlert.vue'
 import BaseModal from '@/components/BaseModal.vue'
 import AppIcons from '@/components/icons/AppIcons.vue'
 import personasService from '@/services/personasService.js'
@@ -1390,7 +1389,7 @@ import { ref, onMounted, nextTick } from 'vue'
 
 export default {
   name: 'GestionPersonas',
-  components: { InputBase, BaseSelect, BaseButton, BaseAlert, BaseModal, AppIcons },
+  components: { InputBase, BaseSelect, BaseButton, BaseModal, AppIcons },
   setup() {
     const { isAdmin, canCreate, canEdit, canDelete, isReadOnly } = usePermissions()
     const filtrosColapsados = ref(false)
@@ -1403,11 +1402,11 @@ export default {
       try {
         await nextTick()
         if (window.__updateCardsViewportHeight) window.__updateCardsViewportHeight()
-        // Additional small delay to handle browser reflow in some devices
+                // Additional small delay to handle browser reflow in some devices
         setTimeout(() => {
-          try { if (window.__updateCardsViewportHeight) window.__updateCardsViewportHeight() } catch(e) {}
+          try { if (window.__updateCardsViewportHeight) window.__updateCardsViewportHeight() } catch { /* ignore */ }
         }, 80)
-      } catch (e) {
+      } catch {
         /* ignore */
       }
     }
@@ -1421,9 +1420,9 @@ export default {
         if (!tw) return
         const top = tw.getBoundingClientRect().top
         const available = Math.max(120, window.innerHeight - top - 16) // mínimo 120px
-        // setear variable CSS en el elemento .table-wrapper (o en root)
+                // setear variable CSS en el elemento .table-wrapper (o en root)
         tw.style.setProperty('--cards-viewport-height', `${available}px`)
-      } catch (e) {
+      } catch {
         // noop
       }
     }
@@ -1518,9 +1517,9 @@ export default {
     loadingMore: false,
     // Filter cache metadata (to avoid repeated slow requests)
     filtersCachedAt: null,
-    filtersCacheTTL: 1000 * 60 * 60 * 24 // 24 hours
-    ,_cargandoPersonasInFlight: false
-    ,_cargandoFiltrosInFlight: false
+          filtersCacheTTL: 1000 * 60 * 60 * 24, // 24 hours
+      cargandoPersonasInFlight: false,
+      cargandoFiltrosInFlight: false
     };
   },
   computed: {
@@ -1581,11 +1580,11 @@ export default {
       }
       this.exportarModalVisible = true;
     },
-    ensureFiltrosLoaded() {
+        ensureFiltrosLoaded() {
       if (this.filtersCachedAt && (Date.now() - this.filtersCachedAt) < this.filtersCacheTTL) return;
-      if (this._cargandoFiltrosInFlight) return;
-      this._cargandoFiltrosInFlight = true;
-      this.cargarOpcionesFiltros().catch(err => { console.warn('Error cargando filtros:', err) }).finally(() => { this._cargandoFiltrosInFlight = false; });
+      if (this.cargandoFiltrosInFlight) return;
+      this.cargandoFiltrosInFlight = true;
+      this.cargarOpcionesFiltros().catch(err => { console.warn('Error cargando filtros:', err) }).finally(() => { this.cargandoFiltrosInFlight = false; });
     },
     cerrarModalExportar() {
       this.exportarModalVisible = false;
@@ -1646,10 +1645,10 @@ export default {
         try {
           // Prefer existing cached options; fallback to API only if empty
           let comunas = Array.isArray(this.comunaOptionsEditar) && this.comunaOptionsEditar.length
-            ? this.comunaOptionsEditar.map(c => ({ COM_ID: c.value, PRO_ID: c.PRO_ID }))
+                      ? this.comunaOptionsEditar.map(c => ({ COM_ID: c.value, PRO_ID: c.PRO_ID }))
             : null;
           if (!comunas || comunas.length === 0) {
-            try { comunas = await mantenedoresService.comuna.list(); } catch (_) { comunas = []; }
+            try { comunas = await mantenedoresService.comuna.list(); } catch { comunas = []; }
           }
           const comunaActual = (comunas || []).find(c => c.COM_ID === this.personaEditada.COM_ID);
           if (comunaActual) {
@@ -1674,10 +1673,10 @@ export default {
         if (this.personaEditada.REG_ID) {
           await this.cargarProvinciasPorRegionEditar();
         }
-        if (this.personaEditada.PRO_ID) {
+                if (this.personaEditada.PRO_ID) {
           await this.cargarComunasPorProvinciaEditar();
         }
-      } catch (_) {
+      } catch {
         // If backend fails (500), avoid blocking the modal
       }
     },
@@ -1726,9 +1725,9 @@ export default {
         } catch (e) {
           // si por alguna razón las refs no están disponibles, ignoramos
           console.warn('No fue posible colapsar filtros automáticamente:', e)
-        }
+                }
         // Recalcular altura disponible tras filtrar (si la función está expuesta)
-        try { if (window.__updateCardsViewportHeight) window.__updateCardsViewportHeight() } catch(e){}
+        try { if (window.__updateCardsViewportHeight) window.__updateCardsViewportHeight() } catch { /* ignore */ }
         this.filtrandoEnProceso = false;
       }, 10);
     },
@@ -1775,8 +1774,8 @@ export default {
           console.log('📡 Respuesta personaCursos.list():', Array.isArray(personaCursosResp) ? `array(${personaCursosResp.length})` : personaCursosResp && personaCursosResp.results ? `paginated(results=${personaCursosResp.results.length})` : typeof personaCursosResp);
           let arr = Array.isArray(personaCursosResp) ? personaCursosResp : (personaCursosResp && Array.isArray(personaCursosResp.results) ? personaCursosResp.results : []);
 
-          // Debug: show sample of relation rows (raw)
-          try { console.log('📋 Muestra persona_curso (raw, primeros 8):', arr.slice(0, 8).map(x => ({ PEC_ID: x.PEC_ID, PER_ID: x.PER_ID, CUS_ID: x.CUS_ID }))); } catch(e){}
+                    // Debug: show sample of relation rows (raw)
+          try { console.log('📋 Muestra persona_curso (raw, primeros 8):', arr.slice(0, 8).map(x => ({ PEC_ID: x.PEC_ID, PER_ID: x.PER_ID, CUS_ID: x.CUS_ID }))); } catch { /* ignore */ }
 
           // Ensure we only keep rows that match the requested CUS_ID. Some backend
           // implementations return the full table ignoring query params, so always
@@ -1855,9 +1854,9 @@ export default {
         if (p.PER_RUN !== undefined && p.PER_RUN !== null && String(p.PER_RUN).trim() !== '') {
           per_run = Number(String(p.PER_RUN).toString().replace(/\./g, '')) || null;
           per_dv = (p.PER_DV !== undefined && p.PER_DV !== null) ? String(p.PER_DV) : '';
-        } else {
+                } else {
           const rawRut = (p.rut || '').toString().trim();
-          const m = rawRut.match(/([0-9\.]+)-?([0-9kK])/);
+          const m = rawRut.match(/([0-9.]+)-?([0-9kK])/);
           if (m) {
             per_run = Number(m[1].replace(/\./g, '')) || null;
             per_dv = m[2] || '';
@@ -2289,9 +2288,9 @@ export default {
               // fallback a primer rol disponible
               if (!rolIdToUse) {
                 try {
-                  const rolesList = await mantenedoresService.rol.list();
+                                  const rolesList = await mantenedoresService.rol.list();
                   if (rolesList && rolesList.length) rolIdToUse = rolesList[0].ROL_ID;
-                } catch (e) {
+                } catch {
                   // dejar rolIdToUse nulo si fallo
                 }
               }
@@ -2376,7 +2375,7 @@ export default {
         
         if (error.status === 400) {
           mensajeError += 'Datos inválidos. Verifica que todos los campos estén correctos.' + detallesError;
-          console.error('🔍 Datos que se intentaron enviar:', datosActualizados);
+          console.error('🔍 Error de validación al actualizar persona');
         } else if (error.status === 404) {
           mensajeError += 'Persona no encontrada.';
         } else if (error.status === 500) {
@@ -2533,9 +2532,9 @@ export default {
     formatearFecha(fecha) {
       if (!fecha) return '';
       try {
-        const date = new Date(fecha);
+                const date = new Date(fecha);
         return date.toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' });
-      } catch (error) {
+      } catch {
         return fecha;
       }
     },
@@ -2636,13 +2635,13 @@ export default {
         console.log('Carga de personas omitida: no se aplicaron filtros y no se forzó la carga');
         this.personas = [];
         return;
-      }
+            }
 
-      if (this._cargandoPersonasInFlight) {
+      if (this.cargandoPersonasInFlight) {
         console.log('Carga de personas ya en curso — omitiendo llamada duplicada');
         return;
       }
-      this._cargandoPersonasInFlight = true;
+      this.cargandoPersonasInFlight = true;
       try {
         this.cargandoPersonas = true;
         this.errorCarga = null;
@@ -2676,7 +2675,7 @@ export default {
         this.personas = [];
       } finally {
         this.cargandoPersonas = false;
-        this._cargandoPersonasInFlight = false;
+        this.cargandoPersonasInFlight = false;
       }
     },
 
@@ -2972,9 +2971,9 @@ export default {
           provincias = this.provinciaOptions.map(p => ({ PRO_ID: p.value, PRO_DESCRIPCION: p.label, REG_ID: p.REG_ID, PRO_VIGENTE: true }));
         }
         if (!provincias) {
-          try {
+                    try {
             provincias = await mantenedoresService.provincia.list();
-          } catch (_) {
+          } catch {
             provincias = [];
           }
         }
@@ -2993,9 +2992,9 @@ export default {
         } else {
           persona.PRO_ID = '';
           persona.COM_ID = '';
-          this[comunasKey] = [];
+                    this[comunasKey] = [];
         }
-      } catch (_) {
+      } catch {
         // Avoid throwing/logging noisy errors when backend returns 500
         this[optionsKey] = [];
       }
@@ -3019,9 +3018,9 @@ export default {
           comunas = this.comunaOptions.map(c => ({ COM_ID: c.value, COM_DESCRIPCION: c.label, PRO_ID: c.PRO_ID, COM_VIGENTE: true }));
         }
         if (!comunas) {
-          try {
+                    try {
             comunas = await mantenedoresService.comuna.list();
-          } catch (_) {
+          } catch {
             comunas = [];
           }
         }
@@ -3036,9 +3035,9 @@ export default {
             persona.COM_ID = '';
           }
         } else {
-          persona.COM_ID = '';
+                    persona.COM_ID = '';
         }
-      } catch (_) {
+      } catch {
         this[optionsKey] = [];
       }
     },
@@ -3068,14 +3067,13 @@ export default {
         PER_PROFESION: '',
         // Campos sincronizados con Formulario 2.vue
         CURSO_ID: '',
-        CUS_ID: '',
+                CUS_ID: '',
         // religion ya existe como PER_RELIGION
         PER_RELIGION: '',
         PER_NOM_EMERGENCIA: '',
         PER_FONO_EMERGENCIA: '',
         PER_ALERGIA_ENFERMEDAD: '',
         PER_LIMITACION: '',
-        PER_RELIGION: '',
         PER_TIEMPO_NNAJ: '',
         PER_TIEMPO_ADULTO: '',
         PER_NUM_MMA: null,
@@ -3367,15 +3365,7 @@ export default {
       XLSX.utils.book_append_sheet(wb, ws, 'Plantilla Personas');
       
       XLSX.writeFile(wb, 'Plantilla_Importar_Personas.xlsx');
-    },
-
-    handleFileSelect(event) {
-      const archivo = event.target.files[0];
-      if (!archivo) return;
-
-      this.archivoSeleccionado = archivo;
-      this.procesarArchivoExcel(archivo);
-    },
+        },
 
     async procesarArchivoExcel(archivo) {
       try {
@@ -3936,9 +3926,9 @@ export default {
               let okUser = false
               for (const u of tryUrls) {
                 try {
-                  const resp = await fetch(u, { method: 'GET', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } })
+                                    const resp = await fetch(u, { method: 'GET', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } })
                   if (resp.ok) { okUser = true; break }
-                } catch (e) {
+                } catch {
                   // ignore and try next
                 }
               }
@@ -3996,9 +3986,9 @@ export default {
           return;
         }
 
-        // Coerciones de tipos: PER_NUM_MMA a número o null
+                // Coerciones de tipos: PER_NUM_MMA a número o null
         if (this.personaNueva.PER_NUM_MMA !== undefined && this.personaNueva.PER_NUM_MMA !== null && this.personaNueva.PER_NUM_MMA !== '') {
-          const parsedMMA = Number(String(this.personaNueva.PER_NUM_MMA).replace(/[^0-9\-]/g, ''));
+          const parsedMMA = Number(String(this.personaNueva.PER_NUM_MMA).replace(/[^0-9-]/g, ''));
           datosPersona.PER_NUM_MMA = Number.isFinite(parsedMMA) ? parsedMMA : null;
         } else {
           datosPersona.PER_NUM_MMA = null;
@@ -4009,9 +3999,9 @@ export default {
         datosPersona.PER_FONO = datosPersona.PER_FONO || '';
         datosPersona.PER_APODO = datosPersona.PER_APODO || '';
         
-        try {
+                try {
           console.log('💾 Guardando nueva persona (orquestador):', JSON.stringify(datosPersona, null, 2));
-        } catch (e) {
+        } catch {
           console.log('💾 Guardando nueva persona (orquestador):', datosPersona);
         }
 
@@ -4195,9 +4185,9 @@ export default {
             }
             if (!rolIdToUse) {
               try {
-                const rolesList = await mantenedoresService.rol.list();
+                              const rolesList = await mantenedoresService.rol.list();
                 if (rolesList && rolesList.length) rolIdToUse = rolesList[0].ROL_ID;
-              } catch (e) {
+              } catch {
                 // ignore
               }
             }
@@ -4259,9 +4249,9 @@ export default {
           mensajeError += error.message || 'Verifica los datos e intenta nuevamente.';
         }
         
-        try {
+                try {
           console.error('🔍 Datos que se intentaron enviar:', datosPersona ? JSON.stringify(datosPersona, null, 2) : datosPersona);
-        } catch (e) {
+        } catch {
           console.error('🔍 Datos que se intentaron enviar (no serializable):', datosPersona);
         }
         alert(mensajeError);

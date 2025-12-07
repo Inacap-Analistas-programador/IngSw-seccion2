@@ -379,12 +379,10 @@ import { useRouter } from 'vue-router'
 import BaseButton from '../components/BaseButton.vue'
 import BaseModal from '../components/BaseModal.vue'
 import BaseSelect from '../components/BaseSelect.vue'
-import BaseCheckBox from '../components/BaseCheckBox.vue'
 import BaseSwitch from '../components/BaseSwitch.vue'
 import InputBase from '../components/InputBase.vue'
 import NotificationToast from '../components/NotificationToast.vue'
 import AppIcons from '../components/icons/AppIcons.vue'
-import PermisosToggle from '../components/PermisosToggle.vue'
 import ModernMainScrollbar from '../components/ModernMainScrollbar.vue'
 import { usuarios as usuariosService, perfiles as perfilesService } from '@/services/usuariosService'
 
@@ -392,14 +390,12 @@ export default {
   name: 'UsuariosRoles',
   components: {
     BaseButton,
-    BaseModal,
+        BaseModal,
     BaseSelect,
-    BaseCheckBox,
     BaseSwitch,
     InputBase,
     NotificationToast,
     AppIcons,
-    PermisosToggle,
     ModernMainScrollbar
   },
   setup() {

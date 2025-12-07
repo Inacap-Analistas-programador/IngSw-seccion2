@@ -780,18 +780,19 @@ function debounce(fn, wait = 250) {
 
 // Safe list wrapper: intenta usar un objeto API global si existe (e.g., cursosApi),
 // si no, hace fallback a `request(path)` (con querystring si params)
-async function safeList(apiName, path, params) {
-  try {
-    const globalObj = typeof globalThis !== 'undefined' ? globalThis[`${apiName}`] : undefined
-    if (globalObj && typeof globalObj.list === 'function') {
-      return await globalObj.list(params)
-    }
-  } catch (e) { /* ignore */ }
+// Currently unused but kept for future use
+// async function safeList(apiName, path, params) {
+//   try {
+//     const globalObj = typeof globalThis !== 'undefined' ? globalThis[`${apiName}`] : undefined
+//     if (globalObj && typeof globalObj.list === 'function') {
+//       return await globalObj.list(params)
+//     }
+//   } catch (e) { /* ignore */ }
 
-  // Build querystring for simple GETs
-  const qs = params && Object.keys(params).length ? `?${new URLSearchParams(params).toString()}` : ''
-  return await request(`${path}${qs}`)
-}
+//   // Build querystring for simple GETs
+//   const qs = params && Object.keys(params).length ? `?${new URLSearchParams(params).toString()}` : ''
+//   return await request(`${path}${qs}`)
+// }
 
 // Abort support for fetch: guardamos el controller y cancelamos la carga anterior
 const lastController = { ctrl: null }
@@ -799,7 +800,7 @@ const lastController = { ctrl: null }
 async function cargarDatos({ page = 1, page_size = 20, search = '' } = {}) {
   if (isLoadingData.value) return
   // Requerir al menos un filtro antes de cargar
-  if (!hasAnyFilter) {
+  if (!hasAnyFilter.value) {
     cursosList.value = []
     cursosFiltrados.value = []
     return
@@ -812,9 +813,9 @@ async function cargarDatos({ page = 1, page_size = 20, search = '' } = {}) {
   // cancelar carga previa si existe
   try {
     if (lastController.ctrl) lastController.ctrl.abort()
-  } catch { /* noop */ }
+    } catch { /* noop */ }
   lastController.ctrl = new AbortController()
-  const signal = lastController.ctrl.signal
+  // const signal = lastController.ctrl.signal // Unused for now
 
   try {
     // Pedir cursos desde el servicio específico y catálogos relacionados
@@ -869,10 +870,7 @@ async function cargarDatos({ page = 1, page_size = 20, search = '' } = {}) {
     // Normalizar listas relacionadas
     const fechasListNorm = (Array.isArray(fechasData) ? fechasData : (fechasData?.results || [])).map(toUpperKeys)
     const seccionesListNorm = (Array.isArray(seccionesData) ? seccionesData : (seccionesData?.results || [])).map(toUpperKeys)
-    const formadoresListNorm = [] // Se cargan bajo demanda o si estuvieran aquí
-    const alimentacionListNorm = [] // Se cargan bajo demanda
-    const cuotasListNorm = [] // Se cargan bajo demanda
-    const coordinadoresListNorm = [] // Se cargan bajo demanda
+    // formadoresListNorm, alimentacionListNorm, cuotasListNorm, coordinadoresListNorm se cargan bajo demanda
 
     // Enlazar fechas a cada curso para mostrar rango en la tabla si tenemos fechas
     const fechasByCurso = fechasListNorm.reduce((acc, f) => {
@@ -932,20 +930,7 @@ onMounted(() => {
   }
 })
 
-async function cargarCatalogos() {
-  try {
-    const [personasApi, tiposApi, ramasApi] = await Promise.all([
-      personasService.personas.list(),
-      mantenedores.tipoCursos.list(),
-      mantenedores.rama.list(),
-    ])
-    personasList.value = (Array.isArray(personasApi) ? personasApi : (personasApi?.results || [])).map(toUpperKeys)
-    tiposCursoList.value = (Array.isArray(tiposApi) ? tiposApi : (tiposApi?.results || [])).map(toUpperKeys)
-    ramaslist.value = (Array.isArray(ramasApi) ? ramasApi : (ramasApi?.results || [])).map(toUpperKeys)
-  } catch (e) {
-    console.error('Error cargando catálogos iniciales:', e)
-  }
-}
+
 
 // Preload minimal catalogs from fast endpoints and cache to localStorage
 async function preloadCatalogosMin() {
@@ -1001,7 +986,7 @@ watch(() => filtros.value.searchQuery, (v) => {
     // No cargar sin filtros
     return
   }
-  if (hasAnyFilter) _debouncedLoad(v)
+  if (hasAnyFilter.value) _debouncedLoad(v)
 })
 
 // Listener de almacenamiento (multi-tab / login en otra pestaña)
@@ -1021,7 +1006,7 @@ if (typeof window !== 'undefined') {
 function aplicarFiltros() {
   let items = [...cursosList.value]
   const { searchQuery, estado, tipoCurso, responsable } = filtros.value
-  if (!hasAnyFilter) {
+  if (!hasAnyFilter.value) {
     cursosFiltrados.value = []
     return
   }

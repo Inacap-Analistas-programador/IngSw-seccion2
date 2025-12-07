@@ -23,4 +23,14 @@ export default defineConfig([
   js.configs.recommended,
   ...pluginVue.configs['flat/essential'],
   skipFormatting,
+  
+  // Custom rules
+  {
+    rules: {
+      // Allow single-word component names for established components
+      'vue/multi-word-component-names': 'off',
+      // Allow empty catch blocks when they are intentionally empty (for error suppression)
+      'no-empty': ['error', { allowEmptyCatch: true }],
+    },
+  },
 ])

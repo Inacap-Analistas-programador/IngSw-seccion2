@@ -36,7 +36,8 @@ const dashboardRows = ref([])
 
 onMounted(async () => {
   try {
-    dashboardRows.value = await fetchDashboardData()
+    // dashboardRows.value = await fetchDashboardData() // TODO: Implement fetchDashboardData
+    console.log('Dashboard mounted')
   } catch (error) {
     console.error("Error cargando dashboard:", error)
   }

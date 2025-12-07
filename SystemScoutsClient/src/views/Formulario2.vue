@@ -826,7 +826,7 @@ import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
 import authService from '@/services/authService'
 import * as cursosService from '@/services/cursosService'
 import { personas as personasApi, personaCursos as personaCursosApi, personaGrupos as personaGruposApi, personaNiveles as personaNivelesApi, personaIndividuales as personaIndividualesApi } from '@/services/personasService'
-import { pagoPersona as pagoPersonaApi } from '@/services/pagosService'
+// import { pagoPersona as pagoPersonaApi } from '@/services/pagosService'
 import mantenedoresService from '@/services/mantenedoresService'
 
 // Componentes
@@ -1047,13 +1047,14 @@ export default {
             formData.telefono?.trim()
           )
         
-        case 2: // Información Asociación Scout
+        case 2: { // Información Asociación Scout
           const primerRolNivel = formData.rolesNiveles[0]
           return !!(
             formData.rama &&
             primerRolNivel.rol &&
             primerRolNivel.nivel
           )
+        }
         
         case 3: // Salud
           return !!(
@@ -1413,7 +1414,6 @@ export default {
           PER_RELIGION: formData.religion || null,
           PER_NUM_MMA: formData.numeroMMAA || null,
           PER_OTROS: formData.observaciones || null,
-          PER_APODO: formData.apodo || '',
           ESC_ID: formData.estadoCivil ? Number(formData.estadoCivil) : 1,
           COM_ID: formData.comuna ? Number(formData.comuna) : 1,
           USU_ID: usuId,

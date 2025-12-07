@@ -148,10 +148,7 @@
 </template>
 
 <script>
-import DataCard from '@/components/DataCard.vue'
-import DataTable from '@/components/DataTable.vue'
 import BaseButton from '@/components/BaseButton.vue'
-import BaseAlert from '@/components/BaseAlert.vue'
 import NotificationToast from '@/components/NotificationToast.vue'
 import AppIcons from '@/components/icons/AppIcons.vue'
 import authViewsService from '@/services/auth_viewsService'
@@ -160,10 +157,7 @@ import authViewsService from '@/services/auth_viewsService'
 export default {
   name: 'ManualAcreditation',
   components: {
-    DataCard,
-    DataTable,
     BaseButton,
-    BaseAlert,
     NotificationToast,
     AppIcons
   },

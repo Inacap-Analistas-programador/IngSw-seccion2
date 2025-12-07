@@ -300,7 +300,7 @@ async function cargarDatos() {
       const cursosData = await request(`/cursos/cursos/${props.cursoId}/`)
       curso.value = cursosData || {}
       console.log('Curso cargado:', curso.value)
-    } catch (error) {
+    } catch {
       // Si falla, intentar obtenerlo de la lista completa
       console.log('No se pudo cargar curso directo, buscando en lista...')
       const cursosListData = await request('/cursos/cursos/?page_size=1000')

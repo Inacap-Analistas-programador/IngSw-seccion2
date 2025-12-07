@@ -13,9 +13,9 @@ export default {
     // Leer el body una sola vez
     const text = await response.text(); // siempre funciona
     let data;
-    try {
+        try {
       data = JSON.parse(text); // intenta parsear como JSON
-    } catch (e) {
+    } catch {
       console.error('No JSON received:', text);
       throw new Error('Respuesta inesperada del servidor');
     }

@@ -851,9 +851,9 @@ function hoyISO () {
 function dateCL (f) {
   if (!f) return '-';
   try {
-    const date = typeof f === 'string' ? parseISO(f) : f;
+        const date = typeof f === 'string' ? parseISO(f) : f;
     return format(date, 'dd-MM-yyyy');
-  } catch (e) {
+  } catch {
     return f;
   }
 }
@@ -983,9 +983,9 @@ export default {
     buscarPersonaQ(newQuery) {
       if (this.debounceTimer) clearTimeout(this.debounceTimer);
       this.debounceTimer = setTimeout(() => this.buscarPersonas(newQuery), 300);
-    },
+      },
     // Implementa debounce para la búsqueda en el histórico
-    filtroQ(newQuery) {
+    filtroQ() {
       if (this.debounceTimer) clearTimeout(this.debounceTimer);
       this.debounceTimer = setTimeout(() => this.cargarPagos(true), 300);
     }
@@ -1093,9 +1093,9 @@ export default {
 
     // Helper expuesto para el template: formatea fechas para mostrar en CL
     dateCL (f) {
-      try {
+            try {
         return dateCL(f)
-      } catch (e) {
+      } catch {
         return f || '-'
       }
     },
@@ -1273,9 +1273,9 @@ export default {
           nombre: `${p.PER_NOMBRES || ''} ${p.PER_APELPTA || ''}`.trim(),
           rut: (p.PER_RUN && p.PER_DV) ? `${p.PER_RUN}-${p.PER_DV}` : (p.PER_RUN || ''),
           email: p.PER_MAIL || ''
-        }))
+                }))
         this.seleccionados = []
-      } catch (e) {
+      } catch {
         this.participantes = []
       } finally {
         this.cargandoParticipantes = false
@@ -1338,9 +1338,9 @@ export default {
         this.toastMessage = 'Pago masivo registrado correctamente'
         this.toastIcon = 'check'
         this.toastVisible = true
-        this.limpiarMasivo()
+                this.limpiarMasivo()
         this.cargarPagos()
-      } catch (e) {
+      } catch {
         this.toastMessage = 'Error registrando pago masivo'
         this.toastIcon = 'x'
         this.toastVisible = true
@@ -1604,7 +1604,7 @@ export default {
           rut: (p.PER_RUN && p.PER_DV) ? `${p.PER_RUN}-${p.PER_DV}` : (p.PER_RUN || ''),
           email: p.PER_MAIL || ''
         }))
-      } catch (e) {
+      } catch {
         this.personasEncontradasTransferir = []
       } finally {
         this.buscandoPersonasTransferir = false
@@ -1751,7 +1751,7 @@ export default {
         this.toastMessage = 'Pago anulado correctamente'
         this.toastIcon = 'check-circle'
         this.toastVisible = true
-      } catch (e) {
+      } catch {
         this.toastMessage = 'Error al anular pago'
         this.toastIcon = 'x'
         this.toastVisible = true
@@ -1790,12 +1790,12 @@ export default {
             
             const coincideTipo = tipoConcepto === this.formComprobante.tipo;
             const coincideFechaDesde = !params.fecha_desde || new Date(p.PAP_FECHA_PAGO) >= new Date(params.fecha_desde);
-            const coincideFechaHasta = !params.fecha_hasta || new Date(p.PAP_FECHA_PAGO) <= new Date(params.fecha_hasta);
+                        const coincideFechaHasta = !params.fecha_hasta || new Date(p.PAP_FECHA_PAGO) <= new Date(params.fecha_hasta);
             const coincideCurso = !params.CUR_ID || String(p.CUR_ID) === String(params.CUR_ID);
             const coincideGrupo = !params.GRU_ID || String(p.GRU_ID) === String(params.GRU_ID);
             const coincideConcepto = !params.COC_ID || String(p.COC_ID) === String(params.COC_ID);
 
-            return coincideTipo && coincideFechaDesde && coincideFechaHasta && coincideCurso && coincideConcepto;
+            return coincideTipo && coincideFechaDesde && coincideFechaHasta && coincideCurso && coincideGrupo && coincideConcepto;
         });
 
       } catch (e) {
@@ -1920,9 +1920,9 @@ export default {
     formatRut(rut) {
       if (!rut) return '';
       const rutLimpio = String(rut).replace(/[^0-9]/g, '');
-      if (rutLimpio.length < 2) return rutLimpio;
+            if (rutLimpio.length < 2) return rutLimpio;
       const cuerpo = rutLimpio.slice(0, -1);
-      const dv = rutLimpio.slice(-1); // Aunque no se usa el DV para el formato con puntos, lo separamos.
+      // const dv = rutLimpio.slice(-1); // Aunque no se usa el DV para el formato con puntos, lo separamos.
       return cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     }
   },

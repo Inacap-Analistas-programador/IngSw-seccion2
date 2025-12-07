@@ -137,9 +137,9 @@ const filteredData = computed(() => {
   if (props.fields.length === 0) {
     return props.rowData
   }
-  const filtered = {}
+    const filtered = {}
   props.fields.forEach(field => {
-    if (props.rowData.hasOwnProperty(field)) {
+    if (Object.prototype.hasOwnProperty.call(props.rowData, field)) {
       filtered[field] = props.rowData[field]
     }
   })

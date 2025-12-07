@@ -1,8 +1,8 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue'
-import AppIcons from './icons/AppIcons.vue'
+// import AppIcons from './icons/AppIcons.vue'
 const emit = defineEmits(['toggle-sidebar'])
-const props = defineProps({ collapsed: { type: Boolean, default: false }})
+// const props = defineProps({ collapsed: { type: Boolean, default: false }})
 function toggleSidebar() {
   // On small screens, open the sidebar as a mobile overlay instead of toggling collapse
   try {
@@ -10,7 +10,7 @@ function toggleSidebar() {
       window.dispatchEvent(new Event('open-sidebar-mobile'))
       return
     }
-  } catch (e) {}
+  } catch {}
   emit('toggle-sidebar')
 }
 import { useRouter, useRoute } from 'vue-router'
@@ -33,7 +33,7 @@ function updateNavbarHeight() {
     const h = Math.round(el.getBoundingClientRect().height) || 64
     const clamped = Math.max(56, Math.min(120, h))
     document.documentElement.style.setProperty('--navbar-height', `${clamped}px`)
-  } catch (e) { /* ignore */ }
+  } catch { /* ignore */ }
 }
 
 const router = useRouter()
@@ -95,14 +95,14 @@ onMounted(() => {
   try {
     ro = new ResizeObserver(updateNavbarHeight)
     if (navRef.value) ro.observe(navRef.value)
-  } catch (e) {}
+  } catch {}
   window.addEventListener('resize', updateNavbarHeight)
 })
 
 onUnmounted(() => {
   window.removeEventListener('storage', updateAuthState)
   window.removeEventListener('resize', updateNavbarHeight)
-  try { if (ro && navRef.value) ro.unobserve(navRef.value) } catch (e) {}
+  try { if (ro && navRef.value) ro.unobserve(navRef.value) } catch {}
 })
 
 // Función de logout
@@ -112,7 +112,7 @@ function logout() {
   localStorage.removeItem('accessToken')
   localStorage.removeItem('refreshToken')
   updateAuthState()
-  try { window.dispatchEvent(new Event('auth-changed')) } catch (e) {}
+  try { window.dispatchEvent(new Event('auth-changed')) } catch {}
   router.push('/')
 }
 
@@ -122,7 +122,7 @@ function goToLogin() {
   localStorage.removeItem('accessToken')
   localStorage.removeItem('refreshToken')
   updateAuthState()
-  try { window.dispatchEvent(new Event('auth-changed')) } catch (e) {}
+  try { window.dispatchEvent(new Event('auth-changed')) } catch {}
   router.push({ name: 'login' })
 }
 

@@ -185,7 +185,6 @@
 <script>
 import BaseButton from '@/components/BaseButton.vue'
 import BaseModal from '@/components/BaseModal.vue'
-import BaseCheckBox from '@/components/BaseCheckBox.vue'
 import BaseSwitch from '@/components/BaseSwitch.vue'
 import InputBase from '@/components/InputBase.vue'
 import NotificationToast from '@/components/NotificationToast.vue'
@@ -195,7 +194,7 @@ import { perfiles as perfilesService, aplicaciones as aplicacionesService, perfi
 
 export default {
   name: 'Roles',
-  components: { BaseButton, BaseModal, BaseCheckBox, BaseSwitch, InputBase, NotificationToast, AppIcons, ModernMainScrollbar },
+  components: { BaseButton, BaseModal, BaseSwitch, InputBase, NotificationToast, AppIcons, ModernMainScrollbar },
   data() {
     return {
       roles: [],
@@ -368,8 +367,8 @@ export default {
               apl_id: appId 
             })
             const existingList = Array.isArray(existingResp) ? existingResp : (existingResp.results || existingResp.data || [])
-            if (existingList.length > 0) existing = existingList[0]
-          } catch (err) {
+                        if (existingList.length > 0) existing = existingList[0]
+          } catch {
             // Fallback a mayúsculas si falla
             const existingResp = await perfilAplicacionesService.list({ 
               PEL_ID: rolId, 
