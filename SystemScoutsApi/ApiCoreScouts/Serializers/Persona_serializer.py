@@ -7,6 +7,9 @@ class PersonaSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class PersonaSearchSerializer(serializers.ModelSerializer):
+    per_rut = serializers.SerializerMethodField()
+    per_apellidos = serializers.SerializerMethodField()
+    
     class Meta:
         model = Persona
         fields = (
@@ -15,6 +18,21 @@ class PersonaSearchSerializer(serializers.ModelSerializer):
             'per_nombres',
             'per_apellidos',
         )
+    
+    def get_per_rut(self, obj):
+        """Combine per_run and per_dv to create full RUT"""
+        if obj.per_run and obj.per_dv:
+            return f"{obj.per_run}-{obj.per_dv}"
+        return obj.per_run
+    
+    def get_per_apellidos(self, obj):
+        """Combine per_apelpta and per_apelmat"""
+        apellidos = []
+        if obj.per_apelpta:
+            apellidos.append(obj.per_apelpta)
+        if obj.per_apelmat:
+            apellidos.append(obj.per_apelmat)
+        return ' '.join(apellidos) if apellidos else None
 
 class PersonaCompletaSerializer(serializers.ModelSerializer):
     """Serializer que incluye datos relacionados de rol, rama y grupo"""
