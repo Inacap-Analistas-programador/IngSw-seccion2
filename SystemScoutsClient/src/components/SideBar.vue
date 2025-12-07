@@ -84,7 +84,7 @@
 
 <script setup>
 import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { useRoute } from 'vue-router';
 import authService from '../services/authService';
 import AppIcons from './icons/AppIcons.vue';
 
@@ -164,7 +164,7 @@ const STORAGE_TOKEN_KEYS = ['token', 'accessToken']
 function hasToken() {
   try {
     return STORAGE_TOKEN_KEYS.some((k) => !!localStorage.getItem(k))
-  } catch (e) {
+  } catch {
     return false
   }
 }
@@ -236,14 +236,14 @@ const collapsed = computed({
     } else {
       internalCollapsed.value = v
     }
-    try { localStorage.setItem('sidebar-collapsed', v ? '1' : '0') } catch (e) { /* ignore */ }
+    try { localStorage.setItem('sidebar-collapsed', v ? '1' : '0') } catch { /* ignore */ }
   }
 })
 
-function toggleCollapse() {
-  const val = !collapsed.value
-  collapsed.value = val
-}
+// function toggleCollapse() {
+//   const val = !collapsed.value
+//   collapsed.value = val
+// }
 
 function loadCollapsedState() {
   const saved = localStorage.getItem('sidebar-collapsed')
@@ -302,7 +302,7 @@ watch(openMobile, (v) => {
       document.documentElement.style.overflow = ''
       document.body.style.overflow = ''
     }
-  } catch (e) { /* ignore */ }
+  } catch { /* ignore */ }
 })
 
 // Handler para abrir la sidebar en móvil (referencia para add/remove)
