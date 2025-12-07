@@ -23,18 +23,18 @@ def verificar_acreditacion_qr(request):
         dv = partes_rut[1]
 
         # Busca en la tabla persona
-        persona = Persona.objects.get(PER_RUN=run, PER_DV=dv) #
-        per_id = persona.PER_ID
+        persona = Persona.objects.get(per_run=run, per_dv=dv) #
+        per_id = persona.per_id
 
         # Busca curso en la tabla curso por su código
-        curso = Curso.objects.get(CUR_CODIGO=curso_codigo) #
-        cur_id = curso.CUR_ID
+        curso = Curso.objects.get(cur_codigo=curso_codigo) #
+        cur_id = curso.cur_id
 
         # Busca las Secciones de ese Curso
-        secciones_del_curso = Curso_Seccion.objects.filter(CUR_ID=cur_id) #
+        secciones_del_curso = Curso_Seccion.objects.filter(cur_id=cur_id) #
         
         # Muestra solo los IDs de las secciones 
-        lista_ids_secciones = [seccion.CUS_ID for seccion in secciones_del_curso]
+        lista_ids_secciones = [seccion.cus_id for seccion in secciones_del_curso]
 
         if not lista_ids_secciones:
             # Si el curso existe pero no tiene secciones, no hay inscritos
@@ -43,19 +43,19 @@ def verificar_acreditacion_qr(request):
         # Busca la Inscripción en la tabla persona_curso que conecte a la persona 
         # con cualquiera de las secciones de ese curso
         inscripcion = Persona_Curso.objects.filter(
-            PER_ID=per_id, 
-            CUS_ID__in=lista_ids_secciones 
+            per_id=per_id, 
+            cus_id__in=lista_ids_secciones 
         ).first() 
 
         # Verifica la Acreditación
         if inscripcion:
             # Revisa si está acreditado
-            if inscripcion.PEC_ACREDITACION:
+            if inscripcion.pec_acreditacion:
                 # Si está inscrito y acreditado devuelve "Acreditado"
                 return Response({
                     "acreditado": True,
-                    "nombre": persona.PER_NOMBRES,
-                    "curso": curso.CUR_DESCRIPCION
+                    "nombre": persona.per_nombres,
+                    "curso": curso.cur_descripcion
                 })
             else:
                 # Está inscrito, pero no acreditado devuelve "No Acreditado"
