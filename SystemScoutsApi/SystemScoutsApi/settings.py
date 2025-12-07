@@ -138,27 +138,42 @@ WSGI_APPLICATION = 'SystemScoutsApi.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': config("DATABASE", default=config("DB_NAME", default=None)),
-        'USER': config("USER", default=config("DB_USER", default=None)),
-        'PASSWORD': config("PASSWORD_DB", default=config("DB_PASSWORD", default=None)),
-        'HOST': config("HOST", default=config("DB_HOST", default=None)),
-        'PORT': config("PORT", default="3306"),
-        'OPTIONS': {
-            # Ensure connection uses utf8mb4 to correctly handle accents and ñ
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES', NAMES 'utf8mb4'",
-            'charset': 'utf8mb4',
-        },
-        'CONN_MAX_AGE': 0,
-        'DISABLE_SERVER_SIDE_CURSORS': True,
-    }
-}
+# Use SQLite as fallback if MySQL settings are not provided
+DB_NAME = config("DATABASE", default=config("DB_NAME", default=None))
+DB_HOST = config("HOST", default=config("DB_HOST", default=None))
 
-# Deshabilitar verificación de versión para MariaDB 10.4
-import django.db.backends.mysql.base
-django.db.backends.mysql.base.DatabaseWrapper.check_database_version_supported = lambda self: None
+if DB_NAME and DB_HOST:
+    # MySQL configuration when credentials are provided
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': DB_NAME,
+            'USER': config("USER", default=config("DB_USER", default=None)),
+            'PASSWORD': config("PASSWORD_DB", default=config("DB_PASSWORD", default=None)),
+            'HOST': DB_HOST,
+            'PORT': config("PORT", default="3306"),
+            'OPTIONS': {
+                # Ensure connection uses utf8mb4 to correctly handle accents and ñ
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES', NAMES 'utf8mb4'",
+                'charset': 'utf8mb4',
+            },
+            'CONN_MAX_AGE': 0,
+            'DISABLE_SERVER_SIDE_CURSORS': True,
+        }
+    }
+else:
+    # SQLite fallback for development/testing
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+
+# Deshabilitar verificación de versión para MariaDB 10.4 (solo cuando se usa MySQL)
+if DB_NAME and DB_HOST:
+    import django.db.backends.mysql.base
+    django.db.backends.mysql.base.DatabaseWrapper.check_database_version_supported = lambda self: None
 
 AUTHENTICATION_BACKENDS = [
     'ApiCoreScouts.authentication.UsuarioBackend',

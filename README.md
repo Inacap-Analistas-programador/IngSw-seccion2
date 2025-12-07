@@ -43,6 +43,21 @@ cd IngSw-seccion2/SystemScoutsApi
 
 ## 🔹 2. Backend – Django API REST
 
+### Configuración de la Base de Datos
+El proyecto soporta tanto **MySQL** como **SQLite**:
+- **MySQL**: Para producción (requiere archivo `.env` con credenciales)
+- **SQLite**: Se usa automáticamente como fallback para desarrollo si no hay configuración MySQL
+
+**Crear archivo `.env` (opcional para MySQL):**
+```bash
+cp SystemScoutsApi/.env.example SystemScoutsApi/.env
+# Editar .env con tus credenciales de MySQL
+```
+
+Si no configuras MySQL, el sistema usará SQLite automáticamente (`db.sqlite3`).
+
+### Instalación y Ejecución
+
 1. **Crear entorno virtual de Python**
    ```bash
    python -m venv venv
@@ -60,20 +75,15 @@ cd IngSw-seccion2/SystemScoutsApi
    ```bash
    pip install -r requirements.txt
    ```
-4. **Ejecutar servidor de desarrollo**
-asegurate de estar posicionado en manage.py con
+4. **Ejecutar migraciones**
    ```bash
-      ls
+   cd SystemScoutsApi
+   python manage.py migrate
    ```
-   si ves el archivo manage.py puedes ejecutar el comando que sigue.
+5. **Ejecutar servidor de desarrollo**
    ```bash
    python manage.py runserver
    ```
-   en caso de no estar posicionado, realiza lo siguiente
-   ```bash
-      cd SystemScoutsApi
-   ```
-   puedes usar "ls" para verificar tu posición, una vez veas **manage.py** puedes hacer **runserver**
 6. **La API estará disponible en:**
     👉 `http://127.0.0.1:8000/`
 
@@ -379,7 +389,7 @@ A continuación se detallan los endpoints disponibles en la API, organizados por
 | `perfil_aplicaciones/` | Relación entre perfiles y aplicaciones |
 
 ## 👨‍👩‍👧‍👦 Módulo de Personas
-**Base URL:** `/api/Personas/`
+**Base URL:** `/api/personas/`
 
 ### Personas
 **Endpoint:** `personas/`
@@ -426,7 +436,7 @@ A continuación se detallan los endpoints disponibles en la API, organizados por
 | `vehiculos/` | Gestión de vehículos |
 
 ## 📚 Módulo de Cursos
-**Base URL:** `/api/Cursos/`
+**Base URL:** `/api/cursos/`
 
 | Endpoint | Descripción |
 |----------|-------------|
@@ -439,7 +449,7 @@ A continuación se detallan los endpoints disponibles en la API, organizados por
 | `formadores/` | Instructores asignados a cursos |
 
 ## 📁 Módulo de Archivos
-**Base URL:** `/api/Archivos/`
+**Base URL:** `/api/archivos/`
 
 | Endpoint | Descripción |
 |----------|-------------|
@@ -448,7 +458,7 @@ A continuación se detallan los endpoints disponibles en la API, organizados por
 | `personas/` | Archivos asociados a personas |
 
 ## ⚙️ Módulo de Mantenedores
-**Base URL:** `/api/Mantenedores/**
+**Base URL:** `/api/mantenedores/`
 
 | Endpoint | Descripción |
 |----------|-------------|
@@ -468,8 +478,16 @@ A continuación se detallan los endpoints disponibles en la API, organizados por
 | `provincia/` | Provincias |
 | `comuna/` | Comunas |
 
+**Endpoints de catálogos ligeros (sin autenticación):**
+| Endpoint | Descripción |
+|----------|-------------|
+| `/api/mantenedores/tipo-curso/min` | Tipos de curso mínimos |
+| `/api/mantenedores/roles/min` | Roles mínimos |
+| `/api/mantenedores/cargos/min` | Cargos mínimos |
+| `/api/mantenedores/ramas/min` | Ramas mínimas |
+
 ## 💰 Módulo de Pagos
-**Base URL:** `/api/Pagos/`
+**Base URL:** `/api/pagos/`
 
 | Endpoint | Descripción |
 |----------|-------------|
@@ -479,6 +497,27 @@ A continuación se detallan los endpoints disponibles en la API, organizados por
 | `pago-persona/` | Pagos asociados a personas |
 | `prepago/` | Sistema de prepagos |
 
+## 📧 Módulo de Correos
+**Base URL:** `/api/correos/`
+
+| Endpoint | Descripción |
+|----------|-------------|
+| `correos/` | Gestión de correos electrónicos |
+
+## 🔐 Autenticación
+
+| Endpoint | Descripción |
+|----------|-------------|
+| `/login/` | Obtener token JWT (access + refresh) |
+| `/refresh/` | Renovar access token usando refresh token |
+| `/api/verificar-qr/` | Verificar acreditación por código QR |
+
+**Endpoints de búsqueda ligeros (sin autenticación):**
+| Endpoint | Descripción |
+|----------|-------------|
+| `/api/personas/search` | Búsqueda rápida de personas |
+| `/api/personas/min` | Listado mínimo de personas |
+
 ---
 
 ## 🔍 Uso de Filtros
@@ -487,22 +526,22 @@ A continuación se detallan los endpoints disponibles en la API, organizados por
 
 **Buscar personas por nombre y apellido:**
 ```
-GET /api/Personas/personas/?nombre=Juan&apellido=Perez
+GET /api/personas/personas/?nombre=Juan&apellido=Perez
 ```
 
 **Buscar participantes de un curso específico:**
 ```
-GET /api/Personas/individuales/?curso_codigo=CUR-0778&acreditado=true
+GET /api/personas/individuales/?curso_codigo=CUR-0778&acreditado=true
 ```
 
 **Buscar personas no vigentes en una comuna:**
 ```
-GET /api/Personas/personas/?comuna_nombre=providencia&vigente=false
+GET /api/personas/personas/?comuna_nombre=providencia&vigente=false
 ```
 
 **Buscar participantes por rol y alimentación:**
 ```
-GET /api/Personas/individuales/?rol_nombre=formador&alimentacion_nombre=vegetariana
+GET /api/personas/individuales/?rol_nombre=formador&alimentacion_nombre=vegetariana
 ```
 
 ---
