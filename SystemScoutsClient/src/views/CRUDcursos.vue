@@ -869,10 +869,7 @@ async function cargarDatos({ page = 1, page_size = 20, search = '' } = {}) {
     // Normalizar listas relacionadas
     const fechasListNorm = (Array.isArray(fechasData) ? fechasData : (fechasData?.results || [])).map(toUpperKeys)
     const seccionesListNorm = (Array.isArray(seccionesData) ? seccionesData : (seccionesData?.results || [])).map(toUpperKeys)
-    const formadoresListNorm = [] // Se cargan bajo demanda o si estuvieran aquí
-    const alimentacionListNorm = [] // Se cargan bajo demanda
-    const cuotasListNorm = [] // Se cargan bajo demanda
-    const coordinadoresListNorm = [] // Se cargan bajo demanda
+    // formadoresListNorm, alimentacionListNorm, cuotasListNorm, coordinadoresListNorm se cargan bajo demanda
 
     // Enlazar fechas a cada curso para mostrar rango en la tabla si tenemos fechas
     const fechasByCurso = fechasListNorm.reduce((acc, f) => {
@@ -932,20 +929,7 @@ onMounted(() => {
   }
 })
 
-async function cargarCatalogos() {
-  try {
-    const [personasApi, tiposApi, ramasApi] = await Promise.all([
-      personasService.personas.list(),
-      mantenedores.tipoCursos.list(),
-      mantenedores.rama.list(),
-    ])
-    personasList.value = (Array.isArray(personasApi) ? personasApi : (personasApi?.results || [])).map(toUpperKeys)
-    tiposCursoList.value = (Array.isArray(tiposApi) ? tiposApi : (tiposApi?.results || [])).map(toUpperKeys)
-    ramaslist.value = (Array.isArray(ramasApi) ? ramasApi : (ramasApi?.results || [])).map(toUpperKeys)
-  } catch (e) {
-    console.error('Error cargando catálogos iniciales:', e)
-  }
-}
+
 
 // Preload minimal catalogs from fast endpoints and cache to localStorage
 async function preloadCatalogosMin() {

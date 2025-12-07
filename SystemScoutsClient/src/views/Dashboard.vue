@@ -79,19 +79,6 @@ function formatearMonto(monto) {
   return `$${monto.toLocaleString('es-CL')}`
 }
 
-function simplifyName(name) {
-  if (!name) return ''
-  let s = String(name).trim()
-  // Normalize spaces
-  s = s.replace(/\s+/g, ' ')
-  // Detect patterns like "grupo 1", "Grupo #1", "grupo-1" and map to G-<n>
-  const grupoMatch = s.match(/grupo\s*#?\s*(\d+)/i) || s.match(/grupo[-\s]?(\d+)/i)
-  if (grupoMatch) return `G-${grupoMatch[1]}`
-  // If the name is long, truncate to keep chart labels tidy
-  if (s.length > 15) return s.slice(0, 12) + '...'
-  return s
-}
-
 async function cargarDatos() {
   try {
     loading.value = true
@@ -244,7 +231,6 @@ function cerrarPopup() {
 onMounted(() => {
   cargarDatos()
   // Attach canvas mouse handlers for tooltip
-  const canvas = graficoCanvas
   // Use an interval to wait for the ref to be set if needed
   const attachHandlers = () => {
     const el = graficoCanvas.value
