@@ -780,18 +780,19 @@ function debounce(fn, wait = 250) {
 
 // Safe list wrapper: intenta usar un objeto API global si existe (e.g., cursosApi),
 // si no, hace fallback a `request(path)` (con querystring si params)
-async function safeList(apiName, path, params) {
-  try {
-    const globalObj = typeof globalThis !== 'undefined' ? globalThis[`${apiName}`] : undefined
-    if (globalObj && typeof globalObj.list === 'function') {
-      return await globalObj.list(params)
-    }
-  } catch (e) { /* ignore */ }
+// Currently unused but kept for future use
+// async function safeList(apiName, path, params) {
+//   try {
+//     const globalObj = typeof globalThis !== 'undefined' ? globalThis[`${apiName}`] : undefined
+//     if (globalObj && typeof globalObj.list === 'function') {
+//       return await globalObj.list(params)
+//     }
+//   } catch (e) { /* ignore */ }
 
-  // Build querystring for simple GETs
-  const qs = params && Object.keys(params).length ? `?${new URLSearchParams(params).toString()}` : ''
-  return await request(`${path}${qs}`)
-}
+//   // Build querystring for simple GETs
+//   const qs = params && Object.keys(params).length ? `?${new URLSearchParams(params).toString()}` : ''
+//   return await request(`${path}${qs}`)
+// }
 
 // Abort support for fetch: guardamos el controller y cancelamos la carga anterior
 const lastController = { ctrl: null }
