@@ -29,9 +29,9 @@ const pagos = {
   // Bulk create endpoint — the backend may implement a custom route for this.
   createMasivo: (data) => {
     // Try a dedicated endpoint first, fallback to regular create
-    try {
+        try {
       return request('pagos/pago-persona/masivo/', { method: 'POST', body: data instanceof FormData ? data : JSON.stringify(data) })
-    } catch (e) {
+    } catch {
       return pagoPersona.create(data)
     }
   },

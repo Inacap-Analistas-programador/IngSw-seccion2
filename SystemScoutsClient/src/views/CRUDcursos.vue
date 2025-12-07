@@ -813,9 +813,9 @@ async function cargarDatos({ page = 1, page_size = 20, search = '' } = {}) {
   // cancelar carga previa si existe
   try {
     if (lastController.ctrl) lastController.ctrl.abort()
-  } catch { /* noop */ }
+    } catch { /* noop */ }
   lastController.ctrl = new AbortController()
-  const signal = lastController.ctrl.signal
+  // const signal = lastController.ctrl.signal // Unused for now
 
   try {
     // Pedir cursos desde el servicio específico y catálogos relacionados

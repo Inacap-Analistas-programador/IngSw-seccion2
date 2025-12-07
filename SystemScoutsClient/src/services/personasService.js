@@ -169,61 +169,56 @@ export default {
   obtenerRoles,
   obtenerRamas,
   obtenerGrupos,
-  // Orquestador: crear Persona -> Persona_Curso -> Persona_Vehiculo
+    // Orquestador: crear Persona -> Persona_Curso -> Persona_Vehiculo
   createPersonaWithCourseAndVehicle: async ({ personaData, cursoData = null, vehiculoData = null }) => {
-    try {
-      // 1) Crear persona
-      const personaCreada = await personas.create(personaData);
+    // 1) Crear persona
+    const personaCreada = await personas.create(personaData);
 
-      let personaCursoCreado = null;
-      let vehiculoCreado = null;
+    let personaCursoCreado = null;
+    let vehiculoCreado = null;
 
-      // 2) Si se solicita crear curso (Persona_Curso)
-      if (cursoData && cursoData.CUS_ID && cursoData.ROL_ID) {
-        const cursoPayload = {
-          PER_ID: personaCreada.PER_ID,
-          CUS_ID: Number(cursoData.CUS_ID),
-          ROL_ID: Number(cursoData.ROL_ID)
-        };
-        // Incluir ALI_ID si fue provisto (Tipo de Alimentación)
-        if (cursoData.ALI_ID !== undefined && cursoData.ALI_ID !== null && cursoData.ALI_ID !== '') {
-          cursoPayload.ALI_ID = Number(cursoData.ALI_ID);
-        }
-        try {
-          personaCursoCreado = await personaCursos.create(cursoPayload);
-        } catch (err) {
-          // Propagar información pero continuar (vehículo depende de PEC_ID)
-          throw new Error(`Error creando Persona_Curso: ${err && err.message ? err.message : err}`);
-        }
+    // 2) Si se solicita crear curso (Persona_Curso)
+    if (cursoData && cursoData.CUS_ID && cursoData.ROL_ID) {
+      const cursoPayload = {
+        PER_ID: personaCreada.PER_ID,
+        CUS_ID: Number(cursoData.CUS_ID),
+        ROL_ID: Number(cursoData.ROL_ID)
+      };
+      // Incluir ALI_ID si fue provisto (Tipo de Alimentación)
+      if (cursoData.ALI_ID !== undefined && cursoData.ALI_ID !== null && cursoData.ALI_ID !== '') {
+        cursoPayload.ALI_ID = Number(cursoData.ALI_ID);
       }
-
-      // 3) Si se solicita crear vehículo y tenemos PEC_ID (de personaCursoCreado)
-      if (vehiculoData) {
-        // Preferir PEC_ID si es entregado; si no y se creó personaCurso, usar su PEC_ID
-        const pecId = vehiculoData.PEC_ID || (personaCursoCreado && personaCursoCreado.PEC_ID) || null;
-        if (!pecId) {
-          throw new Error('PEC_ID no disponible para crear vehículo. Crea primero Persona_Curso o proporciona PEC_ID.');
-        }
-
-        const vehPayload = {
-          PEC_ID: pecId,
-          PEV_PATENTE: vehiculoData.PEV_PATENTE,
-          PEV_MARCA: vehiculoData.PEV_MARCA || '',
-          PEV_MODELO: vehiculoData.PEV_MODELO || ''
-        };
-
-        try {
-          vehiculoCreado = await vehiculos.create(vehPayload);
-        } catch (err) {
-          throw new Error(`Error creando Persona_Vehiculo: ${err && err.message ? err.message : err}`);
-        }
+      try {
+        personaCursoCreado = await personaCursos.create(cursoPayload);
+      } catch (err) {
+        // Propagar información pero continuar (vehículo depende de PEC_ID)
+        throw new Error(`Error creando Persona_Curso: ${err && err.message ? err.message : err}`);
       }
-
-      return { persona: personaCreada, personaCurso: personaCursoCreado, vehiculo: vehiculoCreado };
-    } catch (error) {
-      // Re-lanzar para que el caller lo maneje
-      throw error;
     }
+
+    // 3) Si se solicita crear vehículo y tenemos PEC_ID (de personaCursoCreado)
+    if (vehiculoData) {
+      // Preferir PEC_ID si es entregado; si no y se creó personaCurso, usar su PEC_ID
+      const pecId = vehiculoData.PEC_ID || (personaCursoCreado && personaCursoCreado.PEC_ID) || null;
+      if (!pecId) {
+        throw new Error('PEC_ID no disponible para crear vehículo. Crea primero Persona_Curso o proporciona PEC_ID.');
+      }
+
+      const vehPayload = {
+        PEC_ID: pecId,
+        PEV_PATENTE: vehiculoData.PEV_PATENTE,
+        PEV_MARCA: vehiculoData.PEV_MARCA || '',
+        PEV_MODELO: vehiculoData.PEV_MODELO || ''
+      };
+
+      try {
+        vehiculoCreado = await vehiculos.create(vehPayload);
+      } catch (err) {
+        throw new Error(`Error creando Persona_Vehiculo: ${err && err.message ? err.message : err}`);
+      }
+    }
+
+    return { persona: personaCreada, personaCurso: personaCursoCreado, vehiculo: vehiculoCreado };
   },
   // Método personalizado para obtener cursos de una persona
   obtenerCursosPersona: (personaId) => request(`personas/personas/${personaId}/cursos/`),

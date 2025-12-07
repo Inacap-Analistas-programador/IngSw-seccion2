@@ -12,13 +12,13 @@ const ADMIN_ROLES = [
   'admin'
 ]
 
-// Lista de roles con permisos de solo lectura
-const READONLY_ROLES = [
-  'Invitado',
-  'Usuario',
-  'Visitante',
-  'Lector'
-]
+// Lista de roles con permisos de solo lectura (currently unused)
+// const READONLY_ROLES = [
+//   'Invitado',
+//   'Usuario',
+//   'Visitante',
+//   'Lector'
+// ]
 
 export function usePermissions() {
   // Obtener rol del usuario actual desde authService (soporta cookies y localStorage)

@@ -113,9 +113,9 @@ router.beforeEach(async (to, from, next) => {
   if (DISABLE_AUTH_GUARD) return next()
   
   let token = localStorage.getItem('token') || localStorage.getItem('accessToken')
-  // Normalizar: si sólo existe accessToken, duplica en 'token' para compatibilidad
+    // Normalizar: si sólo existe accessToken, duplica en 'token' para compatibilidad
   if (!localStorage.getItem('token') && token) {
-    try { localStorage.setItem('token', token) } catch {}
+    try { localStorage.setItem('token', token) } catch { /* ignore */ }
   }
   
   // Verificar autenticación
