@@ -284,6 +284,87 @@ La API usa **Django REST Framework** para:
 
 ## Acciones recomendadas:
 
+---
+
+## 🔄 CI/CD - Integración y Despliegue Continuo
+
+El proyecto cuenta con flujos automatizados de CI/CD mediante GitHub Actions que validan la calidad del código en cada push y pull request.
+
+### Workflows Disponibles
+
+#### 1. **Backend CI** (`.github/workflows/backend-ci.yml`)
+Ejecuta automáticamente cuando hay cambios en `SystemScoutsApi/`:
+- ✅ Instalación de dependencias Python
+- ✅ Análisis estático con **flake8** (detecta errores de sintaxis y estilo)
+- ✅ Configuración automática de entorno con SQLite
+- ✅ Ejecución de migraciones
+- ✅ Ejecución de tests unitarios (`python manage.py test`)
+
+#### 2. **Frontend CI** (`.github/workflows/frontend-ci.yml`)
+Ejecuta automáticamente cuando hay cambios en `SystemScoutsClient/`:
+- ✅ Instalación de dependencias Node.js
+- ✅ Análisis de código con **ESLint**
+- ✅ Verificación de formato con **Prettier**
+- ✅ Build de producción con Vite
+
+#### 3. **Code Quality Check** (`.github/workflows/code-quality.yml`)
+Validación completa de calidad de código:
+- ✅ Verificación de errores críticos en Python
+- ✅ Verificación de estilo y complejidad del código
+- ✅ Análisis de seguridad con `npm audit` (frontend)
+- ✅ Escaneo de vulnerabilidades con `safety` (backend)
+
+#### 4. **Pull Request Checks** (`.github/workflows/pr-checks.yml`)
+Validaciones específicas para Pull Requests:
+- ✅ Detección de conflictos de merge
+- ✅ Validación de mensajes de commit
+- ✅ Detección de archivos grandes (>5MB)
+- ✅ Validación de estructura del proyecto
+- ✅ Ejecución de tests completos
+
+### Ver Estado de los Workflows
+
+Los workflows se ejecutan automáticamente en cada push o pull request. Puedes ver su estado en:
+- Pestaña **Actions** del repositorio en GitHub
+- Badge de estado en pull requests
+- Notificaciones por email (si están habilitadas)
+
+### Ejecutar Validaciones Localmente
+
+Antes de hacer push, puedes ejecutar las mismas validaciones localmente:
+
+**Backend:**
+```bash
+cd SystemScoutsApi
+# Linting
+flake8 . --exclude=venv,migrations --max-line-length=127
+
+# Tests
+python manage.py test
+```
+
+**Frontend:**
+```bash
+cd SystemScoutsClient
+# Linting
+npm run lint
+
+# Formato
+npm run format
+
+# Build
+npm run build
+```
+
+### Buenas Prácticas
+
+- ✅ Ejecuta `npm run lint` y `flake8` antes de hacer commit
+- ✅ Asegúrate de que todos los tests pasen antes de crear un PR
+- ✅ Revisa los warnings de los workflows aunque no fallen
+- ✅ Mantén los commits descriptivos (mínimo 10 caracteres)
+- ✅ No incluyas archivos grandes en el repositorio (usa `.gitignore`)
+
+
 1. Ir a la ruta de tu carpeta raíz del proyecto en una nueva terminal
 ```bash
   cd IngSw-seccion2

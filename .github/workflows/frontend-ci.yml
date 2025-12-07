@@ -1,0 +1,54 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'SystemScoutsClient/**'
+      - '.github/workflows/frontend-ci.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'SystemScoutsClient/**'
+      - '.github/workflows/frontend-ci.yml'
+
+jobs:
+  lint-and-build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: SystemScoutsClient/package-lock.json
+
+    - name: Install dependencies
+      run: |
+        cd SystemScoutsClient
+        npm ci
+
+    - name: Run ESLint
+      run: |
+        cd SystemScoutsClient
+        npm run lint
+      continue-on-error: true
+
+    - name: Check code formatting
+      run: |
+        cd SystemScoutsClient
+        npx prettier --check src/
+      continue-on-error: true
+
+    - name: Build application
+      run: |
+        cd SystemScoutsClient
+        npm run build
+      env:
+        # Provide minimal env vars for build
+        VITE_DISABLE_AUTH_GUARD: false
+        VITE_ENABLE_AUTOLOGIN: false

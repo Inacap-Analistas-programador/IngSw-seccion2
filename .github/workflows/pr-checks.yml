@@ -1,0 +1,143 @@
+name: Pull Request Checks
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  validate-pr:
+    name: Validate Pull Request
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Check for merge conflicts
+      run: |
+        git fetch origin ${{ github.base_ref }}
+        if git merge-tree $(git merge-base HEAD origin/${{ github.base_ref }}) origin/${{ github.base_ref }} HEAD | grep -q '<<<<<<<'; then
+          echo "❌ Merge conflicts detected"
+          exit 1
+        else
+          echo "✅ No merge conflicts"
+        fi
+
+    - name: Check commit message format
+      run: |
+        # Get commit messages from the PR
+        git log origin/${{ github.base_ref }}..HEAD --pretty=format:"%s" > commits.txt
+        
+        echo "Commit messages in this PR:"
+        cat commits.txt
+        
+        # Basic validation: commits should not be too short
+        while IFS= read -r msg; do
+          if [ ${#msg} -lt 10 ]; then
+            echo "⚠️  Warning: Commit message too short: '$msg'"
+          fi
+        done < commits.txt
+        
+        echo "✅ Commit message check completed"
+
+    - name: Check for large files
+      run: |
+        echo "Checking for large files (>5MB)..."
+        large_files=$(find . -type f -size +5M -not -path "*/\.*" -not -path "*/node_modules/*" -not -path "*/venv/*" || true)
+        if [ -n "$large_files" ]; then
+          echo "⚠️  Warning: Large files detected:"
+          echo "$large_files"
+        else
+          echo "✅ No large files detected"
+        fi
+
+    - name: Validate file structure
+      run: |
+        echo "Validating project structure..."
+        
+        # Check required directories exist
+        required_dirs="SystemScoutsApi SystemScoutsClient .github/workflows"
+        for dir in $required_dirs; do
+          if [ ! -d "$dir" ]; then
+            echo "❌ Required directory missing: $dir"
+            exit 1
+          fi
+        done
+        
+        echo "✅ Project structure is valid"
+
+  run-backend-tests:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Setup environment file
+      run: |
+        cd SystemScoutsApi
+        cat > .env << 'EOF'
+        DJANGO_SECRET_KEY=test-secret-key-for-ci
+        DJANGO_DEBUG=True
+        DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
+        DATABASE=
+        USER=
+        PASSWORD_DB=
+        HOST=
+        PORT=3306
+        DB_NAME=
+        DB_USER=
+        DB_PASSWORD=
+        DB_HOST=
+        EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
+        SITE_URL=http://localhost:8000
+        EOF
+
+    - name: Run migrations
+      run: |
+        cd SystemScoutsApi
+        python manage.py migrate --noinput
+
+    - name: Run tests
+      run: |
+        cd SystemScoutsApi
+        python manage.py test
+
+  run-frontend-build:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: SystemScoutsClient/package-lock.json
+
+    - name: Install dependencies
+      run: |
+        cd SystemScoutsClient
+        npm ci
+
+    - name: Build application
+      run: |
+        cd SystemScoutsClient
+        npm run build
