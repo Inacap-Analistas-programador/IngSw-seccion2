@@ -96,6 +96,5 @@ python manage.py test test_production
 ## Documentación Útil
 
 - `README.md` (sección Backend) detalla comandos de entorno, problemas con migraciones y creación de perfiles iniciales.
-- `estructura.txt` resume jerarquía de carpetas si buscas rutas rápidas.
 
 Mantén el foco en endpoints consistentes, validaciones claras y comunicación continua con el resto del equipo para evitar regresiones en producción.
