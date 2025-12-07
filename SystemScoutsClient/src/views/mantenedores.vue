@@ -1940,9 +1940,9 @@ export default {
           // primero actualizar la referencia directa (si aplica)
           elemento.vigente = accion !== 'anular'
           // y asegurar que la colección reactiva también se actualiza al instante
-          const nuevoValor = accion === 'anular' ? false : true
+                    const nuevoValor = accion === 'anular' ? false : true
           applyOptimisticCambio(tipo, elemento, nuevoValor)
-        } catch (e) {
+        } catch {
           // ignore
         }
 

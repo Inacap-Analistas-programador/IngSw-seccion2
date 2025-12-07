@@ -1420,9 +1420,9 @@ export default {
         if (!tw) return
         const top = tw.getBoundingClientRect().top
         const available = Math.max(120, window.innerHeight - top - 16) // mínimo 120px
-        // setear variable CSS en el elemento .table-wrapper (o en root)
+                // setear variable CSS en el elemento .table-wrapper (o en root)
         tw.style.setProperty('--cards-viewport-height', `${available}px`)
-      } catch (e) {
+      } catch {
         // noop
       }
     }
@@ -3926,9 +3926,9 @@ export default {
               let okUser = false
               for (const u of tryUrls) {
                 try {
-                  const resp = await fetch(u, { method: 'GET', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } })
+                                    const resp = await fetch(u, { method: 'GET', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } })
                   if (resp.ok) { okUser = true; break }
-                } catch (e) {
+                } catch {
                   // ignore and try next
                 }
               }
@@ -3986,9 +3986,9 @@ export default {
           return;
         }
 
-        // Coerciones de tipos: PER_NUM_MMA a número o null
+                // Coerciones de tipos: PER_NUM_MMA a número o null
         if (this.personaNueva.PER_NUM_MMA !== undefined && this.personaNueva.PER_NUM_MMA !== null && this.personaNueva.PER_NUM_MMA !== '') {
-          const parsedMMA = Number(String(this.personaNueva.PER_NUM_MMA).replace(/[^0-9\-]/g, ''));
+          const parsedMMA = Number(String(this.personaNueva.PER_NUM_MMA).replace(/[^0-9-]/g, ''));
           datosPersona.PER_NUM_MMA = Number.isFinite(parsedMMA) ? parsedMMA : null;
         } else {
           datosPersona.PER_NUM_MMA = null;
@@ -3999,9 +3999,9 @@ export default {
         datosPersona.PER_FONO = datosPersona.PER_FONO || '';
         datosPersona.PER_APODO = datosPersona.PER_APODO || '';
         
-        try {
+                try {
           console.log('💾 Guardando nueva persona (orquestador):', JSON.stringify(datosPersona, null, 2));
-        } catch (e) {
+        } catch {
           console.log('💾 Guardando nueva persona (orquestador):', datosPersona);
         }
 
@@ -4185,9 +4185,9 @@ export default {
             }
             if (!rolIdToUse) {
               try {
-                const rolesList = await mantenedoresService.rol.list();
+                              const rolesList = await mantenedoresService.rol.list();
                 if (rolesList && rolesList.length) rolIdToUse = rolesList[0].ROL_ID;
-              } catch (e) {
+              } catch {
                 // ignore
               }
             }
@@ -4249,9 +4249,9 @@ export default {
           mensajeError += error.message || 'Verifica los datos e intenta nuevamente.';
         }
         
-        try {
+                try {
           console.error('🔍 Datos que se intentaron enviar:', datosPersona ? JSON.stringify(datosPersona, null, 2) : datosPersona);
-        } catch (e) {
+        } catch {
           console.error('🔍 Datos que se intentaron enviar (no serializable):', datosPersona);
         }
         alert(mensajeError);

@@ -79,7 +79,7 @@
 
 <script setup>
 import { ref, nextTick, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
 import authService from '@/services/authService.js'
 import InputBase from '@/components/InputBase.vue'
 import BaseButton from '@/components/BaseButton.vue'
@@ -98,7 +98,7 @@ const usernameInputRef = ref(null)
 const shake = ref(false)
 
 const router = useRouter()
-const route = useRoute()
+// const route = useRoute() // unused for now
 
 // Configuración de autologin
 const isDev = !!import.meta.env?.DEV
@@ -115,16 +115,16 @@ function showToast(message) {
   toastTimer = setTimeout(() => (alerta.value = { mensaje: '', tipo: '' }), 2500)
 }
 
-async function focusUsername(selectAll = true) {
-  await nextTick()
-  const el = usernameInputRef.value?.$el?.querySelector?.('.base-field')
-  if (el) {
-    el.focus()
-    if (selectAll) {
-      try { el.select() } catch {}
-    }
-  }
-}
+// async function focusUsername(selectAll = true) {
+//   await nextTick()
+//   const el = usernameInputRef.value?.$el?.querySelector?.('.base-field')
+//   if (el) {
+//     el.focus()
+//     if (selectAll) {
+//       try { el.select() } catch { /* ignore */ }
+//     }
+//   }
+// }
 
 function triggerShake() {
   shake.value = false
@@ -174,30 +174,30 @@ async function autoLogin() {
 }
 
 // ===== FETCH USUARIOS PROTEGIDOS =====
-const usuarios = ref([])
+// const usuarios = ref([])
 
-async function cargarUsuarios() {
-  try {
-    const token = localStorage.getItem('accessToken') || localStorage.getItem('token')
-    if (!token) return
+// async function cargarUsuarios() {
+//   try {
+//     const token = localStorage.getItem('accessToken') || localStorage.getItem('token')
+//     if (!token) return
 
-    // Usar el endpoint correcto del router: /api/usuarios/usuarios/ (no la raíz del router)
-    const response = await fetch('http://127.0.0.1:8000/api/usuarios/usuarios/', {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    })
+//     // Usar el endpoint correcto del router: /api/usuarios/usuarios/ (no la raíz del router)
+//     const response = await fetch('http://127.0.0.1:8000/api/usuarios/usuarios/', {
+//       headers: {
+//         'Authorization': `Bearer ${token}`,
+//         'Content-Type': 'application/json'
+//       }
+//     })
 
-    if (!response.ok) throw new Error('Error al obtener usuarios')
+//     if (!response.ok) throw new Error('Error al obtener usuarios')
 
-    usuarios.value = await response.json()
-    console.log(usuarios.value)
-  } catch (err) {
-    console.error(err)
-    showToast(err.message || 'Error al cargar usuarios')
-  }
-}
+//     usuarios.value = await response.json()
+//     console.log(usuarios.value)
+//   } catch (err) {
+//     console.error(err)
+//     showToast(err.message || 'Error al cargar usuarios')
+//   }
+// }
 
 </script>
 
