@@ -1,9 +1,16 @@
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.response import Response
 from ..Models.persona_model import Persona, Persona_Curso
 from ..Models.curso_model import Curso, Curso_Seccion
+import logging
 
-@api_view(['GET']) # Define que esta función solo acepta peticiones GET
+logger = logging.getLogger(__name__)
+
+@api_view(['GET'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
 def verificar_acreditacion_qr(request):
     
     # Se reciben los datos por parámetros get
@@ -19,19 +26,22 @@ def verificar_acreditacion_qr(request):
         # Busca a la Persona
         # Separa el RUT (ej: "13815851" y "5")
         partes_rut = rut_completo.split('-')
+        if len(partes_rut) != 2:
+            return Response(None)
+            
         run = partes_rut[0]
         dv = partes_rut[1]
 
         # Busca en la tabla persona
-        persona = Persona.objects.get(per_run=run, per_dv=dv) #
+        persona = Persona.objects.get(per_run=run, per_dv=dv)
         per_id = persona.per_id
 
         # Busca curso en la tabla curso por su código
-        curso = Curso.objects.get(cur_codigo=curso_codigo) #
+        curso = Curso.objects.get(cur_codigo=curso_codigo)
         cur_id = curso.cur_id
 
         # Busca las Secciones de ese Curso
-        secciones_del_curso = Curso_Seccion.objects.filter(cur_id=cur_id) #
+        secciones_del_curso = Curso_Seccion.objects.filter(cur_id=cur_id)
         
         # Muestra solo los IDs de las secciones 
         lista_ids_secciones = [seccion.cus_id for seccion in secciones_del_curso]
@@ -67,5 +77,5 @@ def verificar_acreditacion_qr(request):
     except Exception as e:
         # Captura cualquier error (ej: Persona no encontrada, Curso no encontrado)
         # y lo trata como "No Acreditado"
-        print(f"Error en la verificación: {e}")
+        logger.warning(f"Error en la verificación de acreditación: {str(e)}")
         return Response(None)
