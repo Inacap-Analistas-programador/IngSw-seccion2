@@ -43,6 +43,21 @@ cd IngSw-seccion2/SystemScoutsApi
 
 ## 🔹 2. Backend – Django API REST
 
+### Configuración de la Base de Datos
+El proyecto soporta tanto **MySQL** como **SQLite**:
+- **MySQL**: Para producción (requiere archivo `.env` con credenciales)
+- **SQLite**: Se usa automáticamente como fallback para desarrollo si no hay configuración MySQL
+
+**Crear archivo `.env` (opcional para MySQL):**
+```bash
+cp SystemScoutsApi/.env.example SystemScoutsApi/.env
+# Editar .env con tus credenciales de MySQL
+```
+
+Si no configuras MySQL, el sistema usará SQLite automáticamente (`db.sqlite3`).
+
+### Instalación y Ejecución
+
 1. **Crear entorno virtual de Python**
    ```bash
    python -m venv venv
@@ -60,20 +75,15 @@ cd IngSw-seccion2/SystemScoutsApi
    ```bash
    pip install -r requirements.txt
    ```
-4. **Ejecutar servidor de desarrollo**
-asegurate de estar posicionado en manage.py con
+4. **Ejecutar migraciones**
    ```bash
-      ls
+   cd SystemScoutsApi
+   python manage.py migrate
    ```
-   si ves el archivo manage.py puedes ejecutar el comando que sigue.
+5. **Ejecutar servidor de desarrollo**
    ```bash
    python manage.py runserver
    ```
-   en caso de no estar posicionado, realiza lo siguiente
-   ```bash
-      cd SystemScoutsApi
-   ```
-   puedes usar "ls" para verificar tu posición, una vez veas **manage.py** puedes hacer **runserver**
 6. **La API estará disponible en:**
     👉 `http://127.0.0.1:8000/`
 
@@ -82,27 +92,33 @@ asegurate de estar posicionado en manage.py con
 # Hacer migraciones en el backend: 
 
 1. **Debes estar en esta ruta (cd IngSw-seccion2/SystemScoutsApi):**
+```powershell
 python manage.py makemigrations
-
+```
 2. **Ejecutar migraciones:**
+```powershell
 python manage.py migrate
-
+```
 ---
 
 # En caso de tener problemas al migrar los datos, haz estos pasos:
 
 1. **Revertir todas las migraciones de la app:**
+```powershell
 python manage.py migrate ApiCoreScouts zero
-
-2. **Eliminar archivos de migración conflictivos**
+```
+3. **Eliminar archivos de migración conflictivos**
+```powershell
 rm ApiCoreScouts/migrations/0002_*.py
-
-3. **Crear migraciones limpias**
+```
+4. **Crear migraciones limpias**
+```powershell
 python manage.py makemigrations ApiCoreScouts
-
-4. **Aplicar migraciones**
+```
+5. **Aplicar migraciones**
+```powershell
 python manage.py migrate
-
+```
 # Crear super usuario (si aún no lo haz creado)
 
 ---
@@ -125,11 +141,13 @@ print(f"Perfil ID creado: {perfil_admin.PEL_ID}")
 ######################################################
 
 # Salir de la shell con:
+```powershell
 exit()
-
+```
 # Crear el superusuario con el comando:
+```powershell
 python manage.py createsuperuser
-
+```
 # Introducir datos para crear el super usuario con el perfil "Administrador"
 USU USERNAME, Password (x2)
 
@@ -154,8 +172,10 @@ from django.core.management.utils import get_random_secret_key
 print(get_random_secret_key())
 
 <<<<<<< HEAD
-o:
 
+```
+o:
+```bash
 =======
 >>>>>>> 7d2932d2f785da8bc0444f20a0b8b9f0563f914c
 =======
@@ -264,6 +284,87 @@ La API usa **Django REST Framework** para:
 
 ## Acciones recomendadas:
 
+---
+
+## 🔄 CI/CD - Integración y Despliegue Continuo
+
+El proyecto cuenta con flujos automatizados de CI/CD mediante GitHub Actions que validan la calidad del código en cada push y pull request.
+
+### Workflows Disponibles
+
+#### 1. **Backend CI** (`.github/workflows/backend-ci.yml`)
+Ejecuta automáticamente cuando hay cambios en `SystemScoutsApi/`:
+- ✅ Instalación de dependencias Python
+- ✅ Análisis estático con **flake8** (detecta errores de sintaxis y estilo)
+- ✅ Configuración automática de entorno con SQLite
+- ✅ Ejecución de migraciones
+- ✅ Ejecución de tests unitarios (`python manage.py test`)
+
+#### 2. **Frontend CI** (`.github/workflows/frontend-ci.yml`)
+Ejecuta automáticamente cuando hay cambios en `SystemScoutsClient/`:
+- ✅ Instalación de dependencias Node.js
+- ✅ Análisis de código con **ESLint**
+- ✅ Verificación de formato con **Prettier**
+- ✅ Build de producción con Vite
+
+#### 3. **Code Quality Check** (`.github/workflows/code-quality.yml`)
+Validación completa de calidad de código:
+- ✅ Verificación de errores críticos en Python
+- ✅ Verificación de estilo y complejidad del código
+- ✅ Análisis de seguridad con `npm audit` (frontend)
+- ✅ Escaneo de vulnerabilidades con `safety` (backend)
+
+#### 4. **Pull Request Checks** (`.github/workflows/pr-checks.yml`)
+Validaciones específicas para Pull Requests:
+- ✅ Detección de conflictos de merge
+- ✅ Validación de mensajes de commit
+- ✅ Detección de archivos grandes (>5MB)
+- ✅ Validación de estructura del proyecto
+- ✅ Ejecución de tests completos
+
+### Ver Estado de los Workflows
+
+Los workflows se ejecutan automáticamente en cada push o pull request. Puedes ver su estado en:
+- Pestaña **Actions** del repositorio en GitHub
+- Badge de estado en pull requests
+- Notificaciones por email (si están habilitadas)
+
+### Ejecutar Validaciones Localmente
+
+Antes de hacer push, puedes ejecutar las mismas validaciones localmente:
+
+**Backend:**
+```bash
+cd SystemScoutsApi
+# Linting
+flake8 . --exclude=venv,migrations --max-line-length=127
+
+# Tests
+python manage.py test
+```
+
+**Frontend:**
+```bash
+cd SystemScoutsClient
+# Linting
+npm run lint
+
+# Formato
+npm run format
+
+# Build
+npm run build
+```
+
+### Buenas Prácticas
+
+- ✅ Ejecuta `npm run lint` y `flake8` antes de hacer commit
+- ✅ Asegúrate de que todos los tests pasen antes de crear un PR
+- ✅ Revisa los warnings de los workflows aunque no fallen
+- ✅ Mantén los commits descriptivos (mínimo 10 caracteres)
+- ✅ No incluyas archivos grandes en el repositorio (usa `.gitignore`)
+
+
 1. Ir a la ruta de tu carpeta raíz del proyecto en una nueva terminal
 ```bash
   cd IngSw-seccion2
@@ -369,7 +470,7 @@ A continuación se detallan los endpoints disponibles en la API, organizados por
 | `perfil_aplicaciones/` | Relación entre perfiles y aplicaciones |
 
 ## 👨‍👩‍👧‍👦 Módulo de Personas
-**Base URL:** `/api/Personas/`
+**Base URL:** `/api/personas/`
 
 ### Personas
 **Endpoint:** `personas/`
@@ -416,7 +517,7 @@ A continuación se detallan los endpoints disponibles en la API, organizados por
 | `vehiculos/` | Gestión de vehículos |
 
 ## 📚 Módulo de Cursos
-**Base URL:** `/api/Cursos/`
+**Base URL:** `/api/cursos/`
 
 | Endpoint | Descripción |
 |----------|-------------|
@@ -429,7 +530,7 @@ A continuación se detallan los endpoints disponibles en la API, organizados por
 | `formadores/` | Instructores asignados a cursos |
 
 ## 📁 Módulo de Archivos
-**Base URL:** `/api/Archivos/`
+**Base URL:** `/api/archivos/`
 
 | Endpoint | Descripción |
 |----------|-------------|
@@ -438,7 +539,7 @@ A continuación se detallan los endpoints disponibles en la API, organizados por
 | `personas/` | Archivos asociados a personas |
 
 ## ⚙️ Módulo de Mantenedores
-**Base URL:** `/api/Mantenedores/**
+**Base URL:** `/api/mantenedores/`
 
 | Endpoint | Descripción |
 |----------|-------------|
@@ -458,8 +559,16 @@ A continuación se detallan los endpoints disponibles en la API, organizados por
 | `provincia/` | Provincias |
 | `comuna/` | Comunas |
 
+**Endpoints de catálogos ligeros (sin autenticación):**
+| Endpoint | Descripción |
+|----------|-------------|
+| `/api/mantenedores/tipo-curso/min` | Tipos de curso mínimos |
+| `/api/mantenedores/roles/min` | Roles mínimos |
+| `/api/mantenedores/cargos/min` | Cargos mínimos |
+| `/api/mantenedores/ramas/min` | Ramas mínimas |
+
 ## 💰 Módulo de Pagos
-**Base URL:** `/api/Pagos/`
+**Base URL:** `/api/pagos/`
 
 | Endpoint | Descripción |
 |----------|-------------|
@@ -469,6 +578,27 @@ A continuación se detallan los endpoints disponibles en la API, organizados por
 | `pago-persona/` | Pagos asociados a personas |
 | `prepago/` | Sistema de prepagos |
 
+## 📧 Módulo de Correos
+**Base URL:** `/api/correos/`
+
+| Endpoint | Descripción |
+|----------|-------------|
+| `correos/` | Gestión de correos electrónicos |
+
+## 🔐 Autenticación
+
+| Endpoint | Descripción |
+|----------|-------------|
+| `/login/` | Obtener token JWT (access + refresh) |
+| `/refresh/` | Renovar access token usando refresh token |
+| `/api/verificar-qr/` | Verificar acreditación por código QR |
+
+**Endpoints de búsqueda ligeros (sin autenticación):**
+| Endpoint | Descripción |
+|----------|-------------|
+| `/api/personas/search` | Búsqueda rápida de personas |
+| `/api/personas/min` | Listado mínimo de personas |
+
 ---
 
 ## 🔍 Uso de Filtros
@@ -477,22 +607,22 @@ A continuación se detallan los endpoints disponibles en la API, organizados por
 
 **Buscar personas por nombre y apellido:**
 ```
-GET /api/Personas/personas/?nombre=Juan&apellido=Perez
+GET /api/personas/personas/?nombre=Juan&apellido=Perez
 ```
 
 **Buscar participantes de un curso específico:**
 ```
-GET /api/Personas/individuales/?curso_codigo=CUR-0778&acreditado=true
+GET /api/personas/individuales/?curso_codigo=CUR-0778&acreditado=true
 ```
 
 **Buscar personas no vigentes en una comuna:**
 ```
-GET /api/Personas/personas/?comuna_nombre=providencia&vigente=false
+GET /api/personas/personas/?comuna_nombre=providencia&vigente=false
 ```
 
 **Buscar participantes por rol y alimentación:**
 ```
-GET /api/Personas/individuales/?rol_nombre=formador&alimentacion_nombre=vegetariana
+GET /api/personas/individuales/?rol_nombre=formador&alimentacion_nombre=vegetariana
 ```
 
 ---

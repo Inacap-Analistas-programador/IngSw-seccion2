@@ -1,12 +1,15 @@
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from ..Serializers import Persona_serializer as MU_S
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.renderers import JSONRenderer
 from ..Filters.persona_filter import *
 from ..Models.persona_model import *
+from ..Permissions import PerfilPermission
 from django.db.models import Prefetch
 
 class StandardResultsSetPagination(PageNumberPagination):
@@ -16,6 +19,9 @@ class StandardResultsSetPagination(PageNumberPagination):
 
 class PersonaViewSet(viewsets.ModelViewSet):
     serializer_class = MU_S.PersonaCompletaSerializer  # Usar el serializer con datos relacionados
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, PerfilPermission]
+    app_name = 'Personas'
 
     filter_backends = [DjangoFilterBackend]
     filterset_class = PersonaFilter
@@ -71,6 +77,9 @@ class PersonaViewSet(viewsets.ModelViewSet):
 
 class PersonaCursoViewSet(viewsets.ModelViewSet):
     serializer_class = MU_S.PersonaCursoSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, PerfilPermission]
+    app_name = 'Personas'
 
     filter_backends = [DjangoFilterBackend]
     filterset_class = PersonaCursoFilter

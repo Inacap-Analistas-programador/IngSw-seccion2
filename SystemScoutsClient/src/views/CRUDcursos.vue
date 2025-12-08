@@ -15,14 +15,14 @@
           <BaseSelect v-model="filtros.estado" :options="opcionesEstado" placeholder="Estado" optionLabel="text" />
         </div>
         <div class="filter-item">
-          <BaseSelect v-model="filtros.tipoCurso" :options="tiposCursoOptions" placeholder="Tipo Curso" optionLabel="text" />
+          <BaseSelect v-model="filtros.tipoCurso" :options="tiposCursoOptions" placeholder="Tipo Curso" optionLabel="text" @focus="ensureCatalogo('tipos')" />
         </div>
         <div class="filter-item">
-          <BaseSelect v-model="filtros.responsable" :options="personasOptions" placeholder="Responsable" optionLabel="text" />
+          <BaseSelect v-model="filtros.responsable" :options="personasOptions" placeholder="Responsable" optionLabel="text" @focus="ensureCatalogo('personas')" />
         </div>
       </div>
       <div class="filters-actions">
-        <BaseButton @click="aplicarFiltros" variant="primary"><AppIcons name="search" :size="16" /> Buscar</BaseButton>
+        <BaseButton @click="aplicarFiltros" :disabled="!hasAnyFilter" variant="primary"><AppIcons name="search" :size="16" /> Buscar</BaseButton>
         <BaseButton @click="limpiarFiltros" variant="neutral"><AppIcons name="x-circle" :size="16" /> Limpiar</BaseButton>
         <BaseButton @click="abrirModalCrear" variant="success"><AppIcons name="plus" :size="16" /> Nuevo Curso</BaseButton>
       </div>
@@ -66,9 +66,12 @@
               <BaseButton @click="abrirDashboard(c)" variant="primary" size="sm"><AppIcons name="chart-bar" :size="14" /> Dashboard</BaseButton>
             </td>
           </tr>
-          <tr v-if="cursosFiltrados.length === 0">
-            <td colspan="7" class="no-results">No se encontraron cursos que coincidan con los filtros.</td>
-          </tr>
+            <tr v-if="!hasAnyFilter">
+              <td colspan="7" class="no-results">Ingrese al menos un filtro para buscar cursos.</td>
+            </tr>
+            <tr v-else-if="cursosFiltrados.length === 0">
+              <td colspan="7" class="no-results">No se encontraron cursos que coincidan con los filtros.</td>
+            </tr>
         </tbody>
       </table>
     </div>
@@ -577,7 +580,7 @@
         </div>
         <div class="form-group">
           <label for="nuevo-estado">Nuevo Estado *</label>
-          <BaseSelect v-model="nuevoEstado" :options="opcionesEstado" id="nuevo-estado" />
+          <BaseSelect v-model="nuevoEstado" :options="opcionesEstado" optionLabel="text" optionValue="value" id="nuevo-estado" />
         </div>
       </div>
       <template #footer>
@@ -588,8 +591,6 @@
       </template>
     </BaseModal>
 
-  </div>
-
   <!-- Dashboard del Curso - Overlay completo -->
   <Teleport to="body">
     <div v-if="mostrarDashboard" class="dashboard-overlay">
@@ -599,6 +600,7 @@
       />
     </div>
   </Teleport>
+  </div>
 </template>
 
 <script setup>
@@ -650,7 +652,7 @@ const toLowerKeys = (obj) => {
 }
 
 // --- Estado y Reactividad ---
-const isLoading = ref(true)
+const isLoading = ref(false)
 const isLoadingData = ref(false) // Guard para prevenir cargas duplicadas
 const cursosList = ref([])
 const cursosFiltrados = ref([])
@@ -714,6 +716,11 @@ const filtros = ref({
   responsable: null,
 })
 
+const hasAnyFilter = computed(() => {
+  const f = filtros.value
+  return Boolean((f.searchQuery && f.searchQuery.trim()) || f.estado || f.tipoCurso || f.responsable)
+})
+
 const form = ref(null)
 
 const inicializarFormulario = () => ({
@@ -773,24 +780,31 @@ function debounce(fn, wait = 250) {
 
 // Safe list wrapper: intenta usar un objeto API global si existe (e.g., cursosApi),
 // si no, hace fallback a `request(path)` (con querystring si params)
-async function safeList(apiName, path, params) {
-  try {
-    const globalObj = typeof globalThis !== 'undefined' ? globalThis[`${apiName}`] : undefined
-    if (globalObj && typeof globalObj.list === 'function') {
-      return await globalObj.list(params)
-    }
-  } catch (e) { /* ignore */ }
+// Currently unused but kept for future use
+// async function safeList(apiName, path, params) {
+//   try {
+//     const globalObj = typeof globalThis !== 'undefined' ? globalThis[`${apiName}`] : undefined
+//     if (globalObj && typeof globalObj.list === 'function') {
+//       return await globalObj.list(params)
+//     }
+//   } catch (e) { /* ignore */ }
 
-  // Build querystring for simple GETs
-  const qs = params && Object.keys(params).length ? `?${new URLSearchParams(params).toString()}` : ''
-  return await request(`${path}${qs}`)
-}
+//   // Build querystring for simple GETs
+//   const qs = params && Object.keys(params).length ? `?${new URLSearchParams(params).toString()}` : ''
+//   return await request(`${path}${qs}`)
+// }
 
 // Abort support for fetch: guardamos el controller y cancelamos la carga anterior
 const lastController = { ctrl: null }
 
-async function cargarDatos({ page = 1, page_size = 100, search = '' } = {}) {
+async function cargarDatos({ page = 1, page_size = 20, search = '' } = {}) {
   if (isLoadingData.value) return
+  // Requerir al menos un filtro antes de cargar
+  if (!hasAnyFilter.value) {
+    cursosList.value = []
+    cursosFiltrados.value = []
+    return
+  }
   isLoadingData.value = true
   isLoading.value = true
 
@@ -799,9 +813,9 @@ async function cargarDatos({ page = 1, page_size = 100, search = '' } = {}) {
   // cancelar carga previa si existe
   try {
     if (lastController.ctrl) lastController.ctrl.abort()
-  } catch { /* noop */ }
+    } catch { /* noop */ }
   lastController.ctrl = new AbortController()
-  const signal = lastController.ctrl.signal
+  // const signal = lastController.ctrl.signal // Unused for now
 
   try {
     // Pedir cursos desde el servicio específico y catálogos relacionados
@@ -856,10 +870,7 @@ async function cargarDatos({ page = 1, page_size = 100, search = '' } = {}) {
     // Normalizar listas relacionadas
     const fechasListNorm = (Array.isArray(fechasData) ? fechasData : (fechasData?.results || [])).map(toUpperKeys)
     const seccionesListNorm = (Array.isArray(seccionesData) ? seccionesData : (seccionesData?.results || [])).map(toUpperKeys)
-    const formadoresListNorm = [] // Se cargan bajo demanda o si estuvieran aquí
-    const alimentacionListNorm = [] // Se cargan bajo demanda
-    const cuotasListNorm = [] // Se cargan bajo demanda
-    const coordinadoresListNorm = [] // Se cargan bajo demanda
+    // formadoresListNorm, alimentacionListNorm, cuotasListNorm, coordinadoresListNorm se cargan bajo demanda
 
     // Enlazar fechas a cada curso para mostrar rango en la tabla si tenemos fechas
     const fechasByCurso = fechasListNorm.reduce((acc, f) => {
@@ -902,7 +913,10 @@ async function cargarDatos({ page = 1, page_size = 100, search = '' } = {}) {
 }
 
 onMounted(() => {
-  cargarDatos()
+  // No cargar cursos sin filtros: el usuario debe aplicar al menos un filtro
+  // cargarDatos() se invocará cuando el usuario presione Buscar y haya filtros
+  // Cargar catálogos para filtros sin cargar cursos
+  preloadCatalogosMin()
   // Reintento diferido: si no había token al montar (login recién hecho en otra vista), esperar y reintentar
   const tokenEarly = localStorage.getItem('accessToken') || localStorage.getItem('token')
   if (!tokenEarly) {
@@ -916,15 +930,63 @@ onMounted(() => {
   }
 })
 
+
+
+// Preload minimal catalogs from fast endpoints and cache to localStorage
+async function preloadCatalogosMin() {
+  try {
+    const ttlMs = 15 * 60 * 1000
+    const now = Date.now()
+    const personasCache = JSON.parse(localStorage.getItem('personas_min_cache') || 'null')
+    const tiposCache = JSON.parse(localStorage.getItem('tipos_curso_min_cache') || 'null')
+
+    if (personasCache && (now - personasCache.timestamp) < ttlMs) {
+      personasList.value = personasCache.data.map(toUpperKeys)
+    }
+    if (tiposCache && (now - tiposCache.timestamp) < ttlMs) {
+      tiposCursoList.value = tiposCache.data.map(toUpperKeys)
+    }
+
+    // If not present or empty, do a quick blocking fetch so filters are usable immediately
+    if (!personasList.value.length || !tiposCursoList.value.length) {
+      const [pMin, tMin] = await Promise.all([
+        request('/personas/min?limit=200'),
+        request('/mantenedores/tipo-curso/min?limit=200')
+      ])
+      const pData = (Array.isArray(pMin?.results) ? pMin.results : (pMin || [])).map(r => ({ id: r.id, nombre: r.nombre }))
+      const tData = (Array.isArray(tMin?.results) ? tMin.results : (tMin || [])).map(r => ({ id: r.id, nombre: r.nombre }))
+      personasList.value = pData.map(toUpperKeys)
+      tiposCursoList.value = tData.map(toUpperKeys)
+      localStorage.setItem('personas_min_cache', JSON.stringify({ timestamp: Date.now(), data: pData }))
+      localStorage.setItem('tipos_curso_min_cache', JSON.stringify({ timestamp: Date.now(), data: tData }))
+    } else {
+      // Otherwise refresh in background
+      Promise.all([
+        request('/personas/min?limit=200'),
+        request('/mantenedores/tipo-curso/min?limit=200')
+      ]).then(([pMin, tMin]) => {
+        const pData = (Array.isArray(pMin?.results) ? pMin.results : (pMin || [])).map(r => ({ id: r.id, nombre: r.nombre }))
+        const tData = (Array.isArray(tMin?.results) ? tMin.results : (tMin || [])).map(r => ({ id: r.id, nombre: r.nombre }))
+        personasList.value = pData.map(toUpperKeys)
+        tiposCursoList.value = tData.map(toUpperKeys)
+        localStorage.setItem('personas_min_cache', JSON.stringify({ timestamp: Date.now(), data: pData }))
+        localStorage.setItem('tipos_curso_min_cache', JSON.stringify({ timestamp: Date.now(), data: tData }))
+      }).catch(e => console.warn('No se pudo refrescar catálogos mínimos:', e))
+    }
+  } catch (e) {
+    console.error('Error en preloadCatalogosMin:', e)
+  }
+}
+
 // Debounced server search: cuando el usuario escribe, evitamos múltiples llamadas
-const _debouncedLoad = debounce((q) => cargarDatos({ page: 1, page_size: 100, search: (q || '').trim() }), 450)
+const _debouncedLoad = debounce((q) => cargarDatos({ page: 1, page_size: 20, search: (q || '').trim() }), 450)
 watch(() => filtros.value.searchQuery, (v) => {
   // Si se borra la búsqueda, recargar sin filtro de servidor
   if (!v) {
-    cargarDatos({ page: 1, page_size: 100, search: '' })
+    // No cargar sin filtros
     return
   }
-  _debouncedLoad(v)
+  if (hasAnyFilter.value) _debouncedLoad(v)
 })
 
 // Listener de almacenamiento (multi-tab / login en otra pestaña)
@@ -944,6 +1006,16 @@ if (typeof window !== 'undefined') {
 function aplicarFiltros() {
   let items = [...cursosList.value]
   const { searchQuery, estado, tipoCurso, responsable } = filtros.value
+  if (!hasAnyFilter.value) {
+    cursosFiltrados.value = []
+    return
+  }
+  // Si no hay cursos cargados aún, solicitar al servidor con los filtros actuales
+  if (!items.length) {
+    const search = (searchQuery || '').trim()
+    cargarDatos({ page: 1, page_size: 20, search })
+    return
+  }
   if (searchQuery) {
     const q = String(searchQuery).toLowerCase()
     items = items.filter(c => (c.CUR_DESCRIPCION || '').toLowerCase().includes(q) || (c.CUR_CODIGO || '').toLowerCase().includes(q))
@@ -975,6 +1047,21 @@ const ramasOptions = computed(() => ramaslist.value.map(r => ({ value: r.RAM_ID,
 function getRamaName(id) {
   const rama = ramaslist.value.find(r => r.RAM_ID === id)
   return rama ? rama.RAM_DESCRIPCION : 'No definida'
+}
+
+// Lazy load helpers for select catalogs
+async function ensureCatalogo(kind) {
+  try {
+    if (kind === 'personas' && (!personasList.value || personasList.value.length === 0)) {
+      const personasApi = await personasService.personas.list({ page: 1, page_size: 50 })
+      personasList.value = (Array.isArray(personasApi) ? personasApi : (personasApi?.results || [])).map(toUpperKeys)
+    } else if (kind === 'tipos' && (!tiposCursoList.value || tiposCursoList.value.length === 0)) {
+      const tiposApi = await mantenedores.tipoCursos.list({ page: 1, page_size: 50 })
+      tiposCursoList.value = (Array.isArray(tiposApi) ? tiposApi : (tiposApi?.results || [])).map(toUpperKeys)
+    }
+  } catch (e) {
+    console.error('Error cargando catálogo', kind, e)
+  }
 }
 
 
@@ -1067,10 +1154,10 @@ async function cargarFechasDelCurso(cursoId) {
   }
   try {
     // Solo cargar si aún no tenemos fechas en caché
-    if (!Array.isArray(fechasCursoList.value) || fechasCursoList.value.length === 0) {
-      const todas = await fechasApi.list()
-      fechasCursoList.value = (todas || []).map(toUpperKeys)
-    }
+    // Cargar directamente solo las fechas del curso para evitar traer todas
+    const res = await fechasApi.list({ CUR_ID: cursoId, page_size: 20 })
+    const raw = Array.isArray(res?.results) ? res.results : (Array.isArray(res) ? res : [])
+    fechasCursoList.value = raw.map(toUpperKeys)
     fechasCurso.value = (fechasCursoList.value || []).filter(f => Number(f.CUR_ID) === Number(cursoId))
   } catch (e) {
     console.error('Error cargando fechas:', e)
@@ -1180,10 +1267,10 @@ const nuevaSeccion = ref({
 
 async function cargarSeccionesDelCurso(cursoId) {
   try {
-    if (!Array.isArray(seccionesList.value) || seccionesList.value.length === 0) {
-      const all = await seccionesApi.list()
-      seccionesList.value = (all || []).map(toUpperKeys)
-    }
+    // Cargar directamente solo las secciones del curso para evitar traer todas
+    const all = await seccionesApi.list({ CUR_ID: cursoId, page_size: 500 })
+    const raw = Array.isArray(all?.results) ? all.results : (Array.isArray(all) ? all : [])
+    seccionesList.value = raw.map(toUpperKeys)
     seccionesCurso.value = (seccionesList.value || []).filter(s => Number(s.CUR_ID) === Number(cursoId))
   } catch (e) {
     console.error('Error cargando secciones:', e)
@@ -1461,7 +1548,8 @@ async function guardarCurso() {
         alert('No hay cambios para guardar.')
         return
       }
-      const actualizadoRaw = await cursosApi.update(payload.CUR_ID, apiPayload)
+      // Usar PATCH para edición parcial y evitar requerir todos los campos
+      const actualizadoRaw = await cursosApi.partialUpdate(payload.CUR_ID, apiPayload)
       const actualizado = toUpperKeys(actualizadoRaw)
       const index = cursosList.value.findIndex(c => c.CUR_ID === payload.CUR_ID)
       if (index !== -1) {
@@ -1533,14 +1621,18 @@ async function guardarCambioEstado() {
     return
   }
   
-  const estadoTexto = opcionesEstado.find(e => e.value === Number(nuevoEstado.value))?.text || 'Desconocido'
+  const selectedValue = typeof nuevoEstado.value === 'object' && nuevoEstado.value !== null
+    ? (nuevoEstado.value.value ?? nuevoEstado.value.VALOR ?? nuevoEstado.value)
+    : (nuevoEstado.value ?? nuevoEstado)
+  const estadoNumber = Number(selectedValue)
+  const estadoTexto = opcionesEstado.find(e => e.value === estadoNumber)?.text || 'Desconocido'
   if (!window.confirm(`¿Confirma cambiar el estado a "${estadoTexto}"?`)) return
   
   if (isDisabling.value) return
   isDisabling.value = true
   
   try {
-    const actualizadoRaw = await cursosApi.partialUpdate(cursoParaCambioEstado.value.CUR_ID, toLowerKeys({ CUR_ESTADO: Number(nuevoEstado.value) }))
+    const actualizadoRaw = await cursosApi.partialUpdate(cursoParaCambioEstado.value.CUR_ID, toLowerKeys({ CUR_ESTADO: estadoNumber }))
     const actualizado = toUpperKeys(actualizadoRaw)
     Object.assign(cursoParaCambioEstado.value, actualizado)
     aplicarFiltros()
@@ -1556,10 +1648,10 @@ async function guardarCambioEstado() {
 }
 
 // --- Funciones de Formato y Ayuda ---
-const personasOptions = computed(() => personasList.value.map(p => ({ value: p.PER_ID, text: `${p.PER_NOMBRE} ${p.PER_APELLIDO_PATERNO}` })))
+const personasOptions = computed(() => personasList.value.map(p => ({ value: p.PER_ID || p.id, text: (p.PER_NOMBRES || p.PER_NOMBRE || p.nombre || '').trim() })))
 
 const tiposCursoOptions = computed(() => 
-  tiposCursoList.value.map(tc => ({ value: tc.TCU_ID, text: tc.TCU_DESCRIPCION }))
+  tiposCursoList.value.map(tc => ({ value: tc.TCU_ID || tc.id, text: tc.TCU_DESCRIPCION || tc.nombre }))
 )
 
 const comunasList = ref([])
@@ -1608,20 +1700,21 @@ function formatDateSimple(dateStr) {
 }
 
 function getPersonaName(id) {
-  const p = personasList.value.find(x => x.PER_ID === id)
-  const nombre = p?.PER_NOMBRES || p?.PER_NOMBRE || ''
-  const apellido = p?.PER_APELPTA || p?.PER_APELLIDO_PATERNO || ''
-  return p ? `${nombre} ${apellido}`.trim() : 'No asignado'
+  const p = personasList.value.find(x => Number(x.PER_ID ?? x.ID ?? x.id) === Number(id))
+  const nombre = p?.PER_NOMBRES || p?.PER_NOMBRE || p?.NOMBRE || p?.nombre || ''
+  const apellido = p?.PER_APELPTA || p?.PER_APELLIDO_PATERNO || p?.APELLIDO || p?.apellido || ''
+  const full = `${(nombre || '').trim()} ${(apellido || '').trim()}`.trim()
+  return p ? (full || nombre || '-') : 'No asignado'
 }
 
 function getCargoName(id) {
-  const c = cargosList.value.find(x => x.CAR_ID === id)
-  return c ? c.CAR_DESCRIPCION : ''
+  const c = cargosList.value.find(x => Number(x.CAR_ID ?? x.ID ?? x.id) === Number(id))
+  return c ? (c.CAR_DESCRIPCION || c.DESCRIPCION || c.nombre || c.NOMBRE || '-') : ''
 }
 
 function getTipoCursoName(id) {
-  const tc = tiposCursoList.value.find(x => x.TCU_ID === id)
-  return tc ? tc.TCU_DESCRIPCION : 'No definido'
+  const tc = tiposCursoList.value.find(x => Number(x.TCU_ID ?? x.ID ?? x.id) === Number(id))
+  return tc ? (tc.TCU_DESCRIPCION || tc.DESCRIPCION || tc.nombre || tc.NOMBRE || 'No definido') : 'No definido'
 }
 
 function getEstadoText(e) {
@@ -1648,7 +1741,7 @@ const seccionesOptions = computed(() => seccionesCurso.value.map(s => {
 async function agregarFormador() {
   if (isAddingFormador.value) return
   const f = nuevaFormador.value
-  if (!f.PER_ID || !f.ROL_ID || !f.CUS_ID) { alert('Completa persona, rol y sección.'); return }
+  if (!f.PER_ID || !f.ROL_ID) { alert('Completa persona y rol.'); return }
   try {
     isAddingFormador.value = true
     if (!form.value.CUR_ID) {
@@ -1675,8 +1768,8 @@ function iniciarEdicionFormador(formador) {
 
 async function guardarEdicionFormador() {
   const f = nuevaFormador.value
-  if (!f.PER_ID || !f.ROL_ID || !f.CUS_ID) {
-    alert('Completa persona, rol y sección.')
+  if (!f.PER_ID || !f.ROL_ID) {
+    alert('Completa persona y rol.')
     return
   }
   try {

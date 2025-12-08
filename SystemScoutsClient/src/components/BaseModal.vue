@@ -23,11 +23,11 @@
 // Ya no se importan defineProps/defineEmits (macro implícito con <script setup>) para evitar warnings.
 import ModernMainScrollbar from './ModernMainScrollbar.vue'
 // Alias para variantes con mayúsculas diferentes en algunos archivos
-const ModernMainScrollBar = ModernMainScrollbar
+// const ModernMainScrollBar = ModernMainScrollbar
 
-const props = defineProps({
-  modelValue: { type: Boolean, default: false }
-});
+// const props = defineProps({
+//   modelValue: { type: Boolean, default: false }
+// });
 
 const emit = defineEmits(['update:modelValue', 'close']);
 

@@ -48,24 +48,26 @@ export function verificarUsuario() {
   // Variable para guardar la instancia del escáner y poder usarla en todas las funciones.
   let QR_Scanner = null
 
-  function verificarUsuarioEnAPI(id) {
-    // Retorna una promesa para simular el tiempo de espera (asincronía)
-    return new Promise(resolve => {
-      // Simula la latencia de red usando el tiempo constante
-      setTimeout(() => {
-        const idLimpio = id.trim() // Limpia espacios en blanco del ID
-        // Comprueba si el ID existe en nuestra base de datos simulada
-        const acreditado = ID_Prueba.includes(idLimpio) // <--- Ahora usa la variable
+    // Sample verification function (currently unused)
+  // function verificarUsuarioEnAPI(id) {
+  //   const ID_Prueba = ['1', '2', '3']; // Sample IDs for testing
+  //   // Retorna una promesa para simular el tiempo de espera (asincronía)
+  //   return new Promise(resolve => {
+  //     // Simula la latencia de red usando el tiempo constante
+  //     setTimeout(() => {
+  //       const idLimpio = id.trim() // Limpia espacios en blanco del ID
+  //       // Comprueba si el ID existe en nuestra base de datos simulada
+  //       const acreditado = ID_Prueba.includes(idLimpio)
 
-        // Resuelve la promesa con el objeto de resultado
-        resolve({
-          id: idLimpio,
-          verificado: acreditado,
-          nombre: acreditado ? 'Usuario Acreditado' : 'Usuario Desconocido'
-        })
-      }, TIEMPO_VERIFICACION) // Espera 2 segundos
-    })
-  }
+  //       // Resuelve la promesa con el objeto de resultado
+  //       resolve({
+  //         id: idLimpio,
+  //         verificado: acreditado,
+  //         nombre: acreditado ? 'Usuario Acreditado' : 'Usuario Desconocido'
+  //       })
+  //     }, TIEMPO_VERIFICACION) // Espera 2 segundos
+  //   })
+  // }
 
   async function Acreditacion(textoDelQR) {
     // 'textoDelQR' es el texto completo del QR, ej: "12345678-9,CURSO101"

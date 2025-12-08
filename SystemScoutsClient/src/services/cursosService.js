@@ -1,7 +1,12 @@
 import { request } from './apiClient'
 
 const makeCrud = base => ({
-  list: (params) => request(`${base}/${params ? `?${new URLSearchParams(params)}` : ''}`),
+  list: (params) => {
+    const searchParams = new URLSearchParams(params || {})
+    if (!searchParams.has('page_size')) searchParams.set('page_size', '20')
+    const qs = searchParams.toString()
+    return request(`${base}/${qs ? `?${qs}` : ''}`)
+  },
   get: (id) => request(`${base}/${id}/`),
   create: (data) => request(`${base}/`, { method: 'POST', body: JSON.stringify(data) }),
   update: (id, data) => request(`${base}/${id}/`, { method: 'PUT', body: JSON.stringify(data) }),

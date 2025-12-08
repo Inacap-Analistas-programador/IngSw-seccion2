@@ -2,7 +2,7 @@ import { request } from './apiClient'
 
 const makeCrud = base => ({
   list: (params) => request(`${base}${params ? `?${new URLSearchParams(params)}` : ''}`),
-  get: (id) => request(`${base}${id}/`),
+  get: (id) => request(`${base}/${id}/`),
   // create/update helpers: if data is FormData, pass it directly so apiClient
   // doesn't set Content-Type and allows file uploads. Otherwise stringify JSON.
   create: (data) => {
@@ -11,9 +11,9 @@ const makeCrud = base => ({
     else opts.body = JSON.stringify(data)
     return request(base, opts)
   },
-  update: (id, data) => request(`${base}${id}/`, { method: 'PUT', body: JSON.stringify(data) }),
-  partialUpdate: (id, data) => request(`${base}${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
-  remove: (id) => request(`${base}${id}/`, { method: 'DELETE' }),
+  update: (id, data) => request(`${base}/${id}/`, { method: 'PUT', body: JSON.stringify(data) }),
+  partialUpdate: (id, data) => request(`${base}/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
+  remove: (id) => request(`${base}/${id}/`, { method: 'DELETE' }),
 })
 
 export const proveedor = makeCrud('pagos/proveedor')
@@ -29,9 +29,9 @@ const pagos = {
   // Bulk create endpoint — the backend may implement a custom route for this.
   createMasivo: (data) => {
     // Try a dedicated endpoint first, fallback to regular create
-    try {
+        try {
       return request('pagos/pago-persona/masivo/', { method: 'POST', body: data instanceof FormData ? data : JSON.stringify(data) })
-    } catch (e) {
+    } catch {
       return pagoPersona.create(data)
     }
   },

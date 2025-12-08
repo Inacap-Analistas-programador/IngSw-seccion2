@@ -13,9 +13,9 @@ export default {
     // Leer el body una sola vez
     const text = await response.text(); // siempre funciona
     let data;
-    try {
+        try {
       data = JSON.parse(text); // intenta parsear como JSON
-    } catch (e) {
+    } catch {
       console.error('No JSON received:', text);
       throw new Error('Respuesta inesperada del servidor');
     }
@@ -60,14 +60,22 @@ export default {
       const json = atob(padded);
       const payload = JSON.parse(json);
 
-      // Preferir claims personalizados del backend (USU_ID, USU_USERNAME)
-      const id = payload.USU_ID || payload.user_id || payload.id || null;
-      const username = payload.USU_USERNAME || payload.username || payload.sub || null;
+      // Preferir claims personalizados del backend (usu_id, usu_username)
+      const id = payload.usu_id || payload.user_id || payload.id || null;
+      const username = payload.usu_username || payload.username || payload.sub || null;
       const name = payload.name || username || 'Usuario';
+      
       // Map role from token payload if backend includes 'perfil'
-      const role = (payload.perfil && payload.perfil.PEL_DESCRIPCION) ? payload.perfil.PEL_DESCRIPCION : (payload.perfil && payload.perfil.PEL_DESCRIPCION) || null;
-      // avatar may not be included in token; prefer USU_RUTA_FOTO if present
-      const avatarUrl = payload.USU_RUTA_FOTO || payload.avatarUrl || null;
+      // Backend sends 'perfil': { 'pel_id': ..., 'pel_descripcion': ... }
+      let role = 'Invitado';
+      if (payload.perfil && payload.perfil.pel_descripcion) {
+        role = payload.perfil.pel_descripcion;
+      } else if (payload.perfil && payload.perfil.PEL_DESCRIPCION) {
+        role = payload.perfil.PEL_DESCRIPCION;
+      }
+
+      // avatar may not be included in token; prefer usu_ruta_foto if present
+      const avatarUrl = payload.usu_ruta_foto || payload.USU_RUTA_FOTO || payload.avatarUrl || null;
 
       return {
         id,
@@ -81,5 +89,38 @@ export default {
       console.warn('No se pudo decodificar token JWT en getCurrentUser:', e);
       return null;
     }
+  },
+
+  async hasPermission(moduleName, action = 'consultar') {
+    const user = await this.getCurrentUser();
+    if (!user) return false;
+
+    // Admin bypass: permitir todo a administradores
+    const role = (user.role || '').toLowerCase();
+    if (role.includes('admin') || role.includes('sistema')) {
+      return true;
+    }
+
+    if (!user.payload || !user.payload.aplicaciones) return false;
+    
+    // Normalize
+    const targetModule = String(moduleName).trim().toLowerCase();
+    const targetAction = `pea_${String(action).trim().toLowerCase()}`; // pea_consultar, pea_ingresar, etc.
+    
+    const app = user.payload.aplicaciones.find(a => {
+      const name = a.apl_descripcion || a.APL_DESCRIPCION || '';
+      return name.toLowerCase() === targetModule;
+    });
+    
+    if (!app) return false;
+    
+    // Check permissions object
+    if (app.permisos) {
+      if (app.permisos[targetAction] === true) return true;
+      // Fallback for uppercase keys
+      if (app.permisos[targetAction.toUpperCase()] === true) return true;
+    }
+    
+    return false;
   }
 };

@@ -4,6 +4,7 @@
     <header class="header">
       <h2>Gestión de Pagos</h2>
     </header>
+    <NotificationToast v-if="toastVisible" :message="toastMessage" :icon="toastIcon" @close="toastVisible = false" />
 
     <!-- Tabs principales -->
     <div class="tabs">
@@ -155,10 +156,13 @@
           <BaseButton
             variant="success"
             class="btn-standard"
-            :disabled="!puedeRegistrarIndividual"
+            :disabled="!puedeRegistrarIndividual || submittingIndividual"
             @click="registrarPagoIndividual"
           >
-            <AppIcons name="save" :size="16" /> Registrar Pago
+            <AppIcons v-if="!submittingIndividual" name="save" :size="16" />
+            <AppIcons v-else name="spinner" :size="16" />
+            <span v-if="!submittingIndividual"> Registrar Pago</span>
+            <span v-else> Registrando...</span>
           </BaseButton>
           <BaseButton variant="secondary" class="btn-standard" @click="limpiarIndividual">
             <AppIcons name="x" :size="16" /> Limpiar
@@ -639,6 +643,38 @@
       </template>
     </BaseModal>
 
+    <!-- Modal Confirmar Cambios de Edición -->
+    <BaseModal v-model="modalConfirmarEdicion" class="pago-modal">
+      <template #default>
+        <div class="confirm-content">
+          <div class="confirm-icon">✏️</div>
+          <p style="font-weight: 600; margin-bottom: 12px;">Se modificarán los siguientes campos:</p>
+          <div style="text-align: left; background: #f9fafb; padding: 12px; border-radius: 6px; margin-bottom: 16px;">
+            <div v-for="(cambio, index) in cambiosDetectados" :key="index" style="margin-bottom: 6px; font-size: 13px;">
+              • {{ cambio }}
+            </div>
+          </div>
+          <p style="font-weight: 600;">¿Está seguro de guardar estos cambios?</p>
+          <div class="confirm-actions modal-actions">
+            <BaseButton
+              variant="secondary"
+              class="btn-modal"
+              @click="cancelarEdicion"
+            >
+              <AppIcons name="x" :size="16" /> Cancelar
+            </BaseButton>
+            <BaseButton
+              variant="success"
+              class="btn-modal"
+              @click="confirmarEdicion"
+            >
+              <AppIcons name="check" :size="16" /> Guardar
+            </BaseButton>
+          </div>
+        </div>
+      </template>
+    </BaseModal>
+
     <!-- Modal Transferir -->
     <BaseModal v-model="modalTransferir" title="Transferir Pago">
       <template #default>
@@ -722,6 +758,69 @@
         </div>
       </template>
     </BaseModal>
+
+    <!-- Modal Ver Detalle -->
+    <BaseModal v-model="modalVerDetalle" class="pago-modal">
+      <template #default>
+        <div class="modal-edit">
+          <header class="modal-header">
+            <h3>Detalle del Pago</h3>
+            <BaseButton
+              variant="secondary"
+              size="sm"
+              @click="modalVerDetalle = false"
+            >
+              <AppIcons name="x" :size="16" /> Cerrar
+            </BaseButton>
+          </header>
+
+          <div class="form-fields-grid">
+            <div class="row">
+              <label>Nombre</label>
+              <input type="text" :value="pagoDetalle.nombre" readonly disabled style="background: #f9fafb; border: 1px solid #d1d5db; padding: 8px 10px; border-radius: 6px; color: #374151; pointer-events: none; cursor: not-allowed;" />
+            </div>
+            <div class="row">
+              <label>RUT</label>
+              <input type="text" :value="pagoDetalle.rut" readonly disabled style="background: #f9fafb; border: 1px solid #d1d5db; padding: 8px 10px; border-radius: 6px; color: #374151; pointer-events: none; cursor: not-allowed;" />
+            </div>
+            <div class="row">
+              <label>Curso</label>
+              <input type="text" :value="pagoDetalle.curso" readonly disabled style="background: #f9fafb; border: 1px solid #d1d5db; padding: 8px 10px; border-radius: 6px; color: #374151; pointer-events: none; cursor: not-allowed;" />
+            </div>
+            <div class="row">
+              <label>Grupo</label>
+              <input type="text" :value="pagoDetalle.grupo" readonly disabled style="background: #f9fafb; border: 1px solid #d1d5db; padding: 8px 10px; border-radius: 6px; color: #374151; pointer-events: none; cursor: not-allowed;" />
+            </div>
+            <div class="row">
+              <label>Concepto</label>
+              <input type="text" :value="pagoDetalle.concepto" readonly disabled style="background: #f9fafb; border: 1px solid #d1d5db; padding: 8px 10px; border-radius: 6px; color: #374151; pointer-events: none; cursor: not-allowed;" />
+            </div>
+            <div class="row">
+              <label>Monto</label>
+              <input type="text" :value="pagoDetalle.monto" readonly disabled style="background: #f9fafb; border: 1px solid #d1d5db; padding: 8px 10px; border-radius: 6px; color: #374151; pointer-events: none; cursor: not-allowed;" />
+            </div>
+            <div class="row">
+              <label>Fecha de Pago</label>
+              <input type="text" :value="pagoDetalle.fecha" readonly disabled style="background: #f9fafb; border: 1px solid #d1d5db; padding: 8px 10px; border-radius: 6px; color: #374151; pointer-events: none; cursor: not-allowed;" />
+            </div>
+            <div class="row">
+              <label>Método de Pago</label>
+              <input type="text" :value="pagoDetalle.metodo" readonly disabled style="background: #f9fafb; border: 1px solid #d1d5db; padding: 8px 10px; border-radius: 6px; color: #374151; pointer-events: none; cursor: not-allowed;" />
+            </div>
+            <div class="row full-width">
+              <label>Observación</label>
+              <textarea 
+                class="comentario-input" 
+                :value="pagoDetalle.observacion" 
+                readonly
+                disabled
+                style="resize: none; background: #f9fafb; color: #374151; pointer-events: none; cursor: not-allowed;"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -735,6 +834,8 @@ import pagosService from '@/services/pagosService.js'
 import personasService from '@/services/personasService.js'
 import cursosService from '@/services/cursosService.js'
 import mantenedoresService from '@/services/mantenedoresService.js'
+import authService from '@/services/authService.js'
+import NotificationToast from '@/components/NotificationToast.vue'
 import { format, parseISO } from 'date-fns'
 import jsPDF from 'jspdf'
 import * as XLSX from 'xlsx'
@@ -750,16 +851,16 @@ function hoyISO () {
 function dateCL (f) {
   if (!f) return '-';
   try {
-    const date = typeof f === 'string' ? parseISO(f) : f;
+        const date = typeof f === 'string' ? parseISO(f) : f;
     return format(date, 'dd-MM-yyyy');
-  } catch (e) {
+  } catch {
     return f;
   }
 }
 
 export default {
   name: 'PagosView',
-  components: { InputBase, BaseSelect, BaseButton, BaseModal, AppIcons },
+  components: { AppIcons, InputBase, BaseSelect, BaseButton, BaseModal, NotificationToast },
   data () {
     return {
       tab: 'individual',
@@ -795,6 +896,7 @@ export default {
       cargandoParticipantes: false,
 
       filtroQ: '',
+      filtroEstado: '',
       filtroCurso: '',
       filtroGrupo: '',
       pagos: [],
@@ -804,7 +906,10 @@ export default {
 
       modalEditar: false,
       pagoEdit: {},
+      pagoEditOriginal: {},
       guardando: false,
+      modalConfirmarEdicion: false,
+      cambiosDetectados: [],
 
       modalAnular: false,
       pagoAnular: null,
@@ -821,6 +926,19 @@ export default {
         email: '',
         tipo: 'total',
         monto_parcial: null
+      },
+
+      modalVerDetalle: false,
+      pagoDetalle: {
+        nombre: '',
+        rut: '',
+        curso: '',
+        grupo: '',
+        concepto: '',
+        monto: '',
+        fecha: '',
+        metodo: '',
+        observacion: ''
       }
       ,
       formComprobante: {
@@ -846,7 +964,13 @@ export default {
         PAP_FECHA_PAGO: hoyISO(),
         observacion: '',
         file: null
-      }
+      },
+      // UI state
+      submittingIndividual: false,
+      toastVisible: false,
+      toastMessage: '',
+      toastIcon: '',
+      debounceTimer: null
     };
   },
   watch: {
@@ -859,9 +983,9 @@ export default {
     buscarPersonaQ(newQuery) {
       if (this.debounceTimer) clearTimeout(this.debounceTimer);
       this.debounceTimer = setTimeout(() => this.buscarPersonas(newQuery), 300);
-    },
+      },
     // Implementa debounce para la búsqueda en el histórico
-    filtroQ(newQuery) {
+    filtroQ() {
       if (this.debounceTimer) clearTimeout(this.debounceTimer);
       this.debounceTimer = setTimeout(() => this.cargarPagos(true), 300);
     }
@@ -928,7 +1052,7 @@ export default {
      */
     async cargarCatalogos () {
       try {
-        const cursosResponse = await cursosService.cursos.list()
+        const cursosResponse = await cursosService.cursos.list({ page_size: 20 })
         const cursos = Array.isArray(cursosResponse)
           ? cursosResponse
           : cursosResponse.results || []
@@ -967,6 +1091,15 @@ export default {
       }
     },
 
+    // Helper expuesto para el template: formatea fechas para mostrar en CL
+    dateCL (f) {
+            try {
+        return dateCL(f)
+      } catch {
+        return f || '-'
+      }
+    },
+
     // ===================================================================
     // MÉTODOS PARA REGISTRO INDIVIDUAL
     // ===================================================================
@@ -976,25 +1109,39 @@ export default {
      * @param {string} q - El término de búsqueda.
      */
     async buscarPersonas (q) {
-      let searchTerm = (q || '').trim();
-      if (!searchTerm) {
+      const termRaw = (q || '').trim();
+      if (!termRaw) {
         this.personasEncontradas = []
         return
       }
-      // Formatear RUT si el usuario ingresa solo números
-      if (/^\d{7,8}$/.test(searchTerm)) {
-        searchTerm = this.formatRut(searchTerm);
+
+      // Normalizar entrada (quitar puntos, espacios)
+      const termClean = termRaw.replace(/\./g, '').replace(/\s+/g, '')
+      let params = {}
+
+      // Detectar si es solo dígitos (parcial o completo RUT)
+      if (/^\d+$/.test(termClean)) {
+        // Es un RUT parcial o completo: buscar por run
+        params = { run: termClean }
+      } else if (/^\d{7,8}[0-9kK]$/i.test(termClean)) {
+        // RUT con DV: separar y enviar ambos
+        const rutMatch = termClean.match(/^(\d{7,8})([0-9kK])$/i)
+        if (rutMatch) {
+          params = { run: rutMatch[1], dv: rutMatch[2].toUpperCase() }
+        }
+      } else {
+        // Buscar por nombre y/o apellido
+        const parts = termRaw.split(/\s+/)
+        if (parts.length === 1) params = { nombre: termRaw }
+        else params = { nombre: parts[0], apellido: parts.slice(1).join(' ') }
       }
 
       this.buscandoPersonas = true
       try {
-        const params = { search: q };
-        // The user wants to search by RUT, name, or last name. The backend should support this via the 'search' parameter.
-        // The placeholder already suggests this.
-        const response = await personasService.personas.list(params);
+        const response = await personasService.personas.list(params)
         const arr = Array.isArray(response) ? response : (response.results || [])
         this.personasEncontradas = arr.map(p => ({
-          id: p.PER_ID,
+          id: p.PER_ID || p.id,
           nombre: `${p.PER_NOMBRES || ''} ${p.PER_APELPTA || ''}`.trim(),
           rut: (p.PER_RUN && p.PER_DV) ? `${p.PER_RUN}-${p.PER_DV}` : (p.PER_RUN || ''),
           email: p.PER_MAIL || ''
@@ -1051,25 +1198,51 @@ export default {
      * Construye un FormData con los datos y el archivo del comprobante.
      */
     async registrarPagoIndividual () {
+      if (this.submittingIndividual) return
+      this.submittingIndividual = true
       try {
         const fd = new FormData()
+        // Campos esperados por el backend (modelo): PER_ID, CUR_ID, USU_ID, PAP_VALOR, PAP_FECHA_HORA, PAP_OBSERVACION, PAP_TIPO
         fd.append('PER_ID', this.formInd.personaId)
-        fd.append('CUR_ID', this.formInd.CUR_ID)
-        fd.append('PAP_MONTO', this.formInd.PAP_MONTO)
-        fd.append('COC_ID', this.formInd.COC_ID);
-        fd.append('PAP_FECHA_PAGO', this.formInd.PAP_FECHA_PAGO)
+        if (this.formInd.CUR_ID) fd.append('CUR_ID', this.formInd.CUR_ID)
+        // PAP_VALOR en vez de PAP_MONTO (modelo usa PAP_VALOR)
+        if (this.formInd.PAP_MONTO !== null && this.formInd.PAP_MONTO !== undefined) fd.append('PAP_VALOR', this.formInd.PAP_MONTO)
+        if (this.formInd.COC_ID) fd.append('COC_ID', this.formInd.COC_ID)
+        // En el backend se usa PAP_FECHA_HORA; enviar la fecha seleccionada como PAP_FECHA_HORA
+        if (this.formInd.PAP_FECHA_PAGO) fd.append('PAP_FECHA_HORA', this.formInd.PAP_FECHA_PAGO)
         if (this.formInd.observacion) {
           fd.append('PAP_OBSERVACION', this.formInd.observacion)
         }
-        fd.append('comprobante', this.formInd.file)
-        fd.append('MET_ID', 1) // Asumiendo 1 para Transferencia
-        await pagosService.pagos.create(fd)
+        if (this.formInd.file) fd.append('comprobante', this.formInd.file)
+        // PAP_TIPO: 1 = Ingreso, 2 = Egreso
+        fd.append('PAP_TIPO', this.formInd.tipoPago === 'egreso' ? 2 : 1)
+        // PAP_ESTADO: 1 = Pagado (al registrar pago individual asumimos pagado)
+        fd.append('PAP_ESTADO', 1)
 
-        alert('Pago individual registrado correctamente')
+        // Intentar resolver USU_ID desde el token para cumplir con el campo requerido en el modelo
+        try {
+          const current = await authService.getCurrentUser()
+          const usuId = current && (current.id || current.USU_ID || (current.payload && current.payload.USU_ID)) ? (current.id || current.USU_ID || current.payload?.USU_ID) : null
+          if (usuId) fd.append('USU_ID', usuId)
+        } catch (e) {
+          // no bloquear el envío si no se puede resolver el usuario; el backend puede inferirlo
+          console.warn('No se pudo resolver USU_ID localmente:', e && e.message)
+        }
+
+        await pagosService.pagos.create(fd)
+        // Mostrar toast exitoso
+        this.toastMessage = 'Pago individual registrado correctamente'
+        this.toastIcon = 'check'
+        this.toastVisible = true
         this.limpiarIndividual()
         this.cargarPagos()
       } catch (e) {
-        alert('Error registrando pago individual')
+        console.error('Error registrando pago individual', e)
+        this.toastMessage = 'Error registrando pago: ' + (e && e.message ? e.message : '')
+        this.toastIcon = 'x'
+        this.toastVisible = true
+      } finally {
+        this.submittingIndividual = false
       }
     },
 
@@ -1100,9 +1273,9 @@ export default {
           nombre: `${p.PER_NOMBRES || ''} ${p.PER_APELPTA || ''}`.trim(),
           rut: (p.PER_RUN && p.PER_DV) ? `${p.PER_RUN}-${p.PER_DV}` : (p.PER_RUN || ''),
           email: p.PER_MAIL || ''
-        }))
+                }))
         this.seleccionados = []
-      } catch (e) {
+      } catch {
         this.participantes = []
       } finally {
         this.cargandoParticipantes = false
@@ -1152,6 +1325,8 @@ export default {
         if (this.formMasivo.observacion) {
           fd.append('PAP_OBSERVACION', this.formMasivo.observacion)
         }
+        // PAP_TIPO: 1 = Ingreso, 2 = Egreso
+        fd.append('PAP_TIPO', this.formMasivo.tipoPago === 'egreso' ? 2 : 1)
         this.seleccionados.forEach(id =>
           fd.append('PER_IDS', id)
         )
@@ -1160,11 +1335,15 @@ export default {
         
         await pagosService.pagos.createMasivo(fd)
 
-        alert('Pago masivo registrado correctamente')
-        this.limpiarMasivo()
+        this.toastMessage = 'Pago masivo registrado correctamente'
+        this.toastIcon = 'check'
+        this.toastVisible = true
+                this.limpiarMasivo()
         this.cargarPagos()
-      } catch (e) {
-        alert('Error registrando pago masivo')
+      } catch {
+        this.toastMessage = 'Error registrando pago masivo'
+        this.toastIcon = 'x'
+        this.toastVisible = true
       }
     },
 
@@ -1187,37 +1366,64 @@ export default {
      * @param {boolean} force - Si es true, fuerza la recarga aunque ya esté en proceso.
      */
     async cargarPagos (force = false) {
-      // Evita cargas múltiples si ya hay una en progreso.
       if (this.cargandoPagos && !force) return;
       this.cargandoPagos = true
       this.errorPagos = null
       try {
         let searchTerm = (this.filtroQ || '').trim();
-        // Formatear RUT si el usuario ingresa solo números
         if (/^\d{7,8}$/.test(searchTerm)) {
           searchTerm = this.formatRut(searchTerm);
         }
-        const params = {
-          search: searchTerm || undefined,
-          CUR_ID: this.filtroCurso || undefined,
-          GRU_ID: this.filtroGrupo || undefined,
-          estado: this.filtroEstado || undefined
+
+        const estadoMap = { pagado: 1, anulado: 2 }
+        const params = {}
+        if (searchTerm) params.search = searchTerm
+        if (this.filtroCurso) params.CUR_ID = this.filtroCurso
+        if (this.filtroGrupo) params.GRU_ID = this.filtroGrupo
+        if (this.filtroEstado) {
+          const mapped = estadoMap[this.filtroEstado]
+          if (mapped) params.estado = mapped
         }
+
         const response = await pagosService.pagos.list(params)
-        // Asegurarse de que la respuesta es un array, incluso si la API devuelve otra cosa.
-        if (Array.isArray(response)) {
-          this.pagos = response;
-        } else if (response && Array.isArray(response.results)) {
-          this.pagos = response.results;
-        } else {
-          console.warn('La respuesta de la API de pagos no es un array:', response);
-          this.pagos = []; // Previene errores si la respuesta no es un array
+        let rawList = []
+        if (Array.isArray(response)) rawList = response
+        else if (response && Array.isArray(response.results)) rawList = response.results
+        else {
+          console.warn('La respuesta de la API de pagos no es un array:', response)
+          rawList = []
         }
+
+        // Normalizar cada pago para que la plantilla use campos consistentes
+        this.pagos = rawList.map(r => {
+          const persona = r.persona || r.PER_ID || null
+          const personaNombre = persona && (persona.PER_NOMBRES || persona.name || persona.nombre)
+            ? `${persona.PER_NOMBRES || ''} ${persona.PER_APELPTA || persona.PER_APELLIDO || ''}`.trim()
+            : (r.persona_nombre || r.PER_NOMBRE || '')
+          const personaRut = persona && (persona.PER_RUN || persona.run)
+            ? `${persona.PER_RUN || persona.run}${persona.PER_DV ? ('-' + persona.PER_DV) : ''}`
+            : (r.persona_rut || r.PER_RUN || '')
+
+          const monto = r.PAP_VALOR !== undefined ? Number(r.PAP_VALOR) : (r.PAP_MONTO !== undefined ? Number(r.PAP_MONTO) : null)
+          const fecha = r.PAP_FECHA_HORA || r.PAP_FECHA_PAGO || r.PAP_FECHA || null
+
+          return {
+            // conservar campos originales por si otras funciones los usan
+            ...r,
+            id: r.PAP_ID || r.id,
+            PAP_ID: r.PAP_ID || r.id,
+            PAP_MONTO: monto,
+            PAP_VALOR: monto,
+            PAP_FECHA_PAGO: fecha,
+            persona_nombre: personaNombre || r.persona_nombre || '',
+            persona_rut: personaRut || r.persona_rut || '',
+            MET_DESCRIPCION: r.MET_DESCRIPCION || r.met_descripcion || r.METODO || 'Transferencia'
+          }
+        })
       } catch (e) {
-        console.error("Error al cargar pagos:", e);
+        console.error('Error al cargar pagos:', e)
         this.pagos = []
-        this.errorPagos =
-          'No fue posible cargar pagos. Verifica el backend.'
+        this.errorPagos = 'No fue posible cargar pagos. Verifica el backend.'
       } finally {
         this.cargandoPagos = false
       }
@@ -1227,7 +1433,9 @@ export default {
      */
     exportarExcel () {
       if (this.pagos.length === 0) {
-        alert("No hay datos para exportar.");
+        this.toastMessage = 'No hay datos para exportar'
+        this.toastIcon = 'alert-circle'
+        this.toastVisible = true
         return;
       }
 
@@ -1269,13 +1477,30 @@ export default {
     // ACCIONES DE FILA (Ver, Editar, Anular, etc.)
     // ===================================================================
     /**
-     * Muestra un detalle simple de un pago en un alert.
+     * Muestra el detalle completo de un pago en un modal.
      * @param {object} p - El objeto del pago.
      */
     verDetalle (p) {
-      alert(
-        `Pago de ${p.persona_nombre}\nMonto: $${(p.PAP_MONTO)?.toLocaleString('es-CL') || ''}\nFecha: ${dateCL(p.PAP_FECHA_PAGO)}`
-      )
+      // Buscar el nombre del grupo
+      const grupo = this.grupoOptions.find(g => String(g.value) === String(p.GRU_ID));
+      const grupoNombre = grupo ? grupo.label : (p.GRU_ID || '-');
+      
+      // Buscar el nombre del concepto
+      const concepto = this.conceptosOptions.find(c => String(c.value) === String(p.COC_ID));
+      const conceptoNombre = concepto ? concepto.label : (p.COC_ID || '-');
+
+      this.pagoDetalle = {
+        nombre: p.persona_nombre || '-',
+        rut: p.persona_rut || '-',
+        curso: this.cursoLabel(p.CUR_ID),
+        grupo: grupoNombre,
+        concepto: conceptoNombre,
+        monto: `$${(p.PAP_MONTO || 0).toLocaleString('es-CL')}`,
+        fecha: this.dateCL(p.PAP_FECHA_PAGO),
+        metodo: p.MET_DESCRIPCION || 'Transferencia',
+        observacion: p.PAP_OBSERVACION || 'Sin observaciones'
+      };
+      this.modalVerDetalle = true;
     },
     /**
      * Abre el modal para transferir un pago a otra persona.
@@ -1312,7 +1537,9 @@ export default {
      */
     async confirmarTransferencia () {
       if (!this.pagoTransferir || !this.transferForm.personaId) {
-        alert("Debes seleccionar una persona para realizar la transferencia.");
+        this.toastMessage = 'Debes seleccionar una persona para realizar la transferencia'
+        this.toastIcon = 'alert-circle'
+        this.toastVisible = true
         return;
       }
 
@@ -1328,38 +1555,59 @@ export default {
         // Suponiendo que tienes un nuevo endpoint para esto en tu servicio
         await pagosService.pagos.transferir(payload);
 
-        alert(`Pago transferido exitosamente a ${this.transferForm.nombre}.`);
+        this.toastMessage = `Pago transferido exitosamente a ${this.transferForm.nombre}`
+        this.toastIcon = 'check-circle'
+        this.toastVisible = true
         this.modalTransferir = false;
         await this.cargarPagos(true); // Recargar el historial para ver el cambio
 
       } catch (error) {
         console.error("Error al confirmar la transferencia:", error);
-        alert("Ocurrió un error al intentar transferir el pago. Revisa la consola para más detalles.");
+        this.toastMessage = 'Ocurrió un error al intentar transferir el pago'
+        this.toastIcon = 'x'
+        this.toastVisible = true
       }
     },
     /**
      * Busca una persona para realizar la transferencia de un pago.
      */
     async buscarPersonaParaTransferir() {
-      const q = (this.transferForm.q || '').trim();
-      if (!q) {
-        this.personasEncontradasTransferir = [];
-        return;
+      const qRaw = (this.transferForm.q || '').trim()
+      if (!qRaw) {
+        this.personasEncontradasTransferir = []
+        return
       }
-      this.buscandoPersonasTransferir = true;
+
+      // Reutilizar la lógica de búsqueda por RUT/nombre
+      const termClean = qRaw.replace(/\./g, '').replace(/\s+/g, '')
+      let params = {}
+      if (/^\d+$/.test(termClean)) {
+        params = { run: termClean }
+      } else if (/^\d{7,8}[0-9kK]$/i.test(termClean)) {
+        const rutMatch = termClean.match(/^(\d{7,8})([0-9kK])$/i)
+        if (rutMatch) {
+          params = { run: rutMatch[1], dv: rutMatch[2].toUpperCase() }
+        }
+      } else {
+        const parts = qRaw.split(/\s+/)
+        if (parts.length === 1) params = { nombre: qRaw }
+        else params = { nombre: parts[0], apellido: parts.slice(1).join(' ') }
+      }
+
+      this.buscandoPersonasTransferir = true
       try {
-        const response = await personasService.personas.list({ search: q });
-        const arr = Array.isArray(response) ? response : (response.results || []);
+        const response = await personasService.personas.list(params)
+        const arr = Array.isArray(response) ? response : (response.results || [])
         this.personasEncontradasTransferir = arr.map(p => ({
-          id: p.PER_ID,
+          id: p.PER_ID || p.id,
           nombre: `${p.PER_NOMBRES || ''} ${p.PER_APELPTA || ''}`.trim(),
-          rut: (p.PER_RUN && p.PER_DV) ? `${String(p.PER_RUN).replace(/\./g, '')}-${p.PER_DV}` : (p.PER_RUN || ''),
+          rut: (p.PER_RUN && p.PER_DV) ? `${p.PER_RUN}-${p.PER_DV}` : (p.PER_RUN || ''),
           email: p.PER_MAIL || ''
-        }));
-      } catch (e) {
-        this.personasEncontradasTransferir = [];
+        }))
+      } catch {
+        this.personasEncontradasTransferir = []
       } finally {
-        this.buscandoPersonasTransferir = false;
+        this.buscandoPersonasTransferir = false
       }
     },
     /**
@@ -1376,6 +1624,13 @@ export default {
         fecha: (p.PAP_FECHA_PAGO || '').slice(0, 10),
         observacion: p.PAP_OBSERVACION || ''
       }
+      // Guardar valores originales para comparación
+      this.pagoEditOriginal = {
+        curso: p.CUR_ID,
+        monto: p.PAP_MONTO,
+        fecha: (p.PAP_FECHA_PAGO || '').slice(0, 10),
+        observacion: p.PAP_OBSERVACION || ''
+      }
       this.modalEditar = true
     },
     /**
@@ -1385,30 +1640,92 @@ export default {
       try {
         // Validación de campos obligatorios
         if (!this.pagoEdit.curso) {
-          alert('El campo "Curso" es obligatorio.');
+          this.toastMessage = 'El campo "Curso" es obligatorio'
+          this.toastIcon = 'alert-circle'
+          this.toastVisible = true
           return;
         }
         if (!this.pagoEdit.monto || this.pagoEdit.monto <= 0) {
-          alert('El campo "Monto" debe ser un valor positivo.');
+          this.toastMessage = 'El campo "Monto" debe ser un valor positivo'
+          this.toastIcon = 'alert-circle'
+          this.toastVisible = true
           return;
         }
         if (!this.pagoEdit.fecha) {
-          alert('El campo "Fecha" es obligatorio.');
+          this.toastMessage = 'El campo "Fecha" es obligatorio'
+          this.toastIcon = 'alert-circle'
+          this.toastVisible = true
           return;
         }
+
+        // Detectar cambios
+        const cambios = []
+        if (String(this.pagoEdit.curso) !== String(this.pagoEditOriginal.curso)) {
+          const cursoAnterior = this.cursoLabel(this.pagoEditOriginal.curso)
+          const cursoNuevo = this.cursoLabel(this.pagoEdit.curso)
+          cambios.push(`Curso: "${cursoAnterior}" → "${cursoNuevo}"`)
+        }
+        if (Number(this.pagoEdit.monto) !== Number(this.pagoEditOriginal.monto)) {
+          cambios.push(`Monto: $${Number(this.pagoEditOriginal.monto).toLocaleString('es-CL')} → $${Number(this.pagoEdit.monto).toLocaleString('es-CL')}`)
+        }
+        if (this.pagoEdit.fecha !== this.pagoEditOriginal.fecha) {
+          cambios.push(`Fecha: ${this.dateCL(this.pagoEditOriginal.fecha)} → ${this.dateCL(this.pagoEdit.fecha)}`)
+        }
+        if (this.pagoEdit.observacion !== this.pagoEditOriginal.observacion) {
+          cambios.push(`Observación: "${this.pagoEditOriginal.observacion || 'Sin observación'}" → "${this.pagoEdit.observacion || 'Sin observación'}"`)
+        }
+
+        // Si no hay cambios, mostrar mensaje
+        if (cambios.length === 0) {
+          this.toastMessage = 'No se detectaron cambios'
+          this.toastIcon = 'info'
+          this.toastVisible = true
+          return;
+        }
+
+        // Guardar los cambios detectados y mostrar modal de confirmación
+        this.cambiosDetectados = cambios
+        this.modalConfirmarEdicion = true
+      } catch (e) {
+        console.error('Error validando edición:', e)
+        this.toastMessage = 'Error validando cambios'
+        this.toastIcon = 'x'
+        this.toastVisible = true
+      }
+    },
+    /**
+     * Cancela la edición y cierra el modal de confirmación.
+     */
+    cancelarEdicion () {
+      this.modalConfirmarEdicion = false
+      this.toastMessage = 'Cambios cancelados'
+      this.toastIcon = 'info'
+      this.toastVisible = true
+    },
+    /**
+     * Confirma y guarda los cambios de edición.
+     */
+    async confirmarEdicion () {
+      try {
+        this.modalConfirmarEdicion = false
         this.guardando = true
         const body = {
           CUR_ID: this.pagoEdit.curso,
-          PAP_MONTO: this.pagoEdit.monto,
-          PAP_FECHA_PAGO: this.pagoEdit.fecha,
+          PAP_VALOR: this.pagoEdit.monto,
+          PAP_FECHA_HORA: this.pagoEdit.fecha,
           PAP_OBSERVACION: this.pagoEdit.observacion
         }
         await pagosService.pagos.partialUpdate(this.pagoEdit.id, body)
         this.modalEditar = false
         await this.cargarPagos()
-        alert('Pago actualizado')
+        this.toastMessage = 'Pago actualizado correctamente'
+        this.toastIcon = 'check-circle'
+        this.toastVisible = true
       } catch (e) {
-        alert('Error actualizando pago')
+        console.error('Error actualizando pago:', e)
+        this.toastMessage = 'Error actualizando pago: ' + (e.message || '')
+        this.toastIcon = 'x'
+        this.toastVisible = true
       } finally {
         this.guardando = false
       }
@@ -1431,9 +1748,13 @@ export default {
         await pagosService.pagos.remove(this.pagoAnular.PAP_ID)
         this.modalAnular = false
         await this.cargarPagos()
-        alert('Pago anulado')
-      } catch (e) {
-        alert('Error al anular pago')
+        this.toastMessage = 'Pago anulado correctamente'
+        this.toastIcon = 'check-circle'
+        this.toastVisible = true
+      } catch {
+        this.toastMessage = 'Error al anular pago'
+        this.toastIcon = 'x'
+        this.toastVisible = true
       }
     },
 
@@ -1469,12 +1790,12 @@ export default {
             
             const coincideTipo = tipoConcepto === this.formComprobante.tipo;
             const coincideFechaDesde = !params.fecha_desde || new Date(p.PAP_FECHA_PAGO) >= new Date(params.fecha_desde);
-            const coincideFechaHasta = !params.fecha_hasta || new Date(p.PAP_FECHA_PAGO) <= new Date(params.fecha_hasta);
+                        const coincideFechaHasta = !params.fecha_hasta || new Date(p.PAP_FECHA_PAGO) <= new Date(params.fecha_hasta);
             const coincideCurso = !params.CUR_ID || String(p.CUR_ID) === String(params.CUR_ID);
             const coincideGrupo = !params.GRU_ID || String(p.GRU_ID) === String(params.GRU_ID);
             const coincideConcepto = !params.COC_ID || String(p.COC_ID) === String(params.COC_ID);
 
-            return coincideTipo && coincideFechaDesde && coincideFechaHasta && coincideCurso && coincideConcepto;
+            return coincideTipo && coincideFechaDesde && coincideFechaHasta && coincideCurso && coincideGrupo && coincideConcepto;
         });
 
       } catch (e) {
@@ -1492,7 +1813,9 @@ export default {
     async generarComprobantePDF() {
       const seleccionados = this.pagosParaComprobante.filter(p => this.seleccionadosComprobante.includes(p.PAP_ID));
       if (seleccionados.length === 0) {
-        alert("No hay pagos seleccionados para generar el comprobante.");
+        this.toastMessage = 'No hay pagos seleccionados para generar el comprobante'
+        this.toastIcon = 'alert-circle'
+        this.toastVisible = true
         return;
       }
 
@@ -1576,10 +1899,14 @@ export default {
         // Se necesitará un nuevo endpoint en el servicio, por ejemplo:
         // await pagosService.proveedores.create(fd);
 
-        alert('Pago a proveedor registrado correctamente (simulación).');
+        this.toastMessage = 'Pago a proveedor registrado correctamente (simulación)'
+        this.toastIcon = 'check-circle'
+        this.toastVisible = true
         this.limpiarProveedor();
       } catch (e) {
-        alert('Error registrando pago a proveedor.');
+        this.toastMessage = 'Error registrando pago a proveedor'
+        this.toastIcon = 'x'
+        this.toastVisible = true
         console.error("Error en registrarPagoProveedor:", e);
       }
     }
@@ -1593,9 +1920,9 @@ export default {
     formatRut(rut) {
       if (!rut) return '';
       const rutLimpio = String(rut).replace(/[^0-9]/g, '');
-      if (rutLimpio.length < 2) return rutLimpio;
+            if (rutLimpio.length < 2) return rutLimpio;
       const cuerpo = rutLimpio.slice(0, -1);
-      const dv = rutLimpio.slice(-1); // Aunque no se usa el DV para el formato con puntos, lo separamos.
+      // const dv = rutLimpio.slice(-1); // Aunque no se usa el DV para el formato con puntos, lo separamos.
       return cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     }
   },
@@ -1819,6 +2146,8 @@ label {
   margin-top: 4px;
   max-width: 480px;
   background: #ffffff;
+  max-height: 280px;
+  overflow-y: auto;
 }
 
 .resultado {
@@ -2040,9 +2369,10 @@ th {
 /* Botones acciones tabla */
 .acciones-buttons {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 4px;
   justify-content: center;
+  align-items: center;
 }
 
 .btn-with-icon {
@@ -2089,13 +2419,44 @@ th {
   z-index: 9999 !important;
 }
 
+/* Ocultar la X del BaseModal en los modales de pagos */
+.pago-modal :deep(.close-btn) {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+/* Regla adicional sin :deep() por si acaso */
+.pago-modal .close-btn {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+/* Ajustar el ancho del modal-content dentro de pago-modal */
+.pago-modal :deep(.modal-content) {
+  width: auto !important;
+  max-width: 550px !important;
+}
+
 .modal-edit,
 .modal-transfer {
-  width: 640px;
-  max-width: calc(100vw - 40px);
-  max-height: calc(100vh - 80px);
-  overflow: auto;
-  padding: 20px 22px 18px;
+  width: 100%;
+  max-width: 100%;
+  max-height: 90vh;
+  overflow: visible;
+  padding: 0;
+}
+
+.modal-edit .modal-header,
+.modal-transfer .modal-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-edit .form-fields-grid,
+.modal-transfer .form-fields-grid {
+  padding: 20px 24px;
 }
 
 .modal-header {
@@ -2103,7 +2464,9 @@ th {
   justify-content: space-between;
   align-items: center;
   gap: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .modal-header h3 {
@@ -2135,13 +2498,15 @@ th {
 }
 
 .confirm-content {
-  padding: 18px 20px;
+  padding: 16px 20px 12px;
   text-align: center;
+  max-width: 400px;
+  margin: 0 auto;
 }
 
 .confirm-icon {
-  font-size: 44px;
-  margin-bottom: 8px;
+  font-size: 36px;
+  margin-bottom: 6px;
 }
 
 .confirm-actions {
@@ -2191,6 +2556,11 @@ th {
   }
   .table-wrapper table td:last-child {
     border-bottom: none;
+  }
+
+  /* En móvil, permitir que los botones se envuelvan */
+  .acciones-buttons {
+    flex-wrap: wrap;
   }
 }
 

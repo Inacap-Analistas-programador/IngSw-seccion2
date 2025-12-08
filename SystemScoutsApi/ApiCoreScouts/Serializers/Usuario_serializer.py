@@ -78,35 +78,6 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         if self.username_field not in attrs and 'username' in attrs:
             attrs[self.username_field] = attrs.get('username')
 
-        # Registrar intento de login para ayudar a debug (se imprimirá en la consola del servidor)
-        try:
-            uname = attrs.get(self.username_field)
-            # evitar imprimir contraseñas en logs
-            print(f"[Auth] Login attempt for username={uname!r}")
-        except Exception:
-            pass
-
-        # Intentar autenticar manualmente para obtener más información en logs
-        try:
-            from django.contrib.auth import authenticate
-            uname = attrs.get(self.username_field)
-            pwd = attrs.get('password')
-            auth_user = authenticate(username=uname, password=pwd)
-            print(f"[Auth] authenticate() returned: {auth_user!r}")
-            if auth_user is None:
-                # inspeccionar posible causa
-                try:
-                    u = Usuario.objects.get(usu_username=uname)
-                    print(f"[Auth] Found user usu_vigente={u.usu_vigente}, password_hash={u.password[:60]}...")
-                    try:
-                        print(f"[Auth] check_password => {u.check_password(pwd)}")
-                    except Exception as e:
-                        print('[Auth] error checking password:', e)
-                except Usuario.DoesNotExist:
-                    print('[Auth] user does not exist')
-        except Exception as e:
-            print('[Auth] error during manual authenticate debug:', e)
-
         data = super().validate(attrs)
         user = self.user
 
@@ -128,14 +99,12 @@ class LoginSerializer(serializers.Serializer):
 
 class UsuarioSerializer(serializers.ModelSerializer):
     # Permitimos enviar una contraseña al crear/actualizar usuario desde la API
-    password = serializers.CharField(write_only=True, required=False, allow_null=True, min_length=3)
-    # Devolver la contraseña generada en la respuesta cuando se crea un usuario
-    raw_password = serializers.SerializerMethodField(read_only=True)
+    password = serializers.CharField(write_only=True, required=False, allow_null=True, min_length=8)
 
     class Meta:
         model = Usuario
-        fields = ['usu_id', 'pel_id', 'usu_username', 'usu_email', 'usu_ruta_foto', 'usu_vigente', 'password', 'raw_password']
-        read_only_fields = ('usu_id', 'raw_password')
+        fields = ['usu_id', 'pel_id', 'usu_username', 'usu_email', 'usu_ruta_foto', 'usu_vigente', 'password']
+        read_only_fields = ('usu_id',)
 
     def create(self, validated_data):
         password = validated_data.pop('password', None)
@@ -143,13 +112,11 @@ class UsuarioSerializer(serializers.ModelSerializer):
         if not password:
             import secrets
             # 12 caracteres alfanuméricos seguros
-            password = secrets.token_urlsafe(9)
+            password = secrets.token_urlsafe(12)
 
         usuario = Usuario(**validated_data)
         usuario.set_password(password)
         usuario.save()
-        # Guardar la contraseña en una propiedad temporal para exponerla en la respuesta
-        setattr(usuario, '_raw_password', password)
         return usuario
 
     def update(self, instance, validated_data):
@@ -160,9 +127,6 @@ class UsuarioSerializer(serializers.ModelSerializer):
             instance.set_password(password)
         instance.save()
         return instance
-
-    def get_raw_password(self, obj):
-        return getattr(obj, '_raw_password', None)
 
 
 class AplicacionSerializer(serializers.ModelSerializer):

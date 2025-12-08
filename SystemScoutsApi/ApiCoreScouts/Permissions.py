@@ -86,4 +86,4 @@ class PerfilPermission(BasePermission):
                 except Exception: pass
                 return False
 
-            return True
+        return True

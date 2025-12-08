@@ -59,9 +59,9 @@ async function refreshAccessToken() {
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem('accessToken', data.access)
         localStorage.setItem('token', data.access)
-      }
+          }
       return true
-    } catch (e) {
+    } catch {
       // Limpiar localStorage si existe (las cookies httpOnly se limpian desde el backend)
       if (typeof localStorage !== 'undefined') {
         localStorage.removeItem('accessToken')
@@ -99,9 +99,9 @@ export async function request(path, options = {}) {
   let res = await fetch(url, fetchOptions)
   if (!res.ok && res.status === 401) {
     // intentar refresh si el token expiró
-    // Usar un clon para leer el cuerpo sin consumir el original
+        // Usar un clon para leer el cuerpo sin consumir el original
     let bodyText = ''
-    try { bodyText = await res.clone().text() } catch {}
+    try { bodyText = await res.clone().text() } catch { /* ignore */ }
     if (/token_not_valid|Token is expired|expired/i.test(bodyText)) {
       const ok = await refreshAccessToken()
       if (ok) {

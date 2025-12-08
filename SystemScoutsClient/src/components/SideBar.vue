@@ -1,7 +1,5 @@
 <template>
   <div class="sidebar-wrapper">
-    <!-- Botón para abrir sidebar en móviles -->
-    <button v-if="!openMobile" class="mobile-open-btn" @click="openMobile = true" aria-label="Abrir menú" title="Abrir menú">☰</button>
     <div v-if="openMobile" class="sidebar-backdrop" @click="closeMobile"></div>
     <aside id="app-sidebar" :class="['sidebar', { collapsed, 'mobile-open': openMobile }]" @click.self="closeMobile">
       <button v-if="openMobile" class="mobile-close-btn" @click="closeMobile" aria-label="Cerrar menú">×</button>
@@ -16,104 +14,157 @@
       <!-- Con sesión: mostrar menú completo (por defecto admin) -->
       <div v-else>
         <!-- Apartado desplegable: Usuarios y Perfiles -->
-        <div class="nav-item nav-collapsible" @click="toggleUsuarios" :class="{ 'router-link-exact-active': showUsuarios }">
+        <div v-if="access.usuarios || access.perfiles" class="nav-item nav-collapsible" @click="toggleUsuarios" :class="{ 'router-link-exact-active': showUsuarios }">
           <span class="nav-icon"><AppIcons name="users" :size="20" /></span>
           <span class="nav-collapsible-title">Usuarios y Perfiles</span>
           <span class="caret" :class="{ open: showUsuarios }">▾</span>
         </div>
         <Transition name="submenu-slide">
-          <div v-show="showUsuarios" class="submenu">
-            <router-link to="/usuarios" class="submenu-item"><span class="submenu-icon"><AppIcons name="user" :size="16" /></span>Usuarios</router-link>
-            <router-link to="/roles" class="submenu-item"><span class="submenu-icon"><AppIcons name="lock" :size="16" /></span>Perfiles</router-link>
+          <div v-if="access.usuarios || access.perfiles" v-show="showUsuarios" class="submenu">
+            <router-link v-if="access.usuarios" to="/usuarios" class="submenu-item"><span class="submenu-icon"><AppIcons name="user" :size="16" /></span>Usuarios</router-link>
+            <router-link v-if="access.perfiles" to="/roles" class="submenu-item"><span class="submenu-icon"><AppIcons name="lock" :size="16" /></span>Perfiles</router-link>
           </div>
         </Transition>
 
-        <router-link to="/cursos-capacitaciones" class="nav-item">
+        <router-link v-if="access.cursos" to="/cursos-capacitaciones" class="nav-item">
           <span class="nav-icon"><AppIcons name="book" :size="20" /></span>
           <span class="nav-text">Cursos y Capacitaciones</span>
         </router-link>
-        <router-link to="/inscripciones" class="nav-item">
+        <router-link v-if="access.personas" to="/inscripciones" class="nav-item">
           <span class="nav-icon"><AppIcons name="clipboard" :size="20" /></span>
           <span class="nav-text">Inscripciones</span>
         </router-link>
-        <router-link to="/gestionpersonas" class="nav-item">
+        <router-link v-if="access.personas" to="/gestionpersonas" class="nav-item">
           <span class="nav-icon"><AppIcons name="users" :size="20" /></span>
           <span class="nav-text">Gestión de Personas</span>
         </router-link>
-        <router-link to="/pagos" class="nav-item">
+        <router-link v-if="access.pagos" to="/pagos" class="nav-item">
           <span class="nav-icon"><AppIcons name="credit-card" :size="20" /></span>
           <span class="nav-text">Pagos</span>
         </router-link>
-        <router-link to="/correos" class="nav-item">
+        <router-link v-if="access.correos" to="/correos" class="nav-item">
           <span class="nav-icon"><AppIcons name="mail" :size="20" /></span>
           <span class="nav-text">Envío de Correos</span>
         </router-link>
-          <!-- Apartado desplegable: Mantenedores (sub-tabs) -->
-          <div class="nav-item nav-collapsible" @click="toggleMantenedores" :class="{ 'router-link-exact-active': showMantenedores }">
-            <span class="nav-icon"><AppIcons name="settings" :size="20" /></span>
-            <span class="nav-collapsible-title">Mantenedores</span>
-            <span class="caret" :class="{ open: showMantenedores }">▾</span>
-          </div>
-          <Transition name="submenu-slide">
-            <div v-show="showMantenedores" class="submenu">
-              <router-link
-                v-for="t in mantenedoresTabs"
-                :key="t.id"
-                :to="{ path: '/mantenedores', query: { tab: t.id } }"
-                class="submenu-item"
-              >{{ t.label }}</router-link>
-            </div>
-          </Transition>
-        <router-link to="/manual-acreditacion" class="nav-item">
+        
+        <router-link v-if="access.mantenedores" to="/mantenedores" class="nav-item">
+          <span class="nav-icon"><AppIcons name="settings" :size="20" /></span>
+          <span class="nav-text">Mantenedores</span>
+        </router-link>
+
+        <router-link v-if="access.acreditacionManual" to="/manual-acreditacion" class="nav-item">
           <span class="nav-icon"><AppIcons name="user-check" :size="20" /></span>
           <span class="nav-text">Acreditación Manual</span>
         </router-link>
-        <router-link to="/verificador-qr" class="nav-item">
+        <router-link v-if="access.verificadorQR" to="/verificador-qr" class="nav-item">
           <span class="nav-icon"><AppIcons name="qrcode" :size="20" /></span>
           <span class="nav-text">Verificador QR</span>
         </router-link>
 
-        <!-- Apartado desplegable: Pantallas 2 CORREGIDO -->
-        <div class="nav-item nav-collapsible" @click="togglePantallas2" :class="{ 'router-link-exact-active': showPantallas2 }">
-          <span class="nav-icon"><AppIcons name="chart-bar" :size="20" /></span>
-          <span class="nav-collapsible-title">Pantallas 2</span>
-          <span class="caret" :class="{ open: showPantallas2 }">▾</span>
+        <!-- Apartado desplegable: Mas Pantallas -->
+        <div class="nav-item nav-collapsible" @click="toggleMasPantallas" :class="{ 'router-link-exact-active': showMasPantallas }">
+          <span class="nav-icon"><AppIcons name="view" :size="20" /></span>
+          <span class="nav-collapsible-title">Mas Pantallas</span>
+          <span class="caret" :class="{ open: showMasPantallas }">▾</span>
         </div>
         <Transition name="submenu-slide">
-          <div v-show="showPantallas2" class="submenu">
-            <router-link to="/dashboard-2" class="submenu-item">Dashboard 2</router-link>
-            <router-link to="/inscripciones-2" class="submenu-item">Formulario 2</router-link>
+          <div v-show="showMasPantallas" class="submenu">
+            <router-link to="/dashboard" class="submenu-item"><span class="submenu-icon"><AppIcons name="chart-bar" :size="16" /></span>Dashboard</router-link>
+            <router-link to="/mantenedores-2" class="submenu-item"><span class="submenu-icon"><AppIcons name="settings" :size="16" /></span>Mantenedores 2</router-link>
+            <router-link to="/inscripciones-2" class="submenu-item"><span class="submenu-icon"><AppIcons name="file-text" :size="16" /></span>Formulario 2</router-link>
           </div>
         </Transition>
       </div>
     </nav>
     
-    <div class="sidebar-footer" v-if="typeof props.collapsed === 'undefined'">
-      <button class="collapse-btn-bottom" @click="toggleCollapse" :title="collapsed ? 'Expandir sidebar' : 'Colapsar sidebar'" :aria-pressed="collapsed" :aria-expanded="!collapsed" aria-controls="app-sidebar">
-        <AppIcons :name="collapsed ? 'chevron-right' : 'chevron-left'" :size="16" />
-        <span v-if="!collapsed" class="collapse-text">Contraer</span>
-      </button>
-    </div>
+    <!-- Footer eliminado para evitar duplicidad con el botón de la navbar -->
   </aside>
   </div>
 </template>
 
 <script setup>
 import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { useRoute } from 'vue-router';
 import authService from '../services/authService';
 import AppIcons from './icons/AppIcons.vue';
 
-// Se mantiene el rol para condicionar el menú (por defecto admin para pruebas)
-// Backend auth fue deshabilitado: mostrar el menú completo en UI-only mode
-const usuario = ref({ nombre: 'Usuario Demo', rol: 'Administradora Regional' })
+// Estado del usuario actual
+const currentUser = ref(null)
+const userRole = computed(() => currentUser.value?.role || '')
+
+// Fallback para administradores si falla la carga de permisos granulares
+const isAdmin = computed(() => {
+  const r = (userRole.value || '').toLowerCase()
+  return r.includes('admin') || r.includes('sistema')
+})
+
+// Permisos dinámicos
+const access = ref({
+  usuarios: false,
+  perfiles: false,
+  cursos: false,
+  personas: false,
+  pagos: false,
+  correos: false,
+  mantenedores: false,
+  acreditacionManual: false,
+  verificadorQR: false
+})
+
+// Cargar usuario al montar
+onMounted(async () => {
+  if (isLoggedIn.value) {
+    currentUser.value = await authService.getCurrentUser()
+    updatePermissions()
+  }
+})
+
+function updatePermissions() {
+  const user = currentUser.value
+  // Si es admin, dar acceso total por defecto (fallback)
+  const adminOverride = isAdmin.value
+
+  if (user && user.payload && user.payload.aplicaciones) {
+    const apps = user.payload.aplicaciones
+    const check = (name) => {
+      const app = apps.find(a => {
+        const appName = a.apl_descripcion || a.APL_DESCRIPCION || ''
+        return appName.toLowerCase() === name.toLowerCase()
+      })
+      if (!app) return false
+      // Check permissions object
+      if (app.permisos) {
+        if (app.permisos.pea_consultar === true) return true
+        if (app.permisos.PEA_CONSULTAR === true) return true
+      }
+      return false
+    }
+    
+    access.value.usuarios = check('Usuarios') || adminOverride
+    access.value.perfiles = check('Perfiles') || adminOverride
+    access.value.cursos = check('Cursos') || adminOverride
+    access.value.personas = check('Personas') || adminOverride
+    access.value.pagos = check('Pagos') || adminOverride
+    access.value.correos = check('Correos') || adminOverride
+    access.value.mantenedores = check('Mantenedores') || adminOverride
+    access.value.acreditacionManual = check('AcreditacionManual') || adminOverride
+    access.value.verificadorQR = check('VerificadorQR') || adminOverride
+  } else {
+    // Si no hay info de aplicaciones pero es admin, habilitar todo
+    if (adminOverride) {
+      Object.keys(access.value).forEach(k => access.value[k] = true)
+    } else {
+      Object.keys(access.value).forEach(k => access.value[k] = false)
+    }
+  }
+}
 
 // isLoggedIn: derivado del token en localStorage para reflejar estado real de autenticación
 const STORAGE_TOKEN_KEYS = ['token', 'accessToken']
 function hasToken() {
   try {
     return STORAGE_TOKEN_KEYS.some((k) => !!localStorage.getItem(k))
-  } catch (e) {
+  } catch {
     return false
   }
 }
@@ -127,18 +178,43 @@ function onStorage(e) {
   if (e.key && STORAGE_TOKEN_KEYS.includes(e.key)) {
     // Recalcular por si cambia una u otra clave
     isLoggedIn.value = hasToken()
+    if (isLoggedIn.value) {
+      authService.getCurrentUser().then(u => {
+        currentUser.value = u
+        updatePermissions()
+      })
+    } else {
+      currentUser.value = null
+      updatePermissions()
+    }
   }
 }
 
 // Handler para cambios de auth dentro de la MISMA pestaña (evento custom)
 function handleAuthChanged() {
   isLoggedIn.value = hasToken()
+  if (isLoggedIn.value) {
+    authService.getCurrentUser().then(u => {
+      currentUser.value = u
+      updatePermissions()
+    })
+  } else {
+    currentUser.value = null
+    updatePermissions()
+  }
 }
 
 // Desplegable de Mantenedores
 const showUsuarios = ref(false)
-const showMantenedores = ref(false)
-const showPantallas2 = ref(false)
+const showMasPantallas = ref(false)
+
+function toggleUsuarios() {
+  showUsuarios.value = !showUsuarios.value
+}
+
+function toggleMasPantallas() {
+  showMasPantallas.value = !showMasPantallas.value
+}
 
 // Sidebar can be either controlled by parent via `collapsed` prop or operate in uncontrolled mode using localStorage
 const props = defineProps({
@@ -160,46 +236,14 @@ const collapsed = computed({
     } else {
       internalCollapsed.value = v
     }
-    try { localStorage.setItem('sidebar-collapsed', v ? '1' : '0') } catch (e) { /* ignore */ }
+    try { localStorage.setItem('sidebar-collapsed', v ? '1' : '0') } catch { /* ignore */ }
   }
 })
 
-const mantenedoresTabs = [
-  // Orden solicitado: región, provincia, comuna, zona, distrito, grupo
-  { id: 'regiones', label: 'Regiones' },
-  { id: 'provincias', label: 'Provincias' },
-  { id: 'comunas', label: 'Comunas' },
-  { id: 'zonas', label: 'Zonas' },
-  { id: 'distritos', label: 'Distritos' },
-  { id: 'grupos', label: 'Grupos Scout' },
-  // Resto de mantenedores (manteniendo su orden relativo original)
-  { id: 'ramas', label: 'Ramas' },
-  { id: 'tipos-curso', label: 'Tipos Curso' },
-  { id: 'cargos', label: 'Cargos' },
-  { id: 'alimentacion', label: 'Alimentación' },
-  { id: 'niveles', label: 'Niveles' },
-  { id: 'estados-civiles', label: 'Estados Civiles' },
-  { id: 'roles', label: 'Perfiles' },
-  { id: 'conceptos-contables', label: 'Conceptos Contables' },
-  { id: 'tipos-archivo', label: 'Tipos de Archivo' }
-]
-
-function toggleUsuarios() {
-  showUsuarios.value = !showUsuarios.value
-}
-
-function toggleMantenedores() {
-  showMantenedores.value = !showMantenedores.value
-}
-
-function togglePantallas2() {
-  showPantallas2.value = !showPantallas2.value
-}
-
-function toggleCollapse() {
-  const val = !collapsed.value
-  collapsed.value = val
-}
+// function toggleCollapse() {
+//   const val = !collapsed.value
+//   collapsed.value = val
+// }
 
 function loadCollapsedState() {
   const saved = localStorage.getItem('sidebar-collapsed')
@@ -216,16 +260,14 @@ onMounted(() => {
     // Abrir automáticamente si se navega a /mantenedores o /usuarios
     if (route && route.path) {
       showUsuarios.value = route.path.startsWith('/usuarios') || route.path.startsWith('/roles')
-      showMantenedores.value = route.path.startsWith('/mantenedores')
-      showPantallas2.value = route.path.startsWith('/dashboard-2') || route.path.startsWith('/inscripciones-2')
+      showMasPantallas.value = route.path.startsWith('/dashboard-2') || route.path.startsWith('/mantenedores-2') || route.path.startsWith('/inscripciones-2')
     }
 
     // Watch para actualizar estado al cambiar de ruta
     watch(() => route && route.path, async (p) => {
       if (p) {
         showUsuarios.value = p.startsWith('/usuarios') || p.startsWith('/roles')
-        showMantenedores.value = p.startsWith('/mantenedores')
-        showPantallas2.value = p.startsWith('/dashboard-2') || p.startsWith('/inscripciones-2')
+        showMasPantallas.value = p.startsWith('/dashboard-2') || p.startsWith('/mantenedores-2') || p.startsWith('/inscripciones-2')
       }
       // No actualizamos estado de autenticación ni consultamos authService en modo UI-only
     })
@@ -260,7 +302,7 @@ watch(openMobile, (v) => {
       document.documentElement.style.overflow = ''
       document.body.style.overflow = ''
     }
-  } catch (e) { /* ignore */ }
+  } catch { /* ignore */ }
 })
 
 // Handler para abrir la sidebar en móvil (referencia para add/remove)
@@ -280,13 +322,10 @@ function escHandler(e) {
 .sidebar {
   display: flex;
   flex-direction: column;
-  position: fixed;
-  height: calc(100vh - 64px);
+  height: 100%;
   width: var(--sidebar-width, 250px);
   background: var(--color-primary);
   color: #fff;
-  top: 64px; /* Altura ajustada de la navbar */
-  left: 0;
   box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
   z-index: 999;
   overflow-y: auto;
@@ -294,9 +333,6 @@ function escHandler(e) {
   box-sizing: border-box;
   transition: width 0.3s ease;
   padding-top: 0; /* Eliminar padding superior para que el header sea visible */
-  /* Ocultar scrollbar */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE y Edge */
 }
 
 .sidebar.collapsed {
@@ -386,16 +422,11 @@ function escHandler(e) {
   transform: scale(0.95);
 }
 
-/* Ocultar scrollbar en Chrome, Safari y Opera */
-.sidebar::-webkit-scrollbar {
-  display: none;
-}
-
 /* Nota: ancho aumentado para ocupar el espacio a la derecha y eliminar la franja blanca */
 /* 2. Navegación */
 .sidebar-nav {
   flex-grow: 1;
-  padding-top: 20px;
+  padding-top: 32px;
   padding-bottom: 8px;
 }
 .nav-section-title {
@@ -608,8 +639,13 @@ function escHandler(e) {
   color: #fff;
 }
 
+/* Por defecto ocultar botón móvil en escritorio */
+.mobile-open-btn {
+  display: none;
+}
+
 /* Responsive: transformar sidebar a panel deslizable en móviles */
-@media (max-width: 900px) {
+@media (max-width: 768px) {
   .sidebar-wrapper { position: relative; }
   .sidebar-backdrop {
     position: fixed;
@@ -660,20 +696,8 @@ function escHandler(e) {
   }
   /* Botón para abrir menú en móvil */
   .mobile-open-btn {
-    position: fixed;
-    top: 12px;
-    left: 12px;
-    z-index: 1300;
-    background: var(--color-primary);
-    color: #fff;
-    border: none;
-    padding: 10px 12px;
-    border-radius: 10px;
-    font-size: 18px;
-    box-shadow: 0 6px 18px rgba(2,6,23,0.35);
-    cursor: pointer;
+    display: none;
   }
-  .mobile-open-btn:hover { opacity: 0.95 }
 
   /* Ocultar footer dentro de móviles para ahorrar espacio */
   .sidebar-footer { display: none; }

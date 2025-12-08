@@ -53,10 +53,16 @@
 							</div>
 					</div>
 					<div class="correos-card-desc">
-						<span v-if="loading" style="color: var(--color-info); font-weight: 600;"> (Cargando...)</span>
 						<span v-if="error" style="color: var(--color-danger); font-weight: 600;"> ⚠️ {{ error }}</span>
 					</div>
-					<div class="datatable-visual">
+
+					<!-- Indicador de carga -->
+					<div v-if="loading" class="loading-container">
+						<div class="spinner"></div>
+						<p>Cargando participantes...</p>
+					</div>
+
+					<div v-else class="datatable-visual">
 						<table class="datatable-table">
 							<thead>
 								<tr>
@@ -69,8 +75,13 @@
 								</tr>
 							</thead>
 							<tbody>
-								<tr v-if="loading">
-									<td colspan="6" style="text-align: center; padding: 20px;">Cargando personas...</td>
+								<tr v-if="!hasSearched">
+									<td colspan="6" style="text-align: center; padding: 40px; color: var(--color-text-muted);">
+										<div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+											<AppIcons name="search" :size="48" style="opacity: 0.5;" />
+											<span>Seleccione filtros y presione <b>Buscar</b> para ver resultados</span>
+										</div>
+									</td>
 								</tr>
 								<tr v-else-if="error">
 									<td colspan="6" style="text-align: center; padding: 20px; color: var(--color-danger);">{{ error }}</td>
@@ -143,25 +154,23 @@
 </template>
 
 <script setup>
-import { reactive, computed, ref, onMounted, nextTick } from 'vue'
+import { reactive, computed, ref, onMounted } from 'vue'
 import BaseButton from '../components/BaseButton.vue'
 import AppIcons from '@/components/icons/AppIcons.vue'
 import NotificationToast from '@/components/NotificationToast.vue'
 import ModernMainScrollbar from '@/components/ModernMainScrollbar.vue'
-import QRCode from 'qrcode'
 import { personas as personasService, personaCursos as personaCursosService } from '@/services/personasService'
 import { cursos as cursosService } from '@/services/cursosService'
-import authViewsService from '@/services/auth_viewsService.js'
 import { rol } from '@/services/mantenedoresService'
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
 // Flag temporal: cuando es true, 'Estado correo' se determina desde persona-cursos (PEC_ENVIO_CORREO_QR)
 const USE_BACKEND_ESTADO_CORREO = true
 
 // Datos desde la API
 const rows = ref([])
-const loading = ref(true)
+const loading = ref(false)
 const error = ref(null)
+const hasSearched = ref(false)
 
 // Paginación
 const page = ref(1)
@@ -236,6 +245,7 @@ function notify(msg, icon = '') {
 
 // Cargar personas desde la API (centralizado)
 async function fetchRows(params = {}) {
+	hasSearched.value = true
 	loading.value = true
 	error.value = null
 	try {
@@ -440,16 +450,14 @@ async function loadOptions() {
 }
 
 onMounted(async () => {
+	loading.value = true
 	await loadOptions()
+	loading.value = false
 	lastQueryParams.value = {}
-	await fetchRows()
+	// await fetchRows() // No cargar al inicio, esperar a botón Buscar
 })
 
-const cursos = computed(() => {
-	const s = new Set()
-	rows.value.forEach(r => s.add(r.curso))
-	return Array.from(s)
-})
+// Computed for available unique courses removed (was unused)
 
 // Rows shown in the table: server may apply some filters, but provide
 // a client-side layer so filters like `curso`, `rol` and `estadoPersona`
@@ -467,7 +475,7 @@ const rowsFiltered = computed(() => {
 	// aplicar filtro por estadoPersona si está activo
 	if (appliedFilters.estadoPersona && appliedFilters.estadoPersona !== 'Todos') {
 		if (appliedFilters.estadoPersona === 'Vigente') list = list.filter(r => Boolean(r.vigente))
-		else if (appliedFilters.estadoPersona === 'No vigente') list = list.filter(r => !Boolean(r.vigente))
+		else if (appliedFilters.estadoPersona === 'No vigente') list = list.filter(r => !r.vigente)
 	}
 	return list
 })
@@ -479,7 +487,7 @@ const marcarButtonLabel = computed(() => {
 	const targets = rows.value.filter(r => selIds.includes(String(r.id)))
 	if (!targets.length) return 'Marcar Enviado'
 	const allSent = targets.every(t => Boolean(t.pecEnvioCorreoQR))
-	const allPending = targets.every(t => !Boolean(t.pecEnvioCorreoQR))
+	const allPending = targets.every(t => !t.pecEnvioCorreoQR)
 	if (allSent) return 'Marcar Pendiente'
 	if (allPending) return 'Marcar Enviado'
 	return 'Alternar estado'
@@ -544,21 +552,6 @@ function vigenteClass(row) {
 function estadoPagoClass(row) {
 	// Pagado: verde; Pendiente: amarillo
 	return row.estadoPago === 'Pagado' ? 'badge-success' : 'badge-warning'
-}
-
-function estadoPersonaClass(row) {
-	switch (row.estadoPersona) {
-		case 'Confirmado':
-			return 'badge-success'
-		case 'Inscrito':
-			return 'badge-warning'
-		case 'Preinscrito':
-			return 'badge-warning'
-		case 'Rechazado':
-			return 'badge-danger'
-		default:
-			return 'badge-warning'
-	}
 }
 
 function estadoCorreoClass(row) {
@@ -629,7 +622,7 @@ async function marcarEnviado() {
 
 	// Toggle local-only rows
 	for (const t of localOnly) {
-		const newVal = !Boolean(t.pecEnvioCorreoQR)
+		const newVal = !t.pecEnvioCorreoQR
 		t.pecEnvioCorreoQR = newVal
 		t.estadoCorreo = newVal ? 'Enviado' : 'Pendiente'
 	}
@@ -651,29 +644,47 @@ async function enviarPorCorreo() {
 		return
 	}
 
-		try {
-			const payload = {
-				ids: selIds.map(id => Number(id)),
-				tipo: 'correo-enviado',
-				expSeconds: 24 * 3600,
-				usuId: 1
-			}
-			const result = await authViewsService.qr_email(payload)
+	// Open modal to compose email
+	// For now, we'll use a simple prompt (you can enhance this with BaseModal later)
+	const subject = prompt('Asunto del correo:', 'Información del Curso')
+	if (!subject) return
 
-			// Marcar como enviados localmente
-			for (const r of rows.value) {
-				if (selIds.includes(String(r.id)) && r.vigente && r.email) {
-					r.estadoCorreo = 'Enviado'
-				}
-			}
+	const message = prompt('Mensaje del correo:', 'Estimado/a participante,\n\nTe enviamos la información del curso.')
+	if (!message) return
 
-			notify(`Envío completado. Enviados: ${result.enviados}/${result.solicitados}`, 'send')
-		} catch (e) {
-			console.error('Error enviando correos:', e)
-			notify('No se pudieron enviar los correos: ' + (e?.message || e), 'x-circle')
+	// Get curso_id from filters if selected
+	// Note: curso_id lookup not currently available as cursosOpts only contains names
+	let cursoId = null
+	// if (filters.curso && filters.curso !== 'Todos') {
+	// 	// Find curso ID from cursoOptions
+	// 	const cursoOpt = cursoOptions.value.find(c => c.label === filters.curso || c.value === filters.curso)
+	// 	if (cursoOpt) cursoId = cursoOpt.value
+	// }
+
+	try {
+		const correosService = (await import('@/services/correosService.js')).default
+		const payload = {
+			recipient_ids: selIds.map(id => Number(id)),
+			subject,
+			message,
+			...(cursoId && { curso_id: cursoId })
+		}
+		const result = await correosService.sendEmail(payload)
+
+		// Mark as sent locally
+		for (const r of rows.value) {
+			if (selIds.includes(String(r.id)) && r.vigente && r.email) {
+				r.estadoCorreo = 'Enviado'
+			}
 		}
 
-	// Persistir en backend PEC_ENVIO_CORREO_QR = true (si tenemos pecId) - sólo si está habilitado el backend
+		notify(`Envío completado. Enviados: ${result.sent}/${result.sent + result.failed}`, 'send')
+	} catch (e) {
+		console.error('Error enviando correos:', e)
+		notify('No se pudieron enviar los correos: ' + (e?.message || e), 'x-circle')
+	}
+
+	// Persist in backend PEC_ENVIO_CORREO_QR = true (if we have pecId) - only if backend is enabled
 	if (USE_BACKEND_ESTADO_CORREO) {
 		try {
 			const targets = rows.value.filter(r => selIds.includes(String(r.id)) && r.pecId)
@@ -1014,6 +1025,32 @@ input[type="checkbox"] {
 .pagination-range {
 	color: #6b7280;
 	font-size: 0.9rem;
+}
+
+/* Loading Spinner */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  gap: 1rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 </style>
 

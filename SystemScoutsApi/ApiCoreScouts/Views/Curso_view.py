@@ -1,9 +1,11 @@
 from ..Models.curso_model import *
 from rest_framework import viewsets
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from ..Serializers import Curso_serializer as MC_S
 from ..Filters import curso_filter as CF
-from rest_framework.permissions import AllowAny
+from ..Permissions import PerfilPermission
 from django.db.models import Prefetch
 
 class StandardResultsSetPagination(PageNumberPagination):
@@ -15,9 +17,9 @@ class CursoViewSet(viewsets.ModelViewSet):
     serializer_class = MC_S.CursoSerializer
     filterset_class = CF.CursoFilter
     pagination_class = StandardResultsSetPagination
-    authentication_classes = []
-    permission_classes = [AllowAny]
-    APP_NAME = "Cursos"
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, PerfilPermission]
+    app_name = "Cursos"
     ACTION_PERMISSIONS = {
         'list': ('pea_consultar',),
         'retrieve': ('pea_consultar',),
@@ -57,9 +59,9 @@ class CursoCuotaViewSet(viewsets.ModelViewSet):
     serializer_class = MC_S.CursoCuotaSerializer
     filterset_class = CF.CursoCuotaFilter
     pagination_class = StandardResultsSetPagination
-    authentication_classes = []
-    permission_classes = [AllowAny]
-    APP_NAME = "Cursos"
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, PerfilPermission]
+    app_name = "Cursos"
     ACTION_PERMISSIONS = CursoViewSet.ACTION_PERMISSIONS
     
     def get_queryset(self):
@@ -70,9 +72,9 @@ class CursoCuotaViewSet(viewsets.ModelViewSet):
 
 class CursoFechaViewSet(viewsets.ModelViewSet):
     serializer_class = MC_S.CursoFechaSerializer
-    authentication_classes = []
-    permission_classes = [AllowAny]
-    APP_NAME = "Cursos"
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, PerfilPermission]
+    app_name = "Cursos"
     ACTION_PERMISSIONS = CursoViewSet.ACTION_PERMISSIONS
     
     def get_queryset(self):
@@ -85,9 +87,9 @@ class CursoAlimentacionViewSet(viewsets.ModelViewSet):
     serializer_class = MC_S.CursoAlimentacionSerializer
     filterset_class = CF.CursoAlimentacionFilter
     pagination_class = StandardResultsSetPagination
-    authentication_classes = []
-    permission_classes = [AllowAny]
-    APP_NAME = "Cursos"
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, PerfilPermission]
+    app_name = "Cursos"
     ACTION_PERMISSIONS = CursoViewSet.ACTION_PERMISSIONS
     
     def get_queryset(self):
@@ -100,9 +102,9 @@ class CursoCoordinadorViewSet(viewsets.ModelViewSet):
     serializer_class = MC_S.CursoCoordinadorSerializer
     filterset_class = CF.CursoCoordinadorFilter
     pagination_class = StandardResultsSetPagination
-    authentication_classes = []
-    permission_classes = [AllowAny]
-    APP_NAME = "Cursos"
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, PerfilPermission]
+    app_name = "Cursos"
     ACTION_PERMISSIONS = CursoViewSet.ACTION_PERMISSIONS
     
     def get_queryset(self):
@@ -117,9 +119,9 @@ class CursoSeccionViewSet(viewsets.ModelViewSet):
     serializer_class = MC_S.CursoSeccionSerializer
     filterset_class = CF.CursoSeccionFilter
     pagination_class = StandardResultsSetPagination
-    authentication_classes = []
-    permission_classes = [AllowAny]
-    APP_NAME = "Cursos"
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, PerfilPermission]
+    app_name = "Cursos"
     ACTION_PERMISSIONS = CursoViewSet.ACTION_PERMISSIONS
     
     def get_queryset(self):
@@ -138,9 +140,9 @@ class CursoFormadorViewSet(viewsets.ModelViewSet):
     serializer_class = MC_S.CursoFormadorSerializer
     filterset_class = CF.CursoFormadorFilter
     pagination_class = StandardResultsSetPagination
-    authentication_classes = []
-    permission_classes = [AllowAny]
-    APP_NAME = "Cursos"
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, PerfilPermission]
+    app_name = "Cursos"
     ACTION_PERMISSIONS = CursoViewSet.ACTION_PERMISSIONS
     
     def get_queryset(self):

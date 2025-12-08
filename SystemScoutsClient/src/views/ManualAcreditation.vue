@@ -13,7 +13,7 @@
           type="text" 
           placeholder="Buscar por RUT o nombre completo..."
           class="search-input"
-          @input="handleSearch"
+          @keyup.enter="handleSearch"
           aria-label="Buscar por RUT o nombre completo"
         />
         <BaseButton 
@@ -26,6 +26,7 @@
             Buscar
           </template>
         </BaseButton>
+        <div v-if="searchNotFound" class="search-error">{{ searchErrorMessage }}</div>
         <BaseButton
           v-if="selectedParticipant"
           @click="acreditarParticipante"
@@ -34,6 +35,14 @@
         >
           <AppIcons name="check" :size="16" style="margin-right: 8px;" /> Acreditar
         </BaseButton>
+      </div>
+    </div>
+
+    <!-- Indicador de carga centrado -->
+    <div v-if="cargando" class="loading-overlay" role="status" aria-live="polite">
+      <div class="loading-content">
+        <div class="spinner" aria-hidden="true"></div>
+        <div>Buscando...</div>
       </div>
     </div>
 
@@ -139,10 +148,7 @@
 </template>
 
 <script>
-import DataCard from '@/components/DataCard.vue'
-import DataTable from '@/components/DataTable.vue'
 import BaseButton from '@/components/BaseButton.vue'
-import BaseAlert from '@/components/BaseAlert.vue'
 import NotificationToast from '@/components/NotificationToast.vue'
 import AppIcons from '@/components/icons/AppIcons.vue'
 import authViewsService from '@/services/auth_viewsService'
@@ -151,10 +157,7 @@ import authViewsService from '@/services/auth_viewsService'
 export default {
   name: 'ManualAcreditation',
   components: {
-    DataCard,
-    DataTable,
     BaseButton,
-    BaseAlert,
     NotificationToast,
     AppIcons
   },
@@ -204,6 +207,10 @@ export default {
           accreditationStatus: 'Acreditado' 
         }
       ],
+      // UI flags for search behavior
+      searchNotFound: false,
+      searchErrorMessage: '',
+      cargando: false,
       acreditationSuccess: false,
       isMobile: window.innerWidth <= 768,
       paymentSuccess: false,
@@ -260,14 +267,19 @@ export default {
       this.isMobile = window.innerWidth <= 768;
     },
 
-  async handleSearch() {
+    async handleSearch() {
       const term = this.searchTerm.trim()
-      if (!term) { this.selectedParticipant = null; return }
+      // Búsqueda manual: no ejecutamos automáticamente, solo al presionar el botón o Enter
+      if (!term) { this.selectedParticipant = null; this.searchNotFound = false; this.searchErrorMessage = ''; return }
 
-      // Primero intentar por API remota (si el backend responde)
+      // Resetear flags
+      this.searchNotFound = false
+      this.searchErrorMessage = ''
+
+      // Primero intentar por API remota (si el backend responde). Usamos el endpoint `personas/personas`.
+      this.cargando = true
       try {
-        const payload = { rut: term, query: term }
-        const res = await authViewsService.acreditacion_manual_search(payload)
+        const res = await authViewsService.acreditacion_manual_search(term)
 
         // Normalizar varias formas de respuesta posibles
         let person = null
@@ -275,6 +287,8 @@ export default {
           person = null
         } else if (Array.isArray(res) && res.length) {
           person = res[0]
+        } else if (res.results && Array.isArray(res.results) && res.results.length) {
+          person = res.results[0]
         } else if (res.persona) {
           person = res.persona
         } else if (res.data && Array.isArray(res.data) && res.data.length) {
@@ -299,27 +313,25 @@ export default {
             accreditationStatus: person.acreditado || person.accredited || person.accreditationStatus || 'Pendiente'
           }
           this.selectedParticipant = Object.assign({}, p)
+          this.searchNotFound = false
+          this.searchErrorMessage = ''
+          return
+        } else {
+          // No encontrado
+          this.selectedParticipant = null
+          this.searchNotFound = true
+          this.searchErrorMessage = 'No se encontró la persona solicitada.'
           return
         }
       } catch (err) {
-        // Si falla la llamada, caemos al fallback local
-        console.warn('API de acreditación no disponible, usando datos locales:', err)
-      }
-
-      // Fallback: buscar en datos locales (por RUT exacto o por nombre parcial)
-      const found = this.participants.find(p => {
-        const rut = p.rut && p.rut.toLowerCase && p.rut.toLowerCase()
-        const name = p.name && p.name.toLowerCase && p.name.toLowerCase()
-        return (rut && rut === term.toLowerCase()) || (name && name.includes(term.toLowerCase()))
-      })
-
-      if (!found) {
+        // Si falla la llamada, informar al usuario y no usar datos locales automáticamente
+        console.warn('API de acreditación no disponible:', err)
+        this.searchErrorMessage = 'Error al consultar el servidor. Intente nuevamente.'
+        this.searchNotFound = true
         this.selectedParticipant = null
-        this.acreditationSuccess = false
-        this.paymentSuccess = false
-      } else {
-        // Clonar para edición local
-        this.selectedParticipant = Object.assign({}, found)
+        return
+      } finally {
+        this.cargando = false
       }
     },
 
@@ -384,6 +396,13 @@ export default {
 </script>
 
 <style scoped>
+.search-error {
+  color: #b71c1c;
+  margin-left: 12px;
+  align-self: center;
+  font-weight: 600;
+}
+
 .manual-acreditation {
   max-width: 1200px;
   margin: 0 auto;
@@ -544,6 +563,38 @@ export default {
 .status-acreditado {
   color: #155724;
   font-weight: 600;
+}
+
+/* Loading overlay */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.35);
+  z-index: 1200;
+}
+.loading-content {
+  background: var(--color-surface);
+  color: var(--color-text);
+  padding: 18px 24px;
+  border-radius: 10px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+}
+.spinner {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 3px solid rgba(0,0,0,0.1);
+  border-top-color: var(--color-primary);
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* Responsive */

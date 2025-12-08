@@ -300,7 +300,7 @@ async function cargarDatos() {
       const cursosData = await request(`/cursos/cursos/${props.cursoId}/`)
       curso.value = cursosData || {}
       console.log('Curso cargado:', curso.value)
-    } catch (error) {
+    } catch {
       // Si falla, intentar obtenerlo de la lista completa
       console.log('No se pudo cargar curso directo, buscando en lista...')
       const cursosListData = await request('/cursos/cursos/?page_size=1000')
@@ -309,50 +309,36 @@ async function cargarDatos() {
       console.log('Curso encontrado en lista:', curso.value)
     }
     
-    // Cargar secciones con filtro
-    const seccionesData = await request(`/cursos/secciones/?CUR_ID=${props.cursoId}&page_size=500`)
-    const seccionesArray = Array.isArray(seccionesData?.results) ? seccionesData.results : (seccionesData || [])
-    secciones.value = seccionesArray
-    console.log('Secciones cargadas:', secciones.value.length)
+    // Cargar datos del curso en paralelo para reducir tiempo
+    const [seccionesData, formadoresData, coordinadoresData, alimentacionData, pagosData] = await Promise.all([
+      request(`/cursos/secciones/?CUR_ID=${props.cursoId}&page_size=200`),
+      request(`/cursos/formadores/?CUR_ID=${props.cursoId}&page_size=200`),
+      request(`/cursos/coordinadores/?CUR_ID=${props.cursoId}&page_size=200`),
+      request(`/cursos/alimentaciones/?CUR_ID=${props.cursoId}&page_size=200`),
+      request(`/cursos/cuotas/?CUR_ID=${props.cursoId}&page_size=200`),
+    ])
+
+    secciones.value = Array.isArray(seccionesData?.results) ? seccionesData.results : (seccionesData || [])
+    formadores.value = Array.isArray(formadoresData?.results) ? formadoresData.results : (formadoresData || [])
+    coordinadores.value = Array.isArray(coordinadoresData?.results) ? coordinadoresData.results : (coordinadoresData || [])
+    alimentaciones.value = Array.isArray(alimentacionData?.results) ? alimentacionData.results : (alimentacionData || [])
+    pagos.value = Array.isArray(pagosData?.results) ? pagosData.results : (pagosData || [])
+
+    console.log('Secciones:', secciones.value.length, 'Formadores:', formadores.value.length, 'Coordinadores:', coordinadores.value.length, 'Alimentaciones:', alimentaciones.value.length, 'Pagos:', pagos.value.length)
     
-    // Cargar formadores con filtro
-    const formadoresData = await request(`/cursos/formadores/?CUR_ID=${props.cursoId}&page_size=500`)
-    const formadoresArray = Array.isArray(formadoresData?.results) ? formadoresData.results : (formadoresData || [])
-    formadores.value = formadoresArray
-    console.log('Formadores cargados:', formadores.value.length)
-    
-    // Cargar coordinadores con filtro
-    const coordinadoresData = await request(`/cursos/coordinadores/?CUR_ID=${props.cursoId}&page_size=500`)
-    const coordinadoresArray = Array.isArray(coordinadoresData?.results) ? coordinadoresData.results : (coordinadoresData || [])
-    coordinadores.value = coordinadoresArray
-    console.log('Coordinadores cargados:', coordinadores.value.length)
-    
-    // Cargar alimentación con filtro
-    const alimentacionData = await request(`/cursos/alimentaciones/?CUR_ID=${props.cursoId}&page_size=500`)
-    const alimentacionArray = Array.isArray(alimentacionData?.results) ? alimentacionData.results : (alimentacionData || [])
-    alimentaciones.value = alimentacionArray
-    console.log('Alimentaciones cargadas:', alimentaciones.value.length)
-    
-    // Cargar pagos del curso con filtro
-    const pagosData = await request(`/cursos/cuotas/?CUR_ID=${props.cursoId}&page_size=500`)
-    const pagosArray = Array.isArray(pagosData?.results) ? pagosData.results : (pagosData || [])
-    pagos.value = pagosArray
-    console.log('Pagos cargados:', pagos.value.length)
-    
-    // Cargar catálogos
-    const personasData = await request('/personas/personas/?page_size=500')
+    // Cargar catálogos luego, en paralelo y con menor page_size
+    const [personasData, rolesData, ramasData, cargosData, aliData] = await Promise.all([
+      request('/personas/personas/?page_size=200'),
+      request('/mantenedores/rol/?page_size=200'),
+      request('/mantenedores/rama/?page_size=200'),
+      request('/mantenedores/cargo/?page_size=200'),
+      request('/mantenedores/alimentacion/?page_size=200'),
+    ])
+
     personas.value = Array.isArray(personasData?.results) ? personasData.results : (personasData || [])
-    
-    const rolesData = await request('/mantenedores/rol/?page_size=500')
     roles.value = Array.isArray(rolesData?.results) ? rolesData.results : (rolesData || [])
-    
-    const ramasData = await request('/mantenedores/rama/?page_size=500')
     ramas.value = Array.isArray(ramasData?.results) ? ramasData.results : (ramasData || [])
-    
-    const cargosData = await request('/mantenedores/cargo/?page_size=500')
     cargos.value = Array.isArray(cargosData?.results) ? cargosData.results : (cargosData || [])
-    
-    const aliData = await request('/mantenedores/alimentacion/?page_size=500')
     alimentacionCatalogo.value = Array.isArray(aliData?.results) ? aliData.results : (aliData || [])
     
     console.log('Todos los datos cargados correctamente')

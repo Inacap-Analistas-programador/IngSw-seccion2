@@ -24,7 +24,7 @@ for name in env_names:
         env_path = candidate
         break
 
-if env_path.exists():
+if env_path and env_path.exists():
     try:
         config = Config(RepositoryEnv(env_path, encoding='utf-8'))
     except UnicodeDecodeError:
@@ -43,8 +43,15 @@ else:
     config = Config(EnvRepository())
 
 # CONFIGURACION BASICA
-SECRET_KEY = config('DJANGO_SECRET_KEY', default='fallback-secret-key')
 DEBUG = config('DJANGO_DEBUG', default=False, cast=bool)
+
+# SECRET_KEY configuration with secure defaults
+# In production (DEBUG=False), SECRET_KEY MUST be provided via environment variable
+# In development (DEBUG=True), a fallback is allowed for convenience
+if DEBUG:
+    SECRET_KEY = config('DJANGO_SECRET_KEY', default='dev-secret-key-change-in-production')
+else:
+    SECRET_KEY = config('DJANGO_SECRET_KEY')
 
 if not DEBUG:
     # Configuraciones de seguridad para producción
@@ -146,27 +153,42 @@ WSGI_APPLICATION = 'SystemScoutsApi.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': config("DATABASE", default=config("DB_NAME", default=None)),
-        'USER': config("USER", default=config("DB_USER", default=None)),
-        'PASSWORD': config("PASSWORD_DB", default=config("DB_PASSWORD", default=None)),
-        'HOST': config("HOST", default=config("DB_HOST", default=None)),
-        'PORT': config("PORT", default="3306"),
-        'OPTIONS': {
-            # Ensure connection uses utf8mb4 to correctly handle accents and ñ
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES', NAMES 'utf8mb4'",
-            'charset': 'utf8mb4',
-        },
-        'CONN_MAX_AGE': 0,
-        'DISABLE_SERVER_SIDE_CURSORS': True,
-    }
-}
+# Use SQLite as fallback if MySQL settings are not provided
+DB_NAME = config("DATABASE", default=config("DB_NAME", default=None))
+DB_HOST = config("HOST", default=config("DB_HOST", default=None))
 
-# Deshabilitar verificación de versión para MariaDB 10.4
-import django.db.backends.mysql.base
-django.db.backends.mysql.base.DatabaseWrapper.check_database_version_supported = lambda self: None
+if DB_NAME and DB_HOST:
+    # MySQL configuration when credentials are provided
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': DB_NAME,
+            'USER': config("USER", default=config("DB_USER", default=None)),
+            'PASSWORD': config("PASSWORD_DB", default=config("DB_PASSWORD", default=None)),
+            'HOST': DB_HOST,
+            'PORT': config("PORT", default="3306"),
+            'OPTIONS': {
+                # Ensure connection uses utf8mb4 to correctly handle accents and ñ
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES', NAMES 'utf8mb4'",
+                'charset': 'utf8mb4',
+            },
+            'CONN_MAX_AGE': 0,
+            'DISABLE_SERVER_SIDE_CURSORS': True,
+        }
+    }
+else:
+    # SQLite fallback for development/testing
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+
+# Deshabilitar verificación de versión para MariaDB 10.4 (solo cuando se usa MySQL)
+if DB_NAME and DB_HOST:
+    import django.db.backends.mysql.base
+    django.db.backends.mysql.base.DatabaseWrapper.check_database_version_supported = lambda self: None
 
 AUTHENTICATION_BACKENDS = [
     'ApiCoreScouts.authentication.UsuarioBackend',
@@ -176,6 +198,13 @@ AUTHENTICATION_BACKENDS = [
 SIMPLE_JWT = {
     "USER_ID_FIELD": "usu_id",
     "USER_ID_CLAIM": "user_id",
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": False,
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
+    "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
 AUTH_USER_MODEL = 'ApiCoreScouts.Usuario'
@@ -211,6 +240,59 @@ USE_I18N = True
 USE_TZ = True
 
 
+# Logging configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': 'WARNING',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': BASE_DIR / 'logs' / 'django.log',
+            'maxBytes': 1024 * 1024 * 10,  # 10 MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+        'security_file': {
+            'level': 'WARNING',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': BASE_DIR / 'logs' / 'security.log',
+            'maxBytes': 1024 * 1024 * 10,  # 10 MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.security': {
+            'handlers': ['security_file', 'console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'ApiCoreScouts': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
+
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
@@ -235,6 +317,18 @@ CORS_ALLOWED_ORIGINS = [
 CSRF_TRUSTED_ORIGINS = [
     "https://sistema.guiasyscoutsbiobio.cl",
 ]
+
+# Email configuration
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@guiasyscoutsbiobio.cl')
+EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = config('EMAIL_HOST', default='localhost')
+EMAIL_PORT = config('EMAIL_PORT', default=25, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=False, cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+
+# Site URL for QR codes and external links
+SITE_URL = config('SITE_URL', default='https://sistema.guiasyscoutsbiobio.cl')
 
 
 REST_FRAMEWORK = {

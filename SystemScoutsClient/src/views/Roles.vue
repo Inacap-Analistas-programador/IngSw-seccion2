@@ -15,7 +15,13 @@
         </div>
       </div>
 
-      <div class="table-wrapper">
+      <!-- Indicador de carga -->
+      <div v-if="cargando" class="loading-container">
+        <div class="spinner"></div>
+        <p>Cargando perfiles...</p>
+      </div>
+
+      <div v-else class="table-wrapper">
         <table class="usuarios-table">
           <thead>
             <tr>
@@ -25,10 +31,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-if="cargando">
-              <td colspan="3">Cargando perfiles...</td>
-            </tr>
-            <tr v-else-if="error">
+            <tr v-if="error">
               <td colspan="3" style="color: var(--color-danger)">{{ error }}</td>
             </tr>
             <tr v-else-if="!roles.length">
@@ -104,89 +107,61 @@
                   <p>Cargando permisos...</p>
                 </div>
                 <div v-else class="permisos-container">
-                  <div v-for="app in aplicaciones" :key="app.apl_id || app.APL_ID || app.id" class="aplicacion-section">
-                    <div class="aplicacion-header">
-                      <div class="aplicacion-title-wrapper">
-                        <AppIcons name="clipboard" :size="22" class="aplicacion-icon" />
-                        <h4 class="aplicacion-nombre">{{ app.apl_descripcion || app.APL_DESCRIPCION || app.descripcion }}</h4>
-                      </div>
-                      <div class="permisos-quick-actions">
-                        <button 
-                          type="button" 
-                          class="quick-action-btn"
-                          @click="toggleTodosPermisos(app.apl_id || app.APL_ID || app.id, true)"
-                          title="Seleccionar todos"
-                        >
-                          <AppIcons name="check" :size="14" /> Todos
-                        </button>
-                        <button 
-                          type="button" 
-                          class="quick-action-btn clear"
-                          @click="toggleTodosPermisos(app.apl_id || app.APL_ID || app.id, false)"
-                          title="Quitar todos"
-                        >
-                          <AppIcons name="x" :size="14" /> Ninguno
-                        </button>
-                      </div>
-                    </div>
-                    <div class="permisos-grid">
-                      <div class="permiso-item" @click="togglePermiso(app.apl_id || app.APL_ID || app.id, 'consultar')">
-                        <div class="permiso-content">
-                          <div class="permiso-icon-wrapper">
-                            <AppIcons name="view" :size="24" class="permiso-icon" />
-                          </div>
-                          <div class="permiso-info">
-                            <span class="permiso-label">Consultar</span>
-                            <span class="permiso-description">Ver información</span>
-                          </div>
-                        </div>
-                        <BaseSwitch 
-                          v-model="form.permisos[app.apl_id || app.APL_ID || app.id].consultar"
-                        />
-                      </div>
-                      <div class="permiso-item" @click="togglePermiso(app.apl_id || app.APL_ID || app.id, 'ingresar')">
-                        <div class="permiso-content">
-                          <div class="permiso-icon-wrapper">
-                            <AppIcons name="add" :size="24" class="permiso-icon" />
-                          </div>
-                          <div class="permiso-info">
-                            <span class="permiso-label">Crear</span>
-                            <span class="permiso-description">Agregar nuevos registros</span>
-                          </div>
-                        </div>
-                        <BaseSwitch 
-                          v-model="form.permisos[app.apl_id || app.APL_ID || app.id].ingresar"
-                        />
-                      </div>
-                      <div class="permiso-item" @click="togglePermiso(app.apl_id || app.APL_ID || app.id, 'modificar')">
-                        <div class="permiso-content">
-                          <div class="permiso-icon-wrapper">
-                            <AppIcons name="modify" :size="24" class="permiso-icon" />
-                          </div>
-                          <div class="permiso-info">
-                            <span class="permiso-label">Modificar</span>
-                            <span class="permiso-description">Editar registros existentes</span>
-                          </div>
-                        </div>
-                        <BaseSwitch 
-                          v-model="form.permisos[app.apl_id || app.APL_ID || app.id].modificar"
-                        />
-                      </div>
-                      <div class="permiso-item" @click="togglePermiso(app.apl_id || app.APL_ID || app.id, 'eliminar')">
-                        <div class="permiso-content">
-                          <div class="permiso-icon-wrapper">
-                            <AppIcons name="delete" :size="24" class="permiso-icon" />
-                          </div>
-                          <div class="permiso-info">
-                            <span class="permiso-label">Eliminar</span>
-                            <span class="permiso-description">Borrar registros</span>
-                          </div>
-                        </div>
-                        <BaseSwitch 
-                          v-model="form.permisos[app.apl_id || app.APL_ID || app.id].eliminar"
-                        />
-                      </div>
-                    </div>
+                  <div class="table-responsive">
+                    <table class="permisos-table">
+                      <thead>
+                        <tr>
+                          <th class="col-app">Módulo</th>
+                          <th class="text-center">Consultar</th>
+                          <th class="text-center">Crear</th>
+                          <th class="text-center">Modificar</th>
+                          <th class="text-center">Eliminar</th>
+                          <th class="text-center">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="app in aplicaciones" :key="app.apl_id || app.APL_ID || app.id">
+                          <td>
+                            <div class="app-info">
+                              <div class="app-icon-wrapper">
+                                <AppIcons name="clipboard" :size="18" />
+                              </div>
+                              <span class="app-name">{{ app.apl_descripcion || app.APL_DESCRIPCION || app.descripcion }}</span>
+                            </div>
+                          </td>
+                          <td class="text-center">
+                            <BaseSwitch 
+                              v-model="form.permisos[app.apl_id || app.APL_ID || app.id].consultar"
+                            />
+                          </td>
+                          <td class="text-center">
+                            <BaseSwitch 
+                              v-model="form.permisos[app.apl_id || app.APL_ID || app.id].ingresar"
+                            />
+                          </td>
+                          <td class="text-center">
+                            <BaseSwitch 
+                              v-model="form.permisos[app.apl_id || app.APL_ID || app.id].modificar"
+                            />
+                          </td>
+                          <td class="text-center">
+                            <BaseSwitch 
+                              v-model="form.permisos[app.apl_id || app.APL_ID || app.id].eliminar"
+                            />
+                          </td>
+                          <td class="text-center">
+                            <div class="row-actions-compact">
+                              <BaseButton size="sm" variant="secondary" title="Permitir Todo" @click="toggleTodosPermisos(app.apl_id || app.APL_ID || app.id, true)">
+                                <AppIcons name="check" :size="16" />
+                              </BaseButton>
+                              <BaseButton size="sm" variant="secondary" title="Denegar Todo" @click="toggleTodosPermisos(app.apl_id || app.APL_ID || app.id, false)">
+                                <AppIcons name="x" :size="16" />
+                              </BaseButton>
+                            </div>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>
@@ -210,7 +185,6 @@
 <script>
 import BaseButton from '@/components/BaseButton.vue'
 import BaseModal from '@/components/BaseModal.vue'
-import BaseCheckBox from '@/components/BaseCheckBox.vue'
 import BaseSwitch from '@/components/BaseSwitch.vue'
 import InputBase from '@/components/InputBase.vue'
 import NotificationToast from '@/components/NotificationToast.vue'
@@ -220,7 +194,7 @@ import { perfiles as perfilesService, aplicaciones as aplicacionesService, perfi
 
 export default {
   name: 'Roles',
-  components: { BaseButton, BaseModal, BaseCheckBox, BaseSwitch, InputBase, NotificationToast, AppIcons, ModernMainScrollbar },
+  components: { BaseButton, BaseModal, BaseSwitch, InputBase, NotificationToast, AppIcons, ModernMainScrollbar },
   data() {
     return {
       roles: [],
@@ -393,8 +367,8 @@ export default {
               apl_id: appId 
             })
             const existingList = Array.isArray(existingResp) ? existingResp : (existingResp.results || existingResp.data || [])
-            if (existingList.length > 0) existing = existingList[0]
-          } catch (err) {
+                        if (existingList.length > 0) existing = existingList[0]
+          } catch {
             // Fallback a mayúsculas si falla
             const existingResp = await perfilAplicacionesService.list({ 
               PEL_ID: rolId, 
@@ -674,200 +648,122 @@ export default {
 .permisos-container {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  padding: 1rem;
-}
-
-.aplicacion-section {
-  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-  border-radius: 16px;
-  padding: 1.75rem;
-  border: 2px solid #e9ecef;
-  box-shadow: 0 3px 8px rgba(0,0,0,.05);
-  transition: all 0.3s ease;
-}
-
-.aplicacion-section:hover {
-  border-color: #2563eb;
-  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.2);
-  transform: translateY(-3px);
-}
-
-.aplicacion-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid #dee2e6;
-}
-
-.aplicacion-title-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.aplicacion-icon {
-  color: #2563eb;
-  flex-shrink: 0;
-}
-
-.aplicacion-nombre {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #2c3e50;
-  letter-spacing: 0.3px;
-}
-
-.permisos-quick-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.quick-action-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.5rem 0.75rem;
-  background: #2563eb;
-  color: white;
-  border: none;
+  gap: 0;
+  padding: 0;
+  background: #fff;
   border-radius: 8px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
-}
-
-.quick-action-btn:hover {
-  background: #1d4ed8;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
-}
-
-.quick-action-btn.clear {
-  background: #6b7280;
-}
-
-.quick-action-btn.clear:hover {
-  background: #4b5563;
-}
-
-.permisos-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
-}
-
-.permiso-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  padding: 1.5rem 1rem;
-  background: #ffffff;
-  border-radius: 12px;
-  border: 2px solid #e9ecef;
-  transition: all 0.2s ease;
-  cursor: pointer;
-  position: relative;
   overflow: hidden;
-  min-height: 140px;
+  border: 1px solid #e5e7eb;
+}
+
+.table-responsive {
+  overflow-x: auto;
+}
+
+.permisos-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px;
+}
+
+.permisos-table th {
+  background: #f8fafc;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
+  letter-spacing: 0.05em;
+}
+
+.permisos-table th.text-center {
   text-align: center;
 }
 
-.permiso-content {
+.permisos-table td {
+  padding: 0.25rem 0.75rem;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.permisos-table tr:last-child td {
+  border-bottom: none;
+}
+
+.permisos-table tr:hover {
+  background-color: #f8fafc;
+}
+
+.app-info {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
-  flex: 1;
+  gap: 0.5rem;
 }
 
-.permiso-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  align-items: center;
-}
-
-.permiso-label {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #2c3e50;
-  letter-spacing: 0.3px;
-}
-
-.permiso-description {
-  font-size: 0.8rem;
-  color: #6b7280;
-  font-weight: 500;
-  line-height: 1.3;
-}
-
-.permiso-item::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  height: 4px;
-  background: #2563eb;
-  transform: scaleX(0);
-  transition: transform 0.2s ease;
-}
-
-.permiso-item:hover::before {
-  transform: scaleX(1);
-}
-
-.permiso-item:hover {
-  background: #eff6ff;
-  border-color: #2563eb;
-  transform: translateY(-4px);
-  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.2);
-}
-
-.permiso-icon-wrapper {
+.app-icon-wrapper {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 56px;
-  height: 56px;
-  background: #f3f4f6;
-  border-radius: 14px;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  background: #eff6ff;
+  border-radius: 8px;
+  color: #3b82f6;
 }
 
-.permiso-item:hover .permiso-icon-wrapper {
-  background: #dbeafe;
+.app-name {
+  font-weight: 600;
+  color: #334155;
+  font-size: 0.9rem;
 }
 
-.permiso-icon {
-  color: #6b7280;
-  flex-shrink: 0;
-  transition: color 0.2s ease;
+.text-center {
+  text-align: center;
 }
 
-.permiso-item:hover .permiso-icon {
-  color: #2563eb;
+.text-center :deep(.switch-container) {
+  justify-content: center;
 }
 
-.permiso-item :deep(.p-4) {
-  padding: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  max-width: none !important;
+.row-actions-compact {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
-.permiso-item :deep(.switch-container) {
-  pointer-events: none;
+.action-mini-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
 }
+
+.action-mini-btn.success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.action-mini-btn.success:hover {
+  background: #bbf7d0;
+}
+
+.action-mini-btn.danger {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.action-mini-btn.danger:hover {
+  background: #fecaca;
+}
+
+
 
 .form-actions { 
   display: flex; 
@@ -894,15 +790,12 @@ export default {
 }
 
 /* Responsive */
-@media (max-width: 1024px) {
-  .permisos-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
 @media (max-width: 768px) {
-  .permisos-grid {
-    grid-template-columns: 1fr;
+  .permisos-table th, .permisos-table td {
+    padding: 0.5rem;
+  }
+  .app-name {
+    font-size: 0.8rem;
   }
   
   .modal-rol {
@@ -953,5 +846,51 @@ export default {
 	margin-bottom: 2rem;
 	padding-bottom: 1rem;
 	border-bottom: 2px solid #e0e0e0;
+}
+
+/* Ajuste del botón cerrar del modal para que quede centrado en la esquina */
+:deep(.close-btn) {
+  top: 1.25rem;
+  right: 1.25rem;
+  width: 36px;
+  height: 36px;
+  background: var(--color-secondary) !important;
+  color: #ffffff !important;
+  border: none;
+  backdrop-filter: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+:deep(.close-btn:hover) {
+  background: var(--color-secondary-hover) !important;
+  color: #ffffff !important;
+  transform: rotate(90deg);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* Loading Spinner */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  gap: 1rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 </style>

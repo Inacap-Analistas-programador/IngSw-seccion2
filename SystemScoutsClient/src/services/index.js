@@ -27,10 +27,9 @@ export {
   mantenedoresService,
   pagosService,
   archivosService,
-  reportesService,
   dashboardService,
   dashboard2Service,
-  // Removed legacy CorreosService,
+  // Removed legacy CorreosService and reportesService,
 }
 
 // Backwards-compat aliases (safe to import old names from this barrel):

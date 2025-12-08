@@ -2,9 +2,9 @@ from rest_framework import serializers
 from ..Models.archivo_model import *
 
 class ArchivoSerializer(serializers.ModelSerializer):
-        class Meta:
-            model = Archivo
-            fields = '__all__'
+    class Meta:
+        model = Archivo
+        fields = '__all__'
 
 class ArchivoCursoSerializer(serializers.ModelSerializer):
     class Meta:
