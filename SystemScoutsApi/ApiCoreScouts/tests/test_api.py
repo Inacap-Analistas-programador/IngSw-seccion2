@@ -87,7 +87,6 @@ class UsuarioAPITests(APITestCase):
         )
         self.app = Aplicacion.objects.create(
             apl_descripcion='Usuarios',
-            apl_descripcion='user-icon',
             apl_vigente=True
         )
         Perfil_Aplicacion.objects.create(
@@ -152,7 +151,6 @@ class PerfilAPITests(APITestCase):
         )
         self.app = Aplicacion.objects.create(
             apl_descripcion='Perfiles',
-            apl_descripcion='profile-icon',
             apl_vigente=True
         )
         Perfil_Aplicacion.objects.create(
@@ -206,7 +204,6 @@ class PersonaAPITests(APITestCase):
         )
         self.app = Aplicacion.objects.create(
             apl_descripcion='Personas',
-            apl_descripcion='person-icon',
             apl_vigente=True
         )
         Perfil_Aplicacion.objects.create(
@@ -310,7 +307,6 @@ class CursoAPITests(APITestCase):
         )
         self.app = Aplicacion.objects.create(
             apl_descripcion='Cursos',
-            apl_descripcion='course-icon',
             apl_vigente=True
         )
         Perfil_Aplicacion.objects.create(
@@ -417,7 +413,6 @@ class PagoAPITests(APITestCase):
         )
         self.app = Aplicacion.objects.create(
             apl_descripcion='Pagos',
-            apl_descripcion='payment-icon',
             apl_vigente=True
         )
         Perfil_Aplicacion.objects.create(
