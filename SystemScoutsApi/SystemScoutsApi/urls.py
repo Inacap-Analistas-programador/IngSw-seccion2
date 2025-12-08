@@ -20,7 +20,7 @@ from ApiCoreScouts.Views.Usuario_view import MyTokenObtainPairView
 
 from ApiCoreScouts.Views.Verificador_view import verificar_acreditacion_qr
 
-# FRONTEND_DIST_EXISTS = True #activar el renderizado
+FRONTEND_DIST_EXISTS = False  # Desactivar para desarrollo
 urlpatterns = [
     path('api/usuarios/', include(usuario_router.urls)),
     path('api/personas/', include(personas_router.urls)),

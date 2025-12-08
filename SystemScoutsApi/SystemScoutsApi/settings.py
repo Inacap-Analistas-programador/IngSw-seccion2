@@ -91,6 +91,12 @@ MIDDLEWARE = [
     # 'scout_project.security_middleware.SecurityLoggingMiddleware',
 ]
 
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://sistema.guiasyscoutsbiobio.cl",
+]
+
 CORS_ALLOW_METHODS = [
     "GET",
     "POST",
@@ -114,6 +120,8 @@ CORS_ALLOW_HEADERS = [
 # PERMITIR EL USO DE CREDENCIALES Y COOKIES 
 CORS_ALLOW_CREDENTIALS = True
 
+# Disable automatic slash append for API endpoints
+APPEND_SLASH = False
 
 ROOT_URLCONF = 'SystemScoutsApi.urls'
 
