@@ -31,19 +31,30 @@ if env_path and env_path.exists():
         # fallback al encoding
         config = Config(RepositoryEnv(env_path, encoding='latin-1'))
 else:
-    print(f"Warning: .env file not found. Using environment variables.")
+    print(f"⚠️  Warning: .env file not found. Using environment variables.")
+    print(f"💡 For local development, copy .env.example to .env and configure it:")
+    print(f"   cp {BASE_DIR}/.env.example {BASE_DIR}/.env")
     # usar os.environ directamente
-    from decouple import RepositoryEnv
-    # Crear un repositorio personalizado que lea de os.environ
+    # Crear un repositorio personalizado que lee de os.environ
     class EnvRepository:
-        def __init__(self): self.data = os.environ
-        def __contains__(self, key): return key in os.environ
-        def __getitem__(self, key): return os.environ[key]
+        """Repository that reads from os.environ, compatible with python-decouple"""
+        def __init__(self): 
+            self.data = os.environ
+        
+        def __contains__(self, key): 
+            return key in os.environ
+        
+        def __getitem__(self, key):
+            """Get value from environment or raise KeyError for Config to handle defaults"""
+            if key in os.environ:
+                return os.environ[key]
+            raise KeyError(key)
     
     config = Config(EnvRepository())
 
 # CONFIGURACION BASICA
-DEBUG = config('DJANGO_DEBUG', default=False, cast=bool)
+# Default to development mode if no configuration is found
+DEBUG = config('DJANGO_DEBUG', default=True, cast=bool)
 
 # SECRET_KEY configuration with secure defaults
 # In production (DEBUG=False), SECRET_KEY MUST be provided via environment variable

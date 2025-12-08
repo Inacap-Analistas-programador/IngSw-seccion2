@@ -13,9 +13,35 @@ export default defineConfig([
   globalIgnores(['**/dist/**', '**/dist-ssr/**', '**/coverage/**']),
 
   {
+    files: ['*.config.js', '*.config.mjs'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
+
+  {
     languageOptions: {
       globals: {
         ...globals.browser,
+      },
+    },
+  },
+
+  // Test files configuration
+  {
+    files: ['**/__tests__/**/*.{js,mjs,jsx}', '**/*.spec.{js,mjs,jsx}', '**/*.test.{js,mjs,jsx}'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+        describe: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        vi: 'readonly',
       },
     },
   },

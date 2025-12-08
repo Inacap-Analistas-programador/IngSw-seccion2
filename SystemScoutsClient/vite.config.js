@@ -9,8 +9,9 @@ export default defineConfig({
   base: '/',
   plugins: [
     vue(),
-    vueDevTools(),
-  ],
+    // Only enable devtools in non-test environments
+    process.env.VITEST ? undefined : vueDevTools(),
+  ].filter(Boolean),
   server: {
     hmr: {
       overlay: false,

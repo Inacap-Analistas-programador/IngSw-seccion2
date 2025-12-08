@@ -11,7 +11,7 @@ from ApiCoreScouts.Models.persona_model import Persona
 from ApiCoreScouts.Models.curso_model import Curso, Tipo_Curso
 from ApiCoreScouts.Models.pago_model import Proveedor, Pago_Persona
 from ApiCoreScouts.Models.mantenedor_model import (
-    Estado_Civil, Comuna, Region, Cargo
+    Estado_Civil, Comuna, Provincia, Region, Cargo
 )
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -36,7 +36,7 @@ class AuthenticationTests(APITestCase):
     
     def test_token_obtain(self):
         """Test obtaining JWT token with valid credentials"""
-        url = '/token/'
+        url = '/login/'
         data = {
             'usu_username': 'testuser',
             'password': 'testpass123'
@@ -48,7 +48,7 @@ class AuthenticationTests(APITestCase):
     
     def test_token_obtain_invalid_credentials(self):
         """Test token rejection with invalid credentials"""
-        url = '/token/'
+        url = '/login/'
         data = {
             'usu_username': 'testuser',
             'password': 'wrongpassword'
@@ -59,7 +59,7 @@ class AuthenticationTests(APITestCase):
     def test_token_refresh(self):
         """Test refreshing JWT token"""
         # First get tokens
-        url = '/token/'
+        url = '/login/'
         data = {
             'usu_username': 'testuser',
             'password': 'testpass123'
@@ -68,7 +68,7 @@ class AuthenticationTests(APITestCase):
         refresh_token = response.data['refresh']
         
         # Now refresh
-        url = '/token/refresh/'
+        url = '/refresh/'
         data = {'refresh': refresh_token}
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -87,7 +87,6 @@ class UsuarioAPITests(APITestCase):
         )
         self.app = Aplicacion.objects.create(
             apl_descripcion='Usuarios',
-            apl_descripcion='user-icon',
             apl_vigente=True
         )
         Perfil_Aplicacion.objects.create(
@@ -105,7 +104,7 @@ class UsuarioAPITests(APITestCase):
             usu_vigente=True
         )
         # Authenticate
-        response = self.client.post('/token/', {
+        response = self.client.post('/login/', {
             'usu_username': 'admin',
             'password': 'admin123'
         }, format='json')
@@ -152,7 +151,6 @@ class PerfilAPITests(APITestCase):
         )
         self.app = Aplicacion.objects.create(
             apl_descripcion='Perfiles',
-            apl_descripcion='profile-icon',
             apl_vigente=True
         )
         Perfil_Aplicacion.objects.create(
@@ -169,7 +167,7 @@ class PerfilAPITests(APITestCase):
             pel_id=self.perfil,
             usu_vigente=True
         )
-        response = self.client.post('/token/', {
+        response = self.client.post('/login/', {
             'usu_username': 'admin',
             'password': 'admin123'
         }, format='json')
@@ -206,7 +204,6 @@ class PersonaAPITests(APITestCase):
         )
         self.app = Aplicacion.objects.create(
             apl_descripcion='Personas',
-            apl_descripcion='person-icon',
             apl_vigente=True
         )
         Perfil_Aplicacion.objects.create(
@@ -228,8 +225,13 @@ class PersonaAPITests(APITestCase):
             reg_descripcion='Biobío',
             reg_vigente=True
         )
-        self.comuna = Comuna.objects.create(
+        self.provincia = Provincia.objects.create(
             reg_id=self.region,
+            pro_descripcion='Concepción',
+            pro_vigente=True
+        )
+        self.comuna = Comuna.objects.create(
+            pro_id=self.provincia,
             com_descripcion='Concepción',
             com_vigente=True
         )
@@ -254,7 +256,7 @@ class PersonaAPITests(APITestCase):
             per_vigente=True
         )
         # Authenticate
-        response = self.client.post('/token/', {
+        response = self.client.post('/login/', {
             'usu_username': 'admin',
             'password': 'admin123'
         }, format='json')
@@ -310,7 +312,6 @@ class CursoAPITests(APITestCase):
         )
         self.app = Aplicacion.objects.create(
             apl_descripcion='Cursos',
-            apl_descripcion='course-icon',
             apl_vigente=True
         )
         Perfil_Aplicacion.objects.create(
@@ -333,8 +334,13 @@ class CursoAPITests(APITestCase):
             reg_descripcion='Biobío',
             reg_vigente=True
         )
-        self.comuna = Comuna.objects.create(
+        self.provincia = Provincia.objects.create(
             reg_id=self.region,
+            pro_descripcion='Concepción',
+            pro_vigente=True
+        )
+        self.comuna = Comuna.objects.create(
+            pro_id=self.provincia,
             com_descripcion='Concepción',
             com_vigente=True
         )
@@ -384,7 +390,7 @@ class CursoAPITests(APITestCase):
             cur_estado=1
         )
         # Authenticate
-        response = self.client.post('/token/', {
+        response = self.client.post('/login/', {
             'usu_username': 'admin',
             'password': 'admin123'
         }, format='json')
@@ -417,7 +423,6 @@ class PagoAPITests(APITestCase):
         )
         self.app = Aplicacion.objects.create(
             apl_descripcion='Pagos',
-            apl_descripcion='payment-icon',
             apl_vigente=True
         )
         Perfil_Aplicacion.objects.create(
@@ -441,7 +446,7 @@ class PagoAPITests(APITestCase):
             prv_vigente=True
         )
         # Authenticate
-        response = self.client.post('/token/', {
+        response = self.client.post('/login/', {
             'usu_username': 'admin',
             'password': 'admin123'
         }, format='json')
@@ -488,7 +493,7 @@ class PermissionsAPITests(APITestCase):
     def test_forbidden_access_without_permissions(self):
         """Test that requests without proper permissions are forbidden"""
         # Login with user that has no app permissions
-        response = self.client.post('/token/', {
+        response = self.client.post('/login/', {
             'usu_username': 'noperms',
             'password': 'noperms123'
         }, format='json')

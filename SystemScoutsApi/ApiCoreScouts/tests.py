@@ -8,9 +8,8 @@ from django.test import TestCase
 from .tests.test_models import (
     UsuarioModelTest,
     PerfilModelTest,
-    PersonaModelTest,
-    CursoModelTest,
-    PagoModelTest
+    ProveedorModelTest,
+    MantenedorModelTest
 )
 from .tests.test_api import (
     AuthenticationTests,
