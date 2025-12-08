@@ -11,7 +11,7 @@ from ApiCoreScouts.Models.persona_model import Persona
 from ApiCoreScouts.Models.curso_model import Curso, Tipo_Curso
 from ApiCoreScouts.Models.pago_model import Proveedor, Pago_Persona
 from ApiCoreScouts.Models.mantenedor_model import (
-    Estado_Civil, Comuna, Region, Pais, Cargo
+    Estado_Civil, Comuna, Region, Cargo
 )
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -24,8 +24,8 @@ class AuthenticationTests(APITestCase):
         """Set up test data"""
         self.client = APIClient()
         self.perfil = Perfil.objects.create(
-            PEL_DESCRIPCION='Test Perfil',
-            PEL_VIGENTE=True
+            pel_descripcion='Test Perfil',
+            pel_vigente=True
         )
         self.usuario = Usuario.objects.create_user(
             usu_username='testuser',
@@ -82,21 +82,21 @@ class UsuarioAPITests(APITestCase):
         """Set up test data"""
         self.client = APIClient()
         self.perfil = Perfil.objects.create(
-            PEL_DESCRIPCION='Admin Perfil',
-            PEL_VIGENTE=True
+            pel_descripcion='Admin Perfil',
+            pel_vigente=True
         )
         self.app = Aplicacion.objects.create(
-            APL_DESCRIPCION='Usuarios',
-            APL_ICONO='user-icon',
-            APL_VIGENTE=True
+            apl_descripcion='Usuarios',
+            apl_icono='user-icon',
+            apl_vigente=True
         )
         Perfil_Aplicacion.objects.create(
-            PEL_ID=self.perfil,
-            APL_ID=self.app,
-            PAP_VER=True,
-            PAP_EDITAR=True,
-            PAP_ELIMINAR=True,
-            PAP_VIGENTE=True
+            pel_id=self.perfil,
+            apl_id=self.app,
+            pap_ver=True,
+            pap_editar=True,
+            pap_eliminar=True,
+            pap_vigente=True
         )
         self.usuario = Usuario.objects.create_user(
             usu_username='admin',
@@ -125,7 +125,7 @@ class UsuarioAPITests(APITestCase):
         data = {
             'usu_username': 'newuser',
             'password': 'newpass123',
-            'pel_id': self.perfil.PEL_ID,
+            'pel_id': self.perfil.pel_id,
             'usu_vigente': True
         }
         response = self.client.post(url, data, format='json')
@@ -147,21 +147,21 @@ class PerfilAPITests(APITestCase):
         """Set up test data"""
         self.client = APIClient()
         self.perfil = Perfil.objects.create(
-            PEL_DESCRIPCION='Admin Perfil',
-            PEL_VIGENTE=True
+            pel_descripcion='Admin Perfil',
+            pel_vigente=True
         )
         self.app = Aplicacion.objects.create(
-            APL_DESCRIPCION='Perfiles',
-            APL_ICONO='profile-icon',
-            APL_VIGENTE=True
+            apl_descripcion='Perfiles',
+            apl_icono='profile-icon',
+            apl_vigente=True
         )
         Perfil_Aplicacion.objects.create(
-            PEL_ID=self.perfil,
-            APL_ID=self.app,
-            PAP_VER=True,
-            PAP_EDITAR=True,
-            PAP_ELIMINAR=True,
-            PAP_VIGENTE=True
+            pel_id=self.perfil,
+            apl_id=self.app,
+            pap_ver=True,
+            pap_editar=True,
+            pap_eliminar=True,
+            pap_vigente=True
         )
         self.usuario = Usuario.objects.create_user(
             usu_username='admin',
@@ -186,8 +186,8 @@ class PerfilAPITests(APITestCase):
         """Test creating a new perfil"""
         url = '/api/usuarios/perfiles/'
         data = {
-            'PEL_DESCRIPCION': 'New Perfil',
-            'PEL_VIGENTE': True
+            'pel_descripcion': 'New Perfil',
+            'pel_vigente': True
         }
         response = self.client.post(url, data, format='json')
         self.assertIn(response.status_code, [status.HTTP_201_CREATED, status.HTTP_400_BAD_REQUEST])
@@ -201,21 +201,21 @@ class PersonaAPITests(APITestCase):
         self.client = APIClient()
         # Create dependencies
         self.perfil = Perfil.objects.create(
-            PEL_DESCRIPCION='Admin Perfil',
-            PEL_VIGENTE=True
+            pel_descripcion='Admin Perfil',
+            pel_vigente=True
         )
         self.app = Aplicacion.objects.create(
-            APL_DESCRIPCION='Personas',
-            APL_ICONO='person-icon',
-            APL_VIGENTE=True
+            apl_descripcion='Personas',
+            apl_icono='person-icon',
+            apl_vigente=True
         )
         Perfil_Aplicacion.objects.create(
-            PEL_ID=self.perfil,
-            APL_ID=self.app,
-            PAP_VER=True,
-            PAP_EDITAR=True,
-            PAP_ELIMINAR=True,
-            PAP_VIGENTE=True
+            pel_id=self.perfil,
+            apl_id=self.app,
+            pap_ver=True,
+            pap_editar=True,
+            pap_eliminar=True,
+            pap_vigente=True
         )
         self.usuario = Usuario.objects.create_user(
             usu_username='admin',
@@ -223,12 +223,8 @@ class PersonaAPITests(APITestCase):
             pel_id=self.perfil,
             usu_vigente=True
         )
-        self.pais = Pais.objects.create(
-            pai_descripcion='Chile',
-            pai_vigente=True
-        )
         self.region = Region.objects.create(
-            pai_id=self.pais,
+            
             reg_descripcion='Biobío',
             reg_vigente=True
         )
@@ -309,21 +305,21 @@ class CursoAPITests(APITestCase):
         """Set up test data"""
         self.client = APIClient()
         self.perfil = Perfil.objects.create(
-            PEL_DESCRIPCION='Admin Perfil',
-            PEL_VIGENTE=True
+            pel_descripcion='Admin Perfil',
+            pel_vigente=True
         )
         self.app = Aplicacion.objects.create(
-            APL_DESCRIPCION='Cursos',
-            APL_ICONO='course-icon',
-            APL_VIGENTE=True
+            apl_descripcion='Cursos',
+            apl_icono='course-icon',
+            apl_vigente=True
         )
         Perfil_Aplicacion.objects.create(
-            PEL_ID=self.perfil,
-            APL_ID=self.app,
-            PAP_VER=True,
-            PAP_EDITAR=True,
-            PAP_ELIMINAR=True,
-            PAP_VIGENTE=True
+            pel_id=self.perfil,
+            apl_id=self.app,
+            pap_ver=True,
+            pap_editar=True,
+            pap_eliminar=True,
+            pap_vigente=True
         )
         self.usuario = Usuario.objects.create_user(
             usu_username='admin',
@@ -332,12 +328,8 @@ class CursoAPITests(APITestCase):
             usu_vigente=True
         )
         # Create dependencies
-        self.pais = Pais.objects.create(
-            pai_descripcion='Chile',
-            pai_vigente=True
-        )
         self.region = Region.objects.create(
-            pai_id=self.pais,
+            
             reg_descripcion='Biobío',
             reg_vigente=True
         )
@@ -420,21 +412,21 @@ class PagoAPITests(APITestCase):
         """Set up test data"""
         self.client = APIClient()
         self.perfil = Perfil.objects.create(
-            PEL_DESCRIPCION='Admin Perfil',
-            PEL_VIGENTE=True
+            pel_descripcion='Admin Perfil',
+            pel_vigente=True
         )
         self.app = Aplicacion.objects.create(
-            APL_DESCRIPCION='Pagos',
-            APL_ICONO='payment-icon',
-            APL_VIGENTE=True
+            apl_descripcion='Pagos',
+            apl_icono='payment-icon',
+            apl_vigente=True
         )
         Perfil_Aplicacion.objects.create(
-            PEL_ID=self.perfil,
-            APL_ID=self.app,
-            PAP_VER=True,
-            PAP_EDITAR=True,
-            PAP_ELIMINAR=True,
-            PAP_VIGENTE=True
+            pel_id=self.perfil,
+            apl_id=self.app,
+            pap_ver=True,
+            pap_editar=True,
+            pap_eliminar=True,
+            pap_vigente=True
         )
         self.usuario = Usuario.objects.create_user(
             usu_username='admin',
@@ -477,8 +469,8 @@ class PermissionsAPITests(APITestCase):
         """Set up test data"""
         self.client = APIClient()
         self.perfil_no_perms = Perfil.objects.create(
-            PEL_DESCRIPCION='No Permissions Perfil',
-            PEL_VIGENTE=True
+            pel_descripcion='No Permissions Perfil',
+            pel_vigente=True
         )
         self.usuario_no_perms = Usuario.objects.create_user(
             usu_username='noperms',
