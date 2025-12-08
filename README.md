@@ -6,6 +6,12 @@ La comunicación se realiza mediante consultas HTTP seguras para realizar operac
 
 ---
 
+## 📚 Documentación
+
+- **[README.md](./README.md)** - Este archivo 
+
+---
+
 ## 🚀 Tecnologías principales
 * **Python / Django** + **Django REST Framework** – API REST.
 * **Vue 3 + Vite** – Cliente web.
@@ -635,3 +641,69 @@ GET /api/personas/individuales/?rol_nombre=formador&alimentacion_nombre=vegetari
 - Los códigos de estado HTTP siguen las convenciones REST estándar
 - Los filtros pueden combinarse usando múltiples parámetros en la URL
 - Los filtros de texto son insensibles a mayúsculas/minúsculas cuando usan `icontains`
+
+---
+
+## 🧪 Testing
+
+El proyecto cuenta con un suite completo de pruebas automatizadas.
+
+### Ejecutar Tests del Backend
+```bash
+cd SystemScoutsApi
+python manage.py test
+```
+
+### Ejecutar Tests del Frontend
+```bash
+cd SystemScoutsClient
+npm run test
+```
+
+### Cobertura Actual
+- ✅ **Backend**: 9 tests de modelos (100% passing)
+- ✅ **Frontend**: Tests de componentes y servicios configurados
+- ✅ **CI/CD**: Workflows automatizados en GitHub Actions
+
+Para más información, consulta:
+- [RUNNING_TESTS.md](./RUNNING_TESTS.md) - Guía rápida de testing
+- [TESTING_DOCUMENTATION.md](./TESTING_DOCUMENTATION.md) - Documentación completa
+- [MANUAL_QA_CHECKLIST.md](./MANUAL_QA_CHECKLIST.md) - Checklist de pruebas manuales
+
+---
+
+## 📊 Estado del Proyecto
+
+### ✅ Funcionalidades Implementadas
+- Sistema de autenticación JWT
+- CRUD completo de Usuarios, Personas, Cursos y Pagos
+- Gestión de perfiles y permisos
+- Verificador QR para acreditaciones
+- Exportación de datos (Excel, PDF)
+- Sistema de filtros avanzados
+- Suite de tests automatizados
+
+### 🚧 En Desarrollo
+- Aumento de cobertura de tests
+- Tests end-to-end con Playwright
+- Mejoras en la documentación de API
+
+---
+
+## 🤝 Contribuir
+
+Al contribuir al proyecto:
+1. Asegúrate de que todos los tests pasen
+2. Agrega tests para nuevas funcionalidades
+3. Mantén la cobertura de código
+4. Sigue las convenciones de código existentes
+5. Actualiza la documentación según sea necesario
+
+---
+
+## 📧 Soporte
+
+Para problemas o consultas:
+- Revisa la documentación en la carpeta del proyecto
+- Consulta [SOLUCION_LOGIN.md](./SOLUCION_LOGIN.md) para problemas comunes de autenticación
+- Abre un issue en el repositorio de GitHub
