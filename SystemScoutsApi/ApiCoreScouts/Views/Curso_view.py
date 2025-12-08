@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from ..Serializers import Curso_serializer as MC_S
 from ..Filters import curso_filter as CF
-from rest_framework.permissions import AllowAny
+from ..Permissions import PerfilPermission
 from django.db.models import Prefetch
 
 class StandardResultsSetPagination(PageNumberPagination):
@@ -140,9 +140,9 @@ class CursoFormadorViewSet(viewsets.ModelViewSet):
     serializer_class = MC_S.CursoFormadorSerializer
     filterset_class = CF.CursoFormadorFilter
     pagination_class = StandardResultsSetPagination
-    authentication_classes = []
-    permission_classes = [AllowAny]
-    APP_NAME = "Cursos"
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, PerfilPermission]
+    app_name = "Cursos"
     ACTION_PERMISSIONS = CursoViewSet.ACTION_PERMISSIONS
     
     def get_queryset(self):

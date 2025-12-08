@@ -9,6 +9,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.renderers import JSONRenderer
 from ..Filters.persona_filter import *
 from ..Models.persona_model import *
+from ..Permissions import PerfilPermission
 from django.db.models import Prefetch
 
 class StandardResultsSetPagination(PageNumberPagination):

@@ -43,8 +43,15 @@ else:
     config = Config(EnvRepository())
 
 # CONFIGURACION BASICA
-SECRET_KEY = config('DJANGO_SECRET_KEY')
 DEBUG = config('DJANGO_DEBUG', default=False, cast=bool)
+
+# SECRET_KEY configuration with secure defaults
+# In production (DEBUG=False), SECRET_KEY MUST be provided via environment variable
+# In development (DEBUG=True), a fallback is allowed for convenience
+if DEBUG:
+    SECRET_KEY = config('DJANGO_SECRET_KEY', default='dev-secret-key-change-in-production')
+else:
+    SECRET_KEY = config('DJANGO_SECRET_KEY')
 
 if not DEBUG:
     # Configuraciones de seguridad para producción
