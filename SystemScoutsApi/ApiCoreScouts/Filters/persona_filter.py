@@ -1,7 +1,10 @@
 import django_filters
+from django.db.models import Q
 from ..Models.persona_model import *
+from datetime import datetime, timedelta
 
 class PersonaFilter(django_filters.FilterSet):
+    # --- Filtros de identidad ---
     nombre = django_filters.CharFilter(field_name='per_nombres',lookup_expr='icontains',
         label='Filtrar por nombre')
     apellido = django_filters.CharFilter(field_name='per_apelpta',lookup_expr='icontains',
@@ -10,10 +13,64 @@ class PersonaFilter(django_filters.FilterSet):
         label='Filtrar por RUN')
     dv = django_filters.CharFilter(field_name='per_dv',lookup_expr='iexact',
         label='Filtrar por dígito verificador')
+    
+    # --- Filtros de contacto ---
+    email = django_filters.CharFilter(field_name='per_mail',lookup_expr='icontains',
+        label='Filtrar por email')
+    telefono = django_filters.CharFilter(field_name='per_fono',lookup_expr='icontains',
+        label='Filtrar por teléfono')
+    
+    # --- Filtros de ubicación ---
     comuna_nombre = django_filters.CharFilter(field_name='com_id__com_descripcion',lookup_expr='icontains',
         label='Filtrar por nombre de comuna')
     comuna_id = django_filters.NumberFilter(field_name='com_id__com_id',
         label='Filtrar por ID de comuna')
+    
+    # --- Filtro de edad (rango) ---
+    edad_minima = django_filters.NumberFilter(
+        method='filter_edad_minima',
+        label='Edad mínima')
+    edad_maxima = django_filters.NumberFilter(
+        method='filter_edad_maxima',
+        label='Edad máxima')
+    
+    # --- Filtro de género/sexo (basado en Estado Civil o apellido materno) ---
+    genero = django_filters.ChoiceFilter(
+        method='filter_genero',
+        choices=[
+            ('M', 'Masculino'),
+            ('F', 'Femenino'),
+            ('O', 'Otro'),
+        ],
+        label='Filtrar por género')
+    
+    # --- Filtro de fecha de inscripción (rango) ---
+    fecha_inscripcion_desde = django_filters.DateTimeFilter(
+        field_name='per_fecha_hora',
+        lookup_expr='gte',
+        label='Fecha de inscripción desde')
+    fecha_inscripcion_hasta = django_filters.DateTimeFilter(
+        field_name='per_fecha_hora',
+        lookup_expr='lte',
+        label='Fecha de inscripción hasta')
+    
+    # --- Filtro de estado de acreditación (a través de Persona_Curso) ---
+    acreditado = django_filters.BooleanFilter(
+        field_name='persona_curso__pec_acreditacion',
+        label='Filtrar por estado de acreditación')
+    
+    # --- Filtro de cursos asociados ---
+    curso_codigo = django_filters.CharFilter(
+        field_name='persona_curso__cus_id__cur_id__cur_codigo',
+        lookup_expr='iexact',
+        label='Filtrar por código de curso')
+    
+    curso_descripcion = django_filters.CharFilter(
+        field_name='persona_curso__cus_id__cur_id__cur_descripcion',
+        lookup_expr='icontains',
+        label='Filtrar por descripción de curso')
+    
+    # --- Filtros de usuario y vigencia ---
     usuario_nombre = django_filters.CharFilter(field_name='usu_id__usu_username',lookup_expr='icontains',
         label='Filtrar por nombre de usuario')
     usuario_id = django_filters.NumberFilter(field_name='usu_id__usu_id',
@@ -27,12 +84,50 @@ class PersonaFilter(django_filters.FilterSet):
                   'apellido',
                   'run',
                   'dv',
+                  'email',
+                  'telefono',
                   'comuna_nombre',
                   'comuna_id',
+                  'edad_minima',
+                  'edad_maxima',
+                  'genero',
+                  'fecha_inscripcion_desde',
+                  'fecha_inscripcion_hasta',
+                  'acreditado',
+                  'curso_codigo',
+                  'curso_descripcion',
                   'usuario_nombre',
                   'usuario_id',
                   'vigente'
                   ]
+    
+    def filter_edad_minima(self, queryset, name, value):
+        """Filtrar personas con edad mínima"""
+        if value:
+            fecha_limite = datetime.now() - timedelta(days=value*365)
+            return queryset.filter(per_fecha_nac__lte=fecha_limite)
+        return queryset
+    
+    def filter_edad_maxima(self, queryset, name, value):
+        """Filtrar personas con edad máxima"""
+        if value:
+            fecha_limite = datetime.now() - timedelta(days=value*365)
+            return queryset.filter(per_fecha_nac__gte=fecha_limite)
+        return queryset
+    
+    def filter_genero(self, queryset, name, value):
+        """
+        Filtrar por género/sexo basado en estado civil:
+        M = Masculino, F = Femenino, O = Otro
+        Nota: Ajustar según tu lógica de negocio
+        """
+        if value == 'M':
+            # Personas con estado civil "Soltero", "Casado", "Divorciado" (típicamente masculinos)
+            return queryset.filter(esc_id__esc_descripcion__in=['Soltero', 'Casado', 'Divorciado'])
+        elif value == 'F':
+            # Personas con apellido materno (típicamente femeninos)
+            return queryset.filter(per_apelmat__isnull=False)
+        return queryset
 
 
 class PersonaCursoFilter(django_filters.FilterSet):
