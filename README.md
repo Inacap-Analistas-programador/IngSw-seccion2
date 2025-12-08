@@ -8,11 +8,7 @@ La comunicación se realiza mediante consultas HTTP seguras para realizar operac
 
 ## 📚 Documentación
 
-- **[README.md](./README.md)** - Este archivo (configuración del proyecto)
-- **[TESTING_DOCUMENTATION.md](./TESTING_DOCUMENTATION.md)** - Guía completa de testing
-- **[RUNNING_TESTS.md](./RUNNING_TESTS.md)** - Guía rápida para ejecutar tests
-- **[MANUAL_QA_CHECKLIST.md](./MANUAL_QA_CHECKLIST.md)** - Checklist de pruebas manuales
-- **[SOLUCION_LOGIN.md](./SOLUCION_LOGIN.md)** - Solución a problemas de login
+- **[README.md](./README.md)** - Este archivo 
 
 ---
 
