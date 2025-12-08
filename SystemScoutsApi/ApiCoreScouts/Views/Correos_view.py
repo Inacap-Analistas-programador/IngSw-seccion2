@@ -1,11 +1,14 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.core.mail import EmailMultiAlternatives
 from django.conf import settings
 from django.utils import timezone
 from ..Models.persona_model import Persona
 from ..Models.curso_model import Persona_Curso
+from ..Permissions import PerfilPermission
 import logging
 import secrets
 import qrcode
@@ -18,6 +21,9 @@ class CorreosViewSet(viewsets.ViewSet):
     """
     ViewSet for sending emails with QR codes for course accreditation.
     """
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, PerfilPermission]
+    app_name = 'Correos'
     
     @action(detail=False, methods=['post'])
     def send(self, request):
@@ -117,7 +123,7 @@ class CorreosViewSet(viewsets.ViewSet):
 
                 # Store token temporarily (you might want to create a Token model for this)
                 # For now, we'll just log it
-                logger.info(f"Generated token for PER_ID={persona.per_id}: {token}")
+                logger.info(f"Generated token for PER_ID={persona.per_id}")
 
                 sent_count += 1
             except Exception as e:

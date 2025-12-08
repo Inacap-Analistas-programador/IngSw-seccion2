@@ -1,12 +1,15 @@
 # ApiCoreScouts/Views/Usuario_view.py
 from rest_framework import viewsets
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
 from ..Serializers import Usuario_serializer as MU_S
 from ..Models.usuario_model import *
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from ..Permissions import PerfilPermission
 from rest_framework_simplejwt.views import TokenObtainPairView
 from ..Serializers.Usuario_serializer import MyTokenObtainPairSerializer
+import logging
+
+logger = logging.getLogger(__name__)
 
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
@@ -14,40 +17,39 @@ class MyTokenObtainPairView(TokenObtainPairView):
 class UsuarioViewSet(viewsets.ModelViewSet):
     queryset = Usuario.objects.all()
     serializer_class = MU_S.UsuarioSerializer
-    # Bypass temporal completo: sin auth ni perfil
-    authentication_classes = []
-    permission_classes = [AllowAny]
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, PerfilPermission]
+    app_name = 'Usuarios'
 
     # Envoltorio para capturar y loggear excepciones durante list (500s)
     def list(self, request, *args, **kwargs):
         try:
             return super().list(request, *args, **kwargs)
         except Exception as e:
-            import traceback
-            tb = traceback.format_exc()
-            # Imprimir traceback en la salida del servidor para debugging
-            print('--- Exception in UsuarioViewSet.list ---')
-            print(tb)
+            logger.error(f'Exception in UsuarioViewSet.list: {str(e)}', exc_info=True)
             from rest_framework.response import Response
             from rest_framework import status
-            return Response({'detail': 'internal_server_error', 'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'detail': 'internal_server_error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class PerfilViewSet(viewsets.ModelViewSet):
     queryset = Perfil.objects.all()
     serializer_class = MU_S.PerfilSerializer
-    authentication_classes = []
-    permission_classes = [AllowAny]
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, PerfilPermission]
+    app_name = 'Perfiles'
 
 class AplicacionViewSet(viewsets.ModelViewSet):
     queryset = Aplicacion.objects.all()
     serializer_class = MU_S.AplicacionSerializer
-    authentication_classes = []
-    permission_classes = [AllowAny]
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, PerfilPermission]
+    app_name = 'Aplicaciones'
 
 class PerfilAplicacionViewSet(viewsets.ModelViewSet):
     queryset = Perfil_Aplicacion.objects.all()
     serializer_class = MU_S.PerfilAplicacionSerializer
-    authentication_classes = []
-    permission_classes = [AllowAny]
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, PerfilPermission]
+    app_name = 'Perfiles'
 
 

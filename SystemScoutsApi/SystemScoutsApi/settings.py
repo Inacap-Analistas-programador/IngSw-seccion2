@@ -43,7 +43,7 @@ else:
     config = Config(EnvRepository())
 
 # CONFIGURACION BASICA
-SECRET_KEY = config('DJANGO_SECRET_KEY', default='fallback-secret-key')
+SECRET_KEY = config('DJANGO_SECRET_KEY')
 DEBUG = config('DJANGO_DEBUG', default=False, cast=bool)
 
 if not DEBUG:
@@ -183,6 +183,13 @@ AUTHENTICATION_BACKENDS = [
 SIMPLE_JWT = {
     "USER_ID_FIELD": "usu_id",
     "USER_ID_CLAIM": "user_id",
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": False,
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
+    "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
 AUTH_USER_MODEL = 'ApiCoreScouts.Usuario'
