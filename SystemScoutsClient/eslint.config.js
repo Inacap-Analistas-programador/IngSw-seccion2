@@ -20,6 +20,23 @@ export default defineConfig([
     },
   },
 
+  // Test files configuration
+  {
+    files: ['**/__tests__/**/*.{js,mjs,jsx}', '**/*.spec.{js,mjs,jsx}', '**/*.test.{js,mjs,jsx}'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+        describe: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        vi: 'readonly',
+      },
+    },
+  },
+
   js.configs.recommended,
   ...pluginVue.configs['flat/essential'],
   skipFormatting,
