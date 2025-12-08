@@ -87,16 +87,16 @@ class UsuarioAPITests(APITestCase):
         )
         self.app = Aplicacion.objects.create(
             apl_descripcion='Usuarios',
-            apl_icono='user-icon',
+            apl_descripcion='user-icon',
             apl_vigente=True
         )
         Perfil_Aplicacion.objects.create(
             pel_id=self.perfil,
             apl_id=self.app,
-            pap_ver=True,
-            pap_editar=True,
-            pap_eliminar=True,
-            pap_vigente=True
+            pea_consultar=True,
+            pea_modificar=True,
+            pea_eliminar=True,
+            pea_ingresar=True
         )
         self.usuario = Usuario.objects.create_user(
             usu_username='admin',
@@ -152,16 +152,16 @@ class PerfilAPITests(APITestCase):
         )
         self.app = Aplicacion.objects.create(
             apl_descripcion='Perfiles',
-            apl_icono='profile-icon',
+            apl_descripcion='profile-icon',
             apl_vigente=True
         )
         Perfil_Aplicacion.objects.create(
             pel_id=self.perfil,
             apl_id=self.app,
-            pap_ver=True,
-            pap_editar=True,
-            pap_eliminar=True,
-            pap_vigente=True
+            pea_consultar=True,
+            pea_modificar=True,
+            pea_eliminar=True,
+            pea_ingresar=True
         )
         self.usuario = Usuario.objects.create_user(
             usu_username='admin',
@@ -206,16 +206,16 @@ class PersonaAPITests(APITestCase):
         )
         self.app = Aplicacion.objects.create(
             apl_descripcion='Personas',
-            apl_icono='person-icon',
+            apl_descripcion='person-icon',
             apl_vigente=True
         )
         Perfil_Aplicacion.objects.create(
             pel_id=self.perfil,
             apl_id=self.app,
-            pap_ver=True,
-            pap_editar=True,
-            pap_eliminar=True,
-            pap_vigente=True
+            pea_consultar=True,
+            pea_modificar=True,
+            pea_eliminar=True,
+            pea_ingresar=True
         )
         self.usuario = Usuario.objects.create_user(
             usu_username='admin',
@@ -310,16 +310,16 @@ class CursoAPITests(APITestCase):
         )
         self.app = Aplicacion.objects.create(
             apl_descripcion='Cursos',
-            apl_icono='course-icon',
+            apl_descripcion='course-icon',
             apl_vigente=True
         )
         Perfil_Aplicacion.objects.create(
             pel_id=self.perfil,
             apl_id=self.app,
-            pap_ver=True,
-            pap_editar=True,
-            pap_eliminar=True,
-            pap_vigente=True
+            pea_consultar=True,
+            pea_modificar=True,
+            pea_eliminar=True,
+            pea_ingresar=True
         )
         self.usuario = Usuario.objects.create_user(
             usu_username='admin',
@@ -417,16 +417,16 @@ class PagoAPITests(APITestCase):
         )
         self.app = Aplicacion.objects.create(
             apl_descripcion='Pagos',
-            apl_icono='payment-icon',
+            apl_descripcion='payment-icon',
             apl_vigente=True
         )
         Perfil_Aplicacion.objects.create(
             pel_id=self.perfil,
             apl_id=self.app,
-            pap_ver=True,
-            pap_editar=True,
-            pap_eliminar=True,
-            pap_vigente=True
+            pea_consultar=True,
+            pea_modificar=True,
+            pea_eliminar=True,
+            pea_ingresar=True
         )
         self.usuario = Usuario.objects.create_user(
             usu_username='admin',
