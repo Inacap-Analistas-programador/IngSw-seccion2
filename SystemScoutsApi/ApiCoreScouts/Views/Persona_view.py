@@ -40,27 +40,25 @@ class PersonaViewSet(viewsets.ModelViewSet):
         ).prefetch_related(
             # Prefetch Persona_Curso con sus relaciones
             Prefetch(
-                'persona_curso',
-                Persona_Curso.objects.select_related(
+                'persona_curso_set',
+                queryset=Persona_Curso.objects.select_related(
                     'cus_id__cur_id',   # Curso_Seccion -> Curso
                     'rol_id',            # Rol
                     'ali_id',            # Alimentacion
                     'niv_id'             # Nivel
                 ).prefetch_related(
                     Prefetch(
-                        'persona_curso_estado',  # Persona_Estado_Curso
-                        Persona_Estado_Curso.objects.select_related('usu_id')
+                        'persona_estado_curso_set',  # Persona_Estado_Curso
+                        queryset=Persona_Estado_Curso.objects.select_related('usu_id')
                     )
                 )
             ),
             # Prefetch otras relaciones
-            Prefetch('persona_grupo__gru_id'),
-            Prefetch('persona_formador'),
-            Prefetch('persona_individual__car_id'),
-            Prefetch('persona_nivel__niv_id'),
-            Prefetch('persona_vehiculo')
+            Prefetch('persona_grupo_set', queryset=Persona_Grupo.objects.select_related('gru_id')),
+            Prefetch('persona_formador_set'),
+            Prefetch('persona_individual_set', queryset=Persona_Individual.objects.select_related('car_id')),
+            Prefetch('persona_nivel_set', queryset=Persona_Nivel.objects.select_related('niv_id')),
         ).all()
-        
         return queryset
     
     @action(detail=True, methods=['get'], url_path='cursos')
@@ -69,7 +67,7 @@ class PersonaViewSet(viewsets.ModelViewSet):
         try:
             persona = self.get_object()
             # Usar las relaciones ya precargadas
-            cursos_persona = persona.persona_curso.all()
+            cursos_persona = persona.persona_curso_set.all()
             serializer = MU_S.PersonaCursoSerializer(cursos_persona, many=True)
             return Response(serializer.data)
         except Exception as e:

@@ -138,8 +138,8 @@ CORS_ALLOW_HEADERS = [
 # PERMITIR EL USO DE CREDENCIALES Y COOKIES 
 CORS_ALLOW_CREDENTIALS = True
 
-# Disable automatic slash append for API endpoints
-APPEND_SLASH = False
+# Enable automatic slash append to fix 404s when client omits trailing slash
+APPEND_SLASH = True
 
 ROOT_URLCONF = 'SystemScoutsApi.urls'
 

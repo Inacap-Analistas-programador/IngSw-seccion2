@@ -34,7 +34,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.NOTICE('== Seed Aplicaciones & Permisos =='))
         created_apps = []
         for desc in APP_DESCRIPTIONS:
-            app_obj, created = Aplicacion.objects.get_or_create(APL_DESCRIPCION=desc, defaults={'APL_VIGENTE': True})
+            app_obj, created = Aplicacion.objects.get_or_create(apl_descripcion=desc, defaults={'apl_vigente': True})
             if created:
                 created_apps.append(desc)
         if created_apps:
@@ -43,33 +43,33 @@ class Command(BaseCommand):
             self.stdout.write('Todas las aplicaciones ya existían.')
 
         try:
-            admin_user = Usuario.objects.get(USU_USERNAME=admin_username)
+            admin_user = Usuario.objects.get(usu_username=admin_username)
         except Usuario.DoesNotExist:
             self.stdout.write(self.style.ERROR(f"Usuario '{admin_username}' no existe."))
             return
 
-        perfil = getattr(admin_user, 'PEL_ID', None)
+        perfil = getattr(admin_user, 'pel_id', None)
         if not perfil:
-            self.stdout.write(self.style.ERROR(f"Usuario '{admin_username}' no tiene perfil asignado (PEL_ID)."))
+            self.stdout.write(self.style.ERROR(f"Usuario '{admin_username}' no tiene perfil asignado (pel_id)."))
             return
 
-        self.stdout.write(f"Perfil admin: {getattr(perfil, 'PEL_DESCRIPCION', perfil.PEL_ID)} (ID={perfil.PEL_ID})")
+        self.stdout.write(f"Perfil admin: {getattr(perfil, 'pel_descripcion', perfil.pel_id)} (ID={perfil.pel_id})")
 
         for desc in APP_DESCRIPTIONS:
-            app_obj = Aplicacion.objects.get(APL_DESCRIPCION=desc)
+            app_obj = Aplicacion.objects.get(apl_descripcion=desc)
             pa, created = Perfil_Aplicacion.objects.get_or_create(
-                PEL_ID=perfil,
-                APL_ID=app_obj,
+                pel_id=perfil,
+                apl_id=app_obj,
                 defaults={
-                    'PEA_CONSULTAR': True,
-                    'PEA_INGRESAR': True if give_all else True,
-                    'PEA_MODIFICAR': True if give_all else True,
-                    'PEA_ELIMINAR': True if give_all else True,
+                    'pea_consultar': True,
+                    'pea_ingresar': True if give_all else True,
+                    'pea_modificar': True if give_all else True,
+                    'pea_eliminar': True if give_all else True,
                 }
             )
             if not created and give_all:
                 changed = False
-                for f in ['PEA_CONSULTAR','PEA_INGRESAR','PEA_MODIFICAR','PEA_ELIMINAR']:
+                for f in ['pea_consultar','pea_ingresar','pea_modificar','pea_eliminar']:
                     if not getattr(pa, f):
                         setattr(pa, f, True)
                         changed = True
