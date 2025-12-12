@@ -6,6 +6,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from ..Serializers import Curso_serializer as MC_S
 from ..Filters import curso_filter as CF
 from ..Permissions import PerfilPermission
+from rest_framework.permissions import AllowAny
 from django.db.models import Prefetch
 
 class StandardResultsSetPagination(PageNumberPagination):
@@ -17,8 +18,8 @@ class CursoViewSet(viewsets.ModelViewSet):
     serializer_class = MC_S.CursoSerializer
     filterset_class = CF.CursoFilter
     pagination_class = StandardResultsSetPagination
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated, PerfilPermission]
+    authentication_classes = []
+    permission_classes = [AllowAny]
     app_name = "Cursos"
     ACTION_PERMISSIONS = {
         'list': ('pea_consultar',),
@@ -40,17 +41,17 @@ class CursoViewSet(viewsets.ModelViewSet):
         ).prefetch_related(
             # Prefetch secciones del curso
             Prefetch(
-                'curso_seccion',
+                'curso_seccion_set',
                 Curso_Seccion.objects.select_related('ram_id')
             ),
             # Prefetch coordinadores del curso
             Prefetch(
-                'curso_coordinador',
+                'curso_coordinador_set',
                 Curso_Coordinador.objects.select_related('per_id', 'car_id')
             ),
             # Prefetch formadores del curso
             Prefetch(
-                'curso_formador',
+                'curso_formador_set',
                 Curso_Formador.objects.select_related('per_id', 'rol_id', 'cus_id__cur_id')
             )
         ).order_by('cur_estado', 'cur_descripcion')
@@ -119,8 +120,8 @@ class CursoSeccionViewSet(viewsets.ModelViewSet):
     serializer_class = MC_S.CursoSeccionSerializer
     filterset_class = CF.CursoSeccionFilter
     pagination_class = StandardResultsSetPagination
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated, PerfilPermission]
+    authentication_classes = []
+    permission_classes = [AllowAny]
     app_name = "Cursos"
     ACTION_PERMISSIONS = CursoViewSet.ACTION_PERMISSIONS
     
@@ -131,7 +132,7 @@ class CursoSeccionViewSet(viewsets.ModelViewSet):
             'ram_id'    # Rama
         ).prefetch_related(
             Prefetch(
-                'persona_curso',
+                'persona_curso_set',
                 Persona_Curso.objects.select_related('per_id', 'rol_id', 'ali_id', 'niv_id')
             )
         ).order_by('cus_seccion', 'cus_id')

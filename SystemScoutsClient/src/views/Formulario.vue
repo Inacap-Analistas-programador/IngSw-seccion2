@@ -19,8 +19,8 @@
         <div class="campo-curso">
           <select id="curso" v-model="cursoSeleccionado" required @change="handleCursoChange" style="color: #000;">
             <option value="" disabled selected hidden></option>
-            <option v-for="curso in listaCursosApi" :key="curso.CUR_ID" :value="curso.CUR_ID" style="color: #000;">
-              {{ curso.CUR_DESCRIPCION }}
+            <option v-for="curso in listaCursosApi" :key="curso.cur_id" :value="curso.cur_id" style="color: #000;">
+              {{ curso.cur_descripcion }}
             </option>
           </select>
           <label for="curso">
@@ -37,8 +37,8 @@
               @change="handleSeccionChange"
             >
               <option value="" disabled selected hidden></option>
-              <option v-for="seccion in listaSeccionesApi" :key="seccion.CUS_ID" :value="seccion.CUS_ID">
-                seccion {{ seccion.CUS_SECCION }} - rama {{ obtenerDescripcionRama(seccion.RAM_ID) }}
+              <option v-for="seccion in listaSeccionesApi" :key="seccion.cus_id" :value="seccion.cus_id">
+                {{ seccion.sec_descripcion }}
               </option>
             </select>
             <label for="seccionCurso">
@@ -151,8 +151,8 @@
     <label for="Region">Región:</label>
     <select id="Region" v-model="regionSeleccionada">
       <option disabled value="">Seleccione una región</option>
-      <option v-for="reg in listaRegionApi" :key="reg.REG_ID" :value="reg.REG_ID">
-        {{ reg.REG_DESCRIPCION }}
+      <option v-for="reg in listaRegionApi" :key="reg.reg_id" :value="reg.reg_id">
+        {{ reg.reg_descripcion }}
       </option>
     </select>
   </div>
@@ -160,10 +160,10 @@
 <div class="section-grid">
   <div class="campo">
     <label for="Provincia">Provincia:</label>
-    <select id="Provincia" v-model="provinciaSeleccionada">
+    <select id="Provincia" v-model="provinciaSeleccionada" :disabled="!regionSeleccionada">
       <option disabled value="">Seleccione una provincia</option>
-      <option v-for="prov in listaProvinciaApi" :key="prov.PRO_ID" :value="prov.PRO_ID">
-        {{ prov.PRO_DESCRIPCION }}
+      <option v-for="prov in listaProvinciaApi" :key="prov.pro_id" :value="prov.pro_id">
+        {{ prov.pro_descripcion }}
       </option>
     </select>
   </div>
@@ -177,45 +177,19 @@
 <!-- Agrupamos Ciudad / Comuna / Distrito en una fila de 3 columnas -->
 <transition name="desplegar">
   <div v-if="provinciaSeleccionada" class="section-grid-3" :key="provinciaSeleccionada">
-    <div class="campo">
-      <label for="ciudad">Ciudad:</label>
-      <select id="ciudad" v-model="ciudadSeleccionada">
-        <option disabled value="">Seleccione una ciudad</option>
-        <option v-for="ciudad in Object.keys(ciudadesDisponibles || {})" :key="ciudad" :value="ciudad">
-          {{ ciudad }}
-        </option>
-      </select>
-    </div>
+
 
     <div class="campo">
       <label for="comuna">Comuna:</label>
-      <select id="comuna" v-model="comunaSeleccionada">
+      <select id="comuna" v-model="comunaSeleccionada" :disabled="!provinciaSeleccionada">
         <option disabled value="">Seleccione una comuna</option>
-        <option v-for="comuna in listaComunaApi" :key="comuna.COM_ID" :value="comuna.COM_ID">
-          {{ comuna.COM_DESCRIPCION }}
+        <option v-for="comuna in listaComunaApi" :key="comuna.com_id" :value="comuna.com_id">
+          {{ comuna.com_descripcion }}
         </option>
       </select>
     </div>
 
-    <div class="campo">
-      <label for="distrito">Distrito:</label>
-      <select id="distrito" v-model="distritoSeleccionado">
-        <option disabled value="">Seleccione su distrito</option>
-        <option value="Concepcion">Concepción</option>
-        <option value="Talcahuano - Hualpen">Talcahuano - Hualpén</option>
-        <option value="Rio Andalien">Río Andalién</option>
-        <option value="BioBio">Biobío</option>
-        <option value="Nahuelbuta">Nahuelbuta</option>
-        <option value="Equipo Distrital">Equipo Distrital</option>
-        <option value="Equipo Zonal">Equipo Zonal</option>
-        <option value="Equipo Nacional">Equipo Nacional</option>
-        <option value="Zona Ñuble">Zona Ñuble</option>
-        <option value="Zona Los Lagos">Zona Los Lagos</option>
-        <option value="Zona La Frontera">Zona La Frontera</option>
-        <option value="Zona de los Rios">Zona de los Ríos</option>
-        <option value="Otro">Otro</option>
-      </select>
-    </div>
+
   </div>
 </transition>
 
@@ -225,8 +199,8 @@
           <label for="estadoCivil">Estado Civil:</label>
           <select id="estadoCivil" v-model="estadoCivil">
             <option disabled value="">Seleccione su estado civil</option>
-            <option v-for="item in listaEstadoCivilApi" :key="item.ESC_ID" :value="item.ESC_ID">
-              {{ item.ESC_DESCRIPCION }}
+            <option v-for="item in listaEstadoCivilApi" :key="item.esc_id" :value="item.esc_id">
+              {{ item.esc_descripcion }}
             </option>
           </select>
         </div>
@@ -403,57 +377,9 @@
         <label for="grupo">Zona al que pertenece:</label>
         <select id="grupo" v-model="zonaSeleccionada" @change="handleZonaChange">
           <option disabled value="">Seleccione su zona</option>
-          <option value="Alcatipay">Alcatipay</option>
-          <option value="Alfa Cruz">Alfa Cruz</option>
-          <option value="Alpha y Omega">Alpha y Omega</option>
-          <option value="Andalien">Andalien</option>
-          <option value="Axis Mundi">Axis Mundi</option>
-          <option value="Baden Powell - Tome">Baden Powell - Tomé</option>
-          <option value="Buen Pastor">Buen Pastor</option>
-          <option value="Buena Aventura">Buena Aventura</option>
-          <option value="Callaqui">Callaqui</option>
-          <option value="Catiray">Catiray</option>
-          <option value="Elcan Mapu">Elcan Mapu</option>
-          <option value="Enrique Valdebenito">Enrique Valdebenito</option>
-          <option value="Equipo Zonal">Equipo Zonal</option>
-          <option value="Espíritu Santo">Espíritu Santo</option>
-          <option value="Fresia Müller Ruiz">Fresia Müller Ruiz</option>
-          <option value="Halcones Negros">Halcones Negros</option>
-          <option value="Helen Keller">Helen Keller</option>
-          <option value="Huilliche">Huilliche</option>
-          <option value="Inmaculada Concepción de Talcahuano">Inmaculada Concepción de Talcahuano</option>
-          <option value="Kutral Üinkelen">Kutral Üinkelen</option>
-          <option value="La Ascensión">La Ascensión</option>
-          <option value="La Asunción">La Asunción</option>
-          <option value="Lafkenche">Lafkenche</option>
-          <option value="Lemu Inalaf">Lemu Inalaf</option>
-          <option value="Liceo Alemán del Verbo Divino">Liceo Alemán del Verbo Divino</option>
-          <option value="Mahuidanche">Mahuidanche</option>
-          <option value="Manutara">Manutara</option>
-          <option value="Mapu Antu">Mapu Antu</option>
-          <option value="Mapu Ñuke">Mapu Ñuke</option>
-          <option value="Monte Kenya">Monte Kenya</option>
-          <option value="Namuncura">Namuncura</option>
-          <option value="Pehuen">Pehuen</option>
-          <option value="Pellu Wellang - Arauco">Pellu Wellang - Arauco</option>
-          <option value="Peulla">Peulla</option>
-          <option value="Rañileufu">Rañileufu</option>
-          <option value="Rosa de los Vientos">Rosa de los Vientos</option>
-          <option value="Rucapeñihue">Rucapeñihue</option>
-          <option value="Sagrada Familia">Sagrada Familia</option>
-          <option value="Sagrados Corazones">Sagrados Corazones</option>
-          <option value="Salesiano">Salesiano</option>
-          <option value="Salesianos Concepción">Salesianos Concepción</option>
-          <option value="San Ignacio de Loyola">San Ignacio de Loyola</option>
-          <option value="San Pablo">San Pablo</option>
-          <option value="San Rafael">San Rafael</option>
-          <option value="San Sebastian">San Sebastián</option>
-          <option value="Santa Bárbara">Santa Bárbara</option>
-          <option value="Santa Cecilia">Santa Cecilia</option>
-          <option value="Santa María">Santa María</option>
-          <option value="Tricolor Chileno">Tricolor Chileno</option>
-          <option value="Wetripantu">Wetripantu</option>
-          <option value="otro">Otro</option>
+          <option v-for="zona in listaZonaApi" :key="zona.zon_id" :value="zona.zon_id">
+              {{ zona.zon_descripcion }}
+          </option>
         </select>
 
     <!--:::::::::::::: TEXTAREA QUE SE HABILITA SOLO AL ELEGIR "OTRO"::::::::::::::::::::: -->
@@ -471,17 +397,25 @@
                           </Transition>
     </div>
 
+      <!-- :::::::::::::::::: DISTRITO ::::::::::::::::::::::::: -->
+    <div class="campo">
+      <label for="distrito">Distrito:</label>
+        <select id="distrito" v-model="distritoSeleccionado" :disabled="!zonaSeleccionada">
+          <option disabled value="">Seleccione su distrito</option>
+          <option v-for="dist in listaDistritoApi" :key="dist.dis_id" :value="dist.dis_id">
+            {{ dist.dis_descripcion }}
+          </option>
+        </select>
+    </div>
+
       <!-- :::::::::::::::::: GRUPO AL QUE PERTENECE ::::::::::::::::::::::::: -->
     <div class="campo">
       <label for="rama">Grupo al que pertenece:</label>
-      <select id="rama" v-model="grupoPertenece">
+      <select id="rama" v-model="grupoPertenece" :disabled="!distritoSeleccionado">
         <option disabled value="">Seleccione su grupo</option>
-        <option value="Lobatos">Lobatos</option>
-        <option value="Golondrinas">Golondrinas</option>
-        <option value="Guias">Guías</option>
-        <option value="Scouts">Scouts</option>
-        <option value="Pioneros">Pioneros</option>
-        <option value="Caminantes">Caminantes</option>
+        <option v-for="grupo in listaGrupoApi" :key="grupo.gru_id" :value="grupo.gru_id">
+          {{ grupo.gru_descripcion }}
+        </option>
       </select>
     </div>
   </div>
@@ -492,13 +426,9 @@
       <label for="rol">Rol en el curso:</label>
       <select id="rol" v-model="rolSeleccionado">
         <option disabled value="">Seleccione su rol</option>
-        <option value="participante">Participante</option>
-        <option value="apoyo_formadores">Apoyo a formadores</option>
-        <option value="formador">Formador(a)</option>
-        <option value="equipo_servicio">Equipo de servicio</option>
-        <option value="equipo_organizador">Equipo organizador</option>
-        <option value="equipo_salud">Equipo de salud</option>
-        <option value="otro">Otro</option>
+        <option v-for="rol in listaRolApi" :key="rol.rol_id" :value="rol.rol_id">
+            {{ rol.rol_descripcion }}
+        </option>
       </select>
 
   <!-- TEXTAREA BLOQUEADO POR DEFECTO, SE HABILITA SI ELIGE "OTRO" -->
@@ -522,15 +452,16 @@
       <label for="nivelFormacion">Nivel de formación:</label>
       <select id="nivelFormacion" v-model="nivelFormacion">
         <option disabled value="">Seleccione su nivel</option>
-        <option value="inicial">Nivel inicial</option>
-        <option value="mayor">Mayor a inicial</option>
+        <option v-for="nivel in listaNivelApi" :key="nivel.niv_id" :value="nivel.niv_id">
+           {{ nivel.niv_descripcion }}
+        </option>
       </select>
     </div>
   </div>
 
   <!-- :::::::::::::::::: CHECKBOXES DE NIVELES (Mayor a Inicial) ::::::::::::::::::::::::: -->
   <transition name="desplegar">
-    <div v-if="nivelFormacion === 'mayor'" class="niveles-container">
+    <div v-if="nivelFormacion > 1" class="niveles-container">
       <div class="section-grid">
         <!-- Columna izquierda: Medio -->
         <div class="nivel-column">
@@ -690,23 +621,9 @@
     <label for="alimentacion">Tipo de alimentación:</label>
     <select id="alimentacion" v-model="tipoAlimentacion">
       <option disabled value="">Seleccione su tipo de alimentación</option>
-
-      <!-- Alimentación común -->
-      <option value="omnivora">Omnívora</option>
-      <option value="vegetariana">Vegetariana</option>
-      <option value="vegana">Vegana</option>
-      <option value="pescetariana">Pescetariana</option>
-      <option value="flexitariana">Flexitariana</option>
-
-      <!-- Dietas especiales por enfermedades -->
-      <option value="diabetica">Dieta para diabetes</option>
-      <option value="hipertension">Dieta para hipertensión</option>
-      <option value="celiaca">Dieta sin gluten (celíaca)</option>
-      <option value="baja_sodio">Dieta baja en sodio</option>
-      <option value="baja_lipidos">Dieta baja en lípidos/colesterol</option>
-      <option value="renal">Dieta renal</option>
-      <option value="intolerancia_lactosa">Dieta sin lactosa</option>
-      <option value="ninguna">Ninguna</option>
+      <option v-for="alim in listaAlimentacionApi" :key="alim.ali_id" :value="alim.ali_id">
+          {{ alim.ali_descripcion }}
+      </option>
     </select>
   </div>
 </div>
@@ -963,14 +880,22 @@ const listaRamas = ref([]);
 
 // Devuelve la descripción de la rama por su ID
 const obtenerDescripcionRama = (ramaId) => {
-  const rama = listaRamas.value.find(r => r.RAM_ID === ramaId);
-  return rama ? rama.RAM_DESCRIPCION : ramaId;
+  const rama = listaRamas.value.find(r => r.ram_id === ramaId);
+  return rama ? rama.ram_descripcion : ramaId;
 };
 
 import { cursos as cursosApi, secciones as seccionesApi } from '../services/cursosService';
 import { estadoCivilApi } from '../services/estadoCivilService';
 import { provinciaApi } from '../services/provinciaService';
 import { comunaApi } from '../services/comunaService';
+import { 
+    zona as zonaApi, 
+    distrito as distritoApi, 
+    grupo as grupoApi, 
+    rol as rolApi, 
+    nivel as nivelApi, 
+    alimentacion as alimentacionApi 
+} from '../services/mantenedoresService';
 
 // :::::::::::::::::: MANEJO DE SELECCIÓN DE CURSO Y SECCIÓN :::::::::::::::::::::::::
 // :::::::::::::::::: CURSOS DESDE API :::::::::::::::::::::::::
@@ -982,6 +907,102 @@ const listaComunaApi = ref([]);
 // Estado civil desde API
 const listaEstadoCivilApi = ref([]);
 const listaProvinciaApi = ref([]);
+
+// Nuevas listas para mantenedores
+const listaZonaApi = ref([]);
+const listaDistritoApi = ref([]);
+const listaGrupoApi = ref([]);
+const listaRolApi = ref([]);
+const listaNivelApi = ref([]);
+const listaAlimentacionApi = ref([]);
+
+// :::::::::::::::::: VARIABLES PARA CAPTURAR VALORES (Movidas al inicio) :::::::::::::::::::::::::
+const observacionesCurso = ref("");
+const tieneLimitacion = ref("");
+const detalleLimitacion = ref("");
+const zonaSeleccionada = ref("");
+const otraZona = ref("");
+const grupoPertenece = ref("");
+const nombre = ref("");
+const apellidoPaterno = ref("");
+const apellidoMaterno = ref("");
+const rut = ref("");
+const fechaNacimiento = ref("");
+const email = ref("");
+const religion = ref("");
+const tipoContactoSeleccionado = ref("");
+const numeroContacto = ref("");
+const estadoCivil = ref("");
+const direccion = ref("");
+const edad = ref(null);
+const consideraciones = ref("");
+const necesitaAlojamiento = ref("");
+const profesion = ref("");
+const apodoCredencial = ref("");
+const tieneAlergiaEnfermedad = ref("");
+const detalleAlergiaEnfermedad = ref("");
+const tipoAlimentacion = ref("");
+const rolSeleccionado = ref("");
+const rolOtro = ref("");
+const nivelFormacion = ref("");
+const ramasMedioSeleccionadas = ref([]);
+const ramasAvanzadoSeleccionadas = ref([]);
+const mmaaValor = ref("");
+const grupoSeleccionado = ref("");
+const grupoOtro = ref("");
+const ramaSeleccionada = ref("");
+
+// Datos para los checkboxes de ramas (se pueden conectar a una API)
+const ramasMedio = ref([
+  { value: "rama1", label: "Rama 1" },
+  { value: "rama2", label: "Rama 2" },
+  { value: "rama3", label: "Rama 3" },
+  { value: "rama4", label: "Rama 4" },
+  { value: "rama5", label: "Rama 5" },
+  { value: "rama6", label: "Rama 6" }
+]);
+
+const ramasAvanzado = ref([
+  { value: "rama1", label: "Rama 1" },
+  { value: "rama2", label: "Rama 2" },
+  { value: "rama3", label: "Rama 3" },
+  { value: "rama4", label: "Rama 4" },
+  { value: "rama5", label: "Rama 5" },
+  { value: "rama6", label: "Rama 6" }
+]);
+const opcionCargo = ref("");
+const cargoTexto = ref("");
+const añosUnidad = ref("");
+const mesesUnidad = ref("");
+const distritoSeleccionado = ref("");
+const distritoOtro = ref("");
+const nivelSeleccionado = ref("");
+const ramaMedioSeleccionada = ref("");
+const ramaAvanzadoSeleccionada = ref("");
+const nombreEmergencia = ref("");
+const numeroEmergencia = ref("");
+const tieneNumeroFijo = ref("");
+const numeroFijoEmergencia = ref("");
+const haTrabajadoConNinos = ref("");
+const añosTrabajoNinos = ref("");
+const mesesTrabajoNinos = ref("");
+const esBeneficiario = ref("");
+const tiempoBeneficiario = ref("");
+const esMiembroActivo = ref("");
+const patenteVehiculo = ref("");
+const vehiculoPropio = ref("");
+const patentePropia = ref("");
+const marcaPropia = ref("");
+const modeloPropio = ref("");
+const cursoSeleccionado = ref("");
+const seccionCurso = ref("");
+const añosTiempoBeneficiario = ref("");
+const mesesTiempoBeneficiario = ref("");
+
+const regionSeleccionada = ref("");
+const provinciaSeleccionada = ref("");
+
+
 
 onMounted(async () => {
   // Cargar ramas
@@ -1000,25 +1021,83 @@ onMounted(async () => {
       } catch {
         listaRegionApi.value = [];
       }
-    // Cargar comunas cuando cambia la región seleccionada
+
+
+    // Cuando cambia la Región: Cargar Provincias
     watch(regionSeleccionada, async (newVal) => {
+      provinciaSeleccionada.value = "";
+      comunaSeleccionada.value = "";
+      listaProvinciaApi.value = [];
+      listaComunaApi.value = [];
+
       if (newVal) {
         try {
-          const comunaResp = await comunaApi.list({ region: newVal });
-          listaComunaApi.value = comunaResp.results || comunaResp || [];
-        } catch {
-          listaComunaApi.value = [];
+          // Filtramos provincias por region_id
+          const resp = await provinciaApi.list({ region_id: newVal });
+          listaProvinciaApi.value = resp.results || resp || [];
+        } catch (e) {
+          console.error('Error fetching provinces:', e);
+          listaProvinciaApi.value = [];
         }
-      } else {
-        listaComunaApi.value = [];
       }
     });
+
+
+    // Cuando cambia la Provincia: Cargar Comunas
+    watch(provinciaSeleccionada, async (newVal) => {
+      comunaSeleccionada.value = "";
+      listaComunaApi.value = [];
+
+      if (newVal) {
+        try {
+          // Filtramos comunas por provincia_id
+          const resp = await comunaApi.list({ provincia_id: newVal });
+          listaComunaApi.value = resp.results || resp || [];
+        } catch (e) {
+            console.error('Error fetching comunas:', e);
+            listaComunaApi.value = [];
+        }
+      }
+    });
+
+    // Cargar distritos cuando cambia la zona seleccionada
+    watch(zonaSeleccionada, async (newVal) => {
+      distritoSeleccionado.value = "";
+      grupoSeleccionado.value = "";
+      listaDistritoApi.value = [];
+      listaGrupoApi.value = [];
+
+      if (newVal) {
+        try {
+          const distResp = await distritoApi.list({ zon_id: newVal });
+          listaDistritoApi.value = distResp.results || distResp || [];
+        } catch {
+          listaDistritoApi.value = [];
+        }
+      }
+    });
+
+    // Cargar grupos cuando cambia el distrito seleccionado
+    watch(distritoSeleccionado, async (newVal) => {
+        grupoSeleccionado.value = "";
+        listaGrupoApi.value = [];
+        
+      if (newVal) {
+        try {
+          const grupoResp = await grupoApi.list({ dis_id: newVal });
+          listaGrupoApi.value = grupoResp.results || grupoResp || [];
+        } catch {
+          listaGrupoApi.value = [];
+        }
+      }
+    });
+
   try {
     // Solicita todos los cursos con un page_size grande
     const respuesta = await cursosApi.list({ page_size: 2000 });
     listaCursosApi.value = (respuesta.results || respuesta || [])
       .map(curso => ({ ...curso }))
-      .sort((a, b) => a.CUR_ID - b.CUR_ID);
+      .sort((a, b) => a.cur_id - b.cur_id);
   } catch (error) {
     console.error('Error al obtener cursos:', error);
   }
@@ -1029,12 +1108,35 @@ onMounted(async () => {
   } catch {
     listaEstadoCivilApi.value = [];
   }
-  // Provincia
+  
+  // NOTE: Ya no cargamos provincias ni comunas inicialmente, dependen de la selección cascada
+
+  // Cargar mantenedores generales
   try {
-    const provinciaResp = await provinciaApi.list();
-    listaProvinciaApi.value = provinciaResp.results || provinciaResp || [];
-  } catch {
-    listaProvinciaApi.value = [];
+      console.log('Loading mantenedores...');
+      const [zonaResp, rolResp, nivelResp, alimResp] = await Promise.all([
+          zonaApi.list({ page_size: 100 }),
+          rolApi.list(),
+          nivelApi.list(),
+          alimentacionApi.list()
+      ]);
+      console.log('Zona response:', zonaResp);
+      
+      const zonas = zonaResp.results || zonaResp || [];
+      console.log('Zonas parsed:', zonas);
+      listaZonaApi.value = [...zonas, { zon_id: 'otro', zon_descripcion: 'Otro' }];
+      
+      const roles = rolResp.results || rolResp || [];
+      listaRolApi.value = [...roles, { rol_id: 'otro', rol_descripcion: 'Otro' }];
+      
+      const niveles = nivelResp.results || nivelResp || [];
+      listaNivelApi.value = niveles;
+      
+      const alims = alimResp.results || alimResp || [];
+      listaAlimentacionApi.value = alims; // Alimentacion usually has 'Ninguna' or specific, maybe add 'Otro' if requested but DB had 'Ninguna'
+
+  } catch (e) {
+      console.error("Error cargando mantenedores", e);
   }
 });
 
@@ -1047,8 +1149,8 @@ const handleCursoChange = async () => {
   }
 
   try {
-    // La API espera el parámetro CUR_ID
-    const respuestaSecciones = await seccionesApi.list({ CUR_ID: cursoSeleccionado.value });
+    // La API espera el parámetro cur_id
+    const respuestaSecciones = await seccionesApi.list({ cur_id: cursoSeleccionado.value });
     listaSeccionesApi.value = respuestaSecciones.results || respuestaSecciones || [];
     console.log('Secciones obtenidas para el curso:', listaSeccionesApi.value);
   } catch (error) {
@@ -1152,91 +1254,7 @@ onMounted(() => {
   });
 });
 
-// :::::::::::::::::: VARIABLES PARA CAPTURAR VALORES :::::::::::::::::::::::::
-const observacionesCurso = ref("");
-const tieneLimitacion = ref("");
-const detalleLimitacion = ref("");
-const zonaSeleccionada = ref("");
-const otraZona = ref("");
-const grupoPertenece = ref("");
-const nombre = ref("");
-const apellidoPaterno = ref("");
-const apellidoMaterno = ref("");
-const rut = ref("");
-const fechaNacimiento = ref("");
-const email = ref("");
-const religion = ref("");
-const tipoContactoSeleccionado = ref("");
-const numeroContacto = ref("");
-const estadoCivil = ref("");
-const direccion = ref("");
-const edad = ref(null);
-const consideraciones = ref("");
-const necesitaAlojamiento = ref("");
-const profesion = ref("");
-const apodoCredencial = ref("");
-const tieneAlergiaEnfermedad = ref("");
-const detalleAlergiaEnfermedad = ref("");
-const tipoAlimentacion = ref("");
-const rolSeleccionado = ref("");
-const rolOtro = ref("");
-const nivelFormacion = ref("");
-const ramasMedioSeleccionadas = ref([]);
-const ramasAvanzadoSeleccionadas = ref([]);
-const mmaaValor = ref("");
-const grupoSeleccionado = ref("");
-const grupoOtro = ref("");
-const ramaSeleccionada = ref("");
-
-// Datos para los checkboxes de ramas (se pueden conectar a una API)
-const ramasMedio = ref([
-  { value: "rama1", label: "Rama 1" },
-  { value: "rama2", label: "Rama 2" },
-  { value: "rama3", label: "Rama 3" },
-  { value: "rama4", label: "Rama 4" },
-  { value: "rama5", label: "Rama 5" },
-  { value: "rama6", label: "Rama 6" }
-]);
-
-const ramasAvanzado = ref([
-  { value: "rama1", label: "Rama 1" },
-  { value: "rama2", label: "Rama 2" },
-  { value: "rama3", label: "Rama 3" },
-  { value: "rama4", label: "Rama 4" },
-  { value: "rama5", label: "Rama 5" },
-  { value: "rama6", label: "Rama 6" }
-]);
-const opcionCargo = ref("");
-const cargoTexto = ref("");
-const añosUnidad = ref("");
-const mesesUnidad = ref("");
-const distritoSeleccionado = ref("");
-const distritoOtro = ref("");
-const nivelSeleccionado = ref("");
-const ramaMedioSeleccionada = ref("");
-const ramaAvanzadoSeleccionada = ref("");
-const nombreEmergencia = ref("");
-const numeroEmergencia = ref("");
-const tieneNumeroFijo = ref("");
-const numeroFijoEmergencia = ref("");
-const haTrabajadoConNinos = ref("");
-const añosTrabajoNinos = ref("");
-const mesesTrabajoNinos = ref("");
-const esBeneficiario = ref("");
-const tiempoBeneficiario = ref("");
-const esMiembroActivo = ref("");
-const patenteVehiculo = ref("");
-const vehiculoPropio = ref("");
-const patentePropia = ref("");
-const marcaPropia = ref("");
-const modeloPropio = ref("");
-const cursoSeleccionado = ref("");
-const seccionCurso = ref("");
-const añosTiempoBeneficiario = ref("");
-const mesesTiempoBeneficiario = ref("");
-
-const regionSeleccionada = ref("");
-const provinciaSeleccionada = ref("");
+// (Moved to top)
 // const provinciaSeleccionadaValor = computed(() => {
 //   return listaProvinciaApi.value.find(p => p.PRO_ID === provinciaSeleccionada.value) || null;
 // });
@@ -1421,103 +1439,7 @@ function eliminarFoto() {
 
 
 
-// :::::::::::::::::: LISTA DE REGIONES, CIUDADES Y COMUNAS ::::::::::::::::::::::::: 
-const comunasPorRegion = {
-  "Arica y Parinacota": {
-    "Arica": ["Arica"],
-    "Putre": ["Putre"],
-    "General Lagos": ["General Lagos"],
-    "Camarones": ["Camarones"]
-  },
-  "Tarapacá": {
-    "Iquique": ["Iquique", "Alto Hospicio"],
-    "Tamarugal": ["Pozo Almonte", "Camiña", "Colchane", "Huara", "Pica"]
-  },
-  "Antofagasta": {
-    "Antofagasta": ["Antofagasta", "Mejillones", "Sierra Gorda", "Taltal"],
-    "El Loa": ["Calama", "Ollagüe", "San Pedro de Atacama"],
-    "Tocopilla": ["Tocopilla", "María Elena"]
-  },
-  "Atacama": {
-    "Copiapó": ["Copiapó", "Caldera", "Tierra Amarilla"],
-    "Chañaral": [],
-    "Limarí": ["Ovalle", "Combarbalá", "Monte Patria", "Punitaqui", "Río Hurtado"],
-    "Choapa": ["Illapel", "Canela", "Los Vilos", "Salamanca"]
-  },
-  "Valparaíso": {
-    "Valparaíso": ["Valparaíso", "Viña del Mar", "Concón", "Quintero", "Puchuncaví"],
-    "Isla de Pascua": ["Isla de Pascua"],
-    "Los Andes": ["Los Andes", "Calle Larga", "Rinconada", "San Esteban"],
-    "Petorca": ["La Ligua", "Cabildo", "Papudo", "Petorca", "Zapallar"],
-    "Quillota": ["Quillota", "La Calera", "Hijuelas", "La Cruz", "Nogales"],
-    "San Antonio": ["San Antonio", "Algarrobo", "Cartagena", "El Quisco", "El Tabo", "Santo Domingo"],
-    "San Felipe de Aconcagua": ["San Felipe", "Catemu", "Llay-Llay", "Panquehue", "Putaendo", "Santa María"],
-    "Marga Marga": ["Quilpué", "Limache", "Olmué", "Villa Alemana"]
-  },
-  "Metropolitana de Santiago": {
-    "Santiago": ["Santiago", "Cerrillos", "Cerro Navia", "Conchalí", "El Bosque", "Estación Central", "Huechuraba", "Independencia", "La Cisterna", "La Florida", "La Granja", "La Pintana", "La Reina", "Las Condes", "Lo Barnechea", "Lo Espejo", "Lo Prado", "Macul", "Maipú", "Ñuñoa", "Pedro Aguirre Cerda", "Peñalolén", "Providencia", "Pudahuel", "Puente Alto", "Quilicura", "Quinta Normal", "Recoleta", "Renca", "San Joaquín", "San Miguel", "San Ramón", "Vitacura"],
-    "Cordillera": ["San José de Maipo"],
-    "Chacabuco": ["Colina", "Lampa", "Tiltil"],
-    "Maipo": ["San Bernardo", "Buin", "Calera de Tango", "Paine"],
-    "Talagante": ["Talagante", "El Monte", "Isla de Maipo", "Padre Hurtado", "Peñaflor"],
-    "Melipilla": ["Melipilla", "Alhué", "Curacaví", "María Pinto", "San Pedro"]
-  },
-  "Libertador General Bernardo O'Higgins": {
-    "Cachapoal": ["Rancagua", "Codegua", "Coinco", "Coltauco", "Doñihue", "Graneros", "Las Cabras", "Machalí", "Malloa", "Mostazal", "Olivar", "Peumo", "Pichidegua", "Quinta de Tilcoco", "Rengo", "Requínoa", "San Vicente"],
-    "Cardenal Caro": ["Pichilemu", "La Estrella", "Litueche", "Marchigüe", "Navidad", "Paredones"],
-    "Colchagua": ["San Fernando", "Chépica", "Chimbarongo", "Lolol", "Nancagua", "Palmilla", "Peralillo", "Placilla", "Pumanque", "Santa Cruz"]
-  },
-  "Maule": {
-    "Talca": ["Talca", "Constitución", "Curepto", "Empedrado", "Maule", "Pelarco", "Pencahue", "Río Claro", "San Clemente", "San Rafael"],
-    "Cauquenes": ["Cauquenes", "Chanco", "Pelluhue"],
-    "Curicó": ["Curicó", "Hualañé", "Licantén", "Molina", "Rauco", "Romeral", "Sagrada Familia", "Teno", "Vichuquén"],
-    "Linares": ["Linares", "Colbún", "Longaví", "Parral", "Retiro", "San Javier", "Villa Alegre", "Yerbas Buenas"]
-  },
-  "Ñuble": {
-    "Diguillín": ["Bulnes", "Chillán", "Chillán Viejo", "El Carmen", "Pemuco", "Pinto", "Quillón", "San Ignacio", "Yungay"],
-    "Itata": ["Cobquecura", "Coelemu", "Ninhue", "Portezuelo", "Quirihue", "Ránquil", "Treguaco"],
-    "Punilla": ["Coihueco", "Ñiquén", "San Carlos", "San Fabián", "San Nicolás"]
-  },
-  "Biobío": {
-    "Concepción": ["Concepción", "Coronel", "Chiguayante", "Florida", "Hualqui", "Lota", "Penco", "San Pedro de la Paz", "Santa Juana", "Talcahuano", "Tomé", "Hualpén"],
-    "Arauco": ["Lebu", "Arauco", "Cañete", "Contulmo", "Curanilahue", "Los Álamos", "Tirúa"],
-    "Biobío": ["Los Ángeles", "Antuco", "Cabrero", "Laja", "Mulchén", "Nacimiento", "Negrete", "Quilaco", "Quilleco", "San Rosendo", "Santa Bárbara", "Tucapel", "Yumbel", "Alto Biobío"]
-  },
-  "La Araucanía": {
-    "Cautín": ["Temuco", "Carahue", "Cunco", "Curarrehue", "Freire", "Galvarino", "Gorbea", "Lautaro", "Loncoche", "Melipeuco", "Nueva Imperial", "Padre Las Casas", "Perquenco", "Pitrufquén", "Pucón", "Saavedra", "Teodoro Schmidt", "Toltén", "Vilcún", "Villarrica"],
-    "Malleco": ["Angol", "Collipulli", "Curacautín", "Ercilla", "Lonquimay", "Los Sauces", "Purén", "Renaico", "Traiguén", "Victoria"]
-  },
-  "Los Ríos": {
-    "Valdivia": ["Valdivia", "Corral", "Lanco", "Los Lagos", "Máfil", "Mariquina", "Paillaco", "Panguipulli"],
-    "Ranco": ["La Unión", "Futrono", "Lago Ranco", "Río Bueno"]
-  },
-  "Los Lagos": {
-    "Llanquihue": ["Puerto Montt", "Calbuco", "Cochamó", "Fresia", "Frutillar", "Llanquihue", "Los Muermos", "Maullín", "Puerto Varas"],
-    "Chiloé": ["Castro", "Ancud", "Chonchi", "Curaco de Vélez", "Dalcahue", "Puqueldón", "Queilén", "Quellón", "Quemchi", "Quinchao"],
-    "Osorno": ["Osorno", "Puerto Octay", "Purranque", "Puyehue", "Río Negro", "San Juan de la Costa", "San Pablo"]
-  },
-  "Aysén del General Carlos Ibáñez del Campo": {
-    "Coyhaique": ["Coyhaique", "Lago Verde"],
-    "Aysén": ["Aysén", "Cisnes", "Guaitecas"],
-    "General Carrera": ["Cochrane", "O'Higgins"],
-    "Capitán Prat": ["Tortel"]
-  },
-  "Magallanes y de la Antártica Chilena": {
-    "Magallanes": ["Punta Arenas", "Laguna Blanca", "Río Verde", "San Gregorio"],
-    "Antártica": ["Cabo de Hornos", "Antártica"],
-    "Tierra del Fuego": ["Porvenir", "Primavera", "Timaukel"],
-    "Última Esperanza": ["Puerto Natales", "Torres del Paine"]
-  }
-};
 
-// :::::::::::::::::: LOGICA FILTRO DE LISTA DE CUIDADES Y COMUNAS :::::::::::::::::::::::::
-
-// Ciudades disponibles según la región elegida
-const ciudadesDisponibles = computed(() => {
-  return regionSeleccionada.value ? comunasPorRegion[regionSeleccionada.value] : {};
-});
-
-// Comunas disponibles según la ciudad elegida
 // const comunasDisponibles = computed(() => {
 //   if (regionSeleccionada.value && ciudadSeleccionada.value) {
 //     return comunasPorRegion[regionSeleccionada.value][ciudadSeleccionada.value] || [];

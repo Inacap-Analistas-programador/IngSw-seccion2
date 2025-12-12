@@ -78,9 +78,15 @@ class CursoCoordinadorSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class CursoSeccionSerializer(serializers.ModelSerializer):
+    sec_descripcion = serializers.SerializerMethodField()
+
     class Meta:
         model = Curso_Seccion
         fields = '__all__'
+
+    def get_sec_descripcion(self, obj):
+        rama_desc = obj.ram_id.ram_descripcion if obj.ram_id else "Sin Rama"
+        return f"seccion {obj.cus_seccion} - rama {rama_desc}"
 
 class CursoFormadorSerializer(serializers.ModelSerializer):
     class Meta:
