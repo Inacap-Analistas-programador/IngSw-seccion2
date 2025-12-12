@@ -308,9 +308,9 @@ export default {
             branchName: person.rama || person.branchName || '',
             vehicle: person.PER_VEHICULO === 1 || person.vehicle || false,
             dietType: person.PER_ALIMENTACION || person.dietType || person.alimentacion || '',
-            paymentConfirmed: person.paymentConfirmed || person.PAGO_CONFIRMADO || person.payment_confirmed || false,
-            paymentStatus: person.payment_status || (person.paymentConfirmed ? 'Confirmado' : 'Pendiente'),
-            accreditationStatus: person.acreditado || person.accredited || person.accreditationStatus || 'Pendiente'
+            paymentConfirmed: person.pago_confirmado === true || person.paymentConfirmed === true || person.PAGO_CONFIRMADO === true,
+            paymentStatus: (person.pago_confirmado || person.paymentConfirmed) ? 'Confirmado' : 'Pendiente',
+            accreditationStatus: (person.acreditado === true || person.accredited === true || person.accreditationStatus === 'Acreditado') ? 'Acreditado' : 'Pendiente'
           }
           this.selectedParticipant = Object.assign({}, p)
           this.searchNotFound = false
@@ -350,11 +350,11 @@ export default {
         const res = await authViewsService.acreditacion_manual_acreditar(payload)
 
         // Si la API devolvió la entidad actualizada, usarla; si no, aplicar cambios locales
-        if (res && (res.PER_ID || res.per_id || res.id)) {
+        if (res && (res.PER_ID || res.per_id || res.id || res.acreditado)) {
           // Normalizar respuesta similar a handleSearch
-          this.selectedParticipant.acreditationStatus = res.acreditado || res.accreditationStatus || 'Acreditado'
-          this.selectedParticipant.paymentConfirmed = res.paymentConfirmed || true
-          this.selectedParticipant.paymentStatus = res.payment_status || 'Confirmado'
+          this.selectedParticipant.acreditationStatus = (res.acreditado === true || res.accreditationStatus === 'Acreditado') ? 'Acreditado' : 'Acreditado'
+          this.selectedParticipant.paymentConfirmed = true
+          this.selectedParticipant.paymentStatus = 'Confirmado'
         } else {
           this.selectedParticipant.acreditationStatus = 'Acreditado'
           this.selectedParticipant.paymentConfirmed = true
