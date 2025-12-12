@@ -15,7 +15,7 @@ export default {
   // Use the generic personas list endpoint for search (GET /api/personas/personas?search=term)
   async acreditacion_manual_search(term = '') {
     const q = encodeURIComponent(String(term || '').trim())
-    return request(`personas/personas${q ? `?search=${q}` : ''}`)
+    return request(`personas/personas/${q ? `?search=${q}` : ''}`)
   },
 
   // Keep acreditar endpoint as POST (existing backend view)

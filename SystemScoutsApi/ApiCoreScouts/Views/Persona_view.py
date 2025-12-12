@@ -1,6 +1,7 @@
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework import filters
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from ..Serializers import Persona_serializer as MU_S
@@ -23,8 +24,9 @@ class PersonaViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, PerfilPermission]
     app_name = 'Personas'
 
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_class = PersonaFilter
+    search_fields = ['per_nombres', 'per_apelpta', 'per_run', 'per_apodo']
     renderer_classes = [JSONRenderer]
     pagination_class = StandardResultsSetPagination
     
@@ -75,6 +77,55 @@ class PersonaViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
         except Exception as e:
             return Response({'error': str(e)}, status=400)
+
+    @action(detail=False, methods=['post'], url_path='acreditacion_manual_acreditar')
+    def acreditacion_manual_acreditar(self, request):
+        """
+        Acción personalizada para acreditar a una persona manualmente.
+        Recibe 'per_id' y 'rut' en el body.
+        """
+        try:
+            per_id = request.data.get('per_id')
+            rut = request.data.get('rut') # Opcional, para validación extra
+
+            if not per_id:
+                return Response({'error': 'per_id es requerido'}, status=400)
+
+            # Buscar la Persona
+            try:
+                persona = Persona.objects.get(pk=per_id)
+            except Persona.DoesNotExist:
+                return Response({'error': 'Persona no encontrada'}, status=404)
+
+            # Buscar la inscripción (Persona_Curso) vigente para acreditar
+            # Asumimos que se acredita en el curso activo/vigente (Estado 1 = Vigente).
+            inscripciones = Persona_Curso.objects.filter(
+                per_id=persona,
+                cus_id__cur_id__cur_estado=1
+            )
+            
+            # Si no hay cursos vigentes, fallback a la última inscripción
+            if not inscripciones.exists():
+                 inscripciones = Persona_Curso.objects.filter(per_id=persona).order_by('-pec_id')
+
+            if not inscripciones.exists():
+                return Response({'error': 'No se encontró inscripción para acreditar'}, status=404)
+
+            # Acreditar la primera encontrada (o la más reciente)
+            inscripcion = inscripciones.first()
+            inscripcion.pec_acreditacion = True
+            inscripcion.save()
+
+            # Retornar datos actualizados (puedes usar el serializer si quieres)
+            return Response({
+                'per_id': persona.per_id,
+                'nombre': f"{persona.per_nombres} {persona.per_apelpta}",
+                'acreditado': True,
+                'mensaje': 'Acreditación exitosa'
+            })
+
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
 
 class PersonaCursoViewSet(viewsets.ModelViewSet):
     serializer_class = MU_S.PersonaCursoSerializer

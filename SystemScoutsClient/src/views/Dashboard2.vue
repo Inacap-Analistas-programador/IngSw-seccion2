@@ -117,13 +117,14 @@
       <section class="courses-section">
         <div class="section-header">
           <h3>Cursos Vigentes</h3>
-          <button 
+          <BaseButton 
             @click="actualizarDatos" 
-            class="refresh-btn"
+            variant="primary"
             :disabled="loading"
           >
-            🔄 {{ loading ? 'Cargando...' : 'Actualizar' }}
-          </button>
+            <AppIcons name="refresh-cw" :size="16" class="mr-2" v-if="loading" />
+            <span v-else>🔄</span> {{ loading ? 'Cargando...' : 'Actualizar' }}
+          </BaseButton>
         </div>
         <div class="table-container-expanded">
           <table class="data-table-expanded">
@@ -149,8 +150,9 @@
                 <td>{{ curso.acreditaciones }}</td>
                 <td>{{ curso.pendientesPago }}</td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verCurso(curso)">👁 Ver</button>
-                  <button class="btn-action btn-edit" @click="editarCurso(curso)">✏ Editar</button>
+                  <BaseButton class="mr-2" variant="info" size="sm" @click="verCurso(curso)">👁 Ver</BaseButton>
+                  <BaseButton class="mr-2" variant="warning" size="sm" @click="editarCurso(curso)">✏ Editar</BaseButton>
+                  <BaseButton variant="secondary" size="sm" @click="abrirModalCambioEstado(curso)">⚡ Estado</BaseButton>
                 </td>
               </tr>
             </tbody>
@@ -248,16 +250,25 @@ import { useRouter } from 'vue-router'
 // Componentes del sistema
 import NotificationToast from '@/components/NotificationToast.vue'
 import DataCard from '@/components/DataCard.vue'
+import BaseButton from '@/components/BaseButton.vue'
 
 // CORREGIDO: Importación correcta de servicios
 import dashboardService_2 from '@/services/dashboardService_2'
+
+// Otros componentes
+import BaseModal from '@/components/BaseModal.vue'
+import BaseSelect from '@/components/BaseSelect.vue'
+import cursosService from '@/services/cursosService.js'
 
 export default {
   name: 'DashboardScout',
   
   components: {
     NotificationToast,
-    DataCard
+    DataCard,
+    BaseButton,
+    BaseModal,
+    BaseSelect
   },
   
   setup() {
@@ -589,6 +600,62 @@ export default {
       }
     })
 
+    // Estado para modal de cambio de estado
+    const mostrarModalCambioEstado = ref(false)
+    const cursoParaCambioEstado = ref(null)
+    const nuevoEstado = ref(null)
+    const loadingEstado = ref(false)
+    
+    const opcionesEstado = [
+      { value: 0, text: 'Pendiente' },
+      { value: 1, text: 'Vigente' },
+      { value: 2, text: 'Anulado' },
+      { value: 3, text: 'Finalizado' },
+    ]
+
+    const abrirModalCambioEstado = (curso) => {
+      cursoParaCambioEstado.value = curso
+      nuevoEstado.value = curso.CUR_ESTADO_NUM || curso.CUR_ESTADO // Fallback if num not set
+      mostrarModalCambioEstado.value = true
+    }
+
+    const cerrarModalCambioEstado = () => {
+      mostrarModalCambioEstado.value = false
+      cursoParaCambioEstado.value = null
+      nuevoEstado.value = null
+    }
+
+    const guardarCambioEstado = async () => {
+      if (nuevoEstado.value === null) return
+      
+      loadingEstado.value = true
+      try {
+        await cursosService.cursos.partialUpdate(cursoParaCambioEstado.value.CUR_ID, { cur_estado: nuevoEstado.value })
+        
+        alertas.value.push({
+          id: Date.now(),
+          type: 'success',
+          title: 'Estado Actualizado',
+          message: 'El estado del curso ha sido modificado correctamente.'
+        })
+        
+        // Recargar datos para reflejar cambios
+        await cargarDatosDesdeAPI()
+        cerrarModalCambioEstado()
+        
+      } catch (error) {
+        console.error('Error cambiando estado:', error)
+        alertas.value.push({
+          id: Date.now(),
+          type: 'error',
+          title: 'Error',
+          message: 'No se pudo cambiar el estado del curso.'
+        })
+      } finally {
+        loadingEstado.value = false
+      }
+    }
+
     return {
       cursoSeleccionado,
       alertas,
@@ -614,7 +681,16 @@ export default {
       getEstadoDisplay,
       getSemaphoreClass,
       cursos,
-      personas
+      personas,
+      // Change Status
+      mostrarModalCambioEstado,
+      cursoParaCambioEstado,
+      nuevoEstado,
+      loadingEstado,
+      opcionesEstado,
+      abrirModalCambioEstado,
+      cerrarModalCambioEstado,
+      guardarCambioEstado
     }
   }
 }
@@ -983,33 +1059,6 @@ export default {
   flex-wrap: wrap;
 }
 
-.btn-action {
-  padding: 6px 12px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  transition: all 0.3s ease;
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.btn-view {
-  background: #e3f2fd;
-  color: #1565c0;
-}
-
-.btn-edit {
-  background: #fff3cd;
-  color: #856404;
-}
-
-.btn-action:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
 
 /* Responsables Section */
 .responsibles-section {

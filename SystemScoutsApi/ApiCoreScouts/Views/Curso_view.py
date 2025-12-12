@@ -96,7 +96,8 @@ class CursoAlimentacionViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """Optimizar queries con select_related"""
         return Curso_Alimentacion.objects.select_related(
-            'cua_id'  # Curso_Seccion
+            'cur_id',  # Curso
+            'ali_id'   # Alimentacion
         ).order_by('cua_fecha', 'cua_tiempo', 'cua_id')
 
 class CursoCoordinadorViewSet(viewsets.ModelViewSet):
@@ -132,7 +133,7 @@ class CursoSeccionViewSet(viewsets.ModelViewSet):
             'ram_id'    # Rama
         ).prefetch_related(
             Prefetch(
-                'persona_curso',
+                'persona_curso_set', # Default related_name since none is defined in model
                 Persona_Curso.objects.select_related('per_id', 'rol_id', 'ali_id', 'niv_id')
             )
         ).order_by('cus_seccion', 'cus_id')

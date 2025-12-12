@@ -1,5 +1,16 @@
 <template>
   <div class="crud-cursos-container">
+    <!-- Toasts de notificación -->
+    <div class="toast-container">
+      <NotificationToast
+        v-for="(alerta, index) in alertas"
+        :key="alerta.id"
+        :message="alerta.message"
+        :icon="alerta.type === 'success' ? 'check' : 'alert-circle'"
+        @close="removerAlerta(alerta.id)"
+        :style="{ marginBottom: `${index * 60}px` }"
+      />
+    </div>
     <div class="page-header">
       <h3>Gestión de Cursos</h3>
   <p>Administra, crea y organiza los cursos de formación.</p>
@@ -80,28 +91,28 @@
 
     <!-- Modal de Creación/Edición de Curso -->
     <BaseModal v-model="mostrarModal" @close="cerrarModal">
-      <template #title>{{ esEdicion ? 'Editar Curso' : 'Crear Nuevo Curso' }}</template>
+      <template #title>{{ modoVer ? 'Detalle del Curso' : (esEdicion ? 'Editar Curso' : 'Crear Nuevo Curso') }}</template>
       <div class="modal-body">
         <div class="form-grid-modal">
           <!-- Campos del formulario -->
-          <div class="form-group span-2"><label>Descripción del curso</label><InputBase v-model="form.CUR_DESCRIPCION" /><small class="field-hint">Ej: Curso Básico de Primeros Auxilios</small></div>
-          <div class="form-group"><label>Código</label><InputBase v-model="form.CUR_CODIGO" /></div>
-          <div class="form-group"><label>Tipo de Curso</label><BaseSelect v-model="form.TCU_ID" :options="tiposCursoOptions" optionLabel="text" /><small class="field-hint">Selecciona el tipo de curso</small></div>
-          <div class="form-group"><label>Responsable</label><BaseSelect v-model="form.PER_ID_RESPONSABLE" :options="personasOptions" optionLabel="text" /><small class="field-hint">Selecciona a la persona responsable</small></div>
-          <div class="form-group"><label>Cargo</label><BaseSelect v-model="form.CAR_ID_RESPONSABLE" :options="cargosOptions" optionLabel="text" /><small class="field-hint">Selecciona el cargo del responsable</small></div>
+          <div class="form-group span-2"><label>Descripción del curso</label><InputBase v-model="form.CUR_DESCRIPCION" :disabled="modoVer" /><small class="field-hint">Ej: Curso Básico de Primeros Auxilios</small></div>
+          <div class="form-group"><label>Código</label><InputBase v-model="form.CUR_CODIGO" :disabled="modoVer" /></div>
+          <div class="form-group"><label>Tipo de Curso</label><BaseSelect v-model="form.TCU_ID" :options="tiposCursoOptions" optionLabel="text" :disabled="modoVer" /><small class="field-hint">Selecciona el tipo de curso</small></div>
+          <div class="form-group"><label>Responsable</label><BaseSelect v-model="form.PER_ID_RESPONSABLE" :options="personasOptions" optionLabel="text" :disabled="modoVer" /><small class="field-hint">Selecciona a la persona responsable</small></div>
+          <div class="form-group"><label>Cargo</label><BaseSelect v-model="form.CAR_ID_RESPONSABLE" :options="cargosOptions" optionLabel="text" :disabled="modoVer" /><small class="field-hint">Selecciona el cargo del responsable</small></div>
           <div class="form-group"><label>Fecha de Solicitud</label>
-            <InputBase type="date" v-model="form.CUR_FECHA_SOLICITUD" />
+            <InputBase type="date" v-model="form.CUR_FECHA_SOLICITUD" :disabled="modoVer" />
             <small class="field-hint">Formato: AAAA-MM-DD (Ej: 2025-11-12)</small>
           </div>
           <!-- Estado ahora es automático; se elimina el selector manual -->
-          <div class="form-group"><label>Modalidad</label><BaseSelect v-model="form.CUR_MODALIDAD" :options="opcionesModalidad" optionLabel="text" /><small class="field-hint">Selecciona la modalidad</small></div>
-          <div class="form-group"><label>Tipo (Presencial/Online)</label><BaseSelect v-model="form.CUR_TIPO_CURSO" :options="opcionesTipoPresencial" optionLabel="text" /><small class="field-hint">Selecciona si es presencial u online</small></div>
-          <div class="form-group"><label>Administra</label><BaseSelect v-model="form.CUR_ADMINISTRA" :options="opcionesAdministra" optionLabel="text" /><small class="field-hint">Indica quién administra el curso</small></div>
-          <div class="form-group"><label>Comuna (lugar)</label><BaseSelect v-model="form.COM_ID_LUGAR" :options="comunasOptions" optionLabel="text" /><small class="field-hint">Selecciona la comuna donde se realiza</small></div>
-          <div class="form-group span-2"><label>Lugar</label><InputBase v-model="form.CUR_LUGAR" /><small class="field-hint">Ej: Sede Central, Sala 3</small></div>
+          <div class="form-group"><label>Modalidad</label><BaseSelect v-model="form.CUR_MODALIDAD" :options="opcionesModalidad" optionLabel="text" :disabled="modoVer" /><small class="field-hint">Selecciona la modalidad</small></div>
+          <div class="form-group"><label>Tipo (Presencial/Online)</label><BaseSelect v-model="form.CUR_TIPO_CURSO" :options="opcionesTipoPresencial" optionLabel="text" :disabled="modoVer" /><small class="field-hint">Selecciona si es presencial u online</small></div>
+          <div class="form-group"><label>Administra</label><BaseSelect v-model="form.CUR_ADMINISTRA" :options="opcionesAdministra" optionLabel="text" :disabled="modoVer" /><small class="field-hint">Indica quién administra el curso</small></div>
+          <div class="form-group"><label>Comuna (lugar)</label><BaseSelect v-model="form.COM_ID_LUGAR" :options="comunasOptions" optionLabel="text" :disabled="modoVer" /><small class="field-hint">Selecciona la comuna donde se realiza</small></div>
+          <div class="form-group span-2"><label>Lugar</label><InputBase v-model="form.CUR_LUGAR" :disabled="modoVer" /><small class="field-hint">Ej: Sede Central, Sala 3</small></div>
           
           <!-- Mapa Interactivo -->
-          <div class="form-group span-2">
+          <div class="form-group span-2" :style="modoVer ? 'pointer-events: none; opacity: 0.8;' : ''">
             <label>Ubicación (haz clic en el mapa para seleccionar)</label>
             <MapEmbed
               :lat="form.CUR_COORD_LATITUD"
@@ -110,10 +121,10 @@
               @update:lng="form.CUR_COORD_LONGITUD = $event"
             />
           </div>
-          <div class="form-group"><label>Latitud</label><InputBase v-model="form.CUR_COORD_LATITUD" placeholder="Lat" /><small class="field-hint">Ej: -36.827 (Concepción)</small></div>
-          <div class="form-group"><label>Longitud</label><InputBase v-model="form.CUR_COORD_LONGITUD" placeholder="Lng" /><small class="field-hint">Ej: -73.050 (Concepción)</small></div>
+          <div class="form-group"><label>Latitud</label><InputBase v-model="form.CUR_COORD_LATITUD" placeholder="Lat" :disabled="modoVer" /><small class="field-hint">Ej: -36.827 (Concepción)</small></div>
+          <div class="form-group"><label>Longitud</label><InputBase v-model="form.CUR_COORD_LONGITUD" placeholder="Lng" :disabled="modoVer" /><small class="field-hint">Ej: -73.050 (Concepción)</small></div>
 
-          <div class="form-group span-2"><label>Observaciones</label><textarea v-model="form.CUR_OBSERVACION" rows="3"></textarea><small class="field-hint">Notas internas, ej: traer proyector</small></div>
+          <div class="form-group span-2"><label>Observaciones</label><textarea v-model="form.CUR_OBSERVACION" rows="3" :disabled="modoVer" class="base-textarea"></textarea><small class="field-hint">Notas internas, ej: traer proyector</small></div>
         </div>
 
         <!-- Sección de Gestión de Fechas -->
@@ -129,18 +140,18 @@
                 <th>Inicio</th>
                 <th>Término</th>
                 <th>Tipo</th>
-                <th>Acciones</th>
+                <th v-if="!modoVer">Acciones</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="fechasCurso.length === 0">
-                <td colspan="4" class="no-results-small">No hay períodos definidos.</td>
+                <td :colspan="modoVer ? 3 : 4" class="no-results-small">No hay períodos definidos.</td>
               </tr>
                 <tr v-for="fecha in fechasCurso" :key="fecha.CUF_ID || ('tmp-' + (fecha.__tmpId || 0))">
                   <td>{{ formatDateSimple(fecha.CUF_FECHA_INICIO) }}</td>
                   <td>{{ formatDateSimple(fecha.CUF_FECHA_TERMINO) }}</td>
                   <td>{{ opcionesTipoFecha.find(t => t.value === fecha.CUF_TIPO)?.text }}</td>
-                  <td>
+                  <td v-if="!modoVer">
                     <BaseButton @click="iniciarEdicionFecha(fecha)" variant="secondary" size="sm">Modificar</BaseButton>
                     <BaseButton @click="eliminarFecha(fecha.CUF_ID || ('tmp-' + (fecha.__tmpId || 0)))" variant="danger" size="sm">Eliminar</BaseButton>
                   </td>
@@ -149,7 +160,7 @@
           </table>
 
           <!-- Formulario para Añadir Nueva Fecha -->
-          <div class="add-fecha-form">
+          <div class="add-fecha-form" v-if="!modoVer">
             <div class="form-group">
               <label>Fecha Inicio</label>
               <InputBase type="date" v-model="nuevoPeriodo.CUF_FECHA_INICIO" />
@@ -180,18 +191,18 @@
                 <th>Sección</th>
                 <th>Rama</th>
                 <th>Participantes</th>
-                <th>Acciones</th>
+                <th v-if="!modoVer">Acciones</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="seccionesCurso.length === 0">
-                <td colspan="4" class="no-results-small">No hay secciones definidas.</td>
+                <td :colspan="modoVer ? 3 : 4" class="no-results-small">No hay secciones definidas.</td>
               </tr>
                 <tr v-for="seccion in seccionesCurso" :key="seccion.CUS_ID || ('tmp-' + (seccion.__tmpId || 0))">
                   <td>{{ seccion.CUS_SECCION }}</td>
                   <td>{{ getRamaName(seccion.RAM_ID) }}</td>
                   <td>{{ seccion.CUS_CANT_PARTICIPANTE }}</td>
-                  <td>
+                  <td v-if="!modoVer">
                     <BaseButton @click="iniciarEdicionSeccion(seccion)" variant="secondary" size="sm">Modificar</BaseButton>
                     <BaseButton @click="eliminarSeccion(seccion.CUS_ID || ('tmp-' + (seccion.__tmpId || 0)))" variant="danger" size="sm">Eliminar</BaseButton>
                   </td>
@@ -200,7 +211,7 @@
           </table>
 
           <!-- Formulario para Añadir Nueva Sección -->
-          <div class="add-fecha-form">
+          <div class="add-fecha-form" v-if="!modoVer">
             <div class="form-group">
               <label>Sección #</label>
               <InputBase type="number" v-model="nuevaSeccion.CUS_SECCION" placeholder="Ej: 1, 2, 3..." />
@@ -231,26 +242,26 @@
                 <th>Rol</th>
                 <th>Sección</th>
                 <th>Director</th>
-                <th>Acciones</th>
+                <th v-if="!modoVer">Acciones</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="!formadoresCurso.length">
-                <td colspan="5" class="no-results-small">Sin formadores</td>
+                <td :colspan="modoVer ? 4 : 5" class="no-results-small">Sin formadores</td>
               </tr>
               <tr v-for="f in formadoresCurso" :key="f.CUF_ID || ('tmp-' + (f.__tmpId || 0))">
                 <td>{{ getPersonaName(f.PER_ID) }}</td>
                 <td>{{ rolesList.find(r => r.ROL_ID === f.ROL_ID)?.ROL_DESCRIPCION || '-' }}</td>
                 <td>{{ seccionesCurso.find(s => s.CUS_ID === f.CUS_ID)?.CUS_SECCION || '-' }}</td>
                 <td>{{ f.CUO_DIRECTOR ? 'Sí' : 'No' }}</td>
-                <td>
+                <td v-if="!modoVer">
                   <BaseButton @click="iniciarEdicionFormador(f)" variant="secondary" size="sm">Modificar</BaseButton>
                   <BaseButton @click="eliminarFormador(f)" variant="danger" size="sm">Eliminar</BaseButton>
                 </td>
               </tr>
             </tbody>
           </table>
-          <div class="add-fecha-form add-formadores-form">
+          <div class="add-fecha-form add-formadores-form" v-if="!modoVer">
             <div class="form-group">
               <label>Persona</label>
               <BaseSelect v-model="nuevaFormador.PER_ID" :options="personasOptions" optionLabel="text" />
@@ -289,6 +300,9 @@
               <InputBase type="number" v-model="form.CUR_COTA_SIN_ALMUERZO" />
               <small class="field-hint">Monto en CLP, ej: 10000</small>
             </div>
+            <div class="form-group" v-if="!modoVer">
+               <label></label>
+            </div>
           </div>
           <table class="fechas-table">
             <thead>
@@ -298,12 +312,12 @@
                 <th>Tipo Alimentación</th>
                 <th>Descripción</th>
                 <th>Adic.</th>
-                <th>Acciones</th>
+                <th v-if="!modoVer">Acciones</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="!alimentacionesCurso.length">
-                <td colspan="6" class="no-results-small">Sin alimentación</td>
+                <td :colspan="modoVer ? 5 : 6" class="no-results-small">Sin alimentación</td>
               </tr>
               <tr v-for="a in alimentacionesCurso" :key="a.CUA_ID || ('tmp-' + (a.__tmpId || 0))">
                 <td>{{ formatDateSimple(a.CUA_FECHA) }}</td>
@@ -311,14 +325,14 @@
                 <td>{{ alimentacionCatalogo.find(x => x.ALI_ID === a.ALI_ID)?.ALI_DESCRIPCION || '-' }}</td>
                 <td>{{ a.CUA_DESCRIPCION }}</td>
                 <td>{{ a.CUA_CANTIDAD_ADICIONAL }}</td>
-                <td>
+                <td v-if="!modoVer">
                   <BaseButton @click="iniciarEdicionAlimentacion(a)" variant="secondary" size="sm">Modificar</BaseButton>
                   <BaseButton @click="eliminarAlimentacion(a)" variant="danger" size="sm">Eliminar</BaseButton>
                 </td>
               </tr>
             </tbody>
           </table>
-          <div class="add-fecha-form add-alimentacion-form">
+          <div class="add-fecha-form add-alimentacion-form" v-if="!modoVer">
             <div class="form-group">
               <label>Fecha</label>
               <InputBase type="date" v-model="nuevaAlimentacion.CUA_FECHA" />
@@ -356,24 +370,24 @@
                 <th>Tipo</th>
                 <th>Fecha</th>
                 <th>Monto</th>
-                <th>Acciones</th>
+                <th v-if="!modoVer">Acciones</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="!cuotasCurso.length">
-                <td colspan="4" class="no-results-small">Sin cuotas</td>
+                <td :colspan="modoVer ? 3 : 4" class="no-results-small">Sin cuotas</td>
               </tr>
               <tr v-for="c in cuotasCurso" :key="c.CUU_ID || ('tmp-' + (c.__tmpId || 0))">
                 <td>{{ c.CUU_TIPO === 1 ? 'Con Almuerzo' : 'Sin Almuerzo' }}</td>
                 <td>{{ formatDateSimple(c.CUU_FECHA) }}</td>
                 <td>${{ c.CUU_VALOR }}</td>
-                <td>
+                <td v-if="!modoVer">
                   <BaseButton @click="eliminarCuota(c)" variant="danger" size="sm">Eliminar</BaseButton>
                 </td>
               </tr>
             </tbody>
           </table>
-          <div class="add-fecha-form add-cuota-form">
+          <div class="add-fecha-form add-cuota-form" v-if="!modoVer">
             <div class="form-group">
               <label>Tipo</label>
               <BaseSelect v-model="nuevaCuota.CUU_TIPO" :options="[{value:1,text:'Con Almuerzo'},{value:2,text:'Sin Almuerzo'}]" />
@@ -400,23 +414,23 @@
               <tr>
                 <th>Persona</th>
                 <th>Cargo</th>
-                <th>Acciones</th>
+                <th v-if="!modoVer">Acciones</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="!coordinadoresCurso.length">
-                <td colspan="3" class="no-results-small">Sin coordinadores</td>
+                <td :colspan="modoVer ? 2 : 3" class="no-results-small">Sin coordinadores</td>
               </tr>
               <tr v-for="coord in coordinadoresCurso" :key="coord.CUC_ID || ('tmp-' + (coord.__tmpId || 0))">
                 <td>{{ getPersonaName(coord.PER_ID) }}</td>
                 <td>{{ cargosList.find(c => c.CAR_ID === coord.CAR_ID)?.CAR_DESCRIPCION || '-' }}</td>
-                <td>
+                <td v-if="!modoVer">
                   <BaseButton @click="eliminarCoordinador(coord)" variant="danger" size="sm">Eliminar</BaseButton>
                 </td>
               </tr>
             </tbody>
           </table>
-          <div class="add-fecha-form add-coordinador-form">
+          <div class="add-fecha-form add-coordinador-form" v-if="!modoVer">
             <div class="form-group">
               <label>Persona</label>
               <BaseSelect v-model="nuevoCoordinador.PER_ID" :options="personasOptions" optionLabel="text" />
@@ -432,143 +446,7 @@
       </div>
       <template #footer>
         <BaseButton @click="cerrarModal" variant="secondary">Cancelar</BaseButton>
-        <BaseButton @click="guardarCurso">Guardar Cambios</BaseButton>
-      </template>
-    </BaseModal>
-
-    <!-- Modal de Detalle de Curso -->
-    <BaseModal v-model="mostrarModalVer" @close="cerrarModalVer">
-      <template #title>Detalle del Curso</template>
-      <div class="modal-body">
-        <div v-if="cursoSeleccionado" class="detalle-curso">
-          <p><strong>Descripción:</strong> {{ cursoSeleccionado.CUR_DESCRIPCION }}</p>
-          <p><strong>Código:</strong> {{ cursoSeleccionado.CUR_CODIGO }}</p>
-          <p><strong>Tipo:</strong> {{ getTipoCursoName(cursoSeleccionado.TCU_ID) }}</p>
-          <p><strong>Responsable:</strong> {{ getPersonaName(cursoSeleccionado.PER_ID_RESPONSABLE) }}</p>
-          <p><strong>Estado:</strong> {{ getEstadoText(cursoSeleccionado.CUR_ESTADO) }}</p>
-          <p><strong>Lugar:</strong> {{ cursoSeleccionado.CUR_LUGAR }}</p>
-          <p><strong>Coordenadas:</strong> {{ cursoSeleccionado.CUR_COORD_LATITUD }}, {{ cursoSeleccionado.CUR_COORD_LONGITUD }}</p>
-          <p><strong>Observación:</strong> {{ cursoSeleccionado.CUR_OBSERVACION || '-' }}</p>
-        </div>
-        <h4 class="mt-16">Períodos</h4>
-        <table class="fechas-table">
-          <thead>
-            <tr>
-              <th>Inicio</th>
-              <th>Término</th>
-              <th>Tipo</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="fechasCurso.length === 0"><td colspan="3" class="no-results-small">Sin períodos</td></tr>
-            <tr v-for="f in fechasCurso" :key="f.CUF_ID">
-              <td>{{ formatDateSimple(f.CUF_FECHA_INICIO) }}</td>
-              <td>{{ formatDateSimple(f.CUF_FECHA_TERMINO) }}</td>
-              <td>{{ opcionesTipoFecha.find(t => t.value === f.CUF_TIPO)?.text }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <h4 class="mt-16">Secciones</h4>
-        <table class="fechas-table">
-          <thead>
-            <tr>
-              <th>Sección</th>
-              <th>Rama</th>
-              <th>Participantes</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="seccionesCurso.length === 0"><td colspan="3" class="no-results-small">Sin secciones</td></tr>
-            <tr v-for="s in seccionesCurso" :key="s.CUS_ID">
-              <td>{{ s.CUS_SECCION }}</td>
-              <td>{{ getRamaName(s.RAM_ID) }}</td>
-              <td>{{ s.CUS_CANT_PARTICIPANTE }}</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <h4 class="mt-16">Formadores</h4>
-        <table class="fechas-table">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Rol</th>
-              <th>Sección</th>
-              <th>Director</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="!formadoresCurso.length"><td colspan="4" class="no-results-small">Sin formadores</td></tr>
-            <tr v-for="f in formadoresCurso" :key="f.CUF_ID">
-              <td>{{ getPersonaName(f.PER_ID) }}</td>
-              <td>{{ rolesList.find(r => r.ROL_ID === f.ROL_ID)?.ROL_DESCRIPCION || '-' }}</td>
-              <td>{{ seccionesList.find(s => s.CUS_ID === f.CUS_ID)?.CUS_SECCION || '-' }}</td>
-              <td>{{ f.CUO_DIRECTOR ? 'Sí' : 'No' }}</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <h4 class="mt-16">Alimentación</h4>
-        <table class="fechas-table">
-          <thead>
-            <tr>
-              <th>Fecha</th>
-              <th>Tiempo</th>
-              <th>Alimento</th>
-              <th>Descripción</th>
-              <th>Adic.</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="!alimentacionesCurso.length"><td colspan="5" class="no-results-small">Sin alimentación</td></tr>
-            <tr v-for="a in alimentacionesCurso" :key="a.CUA_ID">
-              <td>{{ formatDateSimple(a.CUA_FECHA) }}</td>
-              <td>{{ tiempoAlimentacionOptions.find(t => t.value === a.CUA_TIEMPO)?.text }}</td>
-              <td>{{ alimentacionCatalogo.find(x => x.ALI_ID === a.ALI_ID)?.ALI_DESCRIPCION || '-' }}</td>
-              <td>{{ a.CUA_DESCRIPCION }}</td>
-              <td>{{ a.CUA_CANTIDAD_ADICIONAL }}</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <h4 class="mt-16">Cuotas</h4>
-        <table class="fechas-table">
-          <thead>
-            <tr>
-              <th>Tipo</th>
-              <th>Fecha</th>
-              <th>Monto</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="!cuotasCurso.length"><td colspan="3" class="no-results-small">Sin cuotas</td></tr>
-            <tr v-for="c in cuotasCurso" :key="c.CUU_ID">
-              <td>{{ c.CUU_TIPO === 1 ? 'Con Almuerzo' : 'Sin Almuerzo' }}</td>
-              <td>{{ formatDateSimple(c.CUU_FECHA) }}</td>
-              <td>${{ c.CUU_VALOR }}</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <h4 class="mt-16">Coordinadores</h4>
-        <table class="fechas-table">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Cargo</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="!coordinadoresCurso.length"><td colspan="2" class="no-results-small">Sin coordinadores</td></tr>
-            <tr v-for="coord in coordinadoresCurso" :key="coord.CUC_ID">
-              <td>{{ getPersonaName(coord.PER_ID) }}</td>
-              <td>{{ cargosList.find(c => c.CAR_ID === coord.CAR_ID)?.CAR_DESCRIPCION || '-' }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <template #footer>
-        <BaseButton @click="cerrarModalVer" variant="secondary">Cerrar</BaseButton>
+        <BaseButton v-if="!modoVer" @click="guardarCurso">Guardar Cambios</BaseButton>
       </template>
     </BaseModal>
 
@@ -627,6 +505,7 @@ import BaseModal from '@/components/BaseModal.vue'
 import BaseSelect from '@/components/BaseSelect.vue'
 import MapEmbed from '@/components/MapEmbed.vue'
 import AppIcons from '@/components/icons/AppIcons.vue'
+import NotificationToast from '@/components/NotificationToast.vue'
 import { comunasCoords } from '@/data/comunasChile.js'
 
 // Helper to normalize keys to Uppercase (for frontend compatibility)
@@ -653,6 +532,23 @@ const toLowerKeys = (obj) => {
 }
 
 // --- Estado y Reactividad ---
+const alertas = ref([])
+const mostrarAlerta = (mensaje, tipo = 'error') => {
+  alertas.value.push({
+    id: Date.now(),
+    message: mensaje,
+    type: tipo
+  })
+  // Auto-cerrar después de 5s
+  setTimeout(() => {
+    removerAlerta(alertas.value[alertas.value.length - 1]?.id)
+  }, 5000)
+}
+const removerAlerta = (id) => {
+  if (!id) return
+  alertas.value = alertas.value.filter(a => a.id !== id)
+}
+
 const isLoading = ref(false)
 const isLoadingData = ref(false) // Guard para prevenir cargas duplicadas
 const cursosList = ref([])
@@ -685,6 +581,7 @@ const nuevoEstado = ref(null)
 
 const mostrarModal = ref(false)
 const esEdicion = ref(false)
+const modoVer = ref(false)
 const isTrulyNew = ref(false)
 const originalCursoBackup = ref(null)
 const originalBuffersBackup = ref({ fechas: [], secciones: [], formadores: [], alimentaciones: [] })
@@ -1102,6 +999,7 @@ async function abrirModalCrear() {
   form.value = inicializarFormulario()
   isTrulyNew.value = true
   esEdicion.value = true // Activar modo "edición" para mostrar las sub-secciones
+  modoVer.value = false
   fechasCurso.value = []
   seccionesCurso.value = []
   formadoresCurso.value = []
@@ -1130,6 +1028,7 @@ async function abrirModalCrear() {
 async function abrirModalEditar(curso) {
   isTrulyNew.value = false
   esEdicion.value = true
+  modoVer.value = false
   form.value = {
     ...curso,
     CUR_FECHA_SOLICITUD: curso.CUR_FECHA_SOLICITUD ? curso.CUR_FECHA_SOLICITUD.split('T')[0] : '',
@@ -1200,12 +1099,12 @@ async function cargarFechasDelCurso(cursoId) {
 async function agregarFecha() {
   if (isAddingPeriodo.value) return
   if (!nuevoPeriodo.value.CUF_FECHA_INICIO || !nuevoPeriodo.value.CUF_FECHA_TERMINO) {
-    alert('Debe seleccionar fecha de inicio y término.')
+    mostrarAlerta('Debe seleccionar fecha de inicio y término.', 'warning')
     return
   }
   // Validación simple de rango
   if (new Date(nuevoPeriodo.value.CUF_FECHA_TERMINO) < new Date(nuevoPeriodo.value.CUF_FECHA_INICIO)) {
-    alert('La fecha de término no puede ser anterior al inicio.')
+    mostrarAlerta('La fecha de término no puede ser anterior al inicio.', 'warning')
     return
   }
   try {
@@ -1221,7 +1120,7 @@ async function agregarFecha() {
     }
     nuevoPeriodo.value.CUF_FECHA_INICIO = ''
     nuevoPeriodo.value.CUF_FECHA_TERMINO = ''
-    alert('Período agregado exitosamente.')
+    mostrarAlerta('Período agregado exitosamente.', 'success')
   } finally { isAddingPeriodo.value = false }
 }
 
@@ -1232,11 +1131,11 @@ function iniciarEdicionFecha(fecha) {
 
 async function guardarEdicionFecha() {
   if (!nuevoPeriodo.value.CUF_FECHA_INICIO || !nuevoPeriodo.value.CUF_FECHA_TERMINO) {
-    alert('Debe completar fecha de inicio y término.')
+    mostrarAlerta('Debe completar fecha de inicio y término.', 'warning')
     return
   }
   if (new Date(nuevoPeriodo.value.CUF_FECHA_TERMINO) < new Date(nuevoPeriodo.value.CUF_FECHA_INICIO)) {
-    alert('La fecha de término no puede ser anterior al inicio.')
+    mostrarAlerta('La fecha de término no puede ser anterior al inicio.', 'warning')
     return
   }
   try {
@@ -1254,10 +1153,10 @@ async function guardarEdicionFecha() {
       if (cacheIdx !== -1) fechasCursoList.value[cacheIdx] = { ...nuevoPeriodo.value, CUF_ID: editandoFecha.value }
     }
     cancelarEdicionFecha()
-    alert('Período actualizado exitosamente.')
+    mostrarAlerta('Período actualizado exitosamente.', 'success')
   } catch (e) {
     console.error('Error actualizando período:', e)
-    alert('Error al actualizar el período.')
+    mostrarAlerta('Error al actualizar el período.', 'error')
   }
 }
 
@@ -1280,7 +1179,7 @@ async function eliminarFecha(fechaId) {
     await fechasApi.remove(fechaId)
     fechasCurso.value = fechasCurso.value.filter(f => f.CUF_ID !== fechaId)
     fechasCursoList.value = fechasCursoList.value.filter(f => f.CUF_ID !== fechaId) // Actualizar caché
-    alert('Período eliminado exitosamente.')
+    mostrarAlerta('Período eliminado exitosamente.', 'success')
   } catch (e) {
     // Manejar 404 silencioso si ya no existe
     if (/404/.test(String(e?.message))) {
@@ -1312,7 +1211,7 @@ async function cargarSeccionesDelCurso(cursoId) {
 
 async function agregarSeccion() {
   if (!nuevaSeccion.value.CUS_SECCION || !nuevaSeccion.value.RAM_ID || !nuevaSeccion.value.CUS_CANT_PARTICIPANTE) {
-    alert('Debe llenar todos los campos de la sección.')
+    mostrarAlerta('Debe llenar todos los campos de la sección.', 'warning')
     return
   }
   if (isAddingSeccion.value) return
@@ -1335,7 +1234,7 @@ async function agregarSeccion() {
     nuevaSeccion.value.CUS_SECCION = ''
     nuevaSeccion.value.RAM_ID = null
     nuevaSeccion.value.CUS_CANT_PARTICIPANTE = ''
-    alert('Sección agregada exitosamente.')
+    mostrarAlerta('Sección agregada exitosamente.', 'success')
   } finally { isAddingSeccion.value = false }
 }
 
@@ -1346,7 +1245,7 @@ function iniciarEdicionSeccion(seccion) {
 
 async function guardarEdicionSeccion() {
   if (!nuevaSeccion.value.CUS_SECCION || !nuevaSeccion.value.RAM_ID || !nuevaSeccion.value.CUS_CANT_PARTICIPANTE) {
-    alert('Debe completar todos los campos.')
+    mostrarAlerta('Debe completar todos los campos.', 'warning')
     return
   }
   try {
@@ -1361,10 +1260,10 @@ async function guardarEdicionSeccion() {
       if (cacheIdx !== -1) seccionesList.value[cacheIdx] = { ...nuevaSeccion.value, CUS_ID: editandoSeccion.value }
     }
     cancelarEdicionSeccion()
-    alert('Sección actualizada exitosamente.')
+    mostrarAlerta('Sección actualizada exitosamente.', 'success')
   } catch (e) {
     console.error('Error actualizando sección:', e)
-    alert('Error al actualizar la sección.')
+    mostrarAlerta('Error al actualizar la sección.', 'error')
   }
 }
 
@@ -1387,7 +1286,7 @@ async function eliminarSeccion(seccionId) {
     seccionesCurso.value = seccionesCurso.value.filter(s => s.CUS_ID !== seccionId)
     seccionesList.value = seccionesList.value.filter(s => s.CUS_ID !== seccionId)
     
-    alert('Sección eliminada exitosamente.')
+    mostrarAlerta('Sección eliminada exitosamente.', 'success')
   } catch (e) {
     if (/404/.test(String(e?.message))) {
       seccionesCurso.value = seccionesCurso.value.filter(s => s.CUS_ID !== seccionId)
@@ -1405,19 +1304,19 @@ async function guardarCurso() {
   try {
     // Validar campos obligatorios
     if (!form.value.CUR_DESCRIPCION?.trim()) {
-      alert('La descripción del curso es obligatoria.')
+      mostrarAlerta('La descripción del curso es obligatoria.', 'warning')
       return
     }
     if (!form.value.CUR_CODIGO?.trim()) {
-      alert('El código del curso es obligatorio.')
+      mostrarAlerta('El código del curso es obligatorio.', 'warning')
       return
     }
     if (!form.value.TCU_ID) {
-      alert('Debes seleccionar un tipo de curso.')
+      mostrarAlerta('Debes seleccionar un tipo de curso.', 'warning')
       return
     }
     if (!form.value.PER_ID_RESPONSABLE) {
-      alert('Debes seleccionar un responsable.')
+      mostrarAlerta('Debes seleccionar un responsable.', 'warning')
       return
     }
 
@@ -1449,17 +1348,8 @@ async function guardarCurso() {
 
     if (isTrulyNew.value) {
       // Obtener usuario actual para USU_ID
-      try {
-        const perfil = await request('auth/perfil')
-        if (perfil?.usuario?.user_id) {
-          apiPayload.usu_id = perfil.usuario.user_id
-        } else {
-          apiPayload.usu_id = 1 // Fallback
-        }
-      } catch (e) {
-        console.warn('No se pudo obtener USU_ID, usando default:', e)
-        apiPayload.usu_id = 1 // Default fallback
-      }
+      // TODO: Implementar endpoint 'auth/perfil' real en backend
+      apiPayload.usu_id = 1 // Por ahora usar ID 1 (Admin/Default)
 
       const creadoRaw = await cursosApi.create(apiPayload)
       const creado = toUpperKeys(creadoRaw)
@@ -1571,13 +1461,13 @@ async function guardarCurso() {
       await cargarFechasDelCurso(creado.CUR_ID)
       await cargarSeccionesDelCurso(creado.CUR_ID)
       isTrulyNew.value = false
-      alert('Curso creado exitosamente.')
+      mostrarAlerta('Curso creado exitosamente.', 'success')
     } else {
       // En edición: prevenir update si no hay cambios relevantes
       const camposClave = ['CUR_DESCRIPCION','CUR_CODIGO','TCU_ID','PER_ID_RESPONSABLE','CUR_FECHA_SOLICITUD','CUR_COTA_CON_ALMUERZO','CUR_COTA_SIN_ALMUERZO','CUR_MODALIDAD','CUR_TIPO_CURSO','CUR_LUGAR','CUR_COORD_LATITUD','CUR_COORD_LONGITUD','CUR_ESTADO','CUR_OBSERVACION','CUR_ADMINISTRA','COM_ID_LUGAR','CAR_ID_RESPONSABLE']
       const huboCambios = camposClave.some(k => String(originalCursoBackup.value?.[k] ?? '') !== String(payload[k] ?? ''))
       if (!huboCambios) {
-        alert('No hay cambios para guardar.')
+        mostrarAlerta('No hay cambios para guardar.', 'info')
         return
       }
       // Usar PATCH para edición parcial y evitar requerir todos los campos
@@ -1599,14 +1489,14 @@ async function guardarCurso() {
         cuotas: JSON.parse(JSON.stringify(cuotasCurso.value)),
         coordinadores: JSON.parse(JSON.stringify(coordinadoresCurso.value)),
       }
-      alert('Curso actualizado exitosamente.')
+      mostrarAlerta('Curso actualizado exitosamente.', 'success')
     }
     aplicarFiltros()
     cerrarModal()
   } catch (e) {
     console.error('Error al guardar el curso:', e)
     console.error('Response:', e.response?.data)
-    alert(`Error al guardar: ${e.response?.data?.detail || e.message || 'Error desconocido'}`)
+    mostrarAlerta(`Error al guardar: ${e.response?.data?.detail || e.message || 'Error desconocido'}`, 'error')
   } finally {
     isSaving.value = false
   }
@@ -1649,7 +1539,7 @@ function cerrarModalCambioEstado() {
 
 async function guardarCambioEstado() {
   if (nuevoEstado.value === null || nuevoEstado.value === undefined) {
-    alert('Debe seleccionar un estado')
+    mostrarAlerta('Debe seleccionar un estado', 'warning')
     return
   }
   
@@ -1668,12 +1558,14 @@ async function guardarCambioEstado() {
     const actualizado = toUpperKeys(actualizadoRaw)
     Object.assign(cursoParaCambioEstado.value, actualizado)
     aplicarFiltros()
-    alert('Estado actualizado exitosamente.')
+    mostrarAlerta('Estado actualizado exitosamente.', 'success')
     cerrarModalCambioEstado()
   } catch (e) {
     console.error('Error al cambiar estado:', e)
     console.error('Response:', e.response?.data)
-    alert(`Error al cambiar estado: ${e.response?.data?.detail || e.message || 'Error desconocido'}`)
+    console.error('Error al cambiar estado:', e)
+    console.error('Response:', e.response?.data)
+    mostrarAlerta(`Error al cambiar estado: ${e.response?.data?.detail || e.message || 'Error desconocido'}`, 'error')
   } finally {
     isDisabling.value = false
   }
@@ -1773,7 +1665,7 @@ const seccionesOptions = computed(() => seccionesCurso.value.map(s => {
 async function agregarFormador() {
   if (isAddingFormador.value) return
   const f = nuevaFormador.value
-  if (!f.PER_ID || !f.ROL_ID) { alert('Completa persona y rol.'); return }
+  if (!f.PER_ID || !f.ROL_ID) { mostrarAlerta('Completa persona y rol.', 'warning'); return }
   try {
     isAddingFormador.value = true
     if (!form.value.CUR_ID) {
@@ -1801,7 +1693,7 @@ function iniciarEdicionFormador(formador) {
 async function guardarEdicionFormador() {
   const f = nuevaFormador.value
   if (!f.PER_ID || !f.ROL_ID) {
-    alert('Completa persona y rol.')
+    mostrarAlerta('Completa persona y rol.', 'warning')
     return
   }
   try {
@@ -1820,10 +1712,10 @@ async function guardarEdicionFormador() {
       if (idx !== -1) formadoresCurso.value[idx] = { ...f, CUF_ID: editandoFormador.value }
     }
     cancelarEdicionFormador()
-    alert('Formador actualizado exitosamente.')
+    mostrarAlerta('Formador actualizado exitosamente.', 'success')
   } catch (e) {
     console.error('Error actualizando formador:', e)
-    alert('Error al actualizar el formador.')
+    mostrarAlerta('Error al actualizar el formador.', 'error')
   }
 }
 
@@ -1863,7 +1755,7 @@ const tiempoAlimentacionOptions = [
 async function agregarAlimentacion() {
   if (isAddingAlimentacion.value) return
   const a = nuevaAlimentacion.value
-  if (!a.ALI_ID || !a.CUA_FECHA || !a.CUA_TIEMPO || !a.CUA_DESCRIPCION) { alert('Completa todos los campos.'); return }
+  if (!a.ALI_ID || !a.CUA_FECHA || !a.CUA_TIEMPO || !a.CUA_DESCRIPCION) { mostrarAlerta('Completa todos los campos.', 'warning'); return }
   try {
     isAddingAlimentacion.value = true
     if (!form.value.CUR_ID) {
@@ -1892,7 +1784,7 @@ function iniciarEdicionAlimentacion(alimentacion) {
 async function guardarEdicionAlimentacion() {
   const a = nuevaAlimentacion.value
   if (!a.ALI_ID || !a.CUA_FECHA || !a.CUA_TIEMPO || !a.CUA_DESCRIPCION) {
-    alert('Completa todos los campos.')
+    mostrarAlerta('Completa todos los campos.', 'warning')
     return
   }
   try {
@@ -1912,10 +1804,10 @@ async function guardarEdicionAlimentacion() {
       if (idx !== -1) alimentacionesCurso.value[idx] = { ...a, CUA_ID: editandoAlimentacion.value }
     }
     cancelarEdicionAlimentacion()
-    alert('Alimentación actualizada exitosamente.')
+    mostrarAlerta('Alimentación actualizada exitosamente.', 'success')
   } catch (e) {
     console.error('Error actualizando alimentación:', e)
-    alert('Error al actualizar la alimentación.')
+    mostrarAlerta('Error al actualizar la alimentación.', 'error')
   }
 }
 
@@ -1947,7 +1839,7 @@ async function eliminarAlimentacion(item) {
 async function agregarCuota() {
   if (isAddingCuota.value) return
   const c = nuevaCuota.value
-  if (!c.CUU_TIPO || !c.CUU_FECHA || !c.CUU_VALOR) { alert('Completa todos los campos.'); return }
+  if (!c.CUU_TIPO || !c.CUU_FECHA || !c.CUU_VALOR) { mostrarAlerta('Completa todos los campos.', 'warning'); return }
   try {
     isAddingCuota.value = true
     if (!form.value.CUR_ID) {
@@ -1989,7 +1881,7 @@ async function eliminarCuota(item) {
 async function agregarCoordinador() {
   if (isAddingCoordinador.value) return
   const coord = nuevoCoordinador.value
-  if (!coord.PER_ID || !coord.CAR_ID) { alert('Completa persona y cargo.'); return }
+  if (!coord.PER_ID || !coord.CAR_ID) { mostrarAlerta('Completa persona y cargo.', 'warning'); return }
   try {
     isAddingCoordinador.value = true
     if (!form.value.CUR_ID) {
@@ -2026,40 +1918,14 @@ async function eliminarCoordinador(item) {
 }
 
 async function abrirModalVer(curso) {
-  cursoSeleccionado.value = curso
-  mostrarModalVer.value = true // Abrir modal inmediatamente para mostrar al usuario
-  
-  // Cargar datos en segundo plano
-  try {
-    await cargarFechasDelCurso(curso.CUR_ID)
-    seccionesCurso.value = seccionesList.value.filter(s => Number(s.CUR_ID) === Number(curso.CUR_ID))
-    
-    // Cargar formadores, alimentación, cuotas y coordinadores en paralelo pero sin bloquear UI
-    const [forms, alims, cuots, coords] = await Promise.all([
-      formadoresApi.list({ CUR_ID: curso.CUR_ID, page_size: 500 }).catch(() => []),
-      alimentacionesApi.list({ CUR_ID: curso.CUR_ID, page_size: 500 }).catch(() => []),
-      cuotasApi.list({ CUR_ID: curso.CUR_ID, page_size: 500 }).catch(() => []),
-      coordinadoresApi.list({ CUR_ID: curso.CUR_ID, page_size: 500 }).catch(() => []),
-    ])
-    
-    formadoresCurso.value = (Array.isArray(forms?.results) ? forms.results : (forms || [])).map(toUpperKeys)
-    alimentacionesCurso.value = (Array.isArray(alims?.results) ? alims.results : (alims || [])).map(toUpperKeys)
-    cuotasCurso.value = (Array.isArray(cuots?.results) ? cuots.results : (cuots || [])).map(toUpperKeys)
-    coordinadoresCurso.value = (Array.isArray(coords?.results) ? coords.results : (coords || [])).map(toUpperKeys)
-    
-    // Cargar catálogo de alimentación solo si es necesario
-    if (!alimentacionCatalogo.value.length) {
-      const cat = await mantenedores.alimentacion.list().catch(() => [])
-      alimentacionCatalogo.value = Array.isArray(cat?.results) ? cat.results : (cat || [])
-    }
-  } catch (e) {
-    console.error('[abrirModalVer] Error cargando datos:', e)
-  }
+  // Reutilizar la lógica de carga de edición pero en modo solo lectura
+  await abrirModalEditar(curso)
+  modoVer.value = true
 }
 
 function cerrarModalVer() {
+  // Legacy cleanup if needed
   mostrarModalVer.value = false
-  cursoSeleccionado.value = null
 }
 
 function abrirDashboard(curso) {
