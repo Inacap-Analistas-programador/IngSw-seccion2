@@ -11,8 +11,8 @@ const dashboardService_2 = {
   // ============================
   cursos: {
     list: (params) =>
-      request(`cursos${params ? `?${new URLSearchParams(params)}` : ''}`),
-    get: (id) => request(`cursos/${id}/`)
+      request(`cursos/cursos${params ? `?${new URLSearchParams(params)}` : ''}`),
+    get: (id) => request(`cursos/cursos/${id}/`)
   },
 
   // ============================
@@ -20,8 +20,8 @@ const dashboardService_2 = {
   // ============================
   personas: {
     list: (params) =>
-      request(`personas${params ? `?${new URLSearchParams(params)}` : ''}`),
-    get: (id) => request(`personas/${id}/`)
+      request(`personas/personas${params ? `?${new URLSearchParams(params)}` : ''}`),
+    get: (id) => request(`personas/personas/${id}/`)
   },
 
   // ============================
@@ -29,8 +29,8 @@ const dashboardService_2 = {
   // ============================
   personaCursos: {
     list: (params) =>
-      request(`persona-cursos${params ? `?${new URLSearchParams(params)}` : ''}`),
-    get: (id) => request(`persona-cursos/${id}/`)
+      request(`personas/cursos${params ? `?${new URLSearchParams(params)}` : ''}`),
+    get: (id) => request(`personas/cursos/${id}/`)
   },
 
   // ============================
@@ -38,8 +38,8 @@ const dashboardService_2 = {
   // ============================
   pagoPersona: {
     list: (params) =>
-      request(`pago-persona${params ? `?${new URLSearchParams(params)}` : ''}`),
-    get: (id) => request(`pago-persona/${id}/`)
+      request(`pagos/pago-persona${params ? `?${new URLSearchParams(params)}` : ''}`),
+    get: (id) => request(`pagos/pago-persona/${id}/`)
   },
 
   // ============================
@@ -47,8 +47,8 @@ const dashboardService_2 = {
   // ============================
   coordinadores: {
     list: (params) =>
-      request(`coordinadores${params ? `?${new URLSearchParams(params)}` : ''}`),
-    get: (id) => request(`coordinadores/${id}/`)
+      request(`cursos/coordinadores${params ? `?${new URLSearchParams(params)}` : ''}`),
+    get: (id) => request(`cursos/coordinadores/${id}/`)
   },
 
   // ============================
@@ -56,8 +56,8 @@ const dashboardService_2 = {
   // ============================
   formadores: {
     list: (params) =>
-      request(`formadores${params ? `?${new URLSearchParams(params)}` : ''}`),
-    get: (id) => request(`formadores/${id}/`)
+      request(`cursos/formadores${params ? `?${new URLSearchParams(params)}` : ''}`),
+    get: (id) => request(`cursos/formadores/${id}/`)
   }
 }
 
