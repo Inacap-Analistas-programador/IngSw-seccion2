@@ -257,7 +257,18 @@ async function fetchRows(params = {}) {
 		let cursosPersona = []
 		if (USE_BACKEND_ESTADO_CORREO) {
 			try {
-				cursosPersona = await personaCursosService.list()
+				// Request all records to ensure client-side join works correctly
+				const pcRes = await personaCursosService.list({ page_size: 10000 })
+				// Normalize response
+				if (Array.isArray(pcRes)) {
+					cursosPersona = pcRes
+				} else if (pcRes && Array.isArray(pcRes.results)) {
+					cursosPersona = pcRes.results
+				} else if (pcRes && Array.isArray(pcRes.data)) {
+					cursosPersona = pcRes.data
+				} else {
+					cursosPersona = []
+				}
 			} catch (e) {
 				console.warn('No se pudieron cargar persona-curso (opcional):', e.message || e)
 			}
@@ -312,9 +323,9 @@ async function fetchRows(params = {}) {
 		}
 
 		rows.value = list.map(p => ({
-			id: p.id || p.PER_ID || null,
-			pecId: (USE_BACKEND_ESTADO_CORREO ? (() => { const cp = cursosMap.get(p.PER_ID || p.id); return cp ? (cp.PEC_ID || cp.id || null) : null })() : null),
-			pecEnvioCorreoQR: (USE_BACKEND_ESTADO_CORREO ? (() => { const cp = cursosMap.get(p.PER_ID || p.id); return cp ? (cp.PEC_ENVIO_CORREO_QR === true || cp.PEC_ENVIO_CORREO_QR === 1 || cp.PEC_ENVIO_CORREO_QR === '1') : false })() : false),
+			id: p.id || p.per_id || p.PER_ID || null,
+			pecId: (USE_BACKEND_ESTADO_CORREO ? (() => { const cp = cursosMap.get(p.id || p.per_id || p.PER_ID); return cp ? (cp.PEC_ID || cp.id || null) : null })() : null),
+			pecEnvioCorreoQR: (USE_BACKEND_ESTADO_CORREO ? (() => { const cp = cursosMap.get(p.id || p.per_id || p.PER_ID); return cp ? (cp.PEC_ENVIO_CORREO_QR === true || cp.PEC_ENVIO_CORREO_QR === 1 || cp.PEC_ENVIO_CORREO_QR === '1') : false })() : false),
 			nombre: p.PER_NOMBRES || p.per_nombres || p.nombre || p.nombre_completo || p.full_name || '',
 			apellidoPaterno: p.PER_APELPTA || p.per_apelpta || p.per_apelpat || p.PER_APELLIDO_PATERNO || p.apellido_paterno || p.apellidoPaterno || p.apellido1 || '',
 			apellidoMaterno: p.PER_APELMAT || p.per_apelmat || p.PER_APELLIDO_MATERNO || p.apellido_materno || p.apellidoMaterno || p.apellido2 || '',
@@ -355,7 +366,7 @@ async function fetchRows(params = {}) {
 			estadoPagoRaw: p.PAP_ESTADO,
 			estadoPagoBool: (p.PAP_ESTADO === 1 || p.PAP_ESTADO === true || p.PAP_ESTADO === '1'),
 			estadoPago: (p.PAP_ESTADO !== undefined ? ((p.PAP_ESTADO === 1 || p.PAP_ESTADO === true || p.PAP_ESTADO === '1') ? 'Pagado' : 'Pendiente') : (p.estadoPago || 'Pendiente')),
-			estadoCorreo: (USE_BACKEND_ESTADO_CORREO ? (() => { const s = cursosMap.get(p.PER_ID || p.id); return s && (s.PEC_ENVIO_CORREO_QR === true || s.PEC_ENVIO_CORREO_QR === 1 || s.PEC_ENVIO_CORREO_QR === '1') ? 'Enviado' : 'Pendiente' })() : 'Pendiente'),
+			estadoCorreo: (USE_BACKEND_ESTADO_CORREO ? (() => { const s = cursosMap.get(p.id || p.per_id || p.PER_ID); return s && (s.PEC_ENVIO_CORREO_QR === true || s.PEC_ENVIO_CORREO_QR === 1 || s.PEC_ENVIO_CORREO_QR === '1') ? 'Enviado' : 'Pendiente' })() : 'Pendiente'),
 			diasPendiente: null,
 			fullName: [
 				(p.PER_APELPTA || p.per_apelpat || p.PER_APELLIDO_PATERNO || p.apellido_paterno || p.apellidoPaterno || ''),

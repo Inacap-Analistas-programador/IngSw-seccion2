@@ -2,12 +2,12 @@
 """
 Idempotent script to create test `Perfil` and `Perfil_Aplicacion` rows per `Aplicacion`.
 
-For each Aplicacion this script creates these Perfiles (PEL_DESCRIPCION):
- - "<APP> - Ninguno"        => only PEA_CONSULTAR = True (others False)
- - "<APP> - Solo Crear"     => PEA_CONSULTAR = True, PEA_INGRESAR = True
- - "<APP> - Solo Modificar" => PEA_CONSULTAR = True, PEA_MODIFICAR = True
- - "<APP> - Solo Eliminar"  => PEA_CONSULTAR = True, PEA_ELIMINAR = True
- - "<APP> - Todos"          => all PEA_* = True
+For each Aplicacion this script creates these Perfiles (pel_descripcion):
+ - "<APP> - Ninguno"        => only pea_consultar = True (others False)
+ - "<APP> - Solo Crear"     => pea_consultar = True, pea_ingresar = True
+ - "<APP> - Solo Modificar" => pea_consultar = True, pea_modificar = True
+ - "<APP> - Solo Eliminar"  => pea_consultar = True, pea_eliminar = True
+ - "<APP> - Todos"          => all pea_* = True
 
 By default the script performs a dry-run and prints the actions it would take.
 Use `--apply` to make changes in the database.
@@ -56,14 +56,14 @@ def main():
 
     # Define desired profile templates per application
     profile_templates = [
-        ('Ninguno', {'PEA_CONSULTAR': True, 'PEA_INGRESAR': False, 'PEA_MODIFICAR': False, 'PEA_ELIMINAR': False}),
-        ('Solo Crear', {'PEA_CONSULTAR': True, 'PEA_INGRESAR': True, 'PEA_MODIFICAR': False, 'PEA_ELIMINAR': False}),
-        ('Solo Modificar', {'PEA_CONSULTAR': True, 'PEA_INGRESAR': False, 'PEA_MODIFICAR': True, 'PEA_ELIMINAR': False}),
-        ('Solo Eliminar', {'PEA_CONSULTAR': True, 'PEA_INGRESAR': False, 'PEA_MODIFICAR': False, 'PEA_ELIMINAR': True}),
-        ('Todos', {'PEA_CONSULTAR': True, 'PEA_INGRESAR': True, 'PEA_MODIFICAR': True, 'PEA_ELIMINAR': True}),
+        ('Ninguno', {'pea_consultar': True, 'pea_ingresar': False, 'pea_modificar': False, 'pea_eliminar': False}),
+        ('Solo Crear', {'pea_consultar': True, 'pea_ingresar': True, 'pea_modificar': False, 'pea_eliminar': False}),
+        ('Solo Modificar', {'pea_consultar': True, 'pea_ingresar': False, 'pea_modificar': True, 'pea_eliminar': False}),
+        ('Solo Eliminar', {'pea_consultar': True, 'pea_ingresar': False, 'pea_modificar': False, 'pea_eliminar': True}),
+        ('Todos', {'pea_consultar': True, 'pea_ingresar': True, 'pea_modificar': True, 'pea_eliminar': True}),
     ]
 
-    aplicacions = Aplicacion.objects.filter(APL_VIGENTE=True).order_by('APL_DESCRIPCION')
+    aplicacions = Aplicacion.objects.filter(apl_vigente=True).order_by('apl_descripcion')
     if not aplicacions.exists():
         print('No se encontraron aplicaciones (APLICACION). Nothing to do.')
         return
@@ -71,46 +71,46 @@ def main():
     changes = []
 
     for app in aplicacions:
-        app_name = (app.APL_DESCRIPCION or '').strip()
+        app_name = (app.apl_descripcion or '').strip()
         if not app_name:
-            app_name = f'Aplicacion-{app.APL_ID}'
+            app_name = f'Aplicacion-{app.apl_id}'
 
         for suffix, perm_map in profile_templates:
             perfil_name = f"{app_name} - {suffix}"
-            # Truncate to 50 chars to fit PEL_DESCRIPCION
+            # Truncate to 50 chars to fit pel_descripcion
             if len(perfil_name) > 50:
                 perfil_name = perfil_name[:47] + '...'
 
-            perfil_obj, created = Perfil.objects.get_or_create(PEL_DESCRIPCION=perfil_name, defaults={'PEL_VIGENTE': True})
+            perfil_obj, created = Perfil.objects.get_or_create(pel_descripcion=perfil_name, defaults={'pel_vigente': True})
             if created:
-                changes.append(f"Crear Perfil: {perfil_name} (PEL_ID={perfil_obj.PEL_ID})")
+                changes.append(f"Crear Perfil: {perfil_name} (pel_id={perfil_obj.pel_id})")
             else:
-                if not perfil_obj.PEL_VIGENTE:
-                    changes.append(f"Activar Perfil existente: {perfil_name} (PEL_ID={perfil_obj.PEL_ID})")
+                if not perfil_obj.pel_vigente:
+                    changes.append(f"Activar Perfil existente: {perfil_name} (pel_id={perfil_obj.pel_id})")
 
             # Ensure perfil is vigente
-            if perfil_obj.PEL_VIGENTE is not True:
-                perfil_obj.PEL_VIGENTE = True
+            if perfil_obj.pel_vigente is not True:
+                perfil_obj.pel_vigente = True
                 if args.apply:
                     perfil_obj.save()
 
             # Create or update Perfil_Aplicacion
-            pea, pea_created = Perfil_Aplicacion.objects.get_or_create(PEL_ID=perfil_obj, APL_ID=app, defaults={
-                'PEA_CONSULTAR': perm_map['PEA_CONSULTAR'],
-                'PEA_INGRESAR': perm_map['PEA_INGRESAR'],
-                'PEA_MODIFICAR': perm_map['PEA_MODIFICAR'],
-                'PEA_ELIMINAR': perm_map['PEA_ELIMINAR'],
+            pea, pea_created = Perfil_Aplicacion.objects.get_or_create(pel_id=perfil_obj, apl_id=app, defaults={
+                'pea_consultar': perm_map['pea_consultar'],
+                'pea_ingresar': perm_map['pea_ingresar'],
+                'pea_modificar': perm_map['pea_modificar'],
+                'pea_eliminar': perm_map['pea_eliminar'],
             })
 
             if pea_created:
-                changes.append(f"Crear Perfil_Aplicacion: Perfil='{perfil_name}' Aplicacion='{app_name}' PEA_ID={pea.PEA_ID}")
+                changes.append(f"Crear Perfil_Aplicacion: Perfil='{perfil_name}' Aplicacion='{app_name}' pea_id={pea.pea_id}")
             else:
                 # Compare and update fields if needed
                 updated = False
                 for field, desired in perm_map.items():
                     current = getattr(pea, field)
                     if bool(current) != bool(desired):
-                        changes.append(f"Actualizar Perfil_Aplicacion PEA_ID={pea.PEA_ID}: {field} {current} -> {desired}")
+                        changes.append(f"Actualizar Perfil_Aplicacion pea_id={pea.pea_id}: {field} {current} -> {desired}")
                         if args.apply:
                             setattr(pea, field, bool(desired))
                             updated = True
