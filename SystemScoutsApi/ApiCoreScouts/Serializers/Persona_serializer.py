@@ -314,6 +314,7 @@ class PersonaNivelSerializer(serializers.ModelSerializer):
 
 class PersonaCursoSerializer(serializers.ModelSerializer):
     # Incluir información completa del curso
+    cur_id = serializers.SerializerMethodField()
     cur_nombre = serializers.SerializerMethodField()
     cur_descripcion = serializers.SerializerMethodField()
     cur_fechainicio = serializers.SerializerMethodField()
@@ -321,6 +322,9 @@ class PersonaCursoSerializer(serializers.ModelSerializer):
     cur_codigo = serializers.SerializerMethodField()
     rol_descripcion = serializers.SerializerMethodField()
     estado_aprobacion = serializers.SerializerMethodField()
+    
+    # Alias para coincidir con frontend (PEC_ACREDITADO)
+    pec_acreditado = serializers.BooleanField(source='pec_acreditacion', read_only=True)
     
     class Meta:
         model = Persona_Curso
@@ -350,6 +354,14 @@ class PersonaCursoSerializer(serializers.ModelSerializer):
             ret['pec_envio_correo_qr'] = bool(ret['pec_envio_correo_qr'])
         return ret
     
+    def get_cur_id(self, obj):
+        try:
+            if obj.cus_id and obj.cus_id.cur_id:
+                return int(obj.cus_id.cur_id.cur_id)
+        except:
+            pass
+        return None
+
     def get_cur_nombre(self, obj):
         try:
             if obj.cus_id and obj.cus_id.cur_id:

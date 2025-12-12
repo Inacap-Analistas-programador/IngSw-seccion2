@@ -61,19 +61,7 @@
           <span class="nav-text">Verificador QR</span>
         </router-link>
 
-        <!-- Apartado desplegable: Mas Pantallas -->
-        <div class="nav-item nav-collapsible" @click="toggleMasPantallas" :class="{ 'router-link-exact-active': showMasPantallas }">
-          <span class="nav-icon"><AppIcons name="view" :size="20" /></span>
-          <span class="nav-collapsible-title">Mas Pantallas</span>
-          <span class="caret" :class="{ open: showMasPantallas }">▾</span>
-        </div>
-        <Transition name="submenu-slide">
-          <div v-show="showMasPantallas" class="submenu">
-            <router-link to="/dashboard" class="submenu-item"><span class="submenu-icon"><AppIcons name="chart-bar" :size="16" /></span>Dashboard</router-link>
-            <router-link to="/mantenedores-2" class="submenu-item"><span class="submenu-icon"><AppIcons name="settings" :size="16" /></span>Mantenedores 2</router-link>
-            <router-link to="/inscripciones-2" class="submenu-item"><span class="submenu-icon"><AppIcons name="file-text" :size="16" /></span>Formulario 2</router-link>
-          </div>
-        </Transition>
+
       </div>
     </nav>
     
@@ -206,15 +194,13 @@ function handleAuthChanged() {
 
 // Desplegable de Mantenedores
 const showUsuarios = ref(false)
-const showMasPantallas = ref(false)
+
 
 function toggleUsuarios() {
   showUsuarios.value = !showUsuarios.value
 }
 
-function toggleMasPantallas() {
-  showMasPantallas.value = !showMasPantallas.value
-}
+
 
 // Sidebar can be either controlled by parent via `collapsed` prop or operate in uncontrolled mode using localStorage
 const props = defineProps({
@@ -260,14 +246,12 @@ onMounted(() => {
     // Abrir automáticamente si se navega a /mantenedores o /usuarios
     if (route && route.path) {
       showUsuarios.value = route.path.startsWith('/usuarios') || route.path.startsWith('/roles')
-      showMasPantallas.value = route.path.startsWith('/dashboard-2') || route.path.startsWith('/mantenedores-2') || route.path.startsWith('/inscripciones-2')
     }
 
     // Watch para actualizar estado al cambiar de ruta
     watch(() => route && route.path, async (p) => {
       if (p) {
         showUsuarios.value = p.startsWith('/usuarios') || p.startsWith('/roles')
-        showMasPantallas.value = p.startsWith('/dashboard-2') || p.startsWith('/mantenedores-2') || p.startsWith('/inscripciones-2')
       }
       // No actualizamos estado de autenticación ni consultamos authService en modo UI-only
     })

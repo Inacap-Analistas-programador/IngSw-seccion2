@@ -37,29 +37,30 @@ class PersonaViewSet(viewsets.ModelViewSet):
             'esc_id',           # Estado_Civil
             'com_id',           # Comuna
             'usu_id'            # Usuario
-        ).prefetch_related(
-            # Prefetch Persona_Curso con sus relaciones
-            Prefetch(
-                'persona_curso',
-                Persona_Curso.objects.select_related(
-                    'cus_id__cur_id',   # Curso_Seccion -> Curso
-                    'rol_id',            # Rol
-                    'ali_id',            # Alimentacion
-                    'niv_id'             # Nivel
-                ).prefetch_related(
-                    Prefetch(
-                        'persona_curso_estado',  # Persona_Estado_Curso
-                        Persona_Estado_Curso.objects.select_related('usu_id')
-                    )
-                )
-            ),
-            # Prefetch otras relaciones
-            Prefetch('persona_grupo__gru_id'),
-            Prefetch('persona_formador'),
-            Prefetch('persona_individual__car_id'),
-            Prefetch('persona_nivel__niv_id'),
-            Prefetch('persona_vehiculo')
         ).all()
+        # .prefetch_related(
+        #     # Prefetch Persona_Curso con sus relaciones
+        #     Prefetch(
+        #         'persona_curso',
+        #         Persona_Curso.objects.select_related(
+        #             'cus_id__cur_id',   # Curso_Seccion -> Curso
+        #             'rol_id',            # Rol
+        #             'ali_id',            # Alimentacion
+        #             'niv_id'             # Nivel
+        #         ).prefetch_related(
+        #             Prefetch(
+        #                 'persona_curso_estado',  # Persona_Estado_Curso
+        #                 Persona_Estado_Curso.objects.select_related('usu_id')
+        #             )
+        #         )
+        #     ),
+        #     # Prefetch otras relaciones
+        #     Prefetch('persona_grupo__gru_id'),
+        #     Prefetch('persona_formador'),
+        #     Prefetch('persona_individual__car_id'),
+        #     Prefetch('persona_nivel__niv_id'),
+        #     Prefetch('persona_vehiculo')
+        # ).all()
         
         return queryset
     
@@ -96,13 +97,14 @@ class PersonaCursoViewSet(viewsets.ModelViewSet):
             'rol_id',               # Rol
             'ali_id',               # Alimentacion
             'niv_id'                # Nivel
-        ).prefetch_related(
-            # Prefetch Estado del curso si existe relación inversa
-            Prefetch(
-                'persona_estado_curso',  # Ajustar según nombre de relación inversa
-                Persona_Estado_Curso.objects.select_related('usu_id')
-            )
         ).all()
+        # .prefetch_related(
+        #     # Prefetch Estado del curso si existe relación inversa
+        #     Prefetch(
+        #         'persona_estado_curso',  # Ajustar según nombre de relación inversa
+        #         Persona_Estado_Curso.objects.select_related('usu_id')
+        #     )
+        # ).all()
 
 class PersonaGrupoViewSet(viewsets.ModelViewSet):
     serializer_class = MU_S.PersonaGrupoSerializer
