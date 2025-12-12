@@ -605,6 +605,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { request } from '@/services/apiClient.js'
 import cursosService from '@/services/cursosService.js'
 import CursoDashboard from './CursoDashboard.vue'
@@ -742,6 +743,9 @@ const inicializarFormulario = () => ({
 })
 
 form.value = inicializarFormulario()
+
+const route = useRoute()
+const router = useRouter()
 
 // --- Opciones para Selects (deberían ser dinámicas o constantes) ---
 const opcionesEstado = [
@@ -924,11 +928,39 @@ onMounted(() => {
       const tokenLate = localStorage.getItem('accessToken') || localStorage.getItem('token')
       if (tokenLate && cursosList.value.length === 0) {
         console.info('[CRUDcursos] Token apareció luego del montaje. Reintentando carga de datos...')
-        cargarDatos()
+        cargarDatos().finally(() => checkRouteActions())
       }
     }, 800)
+  } else {
+    checkRouteActions()
   }
 })
+
+async function checkRouteActions() {
+  const { action, id } = route.query
+  if (action === 'edit' && id) {
+    console.log('Detectada acción de editar para curso ID:', id)
+    // Intentar encontrar el curso en la lista actual
+    let curso = cursosList.value.find(c => Number(c.CUR_ID) === Number(id))
+    
+    // Si no está (porque no se cargó nada o paginación), intentar buscarlo específicamente
+    if (!curso) {
+      try {
+        const res = await request(`/cursos/cursos/${id}/`)
+        // Normalizar respuesta si es necesario
+        curso = toUpperKeys(res)
+      } catch (e) {
+        console.error('Error buscando curso para editar:', e)
+      }
+    }
+    
+    if (curso) {
+      abrirModalEditar(curso)
+      // Limpiar query para no reabrir al recargar, opcional
+      router.replace({ query: {} })
+    }
+  }
+}
 
 
 

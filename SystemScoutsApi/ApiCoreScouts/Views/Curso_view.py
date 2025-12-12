@@ -37,23 +37,24 @@ class CursoViewSet(viewsets.ModelViewSet):
             'per_id_responsable',   # Persona responsable
             'car_id_responsable',   # Cargo responsable
             'com_id_lugar'          # Comuna lugar
-        ).prefetch_related(
-            # Prefetch secciones del curso
-            Prefetch(
-                'curso_seccion',
-                Curso_Seccion.objects.select_related('ram_id')
-            ),
-            # Prefetch coordinadores del curso
-            Prefetch(
-                'curso_coordinador',
-                Curso_Coordinador.objects.select_related('per_id', 'car_id')
-            ),
-            # Prefetch formadores del curso
-            Prefetch(
-                'curso_formador',
-                Curso_Formador.objects.select_related('per_id', 'rol_id', 'cus_id__cur_id')
-            )
         ).order_by('cur_estado', 'cur_descripcion')
+        # .prefetch_related(
+        #     # Prefetch secciones del curso
+        #     Prefetch(
+        #         'curso_seccion',
+        #         Curso_Seccion.objects.select_related('ram_id')
+        #     ),
+        #     # Prefetch coordinadores del curso
+        #     Prefetch(
+        #         'curso_coordinador',
+        #         Curso_Coordinador.objects.select_related('per_id', 'car_id')
+        #     ),
+        #     # Prefetch formadores del curso
+        #     Prefetch(
+        #         'curso_formador',
+        #         Curso_Formador.objects.select_related('per_id', 'rol_id', 'cus_id__cur_id')
+        #     )
+        # ).order_by('cur_estado', 'cur_descripcion')
 
 class CursoCuotaViewSet(viewsets.ModelViewSet):
     serializer_class = MC_S.CursoCuotaSerializer

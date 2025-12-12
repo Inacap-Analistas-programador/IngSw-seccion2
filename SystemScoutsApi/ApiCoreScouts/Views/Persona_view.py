@@ -94,13 +94,14 @@ class PersonaCursoViewSet(viewsets.ModelViewSet):
             'rol_id',               # Rol
             'ali_id',               # Alimentacion
             'niv_id'                # Nivel
-        ).prefetch_related(
-            # Prefetch Estado del curso si existe relación inversa
-            Prefetch(
-                'persona_estado_curso',  # Ajustar según nombre de relación inversa
-                Persona_Estado_Curso.objects.select_related('usu_id')
-            )
         ).all()
+        # .prefetch_related(
+        #     # Prefetch Estado del curso si existe relación inversa
+        #     Prefetch(
+        #         'persona_estado_curso',  # Ajustar según nombre de relación inversa
+        #         Persona_Estado_Curso.objects.select_related('usu_id')
+        #     )
+        # ).all()
 
 class PersonaGrupoViewSet(viewsets.ModelViewSet):
     serializer_class = MU_S.PersonaGrupoSerializer

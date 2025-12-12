@@ -1,15 +1,14 @@
 <template>
   <div class="dashboard-scout">
-    <!-- Bloque de alertas globales -->
-    <div v-if="alertas.length > 0" style="margin-bottom: 16px;">
-      <BaseAlert
-        v-for="alerta in alertas"
+    <!-- Toasts de notificación -->
+    <div class="toast-container">
+      <NotificationToast
+        v-for="(alerta, index) in alertas"
         :key="alerta.id"
-        :type="alerta.type"
-        :title="alerta.title"
-        :message="alerta.message"
-        :dismissible="true"
+        :message="alerta.title ? `${alerta.title}: ${alerta.message}` : alerta.message"
+        :icon="alerta.type === 'success' ? 'check' : 'alert-circle'"
         @close="removerAlerta(alerta.id)"
+        :style="{ marginBottom: `${index * 60}px` }"
       />
     </div>
     <!-- Contenido Principal -->
@@ -27,7 +26,7 @@
               class="native-select"
             >
               <option value="" disabled>Seleccione un curso</option>
-              <option value="todos">Todos los cursos</option>
+              <option value="" disabled selected>Seleccione un curso para ver estadísticas</option>
               <option v-for="curso in cursos" :key="curso.CUR_ID" :value="curso.CUR_ID">
                 {{ curso.CUR_CODIGO }} - {{ curso.CUR_DESCRIPCION }}
               </option>
@@ -35,14 +34,22 @@
           </div>
           
           <div class="semaphore-container">
-            <div class="semaphore" :class="getSemaphoreClass(cursoSeleccionado)"></div>
-            <span class="semaphore-label">{{ getEstadoDisplay(cursoSeleccionadoInfo?.CUR_ESTADO) }}</span>
+            <div class="semaphore" v-if="cursoSeleccionado" :class="getSemaphoreClass(cursoSeleccionado)"></div>
+            <span class="semaphore-label" v-if="cursoSeleccionado">{{ getEstadoDisplay(cursoSeleccionadoInfo?.CUR_ESTADO) }}</span>
           </div>
         </div>
       </section>
 
       <!-- Tarjetas de Estadísticas -->
-      <div class="stats-grid">
+      <!-- Tarjetas de Estadísticas (Solo visibles si hay curso seleccionado) -->
+      <div v-if="!cursoSeleccionado" class="no-selection-placeholder">
+        <div class="placeholder-content">
+          <h3>👈 Por favor, seleccione un curso</h3>
+          <p>Para visualizar el dashboard, debe seleccionar un curso del listado.</p>
+        </div>
+      </div>
+      
+      <div v-else class="stats-grid">
         <DataCard
           title="Personas Inscritas"
           :value="personasInscritas"
@@ -69,7 +76,7 @@
       </div>
 
       <!-- Gráficos -->
-      <section class="charts-section">
+      <section v-if="cursoSeleccionado" class="charts-section">
         <h3>Estadísticas del Curso</h3>
         <div class="charts-grid">
           <div class="chart-card">
@@ -151,8 +158,11 @@
         </div>
       </section>
 
+      <!-- Tabla de Cursos (Solo si seleccionado, aunque selector ya filtra) -->
+      <!-- Se oculta si no hay selección para limpiar la vista -->
+      
       <!-- Tabla de Responsables -->
-      <section class="responsibles-section">
+      <section v-if="cursoSeleccionado" class="responsibles-section">
         <h3>Responsables de Cursos</h3>
         <div class="tabs-container">
           <div class="tabs-header">
@@ -236,7 +246,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 // Componentes del sistema
-import BaseAlert from '@/components/BaseAlert.vue'
+import NotificationToast from '@/components/NotificationToast.vue'
 import DataCard from '@/components/DataCard.vue'
 
 // CORREGIDO: Importación correcta de servicios
@@ -246,7 +256,7 @@ export default {
   name: 'DashboardScout',
   
   components: {
-    BaseAlert,
+    NotificationToast,
     DataCard
   },
   
@@ -254,7 +264,7 @@ export default {
     const router = useRouter()
     
     // Estado reactivo
-    const cursoSeleccionado = ref('todos')
+    const cursoSeleccionado = ref('') // Inicializar vacío para obligar selección
     const alertas = ref([])
     const loading = ref(false)
     const activeTab = ref('coordinadores')
@@ -416,7 +426,7 @@ export default {
         2: '● Finalizado',
         3: '● Cancelado'
       }
-      return estados[estado] || '● Desconocido'
+      return estados[estado] || '' // Retornar vacío si no se conoce
     }
 
     const getSemaphoreClass = (cursoId) => {
@@ -449,7 +459,8 @@ export default {
         
         // Cargar cursos con manejo de error específico
         try {
-          const cursosData = await dashboardService_2.cursos.list()
+          let cursosData = await dashboardService_2.cursos.list()
+          if (cursosData.results) cursosData = cursosData.results
           if (cursosData && Array.isArray(cursosData)) {
             cursos.value = cursosData
             console.log(`✓ Cursos cargados: ${cursosData.length}`)
@@ -464,7 +475,8 @@ export default {
         
         // Cargar personas
         try {
-          const personasData = await dashboardService_2.personas.list()
+          let personasData = await dashboardService_2.personas.list()
+          if (personasData.results) personasData = personasData.results
           if (personasData && Array.isArray(personasData)) {
             personas.value = personasData
             console.log(`✓ Personas cargadas: ${personasData.length}`)
@@ -475,7 +487,8 @@ export default {
         
         // Cargar inscripciones
         try {
-          const personasCursoData = await dashboardService_2.personaCursos.list()
+          let personasCursoData = await dashboardService_2.personaCursos.list()
+          if (personasCursoData.results) personasCursoData = personasCursoData.results
           if (personasCursoData && Array.isArray(personasCursoData)) {
             personasCurso.value = personasCursoData
             console.log(`✓ Inscripciones cargadas: ${personasCursoData.length}`)
@@ -486,7 +499,8 @@ export default {
         
         // Cargar pagos con manejo de error 404
         try {
-          const pagosData = await dashboardService_2.pagoPersona.list()
+          let pagosData = await dashboardService_2.pagoPersona.list()
+          if (pagosData.results) pagosData = pagosData.results
           if (pagosData && Array.isArray(pagosData)) {
             pagosPersona.value = pagosData
             console.log(`✓ Pagos cargados: ${pagosData.length}`)
@@ -499,7 +513,8 @@ export default {
         
         // Cargar coordinadores
         try {
-          const coordinadoresData = await dashboardService_2.coordinadores.list()
+          let coordinadoresData = await dashboardService_2.coordinadores.list()
+          if (coordinadoresData.results) coordinadoresData = coordinadoresData.results
           if (coordinadoresData && Array.isArray(coordinadoresData)) {
             cursoCoordinadores.value = coordinadoresData
             console.log(`✓ Coordinadores cargados: ${coordinadoresData.length}`)
@@ -510,7 +525,8 @@ export default {
         
         // Cargar formadores
         try {
-          const formadoresData = await dashboardService_2.formadores.list()
+          let formadoresData = await dashboardService_2.formadores.list()
+          if (formadoresData.results) formadoresData = formadoresData.results
           if (formadoresData && Array.isArray(formadoresData)) {
             cursoFormadores.value = formadoresData
             console.log(`✓ Formadores cargados: ${formadoresData.length}`)
@@ -1164,5 +1180,24 @@ export default {
   /* Use global --color-surface from base.css for consistent surface color */
   --color-border: #e9ecef;
   --color-text: #495057;
+}
+
+.no-selection-placeholder {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  background-color: var(--color-surface);
+  border-radius: 12px;
+  border: 2px dashed #e9ecef;
+  margin-top: 20px;
+  text-align: center;
+  color: #6c757d;
+}
+
+.placeholder-content h3 {
+  margin-top: 0;
+  color: #2c5aa0;
+  margin-bottom: 8px;
 }
 </style>
