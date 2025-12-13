@@ -74,7 +74,7 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     SECURE_BROWSER_XSS_FILTER = True
     X_FRAME_OPTIONS = 'DENY'
-ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', default='sistema.guiasyscoutsbiobio.cl,www.sistema.guiasyscoutsbiobio.cl,localhost,127.0.0.1', cast=Csv())
+ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', default='sistema.guiasyscoutsbiobio.cl,www.sistema.guiasyscoutsbiobio.cl,localhost,127.0.0.1,testserver', cast=Csv())
 
 
 # APLICACIONES INSTALADAS
@@ -138,8 +138,8 @@ CORS_ALLOW_HEADERS = [
 # PERMITIR EL USO DE CREDENCIALES Y COOKIES 
 CORS_ALLOW_CREDENTIALS = True
 
-# Disable automatic slash append for API endpoints
-APPEND_SLASH = False
+# Enable automatic slash append to fix 404s when client omits trailing slash
+APPEND_SLASH = True
 
 ROOT_URLCONF = 'SystemScoutsApi.urls'
 

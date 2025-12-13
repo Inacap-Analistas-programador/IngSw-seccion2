@@ -19,7 +19,7 @@ class PerfilPermission(BasePermission):
 
         # Bypass: si es superuser (usu_is_superuser True) permitir todo sin revisar flags.
         # Se mantiene estricto para otros usuarios (staff no bypass).
-        if getattr(request.user, 'usu_is_superuser', False):
+        if getattr(request.user, 'is_superuser', False):
             return True
 
         perfil = getattr(request.user, 'pel_id', None)

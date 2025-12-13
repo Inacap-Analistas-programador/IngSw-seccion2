@@ -150,7 +150,7 @@ const handleLogin = async () => {
 
     if (data.access) {
       localStorage.setItem('token', data.access)
-      router.push('/dashboard')
+      router.push('/dashboard-2')
       window.location.reload()
     } else {
       showToast('Usuario o contraseña incorrectos')

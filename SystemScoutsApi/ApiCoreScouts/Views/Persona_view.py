@@ -1,6 +1,7 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework import filters
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from ..Serializers import Persona_serializer as MU_S
@@ -23,10 +24,46 @@ class PersonaViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, PerfilPermission]
     app_name = 'Personas'
 
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_class = PersonaFilter
+    search_fields = ['per_nombres', 'per_apelpta', 'per_apelmat', 'per_run', 'per_apodo']
     renderer_classes = [JSONRenderer]
     pagination_class = StandardResultsSetPagination
+
+    @action(detail=False, methods=['post'])
+    def acreditacion_manual_acreditar(self, request):
+        """
+        Acción para acreditar un participante manualmente.
+        Recibe { 'per_id': <int>, 'rut': <str> }
+        """
+        try:
+            data = request.data
+            per_id = data.get('per_id')
+            
+            # import models inside if not available or rely on global imports
+            # (Imports are available globally in this file)
+            
+            # Buscar persona
+            persona = Persona.objects.filter(per_id=per_id).first()
+            if not persona:
+                return Response({'error': 'Persona no encontrada'}, status=404)
+
+            # Buscar curso activo (Persona_Curso)
+            pec = Persona_Curso.objects.filter(per_id=per_id).first()
+            if not pec:
+                return Response({'error': 'La persona no está inscrita en ningún curso'}, status=400)
+
+            # Realizar acreditación
+            pec.pec_acreditacion = True
+            pec.pec_registro = True
+            pec.save()
+
+            # Retornar datos actualizados usando el serializer completo
+            serializer = self.get_serializer(persona)
+            return Response(serializer.data)
+
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
     
     def get_queryset(self):
         """
@@ -40,27 +77,25 @@ class PersonaViewSet(viewsets.ModelViewSet):
         ).prefetch_related(
             # Prefetch Persona_Curso con sus relaciones
             Prefetch(
-                'persona_curso',
-                Persona_Curso.objects.select_related(
+                'persona_curso_set',
+                queryset=Persona_Curso.objects.select_related(
                     'cus_id__cur_id',   # Curso_Seccion -> Curso
                     'rol_id',            # Rol
                     'ali_id',            # Alimentacion
                     'niv_id'             # Nivel
                 ).prefetch_related(
                     Prefetch(
-                        'persona_curso_estado',  # Persona_Estado_Curso
-                        Persona_Estado_Curso.objects.select_related('usu_id')
+                        'persona_estado_curso_set',  # Persona_Estado_Curso
+                        queryset=Persona_Estado_Curso.objects.select_related('usu_id')
                     )
                 )
             ),
             # Prefetch otras relaciones
-            Prefetch('persona_grupo__gru_id'),
-            Prefetch('persona_formador'),
-            Prefetch('persona_individual__car_id'),
-            Prefetch('persona_nivel__niv_id'),
-            Prefetch('persona_vehiculo')
+            Prefetch('persona_grupo_set', queryset=Persona_Grupo.objects.select_related('gru_id')),
+            Prefetch('persona_formador_set'),
+            Prefetch('persona_individual_set', queryset=Persona_Individual.objects.select_related('car_id')),
+            Prefetch('persona_nivel_set', queryset=Persona_Nivel.objects.select_related('niv_id')),
         ).all()
-        
         return queryset
     
     @action(detail=True, methods=['get'], url_path='cursos')
@@ -69,11 +104,60 @@ class PersonaViewSet(viewsets.ModelViewSet):
         try:
             persona = self.get_object()
             # Usar las relaciones ya precargadas
-            cursos_persona = persona.persona_curso.all()
+            cursos_persona = persona.persona_curso_set.all()
             serializer = MU_S.PersonaCursoSerializer(cursos_persona, many=True)
             return Response(serializer.data)
         except Exception as e:
             return Response({'error': str(e)}, status=400)
+
+    @action(detail=False, methods=['post'], url_path='acreditacion_manual_acreditar')
+    def acreditacion_manual_acreditar(self, request):
+        """
+        Acción personalizada para acreditar a una persona manualmente.
+        Recibe 'per_id' y 'rut' en el body.
+        """
+        try:
+            per_id = request.data.get('per_id')
+            rut = request.data.get('rut') # Opcional, para validación extra
+
+            if not per_id:
+                return Response({'error': 'per_id es requerido'}, status=400)
+
+            # Buscar la Persona
+            try:
+                persona = Persona.objects.get(pk=per_id)
+            except Persona.DoesNotExist:
+                return Response({'error': 'Persona no encontrada'}, status=404)
+
+            # Buscar la inscripción (Persona_Curso) vigente para acreditar
+            # Asumimos que se acredita en el curso activo/vigente (Estado 1 = Vigente).
+            inscripciones = Persona_Curso.objects.filter(
+                per_id=persona,
+                cus_id__cur_id__cur_estado=1
+            )
+            
+            # Si no hay cursos vigentes, fallback a la última inscripción
+            if not inscripciones.exists():
+                 inscripciones = Persona_Curso.objects.filter(per_id=persona).order_by('-pec_id')
+
+            if not inscripciones.exists():
+                return Response({'error': 'No se encontró inscripción para acreditar'}, status=404)
+
+            # Acreditar la primera encontrada (o la más reciente)
+            inscripcion = inscripciones.first()
+            inscripcion.pec_acreditacion = True
+            inscripcion.save()
+
+            # Retornar datos actualizados (puedes usar el serializer si quieres)
+            return Response({
+                'per_id': persona.per_id,
+                'nombre': f"{persona.per_nombres} {persona.per_apelpta}",
+                'acreditado': True,
+                'mensaje': 'Acreditación exitosa'
+            })
+
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
 
 class PersonaCursoViewSet(viewsets.ModelViewSet):
     serializer_class = MU_S.PersonaCursoSerializer
@@ -96,13 +180,14 @@ class PersonaCursoViewSet(viewsets.ModelViewSet):
             'rol_id',               # Rol
             'ali_id',               # Alimentacion
             'niv_id'                # Nivel
-        ).prefetch_related(
-            # Prefetch Estado del curso si existe relación inversa
-            Prefetch(
-                'persona_estado_curso',  # Ajustar según nombre de relación inversa
-                Persona_Estado_Curso.objects.select_related('usu_id')
-            )
         ).all()
+        # .prefetch_related(
+        #     # Prefetch Estado del curso si existe relación inversa
+        #     Prefetch(
+        #         'persona_estado_curso',  # Ajustar según nombre de relación inversa
+        #         Persona_Estado_Curso.objects.select_related('usu_id')
+        #     )
+        # ).all()
 
 class PersonaGrupoViewSet(viewsets.ModelViewSet):
     serializer_class = MU_S.PersonaGrupoSerializer
@@ -172,3 +257,4 @@ class PersonaVehiculoViewSet(viewsets.ModelViewSet):
             'pec_id__per_id',      # Persona_Curso -> Persona
             'pec_id__cus_id__cur_id'  # Persona_Curso -> Curso_Seccion -> Curso
         ).all()
+

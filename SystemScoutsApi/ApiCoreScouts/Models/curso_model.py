@@ -20,8 +20,8 @@ class Curso(models.Model):
         (2, 'Distrito'),
     ]
     cur_administra = models.IntegerField(choices=cur_administra_opcion, null=False, db_column='cur_administra')
-    cur_cota_con_almuerzo = models.IntegerField(db_column='cur_cuota_con_almuerzo')
-    cur_cota_sin_almuerzo = models.IntegerField(db_column='cur_cuota_sin_almuerzo')
+    cur_cota_con_almuerzo = models.IntegerField(default=0, db_column='cur_cuota_con_almuerzo')
+    cur_cota_sin_almuerzo = models.IntegerField(default=0, db_column='cur_cuota_sin_almuerzo')
     cur_modalidad_options = [
         (1, 'Internado'),
         (2, 'Externado'),

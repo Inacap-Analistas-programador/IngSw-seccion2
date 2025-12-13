@@ -58,7 +58,10 @@ class PersonaCompletaSerializer(serializers.ModelSerializer):
     
     # Campos de Nivel
     niv_id = serializers.SerializerMethodField()
+    niv_id = serializers.SerializerMethodField()
     ram_id_nivel = serializers.SerializerMethodField()
+
+
     
     # Campos de Vehículo
     pev_patente = serializers.SerializerMethodField()
@@ -67,6 +70,13 @@ class PersonaCompletaSerializer(serializers.ModelSerializer):
     pev_anio = serializers.SerializerMethodField()
     pev_color = serializers.SerializerMethodField()
     pev_capacidad = serializers.SerializerMethodField()
+    
+    # Campos UI Friendly
+    per_curso = serializers.SerializerMethodField()
+    per_alimentacion = serializers.SerializerMethodField()
+    per_tiene_vehiculo = serializers.SerializerMethodField()
+    per_pago_confirmado = serializers.SerializerMethodField()
+    per_acreditado = serializers.SerializerMethodField()
     
     class Meta:
         model = Persona
@@ -292,6 +302,55 @@ class PersonaCompletaSerializer(serializers.ModelSerializer):
             pass
         return None
 
+
+    def get_per_curso(self, obj):
+        """Obtener nombre del curso actual"""
+        try:
+            pec = Persona_Curso.objects.filter(per_id=obj.per_id).first()
+            if pec and pec.cus_id and pec.cus_id.cur_id:
+                return pec.cus_id.cur_id.cur_descripcion
+        except:
+            pass
+        return None
+
+    def get_per_alimentacion(self, obj):
+        """Obtener descripción de alimentación"""
+        try:
+            pec = Persona_Curso.objects.filter(per_id=obj.per_id).first()
+            if pec and pec.ali_id:
+                return pec.ali_id.ali_descripcion
+        except:
+            pass
+        return None
+
+    def get_per_tiene_vehiculo(self, obj):
+        """Determinar si tiene vehículo"""
+        try:
+            return Persona_Vehiculo.objects.filter(per_id=obj.per_id).exists()
+        except:
+            return False
+
+    def get_per_pago_confirmado(self, obj):
+        """Determinar si tiene pago confirmado (Estado 1 = Pagado)"""
+        try:
+            # Import locally to avoid circular imports if any
+            from ..Models.pago_model import Pago_Persona
+            return Pago_Persona.objects.filter(per_id=obj.per_id, pap_estado=1).exists()
+        except:
+            return False
+
+    def get_per_acreditado(self, obj):
+        """Determinar si está acreditado (pec_acreditacion=True)"""
+        try:
+            from ..Models.persona_model import Persona_Curso
+            pec = Persona_Curso.objects.filter(per_id=obj.per_id).first()
+            if pec:
+                return pec.pec_acreditacion
+            return False
+        except:
+            return False
+
+
 class PersonaGrupoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Persona_Grupo
@@ -314,6 +373,7 @@ class PersonaNivelSerializer(serializers.ModelSerializer):
 
 class PersonaCursoSerializer(serializers.ModelSerializer):
     # Incluir información completa del curso
+    cur_id = serializers.SerializerMethodField()
     cur_nombre = serializers.SerializerMethodField()
     cur_descripcion = serializers.SerializerMethodField()
     cur_fechainicio = serializers.SerializerMethodField()
@@ -321,6 +381,9 @@ class PersonaCursoSerializer(serializers.ModelSerializer):
     cur_codigo = serializers.SerializerMethodField()
     rol_descripcion = serializers.SerializerMethodField()
     estado_aprobacion = serializers.SerializerMethodField()
+    
+    # Alias para coincidir con frontend (PEC_ACREDITADO)
+    pec_acreditado = serializers.BooleanField(source='pec_acreditacion', read_only=True)
     
     class Meta:
         model = Persona_Curso
@@ -350,6 +413,14 @@ class PersonaCursoSerializer(serializers.ModelSerializer):
             ret['pec_envio_correo_qr'] = bool(ret['pec_envio_correo_qr'])
         return ret
     
+    def get_cur_id(self, obj):
+        try:
+            if obj.cus_id and obj.cus_id.cur_id:
+                return int(obj.cus_id.cur_id.cur_id)
+        except:
+            pass
+        return None
+
     def get_cur_nombre(self, obj):
         try:
             if obj.cus_id and obj.cus_id.cur_id:

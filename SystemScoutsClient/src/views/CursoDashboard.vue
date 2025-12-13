@@ -218,7 +218,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import BaseButton from '@/components/BaseButton.vue'
 import AppIcons from '@/components/icons/AppIcons.vue'
 import { request } from '@/services/apiClient.js'
@@ -232,6 +232,7 @@ const props = defineProps({
 
 const emit = defineEmits(['close'])
 const router = useRouter()
+const route = useRoute()
 
 const isLoading = ref(true)
 const curso = ref({})
@@ -411,6 +412,9 @@ async function cargarDatos() {
 
 function cerrar() {
   emit('close')
+  if (route.name === 'curso-detalle') {
+    router.push({ name: 'dashboard2' })
+  }
 }
 
 function verParticipantes() {

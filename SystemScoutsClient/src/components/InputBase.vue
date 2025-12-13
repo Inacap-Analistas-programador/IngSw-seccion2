@@ -10,7 +10,8 @@ const props = defineProps({
     required: { type: Boolean, default: false },
     id: { type: String, default: "" },
     // Permite inyectar un error externo (ej: desde el formulario)
-    externalError: { type: String, default: "" }
+    externalError: { type: String, default: "" },
+    disabled: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(["update:modelValue"])
@@ -30,6 +31,7 @@ function validarRut(rut) {
 }
 
 function validar(value) {
+    if (props.disabled) return ""
     if (props.required && !value) return "Campo requerido"
     if (props.rules === "number" && value && !/^[0-9]+$/.test(value)) return "Solo números"
     if (props.rules === "email" && value && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value)) return "Email inválido"
@@ -38,6 +40,7 @@ function validar(value) {
 }
 
 function onInput(e) {
+    if (props.disabled) return
     const val = e.target.value
     emit("update:modelValue", val)
     error.value = validar(val)
@@ -56,7 +59,9 @@ function onInput(e) {
                 :placeholder="placeholder"
                 @input="onInput"
                 class="base-field"
+                :disabled="disabled"
                 :aria-invalid="(externalError || error) ? 'true' : 'false'"
+                :class="{ 'base-field--disabled': disabled }"
             />
 
             <div v-if="hasAppend" class="input-append">
@@ -107,5 +112,13 @@ function onInput(e) {
 .base-field[aria-invalid="true"]:focus {
     border-color: #dc2626;
     box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.1) inset;
+}
+
+/* estado deshabilitado */
+.base-field--disabled {
+    background-color: #f8f9fa;
+    color: #6c757d;
+    cursor: not-allowed;
+    border-color: #ced4da;
 }
 </style>

@@ -3,7 +3,6 @@
     class="base-button"
     :class="[sizeClass, variantClass, { 'is-disabled': disabled, 'is-block': block }]"
     :disabled="disabled"
-    @click="handleClick"
   >
     <slot />
   </button>
@@ -67,11 +66,7 @@ export default {
     },
   },
   methods: {
-    handleClick(event) {
-      if (!this.disabled) {
-        this.$emit("click", event);
-      }
-    },
+    /* handleClick removed to prevent double event firing */
   },
 };
 </script>

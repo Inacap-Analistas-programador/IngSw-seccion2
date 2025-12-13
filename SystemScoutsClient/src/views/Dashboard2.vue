@@ -1,15 +1,14 @@
 <template>
   <div class="dashboard-scout">
-    <!-- Bloque de alertas globales -->
-    <div v-if="alertas.length > 0" style="margin-bottom: 16px;">
-      <BaseAlert
-        v-for="alerta in alertas"
+    <!-- Toasts de notificación -->
+    <div class="toast-container">
+      <NotificationToast
+        v-for="(alerta, index) in alertas"
         :key="alerta.id"
-        :type="alerta.type"
-        :title="alerta.title"
-        :message="alerta.message"
-        :dismissible="true"
+        :message="alerta.title ? `${alerta.title}: ${alerta.message}` : alerta.message"
+        :icon="alerta.type === 'success' ? 'check' : 'alert-circle'"
         @close="removerAlerta(alerta.id)"
+        :style="{ marginBottom: `${index * 60}px` }"
       />
     </div>
     <!-- Contenido Principal -->
@@ -27,7 +26,7 @@
               class="native-select"
             >
               <option value="" disabled>Seleccione un curso</option>
-              <option value="todos">Todos los cursos</option>
+              <option value="" disabled selected>Seleccione un curso para ver estadísticas</option>
               <option v-for="curso in cursos" :key="curso.CUR_ID" :value="curso.CUR_ID">
                 {{ curso.CUR_CODIGO }} - {{ curso.CUR_DESCRIPCION }}
               </option>
@@ -35,14 +34,22 @@
           </div>
           
           <div class="semaphore-container">
-            <div class="semaphore" :class="getSemaphoreClass(cursoSeleccionado)"></div>
-            <span class="semaphore-label">{{ getEstadoDisplay(cursoSeleccionadoInfo?.CUR_ESTADO) }}</span>
+            <div class="semaphore" v-if="cursoSeleccionado" :class="getSemaphoreClass(cursoSeleccionado)"></div>
+            <span class="semaphore-label" v-if="cursoSeleccionado">{{ getEstadoDisplay(cursoSeleccionadoInfo?.CUR_ESTADO) }}</span>
           </div>
         </div>
       </section>
 
       <!-- Tarjetas de Estadísticas -->
-      <div class="stats-grid">
+      <!-- Tarjetas de Estadísticas (Solo visibles si hay curso seleccionado) -->
+      <div v-if="!cursoSeleccionado" class="no-selection-placeholder">
+        <div class="placeholder-content">
+          <h3>👈 Por favor, seleccione un curso</h3>
+          <p>Para visualizar el dashboard, debe seleccionar un curso del listado.</p>
+        </div>
+      </div>
+      
+      <div v-else class="stats-grid">
         <DataCard
           title="Personas Inscritas"
           :value="personasInscritas"
@@ -69,7 +76,7 @@
       </div>
 
       <!-- Gráficos -->
-      <section class="charts-section">
+      <section v-if="cursoSeleccionado" class="charts-section">
         <h3>Estadísticas del Curso</h3>
         <div class="charts-grid">
           <div class="chart-card">
@@ -110,13 +117,14 @@
       <section class="courses-section">
         <div class="section-header">
           <h3>Cursos Vigentes</h3>
-          <button 
+          <BaseButton 
             @click="actualizarDatos" 
-            class="refresh-btn"
+            variant="primary"
             :disabled="loading"
           >
-            🔄 {{ loading ? 'Cargando...' : 'Actualizar' }}
-          </button>
+            <AppIcons name="refresh-cw" :size="16" class="mr-2" v-if="loading" />
+            <span v-else>🔄</span> {{ loading ? 'Cargando...' : 'Actualizar' }}
+          </BaseButton>
         </div>
         <div class="table-container-expanded">
           <table class="data-table-expanded">
@@ -142,8 +150,9 @@
                 <td>{{ curso.acreditaciones }}</td>
                 <td>{{ curso.pendientesPago }}</td>
                 <td class="actions">
-                  <button class="btn-action btn-view" @click="verCurso(curso)">👁 Ver</button>
-                  <button class="btn-action btn-edit" @click="editarCurso(curso)">✏ Editar</button>
+                  <BaseButton class="mr-2" variant="info" size="sm" @click="verCurso(curso)">👁 Ver</BaseButton>
+                  <BaseButton class="mr-2" variant="warning" size="sm" @click="editarCurso(curso)">✏ Editar</BaseButton>
+                  <BaseButton variant="secondary" size="sm" @click="abrirModalCambioEstado(curso)">⚡ Estado</BaseButton>
                 </td>
               </tr>
             </tbody>
@@ -151,8 +160,11 @@
         </div>
       </section>
 
+      <!-- Tabla de Cursos (Solo si seleccionado, aunque selector ya filtra) -->
+      <!-- Se oculta si no hay selección para limpiar la vista -->
+      
       <!-- Tabla de Responsables -->
-      <section class="responsibles-section">
+      <section v-if="cursoSeleccionado" class="responsibles-section">
         <h3>Responsables de Cursos</h3>
         <div class="tabs-container">
           <div class="tabs-header">
@@ -236,25 +248,34 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 // Componentes del sistema
-import BaseAlert from '@/components/BaseAlert.vue'
+import NotificationToast from '@/components/NotificationToast.vue'
 import DataCard from '@/components/DataCard.vue'
+import BaseButton from '@/components/BaseButton.vue'
 
 // CORREGIDO: Importación correcta de servicios
 import dashboardService_2 from '@/services/dashboardService_2'
+
+// Otros componentes
+import BaseModal from '@/components/BaseModal.vue'
+import BaseSelect from '@/components/BaseSelect.vue'
+import cursosService from '@/services/cursosService.js'
 
 export default {
   name: 'DashboardScout',
   
   components: {
-    BaseAlert,
-    DataCard
+    NotificationToast,
+    DataCard,
+    BaseButton,
+    BaseModal,
+    BaseSelect
   },
   
   setup() {
     const router = useRouter()
     
     // Estado reactivo
-    const cursoSeleccionado = ref('todos')
+    const cursoSeleccionado = ref('') // Inicializar vacío para obligar selección
     const alertas = ref([])
     const loading = ref(false)
     const activeTab = ref('coordinadores')
@@ -416,7 +437,7 @@ export default {
         2: '● Finalizado',
         3: '● Cancelado'
       }
-      return estados[estado] || '● Desconocido'
+      return estados[estado] || '' // Retornar vacío si no se conoce
     }
 
     const getSemaphoreClass = (cursoId) => {
@@ -449,7 +470,8 @@ export default {
         
         // Cargar cursos con manejo de error específico
         try {
-          const cursosData = await dashboardService_2.cursos.list()
+          let cursosData = await dashboardService_2.cursos.list()
+          if (cursosData.results) cursosData = cursosData.results
           if (cursosData && Array.isArray(cursosData)) {
             cursos.value = cursosData
             console.log(`✓ Cursos cargados: ${cursosData.length}`)
@@ -464,7 +486,8 @@ export default {
         
         // Cargar personas
         try {
-          const personasData = await dashboardService_2.personas.list()
+          let personasData = await dashboardService_2.personas.list()
+          if (personasData.results) personasData = personasData.results
           if (personasData && Array.isArray(personasData)) {
             personas.value = personasData
             console.log(`✓ Personas cargadas: ${personasData.length}`)
@@ -475,7 +498,8 @@ export default {
         
         // Cargar inscripciones
         try {
-          const personasCursoData = await dashboardService_2.personaCursos.list()
+          let personasCursoData = await dashboardService_2.personaCursos.list()
+          if (personasCursoData.results) personasCursoData = personasCursoData.results
           if (personasCursoData && Array.isArray(personasCursoData)) {
             personasCurso.value = personasCursoData
             console.log(`✓ Inscripciones cargadas: ${personasCursoData.length}`)
@@ -486,7 +510,8 @@ export default {
         
         // Cargar pagos con manejo de error 404
         try {
-          const pagosData = await dashboardService_2.pagoPersona.list()
+          let pagosData = await dashboardService_2.pagoPersona.list()
+          if (pagosData.results) pagosData = pagosData.results
           if (pagosData && Array.isArray(pagosData)) {
             pagosPersona.value = pagosData
             console.log(`✓ Pagos cargados: ${pagosData.length}`)
@@ -499,7 +524,8 @@ export default {
         
         // Cargar coordinadores
         try {
-          const coordinadoresData = await dashboardService_2.coordinadores.list()
+          let coordinadoresData = await dashboardService_2.coordinadores.list()
+          if (coordinadoresData.results) coordinadoresData = coordinadoresData.results
           if (coordinadoresData && Array.isArray(coordinadoresData)) {
             cursoCoordinadores.value = coordinadoresData
             console.log(`✓ Coordinadores cargados: ${coordinadoresData.length}`)
@@ -510,7 +536,8 @@ export default {
         
         // Cargar formadores
         try {
-          const formadoresData = await dashboardService_2.formadores.list()
+          let formadoresData = await dashboardService_2.formadores.list()
+          if (formadoresData.results) formadoresData = formadoresData.results
           if (formadoresData && Array.isArray(formadoresData)) {
             cursoFormadores.value = formadoresData
             console.log(`✓ Formadores cargados: ${formadoresData.length}`)
@@ -573,6 +600,62 @@ export default {
       }
     })
 
+    // Estado para modal de cambio de estado
+    const mostrarModalCambioEstado = ref(false)
+    const cursoParaCambioEstado = ref(null)
+    const nuevoEstado = ref(null)
+    const loadingEstado = ref(false)
+    
+    const opcionesEstado = [
+      { value: 0, text: 'Pendiente' },
+      { value: 1, text: 'Vigente' },
+      { value: 2, text: 'Anulado' },
+      { value: 3, text: 'Finalizado' },
+    ]
+
+    const abrirModalCambioEstado = (curso) => {
+      cursoParaCambioEstado.value = curso
+      nuevoEstado.value = curso.CUR_ESTADO_NUM || curso.CUR_ESTADO // Fallback if num not set
+      mostrarModalCambioEstado.value = true
+    }
+
+    const cerrarModalCambioEstado = () => {
+      mostrarModalCambioEstado.value = false
+      cursoParaCambioEstado.value = null
+      nuevoEstado.value = null
+    }
+
+    const guardarCambioEstado = async () => {
+      if (nuevoEstado.value === null) return
+      
+      loadingEstado.value = true
+      try {
+        await cursosService.cursos.partialUpdate(cursoParaCambioEstado.value.CUR_ID, { cur_estado: nuevoEstado.value })
+        
+        alertas.value.push({
+          id: Date.now(),
+          type: 'success',
+          title: 'Estado Actualizado',
+          message: 'El estado del curso ha sido modificado correctamente.'
+        })
+        
+        // Recargar datos para reflejar cambios
+        await cargarDatosDesdeAPI()
+        cerrarModalCambioEstado()
+        
+      } catch (error) {
+        console.error('Error cambiando estado:', error)
+        alertas.value.push({
+          id: Date.now(),
+          type: 'error',
+          title: 'Error',
+          message: 'No se pudo cambiar el estado del curso.'
+        })
+      } finally {
+        loadingEstado.value = false
+      }
+    }
+
     return {
       cursoSeleccionado,
       alertas,
@@ -598,7 +681,16 @@ export default {
       getEstadoDisplay,
       getSemaphoreClass,
       cursos,
-      personas
+      personas,
+      // Change Status
+      mostrarModalCambioEstado,
+      cursoParaCambioEstado,
+      nuevoEstado,
+      loadingEstado,
+      opcionesEstado,
+      abrirModalCambioEstado,
+      cerrarModalCambioEstado,
+      guardarCambioEstado
     }
   }
 }
@@ -967,33 +1059,6 @@ export default {
   flex-wrap: wrap;
 }
 
-.btn-action {
-  padding: 6px 12px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  transition: all 0.3s ease;
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.btn-view {
-  background: #e3f2fd;
-  color: #1565c0;
-}
-
-.btn-edit {
-  background: #fff3cd;
-  color: #856404;
-}
-
-.btn-action:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
 
 /* Responsables Section */
 .responsibles-section {
@@ -1164,5 +1229,24 @@ export default {
   /* Use global --color-surface from base.css for consistent surface color */
   --color-border: #e9ecef;
   --color-text: #495057;
+}
+
+.no-selection-placeholder {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  background-color: var(--color-surface);
+  border-radius: 12px;
+  border: 2px dashed #e9ecef;
+  margin-top: 20px;
+  text-align: center;
+  color: #6c757d;
+}
+
+.placeholder-content h3 {
+  margin-top: 0;
+  color: #2c5aa0;
+  margin-bottom: 8px;
 }
 </style>
