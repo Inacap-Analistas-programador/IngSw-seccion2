@@ -74,7 +74,7 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     SECURE_BROWSER_XSS_FILTER = True
     X_FRAME_OPTIONS = 'DENY'
-ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', default='sistema.guiasyscoutsbiobio.cl,www.sistema.guiasyscoutsbiobio.cl,localhost,127.0.0.1', cast=Csv())
+ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', default='sistema.guiasyscoutsbiobio.cl,www.sistema.guiasyscoutsbiobio.cl,localhost,127.0.0.1,testserver', cast=Csv())
 
 
 # APLICACIONES INSTALADAS

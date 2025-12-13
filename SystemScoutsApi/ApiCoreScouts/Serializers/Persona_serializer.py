@@ -61,9 +61,7 @@ class PersonaCompletaSerializer(serializers.ModelSerializer):
     niv_id = serializers.SerializerMethodField()
     ram_id_nivel = serializers.SerializerMethodField()
 
-    # Campos de Estado (Acreditación y Pago)
-    acreditado = serializers.SerializerMethodField()
-    pago_confirmado = serializers.SerializerMethodField()
+
     
     # Campos de Vehículo
     pev_patente = serializers.SerializerMethodField()
@@ -304,43 +302,7 @@ class PersonaCompletaSerializer(serializers.ModelSerializer):
             pass
         return None
 
-<<<<<<< HEAD
-    # Métodos para Estado (Acreditación y Pago)
-    def get_acreditado(self, obj):
-        try:
-            # Buscar inscripción en curso vigente (Estado=1)
-            inscripcion = Persona_Curso.objects.filter(
-                per_id=obj.per_id,
-                cus_id__cur_id__cur_estado=1
-            ).first()
-            
-            # Fallback a última inscripción
-            if not inscripcion:
-                inscripcion = Persona_Curso.objects.filter(per_id=obj.per_id).order_by('-pec_id').first()
-                
-            if inscripcion:
-                return bool(inscripcion.pec_acreditacion)
-        except:
-            pass
-        return False
 
-    def get_pago_confirmado(self, obj):
-        try:
-            # Usamos pec_registro como proxy de pago confirmado/registro completo
-            inscripcion = Persona_Curso.objects.filter(
-                per_id=obj.per_id,
-                cus_id__cur_id__cur_estado=1
-            ).first()
-            
-            if not inscripcion:
-                inscripcion = Persona_Curso.objects.filter(per_id=obj.per_id).order_by('-pec_id').first()
-                
-            if inscripcion:
-                return bool(inscripcion.pec_registro)
-        except:
-            pass
-        return False
-=======
     def get_per_curso(self, obj):
         """Obtener nombre del curso actual"""
         try:
@@ -387,7 +349,7 @@ class PersonaCompletaSerializer(serializers.ModelSerializer):
             return False
         except:
             return False
->>>>>>> 74c5fcda (Fix Manual Accreditation: Add endpoint, fix serializer, update frontend)
+
 
 class PersonaGrupoSerializer(serializers.ModelSerializer):
     class Meta:

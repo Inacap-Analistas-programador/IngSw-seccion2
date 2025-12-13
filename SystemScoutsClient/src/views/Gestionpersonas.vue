@@ -45,10 +45,7 @@
     </div>
 
     <!-- Mensaje informativo de permisos limitados -->
-    <div v-if="isReadOnly" class="mensaje-info-permisos">
-      <AppIcons name="info" :size="18" />
-      <span>Estás viendo este módulo en modo solo lectura. Contacta al administrador para solicitar permisos de edición.</span>
-    </div>
+
 
     <!-- Indicadores de carga y error -->
     <div v-if="cargandoPersonas" class="estado-carga">
@@ -1842,88 +1839,84 @@ export default {
       });
     },
     enrichPersonas() {
-      const now = new Date().toISOString();
-      this.personas = (this.personas || []).map((p, idx) => {
-        // Prefer existing PER_* fields from the API payload. Only compute
-        // fallback values when the canonical PER_* fields are missing.
-        const existingPerId = p.PER_ID !== undefined && p.PER_ID !== null ? Number(p.PER_ID) : null;
+  const now = new Date().toISOString();
+  this.personas = (this.personas || []).map((p, idx) => {
+    // Prefer existing PER_* fields from the API payload (upper or lower case).
+    
+    // Parse RUT
+    let per_run = p.PER_RUN !== undefined ? p.PER_RUN : p.per_run;
+    if (typeof per_run === 'string') {
+        per_run = Number(per_run.replace(/\./g, '')) || null;
+    }
+    
+    let per_dv = p.PER_DV !== undefined ? p.PER_DV : p.per_dv;
+    if (per_dv === undefined || per_dv === null) per_dv = '';
 
-        // Parse RUT from known keys if PER_RUN is absent
-        let per_run = null;
-        let per_dv = '';
-        if (p.PER_RUN !== undefined && p.PER_RUN !== null && String(p.PER_RUN).trim() !== '') {
-          per_run = Number(String(p.PER_RUN).toString().replace(/\./g, '')) || null;
-          per_dv = (p.PER_DV !== undefined && p.PER_DV !== null) ? String(p.PER_DV) : '';
-                } else {
-          const rawRut = (p.rut || '').toString().trim();
-          const m = rawRut.match(/([0-9.]+)-?([0-9kK])/);
-          if (m) {
-            per_run = Number(m[1].replace(/\./g, '')) || null;
-            per_dv = m[2] || '';
-          }
-        }
+    // Names
+    let per_nombres = p.PER_NOMBRES || p.per_nombres;
+    let per_apelpat = p.PER_APELPTA || p.per_apelpta || p.PER_APELPAT || p.per_apelpat;
+    let per_apelmat = p.PER_APELMAT || p.per_apelmat;
 
-        // Names: prefer explicit PER_NOMBRES / PER_APELPTA / PER_APELMAT if present
-        let per_nombres = p.PER_NOMBRES;
-        let per_apelpat = p.PER_APELPTA;
-        let per_apelmat = p.PER_APELMAT;
+    // Fallback for names if not found
+    if (!per_nombres && p.nombre) {
+      const nameParts = String(p.nombre || '').trim().split(/\s+/);
+      if (nameParts.length >= 3) {
+        per_apelmat = per_apelmat || nameParts.pop();
+        per_apelpat = per_apelpat || nameParts.pop();
+        per_nombres = nameParts.join(' ');
+      } else if (nameParts.length === 2) {
+        per_apelpat = per_apelpat || nameParts.pop();
+        per_nombres = nameParts.join(' ');
+      } else {
+        per_nombres = per_nombres || String(p.nombre || '');
+      }
+    }
 
-        if (!per_nombres && p.nombre) {
-          // Try to split legacy `nombre` field into parts
-          const nameParts = String(p.nombre || '').trim().split(/\s+/);
-          if (nameParts.length >= 3) {
-            per_apelmat = per_apelmat || nameParts.pop();
-            per_apelpat = per_apelpat || nameParts.pop();
-            per_nombres = nameParts.join(' ');
-          } else if (nameParts.length === 2) {
-            per_apelpat = per_apelpat || nameParts.pop();
-            per_nombres = nameParts.join(' ');
-          } else {
-            per_nombres = per_nombres || String(p.nombre || '');
-          }
-        }
+    // Email and phone
+    const per_mail = p.PER_MAIL || p.per_mail || p.PER_EMAIL || p.email || '';
+    const per_fono = p.PER_FONO || p.per_fono || p.telefono || p.PER_CEL || '';
+    const per_rol = p.PER_ROL || p.per_rol; // Backend might send 'per_rol' (string description) if serialized
 
-        // Email and phone: preserve canonical keys if present
-        const per_mail = (p.PER_MAIL !== undefined && p.PER_MAIL !== null && String(p.PER_MAIL).trim() !== '') ? p.PER_MAIL : (p.PER_EMAIL || p.email || '');
-        const per_fono = (p.PER_FONO !== undefined && p.PER_FONO !== null && String(p.PER_FONO).trim() !== '') ? p.PER_FONO : (p.telefono || p.PER_CEL || '');
+    // ID
+    const existingPerId = p.PER_ID !== undefined ? p.PER_ID : p.per_id;
+    
+    const enriched = Object.assign({}, p, {
+      PER_ID: Number(existingPerId || per_run || (idx + 1)),
+      ESC_ID: p.ESC_ID || p.esc_id || null,
+      COM_ID: p.COM_ID || p.com_id || null,
+      USU_ID: p.USU_ID || p.usu_id || null,
+      PER_FECHA_HORA: p.PER_FECHA_HORA || p.per_fecha_hora || now,
+      PER_RUN: per_run,
+      PER_DV: per_dv,
+      PER_APELPAT: per_apelpat || '',
+      PER_APELMAT: per_apelmat || '',
+      PER_NOMBRES: per_nombres || '',
+      PER_MAIL: per_mail,
+      PER_FECHA_NAC: p.PER_FECHA_NAC || p.per_fecha_nac || p.fecha_nac || '1900-01-01',
+      PER_DIRECCION: p.PER_DIRECCION || p.per_direccion || p.direccion || '',
+      PER_TIPO_FONO: p.PER_TIPO_FONO || p.per_tipo_fono || 'Móvil', // Ensure fallback
+      PER_FONO: per_fono,
+      PER_ALERGIA_ENFERMEDAD: p.PER_ALERGIA_ENFERMEDAD || p.per_alergia_enfermedad || '',
+      PER_LIMITACION: p.PER_LIMITACION || p.per_limitacion || '',
+      PER_NOM_EMERGENCIA: p.PER_NOM_EMERGENCIA || p.per_nom_emergencia || '',
+      PER_FONO_EMERGENCIA: p.PER_FONO_EMERGENCIA || p.per_fono_emergencia || '',
+      PER_OTROS: p.PER_OTROS || p.per_otros || '',
+      PER_NUM_MMAA: p.PER_NUM_MMAA || p.per_num_mmaa || 0,
+      PER_PROFESION: p.PER_PROFESION || p.per_profesion || '',
+      PER_TIEMPO_NNAJ: p.PER_TIEMPO_NNAJ || p.per_tiempo_nnaj || '',
+      PER_TIEMPO_ADULTO: p.PER_TIEMPO_ADULTO || p.per_tiempo_adulto || '',
+      PER_RELIGION: p.PER_RELIGION || p.per_religion || '',
+      PER_APODO: p.PER_APODO || p.per_apodo || '',
+      PER_FOTO: p.PER_FOTO || p.per_foto || null,
+      PER_VIGENTE: (p.PER_VIGENTE !== undefined ? p.PER_VIGENTE : (p.per_vigente !== undefined ? p.per_vigente : true)),
+      PER_ROL: per_rol || 'Sin rol', // Display value
+      cursos: p.cursos || [],
+      historial: p.historial || []
+    });
 
-        const enriched = Object.assign({}, p, {
-          // PER_ID: prefer canonical PER_ID, then any provided PER_RUN value, then stable index
-          PER_ID: Number(existingPerId || per_run || (idx + 1)),
-          ESC_ID: p.ESC_ID !== undefined ? p.ESC_ID : null,
-          COM_ID: p.COM_ID !== undefined ? p.COM_ID : null,
-          USU_ID: p.USU_ID !== undefined ? p.USU_ID : null,
-          PER_FECHA_HORA: p.PER_FECHA_HORA || now,
-          PER_RUN: per_run !== null ? per_run : (p.PER_RUN || null),
-          PER_DV: per_dv || (p.PER_DV || ''),
-          PER_APELPAT: per_apelpat || p.PER_APELPTA || p.PER_APELPAT || '',
-          PER_APELMAT: per_apelmat || p.PER_APELMAT || p.PER_APELMAT || '',
-          PER_NOMBRES: per_nombres || p.PER_NOMBRES || p.PER_NOMBRES || '',
-          PER_MAIL: per_mail,
-          PER_FECHA_NAC: p.PER_FECHA_NAC || p.fecha_nac || '1990-01-01',
-          PER_DIRECCION: p.PER_DIRECCION || p.direccion || '',
-          PER_TIPO_FONO: p.PER_TIPO_FONO !== undefined ? p.PER_TIPO_FONO : 'Móvil',
-          PER_FONO: per_fono,
-          PER_ALERGIA_ENFERMEDAD: p.PER_ALERGIA_ENFERMEDAD || p.alergias || '',
-          PER_LIMITACION: p.PER_LIMITACION || p.limitacion || '',
-          PER_NOM_EMERGENCIA: p.PER_NOM_EMERGENCIA || p.contacto_emergencia || '',
-          PER_FONO_EMERGENCIA: p.PER_FONO_EMERGENCIA || p.telefono_emergencia || '',
-          PER_OTROS: p.PER_OTROS || p.otros || '',
-          PER_NUM_MMAA: p.PER_NUM_MMAA || p.num_mmaa || 0,
-          PER_PROFESION: p.PER_PROFESION || p.profesion || '',
-          PER_TIEMPO_NNAJ: p.PER_TIEMPO_NNAJ || p.tiempo_nnaj || '',
-          PER_TIEMPO_ADULTO: p.PER_TIEMPO_ADULTO || p.tiempo_adulto || '',
-          PER_RELIGION: p.PER_RELIGION || p.religion || '',
-          PER_APODO: p.PER_APODO || p.apodo || '',
-          PER_FOTO: p.PER_FOTO || p.foto || null,
-          PER_VIGENTE: p.PER_VIGENTE !== undefined ? !!p.PER_VIGENTE : (p.vigente === undefined ? true : !!p.vigente),
-          cursos: p.cursos || [],
-          historial: p.historial || []
-        });
-
-        return enriched;
-      });
-    },
+    return enriched;
+  });
+},
     exportarExcel(tipo = 'todos') {
       const datos = this.personasFiltradas.map((p) => {
         // Buscar nombres descriptivos
@@ -2666,6 +2659,13 @@ export default {
           console.warn('No fue posible enriquecer personas automáticamente:', e);
         }
         console.log('✅ Personas cargadas:', this.personas.length);
+        
+        // Si es carga forzada (al inicio), mostrar todo sin requerir filtro manual
+        if (force) {
+          console.log('⚡ Carga forzada: mostrando todos los datos automáticamente');
+          this.filteredPersonas = [...this.personas];
+          this.filtroAplicado = true;
+        }
         // Cargar opciones de filtros (desde mantenedores). No derivamos filtros desde personas paginadas.
         await this.cargarOpcionesFiltros();
         
@@ -4295,11 +4295,13 @@ export default {
   async mounted() {
     // Auto-load filter options on view entry so selects are ready for the user.
     try {
-      this.ensureFiltrosLoaded();
+      // Force reload filters to ensure fresh data and avoid empty dropdowns
+      await this.cargarOpcionesFiltros(true);
     } catch (e) {
       console.warn('Error cargando filtros en mounted:', e);
     }
-    // Do not auto-load personas here; users must apply filters first.
+    // Auto-load personas on mount so the table is populated
+    this.cargarPersonas(true);
   }
 };
 </script>
