@@ -44,7 +44,7 @@ export const personaIndividuales = makeCrud('personas/individuales') // Reutiliz
 export const obtenerRoles = async () => {
   try {
     const rolesSet = new Set();
-    
+
     // Obtener de personas completas
     try {
       const data = await personasCompletas.list();
@@ -56,7 +56,7 @@ export const obtenerRoles = async () => {
     } catch (error) {
       console.warn('No se pudieron cargar roles desde personas-completas:', error.message);
     }
-    
+
     // Obtener de formadores (tabla de relación)
     try {
       const formadoresData = await formadores.list();
@@ -68,7 +68,7 @@ export const obtenerRoles = async () => {
     } catch (error) {
       console.warn('No se pudieron cargar roles desde formadores:', error.message);
     }
-    
+
     const rolesUnicos = Array.from(rolesSet);
     console.log('Roles encontrados:', rolesUnicos);
     return rolesUnicos.map(rol => ({ value: rol, label: rol }));
@@ -81,7 +81,7 @@ export const obtenerRoles = async () => {
 export const obtenerRamas = async () => {
   try {
     const ramasSet = new Set();
-    
+
     // Obtener de personas completas
     try {
       const data = await personasCompletas.list();
@@ -93,7 +93,7 @@ export const obtenerRamas = async () => {
     } catch (error) {
       console.warn('No se pudieron cargar ramas desde personas-completas:', error.message);
     }
-    
+
     // Obtener de individuales (tabla de relación)
     try {
       const individualesData = await individuales.list();
@@ -105,7 +105,7 @@ export const obtenerRamas = async () => {
     } catch (error) {
       console.warn('No se pudieron cargar ramas desde individuales:', error.message);
     }
-    
+
     const ramasUnicas = Array.from(ramasSet);
     console.log('Ramas encontradas:', ramasUnicas);
     return ramasUnicas.map(rama => ({ value: rama, label: rama }));
@@ -118,7 +118,7 @@ export const obtenerRamas = async () => {
 export const obtenerGrupos = async () => {
   try {
     const gruposSet = new Set();
-    
+
     // Obtener de personas completas
     try {
       const data = await personasCompletas.list();
@@ -130,7 +130,7 @@ export const obtenerGrupos = async () => {
     } catch (error) {
       console.warn('No se pudieron cargar grupos desde personas-completas:', error.message);
     }
-    
+
     // Obtener de grupos (tabla de relación)
     try {
       const gruposData = await grupos.list();
@@ -142,7 +142,7 @@ export const obtenerGrupos = async () => {
     } catch (error) {
       console.warn('No se pudieron cargar grupos desde tabla grupos:', error.message);
     }
-    
+
     const gruposUnicos = Array.from(gruposSet);
     console.log('Grupos encontrados:', gruposUnicos);
     return gruposUnicos.map(grupo => ({ value: grupo, label: grupo }));
@@ -152,15 +152,15 @@ export const obtenerGrupos = async () => {
   }
 };
 
-export default { 
-  personas, 
-  personasCompletas, 
-  grupos, 
-  formadores, 
-  individuales, 
-  niveles, 
-  personaCursos, 
-  estadoCursos, 
+export default {
+  personas,
+  personasCompletas,
+  grupos,
+  formadores,
+  individuales,
+  niveles,
+  personaCursos,
+  estadoCursos,
   vehiculos,
   // NUEVAS EXPORTACIONES PARA FORMULARIO 2.VUE
   personaGrupos,
@@ -169,8 +169,8 @@ export default {
   obtenerRoles,
   obtenerRamas,
   obtenerGrupos,
-    // Orquestador: crear Persona -> Persona_Curso -> Persona_Vehiculo
-  createPersonaWithCourseAndVehicle: async ({ personaData, cursoData = null, vehiculoData = null }) => {
+  // Orquestador: crear Persona -> Persona_Curso -> Persona_Vehiculo
+  createPersonaWithCourseAndVehicle: async ({ personaData, cursoData = null, vehiculoData = null, formadorData = null, ramasData = null }) => {
     // 1) Crear persona
     const personaCreada = await personas.create(personaData);
 
@@ -218,7 +218,51 @@ export default {
       }
     }
 
-    return { persona: personaCreada, personaCurso: personaCursoCreado, vehiculo: vehiculoCreado };
+    // 4) Si se solicita crear datos de Formador (Persona_Formador)
+    let formadorCreado = null;
+    if (formadorData) {
+      const formadorPayload = {
+        per_id: personaCreada.PER_ID, // Usar snake_case si el serializer lo espera, o mayusculas si es raw
+        pef_hab_1: formadorData.pef_hab_1 || false,
+        pef_hab_2: formadorData.pef_hab_2 || false,
+        pef_verif: formadorData.pef_verif || false,
+        pef_historial: formadorData.pef_historial || ''
+      };
+
+      try {
+        formadorCreado = await formadores.create(formadorPayload);
+      } catch (err) {
+        console.warn("Error creando Formador:", err);
+        // No lanzar error fatal, permitir continuar
+      }
+    }
+
+    // 5) Si se solicitan Ramas (Persona_Nivel)
+    // ramasData debe ser un array de objetos: { niv_id, ram_id }
+    let ramasCreadas = [];
+    if (ramasData && Array.isArray(ramasData) && ramasData.length > 0) {
+      for (const rama of ramasData) {
+        const ramaPayload = {
+          per_id: personaCreada.PER_ID,
+          niv_id: rama.niv_id,
+          ram_id: rama.ram_id
+        };
+        try {
+          const res = await personaNiveles.create(ramaPayload);
+          ramasCreadas.push(res);
+        } catch (err) {
+          console.warn(`Error creando Rama (Nivel ${rama.niv_id}, ID ${rama.ram_id}):`, err);
+        }
+      }
+    }
+
+    return {
+      persona: personaCreada,
+      personaCurso: personaCursoCreado,
+      vehiculo: vehiculoCreado,
+      formador: formadorCreado,
+      ramas: ramasCreadas
+    };
   },
   // Método personalizado para obtener cursos de una persona
   obtenerCursosPersona: (personaId) => request(`personas/personas/${personaId}/cursos/`),

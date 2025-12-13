@@ -467,7 +467,7 @@
         <div class="nivel-column">
           <h4 class="nivel-title">Medio</h4>
           <div class="checkbox-list">
-            <div v-for="rama in ramasMedio" :key="rama.value">
+            <div v-for="rama in ramasMedio" :key="rama.value" class="checkbox-item">
               <input 
                 :id="'medio-' + rama.value" 
                 type="checkbox" 
@@ -484,7 +484,7 @@
         <div class="nivel-column">
           <h4 class="nivel-title">Avanzado</h4>
           <div class="checkbox-list">
-            <div v-for="rama in ramasAvanzado" :key="rama.value">
+            <div v-for="rama in ramasAvanzado" :key="rama.value" class="checkbox-item">
               <input 
                 :id="'avanzado-' + rama.value" 
                 type="checkbox" 
@@ -953,23 +953,22 @@ const grupoOtro = ref("");
 const ramaSeleccionada = ref("");
 
 // Datos para los checkboxes de ramas (se pueden conectar a una API)
-const ramasMedio = ref([
-  { value: "rama1", label: "Rama 1" },
-  { value: "rama2", label: "Rama 2" },
-  { value: "rama3", label: "Rama 3" },
-  { value: "rama4", label: "Rama 4" },
-  { value: "rama5", label: "Rama 5" },
-  { value: "rama6", label: "Rama 6" }
-]);
+// Ramas computadas desde la API en lugar de hardcodeadas
+const ramasMedio = computed(() => {
+  return listaRamas.value.map(rama => ({
+    value: rama.ram_id,
+    label: rama.ram_descripcion
+  }));
+});
 
-const ramasAvanzado = ref([
-  { value: "rama1", label: "Rama 1" },
-  { value: "rama2", label: "Rama 2" },
-  { value: "rama3", label: "Rama 3" },
-  { value: "rama4", label: "Rama 4" },
-  { value: "rama5", label: "Rama 5" },
-  { value: "rama6", label: "Rama 6" }
-]);
+// Asumimos que las mismas ramas están disponibles para avanzado, 
+// o si hay lógica diferente, se puede filtrar aquí.
+const ramasAvanzado = computed(() => {
+  return listaRamas.value.map(rama => ({
+    value: rama.ram_id,
+    label: rama.ram_descripcion
+  }));
+});
 const opcionCargo = ref("");
 const cargoTexto = ref("");
 const añosUnidad = ref("");
@@ -1446,6 +1445,139 @@ function eliminarFoto() {
 //   }
 //   return [];
 // });
+import personasService from '../services/personasService'; // Importar servicio de personas
+
+// ... (existing code)
+
+const enviarFormulario = async () => {
+  try {
+    // 1. Validaciones básicas
+    if (!rut.value || !nombres.value || !apellidoPaterno.value || !email.value) {
+      alert("Por favor complete los campos obligatorios del postulante.");
+      return;
+    }
+    if (!seccionCurso.value || !rolSeleccionado.value) {
+      alert("Por favor seleccione Curso y Cargo/Rol.");
+      return;
+    }
+
+    // 2. Preparar datos de Persona
+    const [run, dv] = rut.value.split('-');
+    
+    // Mapeo de campos según persona_model.py
+    const personaData = {
+      per_run: run,
+      per_dv: dv || '', // Manejar caso sin guion si rut viene limpio
+      per_nombres: nombres.value,
+      per_apelpta: apellidoPaterno.value,
+      per_apelmat: apellidoMaterno.value || '',
+      per_email: email.value,
+      per_fecha_nac: fechaNacimiento.value, // Asegurar formato YYYY-MM-DD
+      per_direccion: direccion.value,
+      com_id: comunaSeleccionada.value,
+      esc_id: estadoCivil.value,
+      per_tipo_fono: tipoTelefono.value,
+      per_fono: telefono.value,
+      per_nom_emergencia: nombreEmergencia.value,
+      per_fono_emergencia: telefonoEmergencia.value,
+      per_alergia_enfermedad: alergias.value || '',
+      per_limitacion: limitaciones.value || '', // Verificar si existe este input
+      per_profesion: profesion.value || '',
+      per_religion: religion.value || '',
+      per_apodo: apodoCredencial.value || '',
+      // per_foto: fotoUrl.value, // Pendiente: Manejo de subida de archivo
+      per_otros: consideraciones.value || '',
+      // per_num_mmaa: mmaaValor.value // Si existe input
+      // Valores por defecto
+      per_vigente: true
+    };
+    
+    // Agregar campos opcionales solo si tienen valor
+    if (anosTrabajoNinos.value) personaData.per_tiempo_nnaj = anosTrabajoNinos.value;
+    // if (anosTiempoBeneficiario.value) personaData.per_tiempo_adulto = ...;
+
+    // 3. Preparar datos de Curso (Persona_Curso)
+    const cursoData = {
+      CUS_ID: seccionCurso.value,
+      ROL_ID: rolSeleccionado.value,
+      ALI_ID: tipoAlimentacion.value,
+      niv_id: nivelFormacion.value
+    };
+
+    // 4. Preparar datos de Vehículo (Persona_Vehiculo)
+    let vehiculoData = null;
+    if (vehiculoPropio.value === 'si') {
+      vehiculoData = {
+        PEV_PATENTE: patente.value,
+        PEV_MARCA: marcaVehiculo.value,
+        PEV_MODELO: modeloVehiculo.value
+      };
+    }
+
+    // 5. Preparar datos de Formador (Persona_Formador)
+    let formadorData = null;
+    // Si se seleccionó checkbox esFormador o si hay datos relevantes
+    // Ojo: el modelo tiene 'pef_hab_1', etc.
+    // Verificamos si hay algún dato chequeado en las habilidades o verificado
+    if (habilidad1.value || habilidad2.value || verificado.value) {
+      formadorData = {
+        pef_hab_1: habilidad1.value,
+        pef_hab_2: habilidad2.value,
+        pef_verif: verificado.value,
+        pef_historial: '' // No hay input explícito para historial en este form?
+      };
+    }
+
+    // 6. Preparar datos de Ramas (Persona_Nivel)
+    // Necesitamos los IDs de nivel para Medio y Avanzado.
+    // Asumiremos IDs fijos o buscaremos en 'listaNivelApi' si es posible, 
+    // pero por ahora usaremos lógica: si el usuario seleccionó ramas, las enviamos.
+    // IMPORTANTE: Necesitamos el ID del Nivel asociado a la rama.
+    // Si 'ramasMedioSeleccionadas' son de Nivel Medio y 'ramasAvanzadoSeleccionadas' de Avanzado.
+    // Supuesto: Medio = 2, Avanzado = 3 (Esto debería ser dinámico pero para MVP...).
+    // Mejor: Buscar en listaNivelApi el id donde descripcion='Medio' etc.
+    
+    let ramasData = [];
+    
+    // Función auxiliar para buscar ID de nivel por nombre (si listaNivelApi está poblada)
+    const getNivelId = (nombre) => {
+      const nivel = listaNivelApi.value.find(n => n.niv_descripcion && n.niv_descripcion.toLowerCase().includes(nombre.toLowerCase()));
+      return nivel ? nivel.niv_id : null;
+    };
+
+    const idMedio = getNivelId('Medio') || 2; // Fallback a 2
+    const idAvanzado = getNivelId('Avanzado') || 3; // Fallback a 3
+
+    if (ramasMedioSeleccionadas.value.length > 0) {
+      ramasMedioSeleccionadas.value.forEach(rId => {
+        ramasData.push({ niv_id: idMedio, ram_id: rId });
+      });
+    }
+    if (ramasAvanzadoSeleccionadas.value.length > 0) {
+      ramasAvanzadoSeleccionadas.value.forEach(rId => {
+        ramasData.push({ niv_id: idAvanzado, ram_id: rId });
+      });
+    }
+
+    // 7. Enviar al Backend
+    console.log("Enviando formulario:", { personaData, cursoData, vehiculoData, formadorData, ramasData });
+    const result = await personasService.createPersonaWithCourseAndVehicle({
+      personaData,
+      cursoData,
+      vehiculoData,
+      formadorData,
+      ramasData
+    });
+
+    console.log("Resultado envío:", result);
+    alert("Formulario enviado exitosamente!");
+    limpiarFormulario();
+
+  } catch (error) {
+    console.error("Error al enviar formulario:", error);
+    alert("Error al enviar el formulario: " + (error.message || "Error desconocido"));
+  }
+};
 </script>
 
 
@@ -2105,65 +2237,104 @@ textarea:focus {
 }
 
 
-/* :::::::::::::::::::: CHECKBOX MODERNO Y CENTRADO :::::::::::::::::::: */
-.campo-checkbox {
-  display: flex;
-  justify-content: center;      /* Centra horizontalmente */
-  padding: 15px 10px;              /* Espaciado vertical */
+/* :::::::::::::::::::: ESTILOS PARA CAJAS DE RAMAS :::::::::::::::::::: */
+.niveles-container {
+  margin-top: 30px;
+  width: 100%;
 }
 
-.campo-checkbox label {
+.nivel-column {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  height: 100%;
+}
+
+.nivel-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  text-align: center;
+  padding: 15px 0;
+  background-color: #fff;
+  border-bottom: 3px solid #10b981; /* Green line separator */
+}
+
+/* Grid layout for checkboxes inside the card */
+.nivel-column .checkbox-list {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  gap: 12px;
+}
+
+.checkbox-item {
   display: flex;
   align-items: center;
-  font-size: 16px;
-  color: #333;
-  background-color: #f9f9f9;    /* Fondo suave */
-  padding: 10px 20px;           /* Padding interno */
+  gap: 12px;
+  padding: 8px 12px;
   border-radius: 8px;
-  border: 2px solid #e2e8f0;
+  transition: background-color 0.2s ease;
+}
+
+.checkbox-item:hover {
+  background-color: #f8fafc;
+}
+
+.checkbox-item label {
   cursor: pointer;
-  transition: all 0.3s ease;
+  color: #334155;
+  font-weight: 500;
+  font-size: 15px;
+  user-select: none;
+  margin: 0;
 }
 
-.campo-checkbox label:hover {
-  background-color: #f0f8ff;    /* Azul muy claro al pasar el mouse */
-  transform: translateY(-2px);
-}
-
-.campo-checkbox input[type="checkbox"].custom-checkbox {
+/* Custom checkbox styling */
+.custom-checkbox {
   appearance: none;
   -webkit-appearance: none;
-  outline: none;
-  width: 1.5rem;
-  height: 1.5rem;
-  aspect-ratio: 1;
-  padding: 0.12rem;
-  background: transparent;
-  border: 1px solid #333;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #cbd5e1;
   border-radius: 4px;
+  background-color: white;
   display: grid;
   place-content: center;
   cursor: pointer;
-  transition: all 140ms ease-in-out;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
-.campo-checkbox input[type="checkbox"].custom-checkbox::after {
-  content: '';
-  color: #fff;
-  font-weight: 700;
+.custom-checkbox::after {
+  content: "✓";
+  font-size: 14px;
+  color: white;
   transform: scale(0);
-  transition: transform 120ms ease-in-out;
+  transition: transform 0.2s ease;
+  font-weight: bold;
 }
 
-.campo-checkbox input[type="checkbox"].custom-checkbox:checked {
-  background: #127acf;
-  border-color: #127acf;
+.custom-checkbox:checked {
+  background-color: #10b981; /* Green active color */
+  border-color: #10b981;
 }
 
-.campo-checkbox input[type="checkbox"].custom-checkbox:checked::after {
-  content: '✓';
+.custom-checkbox:checked::after {
   transform: scale(1);
-  font-size: 0.95rem;
+}
+
+/* Input MMAA minimalista - posicionado debajo de ambas columnas */
+.mmaa-input-container {
+  margin-top: 25px;
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Center align */
+  gap: 8px;
 }
 
 /* Estilos para la transición del formulario */
