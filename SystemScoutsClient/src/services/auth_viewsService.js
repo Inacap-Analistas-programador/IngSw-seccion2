@@ -15,11 +15,12 @@ export default {
   // Use the generic personas list endpoint for search (GET /api/personas/personas?search=term)
   async acreditacion_manual_search(term = '') {
     const q = encodeURIComponent(String(term || '').trim())
+    // Ensure trailing slash for Django compatibility
     return request(`personas/personas/${q ? `?search=${q}` : ''}`)
   },
 
   // Keep acreditar endpoint as POST (existing backend view)
   async acreditacion_manual_acreditar(payload = {}) {
-    return request('personas/acreditacion_manual_acreditar', { method: 'POST', body: JSON.stringify(payload) })
+    return request('personas/personas/acreditacion_manual_acreditar/', { method: 'POST', body: JSON.stringify(payload) })
   }
 }

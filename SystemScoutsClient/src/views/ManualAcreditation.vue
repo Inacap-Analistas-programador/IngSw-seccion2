@@ -300,17 +300,18 @@ export default {
         if (person) {
           // Mapear campos de la API al formato local del componente
           const p = {
-            per_id: person.PER_ID || person.per_id || person.id || null,
-            name: person.PER_NOMBRES || person.nombre || person.name || person.full_name || person.NOMBRE || '',
-            nickname: person.PER_APODO || person.apodo || person.nickname || '',
-            rut: person.PER_RUN || person.rut || person.run || '',
-            currentCourse: person.curso || person.currentCourse || '',
-            branchName: person.rama || person.branchName || '',
-            vehicle: person.PER_VEHICULO === 1 || person.vehicle || false,
-            dietType: person.PER_ALIMENTACION || person.dietType || person.alimentacion || '',
-            paymentConfirmed: person.pago_confirmado === true || person.paymentConfirmed === true || person.PAGO_CONFIRMADO === true,
-            paymentStatus: (person.pago_confirmado || person.paymentConfirmed) ? 'Confirmado' : 'Pendiente',
-            accreditationStatus: (person.acreditado === true || person.accredited === true || person.accreditationStatus === 'Acreditado') ? 'Acreditado' : 'Pendiente'
+            per_id: person.per_id || person.PER_ID || person.id || null,
+            name: person.per_nombres || person.PER_NOMBRES || person.nombre || person.name || person.full_name || person.NOMBRE || '',
+            nickname: person.per_apodo || person.PER_APODO || person.apodo || person.nickname || '',
+            rut: person.per_run || person.PER_RUN || person.rut || person.run || '',
+            dv: person.per_dv || person.PER_DV || person.dv || '',
+            currentCourse: person.per_curso || person.curso || person.currentCourse || '',
+            branchName: person.per_rama || person.rama || person.branchName || '',
+            vehicle: person.per_tiene_vehiculo || (person.per_vehiculo === 1) || (person.PER_VEHICULO === 1) || person.vehicle || false,
+            dietType: person.per_alimentacion || person.PER_ALIMENTACION || person.dietType || person.alimentacion || '',
+            paymentConfirmed: person.per_pago_confirmado || person.paymentConfirmed || person.PAGO_CONFIRMADO || person.payment_confirmed || false,
+            paymentStatus: person.payment_status || ((person.per_pago_confirmado || person.paymentConfirmed) ? 'Confirmado' : 'Pendiente'),
+            accreditationStatus: (person.per_acreditado === true) ? 'Acreditado' : (person.acreditado || person.accredited || person.accreditationStatus || 'Pendiente')
           }
           this.selectedParticipant = Object.assign({}, p)
           this.searchNotFound = false

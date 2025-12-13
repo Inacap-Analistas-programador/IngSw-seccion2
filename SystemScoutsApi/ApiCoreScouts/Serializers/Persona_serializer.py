@@ -73,6 +73,13 @@ class PersonaCompletaSerializer(serializers.ModelSerializer):
     pev_color = serializers.SerializerMethodField()
     pev_capacidad = serializers.SerializerMethodField()
     
+    # Campos UI Friendly
+    per_curso = serializers.SerializerMethodField()
+    per_alimentacion = serializers.SerializerMethodField()
+    per_tiene_vehiculo = serializers.SerializerMethodField()
+    per_pago_confirmado = serializers.SerializerMethodField()
+    per_acreditado = serializers.SerializerMethodField()
+    
     class Meta:
         model = Persona
         fields = '__all__'
@@ -297,6 +304,7 @@ class PersonaCompletaSerializer(serializers.ModelSerializer):
             pass
         return None
 
+<<<<<<< HEAD
     # Métodos para Estado (Acreditación y Pago)
     def get_acreditado(self, obj):
         try:
@@ -332,6 +340,54 @@ class PersonaCompletaSerializer(serializers.ModelSerializer):
         except:
             pass
         return False
+=======
+    def get_per_curso(self, obj):
+        """Obtener nombre del curso actual"""
+        try:
+            pec = Persona_Curso.objects.filter(per_id=obj.per_id).first()
+            if pec and pec.cus_id and pec.cus_id.cur_id:
+                return pec.cus_id.cur_id.cur_descripcion
+        except:
+            pass
+        return None
+
+    def get_per_alimentacion(self, obj):
+        """Obtener descripción de alimentación"""
+        try:
+            pec = Persona_Curso.objects.filter(per_id=obj.per_id).first()
+            if pec and pec.ali_id:
+                return pec.ali_id.ali_descripcion
+        except:
+            pass
+        return None
+
+    def get_per_tiene_vehiculo(self, obj):
+        """Determinar si tiene vehículo"""
+        try:
+            return Persona_Vehiculo.objects.filter(per_id=obj.per_id).exists()
+        except:
+            return False
+
+    def get_per_pago_confirmado(self, obj):
+        """Determinar si tiene pago confirmado (Estado 1 = Pagado)"""
+        try:
+            # Import locally to avoid circular imports if any
+            from ..Models.pago_model import Pago_Persona
+            return Pago_Persona.objects.filter(per_id=obj.per_id, pap_estado=1).exists()
+        except:
+            return False
+
+    def get_per_acreditado(self, obj):
+        """Determinar si está acreditado (pec_acreditacion=True)"""
+        try:
+            from ..Models.persona_model import Persona_Curso
+            pec = Persona_Curso.objects.filter(per_id=obj.per_id).first()
+            if pec:
+                return pec.pec_acreditacion
+            return False
+        except:
+            return False
+>>>>>>> 74c5fcda (Fix Manual Accreditation: Add endpoint, fix serializer, update frontend)
 
 class PersonaGrupoSerializer(serializers.ModelSerializer):
     class Meta:

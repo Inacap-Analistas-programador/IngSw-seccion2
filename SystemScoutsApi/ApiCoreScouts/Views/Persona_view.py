@@ -1,4 +1,4 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import filters
@@ -26,9 +26,44 @@ class PersonaViewSet(viewsets.ModelViewSet):
 
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_class = PersonaFilter
-    search_fields = ['per_nombres', 'per_apelpta', 'per_run', 'per_apodo']
+    search_fields = ['per_nombres', 'per_apelpta', 'per_apelmat', 'per_run', 'per_apodo']
     renderer_classes = [JSONRenderer]
     pagination_class = StandardResultsSetPagination
+
+    @action(detail=False, methods=['post'])
+    def acreditacion_manual_acreditar(self, request):
+        """
+        Acción para acreditar un participante manualmente.
+        Recibe { 'per_id': <int>, 'rut': <str> }
+        """
+        try:
+            data = request.data
+            per_id = data.get('per_id')
+            
+            # import models inside if not available or rely on global imports
+            # (Imports are available globally in this file)
+            
+            # Buscar persona
+            persona = Persona.objects.filter(per_id=per_id).first()
+            if not persona:
+                return Response({'error': 'Persona no encontrada'}, status=404)
+
+            # Buscar curso activo (Persona_Curso)
+            pec = Persona_Curso.objects.filter(per_id=per_id).first()
+            if not pec:
+                return Response({'error': 'La persona no está inscrita en ningún curso'}, status=400)
+
+            # Realizar acreditación
+            pec.pec_acreditacion = True
+            pec.pec_registro = True
+            pec.save()
+
+            # Retornar datos actualizados usando el serializer completo
+            serializer = self.get_serializer(persona)
+            return Response(serializer.data)
+
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
     
     def get_queryset(self):
         """
@@ -222,3 +257,4 @@ class PersonaVehiculoViewSet(viewsets.ModelViewSet):
             'pec_id__per_id',      # Persona_Curso -> Persona
             'pec_id__cus_id__cur_id'  # Persona_Curso -> Curso_Seccion -> Curso
         ).all()
+
