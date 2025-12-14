@@ -2,40 +2,49 @@
   <div class="gestion-personas">
   <!-- Vista: la NavBar se renderiza globalmente en App.vue, no incluirla aquí -->
 
-    <!-- Barra de búsqueda y filtros -->
-    <div :class="['filtros', (isMobile && filtrosColapsados) ? 'filtros-collapsed' : '']">
-      <div class="filtros-toggle-mobile" v-if="isMobile">
-        <!-- Usar las mismas clases estándar que otros botones para mantener diseño consistente -->
+    <!-- Encabezado estándar de pantalla -->
+    <div class="header">
+      <h2>Gestión de Personas</h2>
+      <h3>Administra, crea y organiza el registro de personas.</h3>
+    </div>
+
+    <!-- Barra de búsqueda y filtros: separar móvil y escritorio para evitar que se mezclen -->
+    <!-- Versión móvil: dos columnas, toggle y sin acciones de escritorio -->
+    <div v-if="isMobile" :class="['filtros filtros-mobile', filtrosColapsados ? 'filtros-collapsed' : '']">
+      <div class="filtros-toggle-mobile">
         <button type="button" class="btn-standard btn-toggle-filtros" @click="toggleFiltros">
           <AppIcons :name="filtrosColapsados ? 'chevron-down' : 'chevron-up'" :size="18" />
           {{ filtrosColapsados ? 'Mostrar filtros' : 'Ocultar filtros' }}
         </button>
       </div>
-      <div class="filtros-left" v-if="!isMobile || !filtrosColapsados">
-        <InputBase v-model="searchQuery" placeholder="Buscar por nombre, RUT, email..." @keydown.enter.prevent="filtrar" @focus="ensureFiltrosLoaded" />
+      <div class="filtros-left" v-if="!filtrosColapsados">
+        <InputBase v-model="searchQuery" placeholder="Buscar por nombre, RUT, email..." @input="filtrar({ immediate: false })" @keydown.enter.prevent="filtrar" @focus="ensureFiltrosLoaded" />
         <BaseSelect v-model="selectedRole" :options="roleOptions" placeholder="Todos los roles" @click="ensureFiltrosLoaded" />
         <BaseSelect v-model="selectedCourse" :options="courseOptions" placeholder="Todos los grupos" @click="ensureFiltrosLoaded" />
         <BaseSelect v-model="selectedCurso" :options="cursosOptions" placeholder="Seleccione Curso" @click="ensureFiltrosLoaded" />
         <BaseSelect v-model="selectedRama" :options="ramaOptions" placeholder="Todas las ramas" @click="ensureFiltrosLoaded" />
         <BaseButton class="btn-search btn-standard" variant="primary" @click="filtrar"><AppIcons name="search" :size="16" /> Buscar</BaseButton>
       </div>
-      <div class="filtros-right" v-if="!isMobile || !filtrosColapsados">
-        <!-- Right area for filters. Desktop actions are rendered here so they
-             align with the filters row without overlapping. Kept inside this
-             block only for desktop (v-if on the buttons) so mobile collapse
-             still hides filter controls. -->
-        <div class="acciones-top-desktop" v-if="!isMobile">
-          <BaseButton v-if="canCreate" class="btn-add btn-standard" variant="primary" @click="abrirRutPopup"><AppIcons name="plus" :size="16" /> Nueva Persona</BaseButton>
-          <BaseButton v-if="canCreate" class="btn-import btn-standard" variant="secondary" @click="abrirModalImportar"><AppIcons name="download" :size="16" /> Importar Excel</BaseButton>
-          <BaseButton class="btn-export btn-standard" variant="secondary" @click="abrirModalExportar"><AppIcons name="upload" :size="16" /> Exportar</BaseButton>
+    </div>
 
-          <!-- Pagination removed (not used) -->
-        </div>
+    <!-- Versión escritorio: fila con filtros a la izquierda y acciones a la derecha -->
+    <div v-else class="filtros">
+      <div class="filtros-left">
+        <InputBase v-model="searchQuery" placeholder="Buscar por nombre, RUT, email..." @input="filtrar({ immediate: false })" @keydown.enter.prevent="filtrar" @focus="ensureFiltrosLoaded" />
+        <BaseSelect v-model="selectedRole" :options="roleOptions" placeholder="Todos los roles" @click="ensureFiltrosLoaded" />
+        <BaseSelect v-model="selectedCourse" :options="courseOptions" placeholder="Todos los grupos" @click="ensureFiltrosLoaded" />
+        <BaseSelect v-model="selectedCurso" :options="cursosOptions" placeholder="Seleccione Curso" @click="ensureFiltrosLoaded" />
+        <BaseSelect v-model="selectedRama" :options="ramaOptions" placeholder="Todas las ramas" @click="ensureFiltrosLoaded" />
+        <BaseButton class="btn-search btn-standard" variant="primary" @click="filtrar"><AppIcons name="search" :size="16" /> Buscar</BaseButton>
+      </div>
+      <div class="filtros-right">
+        <BaseButton v-if="canCreate" class="btn-add btn-standard" variant="primary" @click="abrirRutPopup"><AppIcons name="plus" :size="16" /> Nueva Persona</BaseButton>
+        <BaseButton v-if="canCreate" class="btn-import btn-standard" variant="secondary" @click="abrirModalImportar"><AppIcons name="download" :size="16" /> Importar Excel</BaseButton>
+        <BaseButton class="btn-export btn-standard" variant="secondary" @click="abrirModalExportar"><AppIcons name="upload" :size="16" /> Exportar</BaseButton>
       </div>
     </div>
 
-    <!-- Desktop actions are now rendered inside the filters right area so they
-         align properly with filter controls and don't overlap. -->
+            <!-- Desktop actions are now rendered inside the filters right area so they -->
 
     <!-- Acciones principales para mobile: se muestran debajo de los filtros cuando están visibles o colapsadas -->
     <div class="acciones-top" v-if="isMobile">
@@ -50,6 +59,9 @@
     <!-- Indicadores de carga y error -->
     <div v-if="cargandoPersonas" class="estado-carga">
       <p><AppIcons name="refresh" :size="16" /> Cargando personas...</p>
+    </div>
+    <div v-if="filtrandoEnProceso" class="estado-carga">
+      <p><AppIcons name="refresh" :size="16" /> Filtrando resultados...</p>
     </div>
     
     <div v-if="errorCarga" class="mensaje-error">
@@ -75,7 +87,7 @@
           <th>Rol</th>
           <th>Teléfono/Celular</th>
           <th>Estado</th>
-          <th>Acciones</th>
+          <th class="col-acciones">Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -92,42 +104,16 @@
           </td>
           <td data-label="Teléfono/Celular">{{ p.PER_FONO || p.PER_CEL || 'Sin teléfono' }}</td>
           <td data-label="Estado">
-            <span
-              :class="['estado', p.PER_VIGENTE ? 'activo' : 'inactivo']"
-            >
-                {{ p.PER_VIGENTE ? 'Activo' : 'Inactivo' }}
+            <span :class="['estado', p.PER_VIGENTE ? 'activo' : 'inactivo']">
+              {{ p.PER_VIGENTE ? 'Activo' : 'Inactivo' }}
             </span>
           </td>
           <td>
             <div class="acciones-buttons">
-              <BaseButton class="btn-ver btn-action" variant="secondary" @click="abrirModalVer(p)" title="Ver"><AppIcons name="eye" :size="14" /><span class="btn-label">Ver</span></BaseButton>
-              <BaseButton 
-                v-if="canEdit" 
-                class="btn-editar btn-action" 
-                variant="primary" 
-                @click="abrirModalEditar(p)"
-                title="Editar"
-              >
-                <AppIcons name="edit" :size="14" /><span class="btn-label">Editar</span>
-              </BaseButton>
-              <BaseButton 
-                v-if="canDelete && p.PER_VIGENTE" 
-                class="btn-anular btn-action" 
-                variant="secondary" 
-                @click="anularPersona(p)"
-                title="Anular"
-              >
-                <AppIcons name="x" :size="14" /><span class="btn-label">Anular</span>
-              </BaseButton>
-              <BaseButton 
-                v-if="canDelete && !p.PER_VIGENTE" 
-                class="btn-reactivar btn-action" 
-                variant="primary" 
-                @click="reactivarPersona(p)"
-                title="Reactivar"
-              >
-                <AppIcons name="check" :size="14" /><span class="btn-label">Reactivar</span>
-              </BaseButton>
+              <BaseButton class="btn-ver btn-action" variant="primary" @click="abrirModalVer(p)" title="Ver"><AppIcons name="eye" :size="14" /><span class="btn-label">Ver</span></BaseButton>
+              <BaseButton v-if="canEdit" class="btn-editar btn-action" variant="primary" @click="abrirModalEditar(p)" title="Editar"><AppIcons name="edit" :size="14" /><span class="btn-label">Editar</span></BaseButton>
+              <BaseButton v-if="canDelete && p.PER_VIGENTE" class="btn-anular btn-action" variant="secondary" @click="anularPersona(p)" title="Anular"><AppIcons name="x" :size="14" /><span class="btn-label">Anular</span></BaseButton>
+              <BaseButton v-if="canDelete && !p.PER_VIGENTE" class="btn-reactivar btn-action" variant="primary" @click="reactivarPersona(p)" title="Reactivar"><AppIcons name="check" :size="14" /><span class="btn-label">Reactivar</span></BaseButton>
             </div>
           </td>
         </tr>
@@ -221,12 +207,12 @@
                           ref="fotoInput"
                           type="file" 
                           accept="image/png, image/jpeg, image/jpg" 
-                          @change="handleFileUpload($event, 'editar')"
+                          @change.stop="handleFileUpload($event, 'editar')"
                           style="display: none"
                         />
                         <BaseButton 
                           type="button" 
-                          @click="$refs.fotoInput?.click()" 
+                          @click.stop="$refs.fotoInput?.click()" 
                           variant="primary"
                           class="btn-foto"
                         >
@@ -519,10 +505,8 @@
                     </div>
                     <ul v-else>
                       <li v-for="curso in personaEditada.cursosHistorial" :key="curso.PEC_ID" 
-                          class="historial-curso-item"
-                          @click="navegarACurso(curso.CUS_ID)"
-                          :title="'Clic para ver detalles del curso'">
-                        <div class="curso-item-content">
+                          class="historial-curso-item">
+                        <div class="curso-item-content" @click="navegarACurso(curso.CUS_ID)" :title="'Clic para ver detalles del curso'">
                           <div class="curso-header">
                             <strong class="curso-nombre">{{ curso.CUR_NOMBRE || 'Curso sin nombre' }}</strong>
                             <span class="curso-codigo">#{{ curso.CUR_CODIGO || curso.CUS_ID }}</span>
@@ -540,6 +524,16 @@
                           <div v-if="curso.CUR_DESCRIPCION" class="curso-descripcion">
                             {{ curso.CUR_DESCRIPCION }}
                           </div>
+                        </div>
+                        <div class="curso-actions">
+                          <BaseButton 
+                            variant="primary" 
+                            class="btn-ver-pagos"
+                            @click.stop="navegarAPagos(curso.CUS_ID, personaEditada)"
+                            title="Ver pagos de este curso"
+                          >
+                            <AppIcons name="dollar-sign" :size="14" /> Pagos
+                          </BaseButton>
                         </div>
                       </li>
                     </ul>
@@ -668,12 +662,12 @@
                       ref="fotoInputNueva"
                       type="file" 
                       accept="image/png, image/jpeg, image/jpg" 
-                      @change="handleFileUpload($event, 'nueva')"
+                      @change.stop="handleFileUpload($event, 'nueva')"
                       style="display: none"
                     />
                     <BaseButton 
                       type="button" 
-                      @click="$refs.fotoInputNueva?.click()" 
+                      @click.stop="$refs.fotoInputNueva?.click()" 
                       variant="primary"
                       class="btn-foto"
                       :disabled="guardandoPersona"
@@ -746,6 +740,7 @@
                         required
                       />
                     </div>
+                    <small v-if="rutNuevoInvalido" class="error-message">⚠️ Debe ingresar un RUT válido</small>
                   </div>
 
                   <div class="form-field">
@@ -1136,37 +1131,37 @@
                     Salud y Alimentación
                   </h3>
                   <div class="form-grid">
-                    <div class="form-field">
-                      <label>Tipo de Alimentación</label>
-                      <BaseSelect v-model="personaNueva.ALI_ID" :options="alimentacionOptions" :disabled="guardandoPersona" />
-                    </div>
-
-                    <div class="form-field full-width">
-                      <label>Alergias / Enfermedades</label>
-                      <InputBase v-model="personaNueva.PER_ALERGIA_ENFERMEDAD" :disabled="guardandoPersona" />
-                    </div>
-
-                    <div class="form-field full-width">
-                      <label>Limitaciones</label>
-                      <InputBase v-model="personaNueva.PER_LIMITACION" :disabled="guardandoPersona" />
-                    </div>
-                    
-                    <div class="form-field">
-                      <label>Contacto Emergencia</label>
-                      <InputBase v-model="personaNueva.PER_NOM_EMERGENCIA" :disabled="guardandoPersona" placeholder="María González" />
-                    </div>
-                    <div class="form-field">
-                      <label>Tel. Emergencia</label>
-                      <div class="phone-input-wrapper">
-                        <span class="phone-prefix">+56</span>
-                        <InputBase v-model="personaNueva.PER_FONO_EMERGENCIA" :disabled="guardandoPersona" placeholder="912345678" class="phone-input" />
+                      <div class="form-field">
+                        <label>Tipo de Alimentación</label>
+                        <BaseSelect v-model="personaNueva.ALI_ID" :options="alimentacionOptions" :disabled="guardandoPersona" />
                       </div>
-                    </div>
-
-                    <div class="form-field full-width">
-                      <label>Ficha Médica (opcional)</label>
-                      <InputBase v-model="personaNueva.FICHA_MEDICA" placeholder="Url o identificador de ficha" :disabled="guardandoPersona" />
-                    </div>
+          
+                      <div class="form-field full-width">
+                        <label>Alergias / Enfermedades</label>
+                        <InputBase v-model="personaNueva.PER_ALERGIA_ENFERMEDAD" :disabled="guardandoPersona" />
+                      </div>
+          
+                      <div class="form-field full-width">
+                        <label>Limitaciones</label>
+                        <InputBase v-model="personaNueva.PER_LIMITACION" :disabled="guardandoPersona" />
+                      </div>
+          
+                      <div class="form-field">
+                        <label>Contacto Emergencia</label>
+                        <InputBase v-model="personaNueva.PER_NOM_EMERGENCIA" :disabled="guardandoPersona" placeholder="María González" />
+                      </div>
+                      <div class="form-field">
+                        <label>Tel. Emergencia</label>
+                        <div class="phone-input-wrapper">
+                          <span class="phone-prefix">+56</span>
+                          <InputBase v-model="personaNueva.PER_FONO_EMERGENCIA" :disabled="guardandoPersona" placeholder="912345678" class="phone-input" />
+                        </div>
+                      </div>
+          
+                      <div class="form-field full-width">
+                        <label>Ficha Médica (opcional)</label>
+                        <InputBase v-model="personaNueva.FICHA_MEDICA" placeholder="Url o identificador de ficha" :disabled="guardandoPersona" />
+                      </div>
                   </div>
                 </div>
 
@@ -1196,13 +1191,14 @@
 
             <form @submit.prevent="buscarRutPopup" class="rut-form" style="padding:16px;">
               <div class="rut-row">
-                <InputBase class="rut-input" v-model="rutPopup.run" placeholder="12345678" @input="rutPopup.run = rutPopup.run.replace(/[^0-9]/g,'')" />
+                <InputBase class="rut-input" v-model="rutPopup.run" placeholder="12345678" @input="calcularDvPopup" />
                 <span class="rut-separator">-</span>
                 <InputBase class="rut-dv" v-model="rutPopup.dv" placeholder="9" maxlength="1" />
-                <BaseButton class="btn-search" type="submit" variant="primary" :disabled="rutPopup.searching || !rutPopup.run">
+                <BaseButton class="btn-search" type="submit" variant="primary" :disabled="rutPopup.searching || !rutPopup.run || rutPopupInvalido">
                   <AppIcons name="search" :size="14" /> Buscar
                 </BaseButton>
               </div>
+              <small v-if="rutPopupInvalido" class="error-message">⚠️ Debe ingresar un RUT válido</small>
             </form>
           </div>
         </template>
@@ -1365,17 +1361,135 @@
           </div>
         </template>
       </BaseModal>
+
+      <!-- Modal de Recorte de Foto -->
+      <BaseModal v-model="cropperVisible" @close="closeCropper" class="persona-modal modal-cropper-foto">
+        <template #default>
+          <div class="modal-cropper">
+            <header class="modal-header-cropper">
+              <div class="header-title">
+                <h2><AppIcons name="image" :size="24" /> Ajustar Foto de Perfil</h2>
+                <p class="subtitle">Selecciona la parte de la imagen que deseas usar</p>
+              </div>
+              <div class="header-actions">
+                <BaseButton class="btn-cancel btn-modal-header" type="button" variant="secondary" @click="closeCropper">
+                  <AppIcons name="x" :size="16" /> Cerrar
+                </BaseButton>
+              </div>
+            </header>
+            
+            <div class="cropper-content">
+              <!-- Vista previa circular -->
+              <div class="cropper-preview-section">
+                <div class="cropper-frame">
+                  <img 
+                    :src="cropperImageUrl" 
+                    alt="Preview" 
+                    class="cropper-image" 
+                    :style="cropStyle()" 
+                  />
+                  <div class="cropper-mask"></div>
+                </div>
+                <p class="preview-hint">Vista previa del avatar</p>
+              </div>
+
+              <!-- Controles de ajuste -->
+              <div class="cropper-controls">
+                <div class="control-group">
+                  <label class="control-label">
+                    <AppIcons name="zoom-in" :size="16" />
+                    Zoom
+                  </label>
+                  <div class="control-slider-wrapper">
+                    <span class="slider-value">{{ Math.round((cropZoom - 0.5) / 2.5 * 100) }}%</span>
+                    <input 
+                      class="control-range" 
+                      type="range" 
+                      min="0.5" 
+                      max="3" 
+                      step="0.05" 
+                      v-model.number="cropZoom" 
+                    />
+                  </div>
+                </div>
+
+                <div class="control-group">
+                  <label class="control-label">
+                    <AppIcons name="move-horizontal" :size="16" />
+                    Posición Horizontal
+                  </label>
+                  <div class="control-slider-wrapper">
+                    <input 
+                      class="control-range" 
+                      type="range" 
+                      min="-200" 
+                      max="200" 
+                      step="1" 
+                      v-model.number="cropOffsetX" 
+                    />
+                  </div>
+                </div>
+
+                <div class="control-group">
+                  <label class="control-label">
+                    <AppIcons name="move-vertical" :size="16" />
+                    Posición Vertical
+                  </label>
+                  <div class="control-slider-wrapper">
+                    <input 
+                      class="control-range" 
+                      type="range" 
+                      min="-200" 
+                      max="200" 
+                      step="1" 
+                      v-model.number="cropOffsetY" 
+                    />
+                  </div>
+                </div>
+
+                <div class="control-group upload-group">
+                  <input 
+                    ref="cropperFileInput" 
+                    type="file" 
+                    accept="image/png, image/jpeg, image/jpg" 
+                    @change="changeImageInCropper" 
+                    hidden 
+                  />
+                  <BaseButton 
+                    type="button" 
+                    class="btn-standard btn-upload" 
+                    variant="secondary" 
+                    @click="$refs.cropperFileInput?.click()"
+                  >
+                    <AppIcons name="upload" :size="16" /> Cargar otra imagen
+                  </BaseButton>
+                </div>
+              </div>
+            </div>
+
+            <footer class="modal-footer-cropper">
+              <BaseButton variant="secondary" class="btn-standard" @click="closeCropper">
+                <AppIcons name="x" :size="16" /> Cancelar
+              </BaseButton>
+              <BaseButton variant="primary" class="btn-standard" @click="finalizeCrop">
+                <AppIcons name="check" :size="16" /> Usar esta foto
+              </BaseButton>
+            </footer>
+          </div>
+        </template>
+      </BaseModal>
     </div>
   </div>
 </template>
 
 
 <script>
-import InputBase from '@/components/InputBase.vue'
-import BaseSelect from '@/components/BaseSelect.vue'
-import BaseButton from '@/components/BaseButton.vue'
-import BaseModal from '@/components/BaseModal.vue'
-import AppIcons from '@/components/icons/AppIcons.vue'
+import { defineAsyncComponent } from 'vue'
+const InputBase = defineAsyncComponent(() => import('@/components/InputBase.vue'))
+const BaseSelect = defineAsyncComponent(() => import('@/components/BaseSelect.vue'))
+const BaseButton = defineAsyncComponent(() => import('@/components/BaseButton.vue'))
+const BaseModal = defineAsyncComponent(() => import('@/components/BaseModal.vue'))
+const AppIcons = defineAsyncComponent(() => import('@/components/icons/AppIcons.vue'))
 import personasService from '@/services/personasService.js'
 import mantenedoresService from '@/services/mantenedoresService.js'
 import cursosService from '@/services/cursosService.js'
@@ -1394,12 +1508,12 @@ export default {
     const toggleFiltros = async () => {
       filtrosColapsados.value = !filtrosColapsados.value
       // Recalcular altura disponible cuando se colapsan/expanden filtros.
-      // Use nextTick and a short timeout to ensure DOM layout has settled
-      // (sticky headers / scrollbars can change positions asynchronously).
+      // Usar nextTick y un pequeño timeout para asegurar que el layout del DOM se haya estabilizado
+      // (los headers sticky / scrollbars pueden cambiar posiciones asincrónicamente).
       try {
         await nextTick()
         if (window.__updateCardsViewportHeight) window.__updateCardsViewportHeight()
-                // Additional small delay to handle browser reflow in some devices
+                // Pequeño delay adicional para manejar el reflow del navegador en algunos dispositivos
         setTimeout(() => {
           try { if (window.__updateCardsViewportHeight) window.__updateCardsViewportHeight() } catch { /* ignore */ }
         }, 80)
@@ -1408,7 +1522,19 @@ export default {
       }
     }
     const checkMobile = () => {
-      isMobile.value = window.innerWidth <= 768
+      try {
+        // Preferir media query CSS por confiabilidad (breakpoint ligeramente más amplio para diseño móvil)
+        if (window.matchMedia) {
+          isMobile.value = window.matchMedia('(max-width: 880px)').matches
+          return
+        }
+        // Respaldo: medir el ancho del contenedor/contenido principal cuando esté disponible
+        const container = document.querySelector('.app-layout .main-content') || document.querySelector('.gestion-personas') || document.body
+        const width = container?.clientWidth || window.innerWidth
+        isMobile.value = width <= 880
+      } catch {
+        isMobile.value = window.innerWidth <= 880
+      }
     }
     // Calcula la altura disponible para las tarjetas (debajo del .table-wrapper)
     const updateCardsViewportHeight = () => {
@@ -1429,7 +1555,13 @@ export default {
       checkMobile()
       window.addEventListener('resize', checkMobile)
       window.addEventListener('resize', updateCardsViewportHeight)
-      // run once to initialize sizes
+      // También escuchar cambios en media queries para mejor precisión
+      try {
+        const mq = window.matchMedia('(max-width: 880px)')
+        const mqHandler = (e) => { isMobile.value = e.matches }
+        mq.addEventListener ? mq.addEventListener('change', mqHandler) : mq.addListener(mqHandler)
+      } catch {}
+      // ejecutar una vez para inicializar tamaños
       updateCardsViewportHeight()
     })
     return {
@@ -1494,6 +1626,7 @@ export default {
   guardandoPersona: false,
   rutModalVisible: false,
   rutPopup: { run: '', dv: '', searching: false },
+  rutPopupInvalido: false,
   
   importarModalVisible: false,
   exportarModalVisible: false,
@@ -1505,18 +1638,30 @@ export default {
   
   esAdministrador: true,
   
+  cropperVisible: false,
+  cropperImageUrl: '',
+  cropperModo: '',
+  cropZoom: 1,
+  cropOffsetX: 0,
+  cropOffsetY: 0,
+  
+  rutNuevoInvalido: false,
+  
     filtroAplicado: false,
     filteredPersonas: [],
     filtrandoEnProceso: false,
+    currentFetchController: null,
     cargandoPersonas: false,
     errorCarga: null,
     personas: [],
     loadingMore: false,
-    // Filter cache metadata (to avoid repeated slow requests)
+    // Metadatos de caché de filtros (para evitar solicitudes lentas repetidas)
     filtersCachedAt: null,
-          filtersCacheTTL: 1000 * 60 * 60 * 24, // 24 hours
+          filtersCacheTTL: 1000 * 60 * 60 * 24, // 24 horas
       cargandoPersonasInFlight: false,
-      cargandoFiltrosInFlight: false
+      cargandoFiltrosInFlight: false,
+      latenciaMs: 0,
+      latenciaDetalle: ''
     };
   },
   computed: {
@@ -1570,6 +1715,14 @@ export default {
     }
   },
   methods: {
+    authReady() {
+      try {
+        const cookies = typeof document !== 'undefined' ? document.cookie : '';
+        const hasCookieToken = /access_token=|token=|accessToken=/.test(cookies);
+        const lsToken = typeof localStorage !== 'undefined' ? (localStorage.getItem('token') || localStorage.getItem('accessToken')) : null;
+        return Boolean(hasCookieToken || lsToken);
+      } catch { return false; }
+    },
     abrirModalExportar() {
       if (!this.filtroAplicado || this.personasFiltradas.length === 0) {
         alert('No hay datos para exportar. Usa los filtros y presiona "Buscar" primero.');
@@ -1578,11 +1731,13 @@ export default {
       this.exportarModalVisible = true;
     },
         ensureFiltrosLoaded() {
-      if (this.filtersCachedAt && (Date.now() - this.filtersCachedAt) < this.filtersCacheTTL) return;
-      if (this.cargandoFiltrosInFlight) return;
-      this.cargandoFiltrosInFlight = true;
-      this.cargarOpcionesFiltros().catch(err => { console.warn('Error cargando filtros:', err) }).finally(() => { this.cargandoFiltrosInFlight = false; });
-    },
+          // Evitar cargar mantenedores cuando no está autenticado para prevenir delays 401
+          if (!this.authReady()) return;
+          if (this.filtersCachedAt && (Date.now() - this.filtersCachedAt) < this.filtersCacheTTL) return;
+          if (this.cargandoFiltrosInFlight) return;
+          this.cargandoFiltrosInFlight = true;
+          this.cargarOpcionesFiltros().finally(() => { this.cargandoFiltrosInFlight = false; });
+        },
     cerrarModalExportar() {
       this.exportarModalVisible = false;
     },
@@ -1605,7 +1760,7 @@ export default {
           const cursosData = await personasService.obtenerCursosPersona(this.personaEditada.PER_ID);
           this.personaEditada.cursosHistorial = cursosData || [];
         } catch (error) {
-          console.error('Error cargando cursos de la persona:', error);
+          /* error suppressed */
           this.personaEditada.cursosHistorial = [];
         }
       } else {
@@ -1623,12 +1778,12 @@ export default {
         BENEFICIARIO: this.personaEditada.BENEFICIARIO !== undefined ? this.personaEditada.BENEFICIARIO : false,
         RANGO_EDAD_NNAJ: this.personaEditada.RANGO_EDAD_NNAJ || ''
       };
-      // Ensure vehicle keys exist to avoid undefined during edits
+      // Asegurar que existan las claves de vehículo para evitar undefined durante ediciones
       Object.assign(defaults, {
         PEV_PATENTE: this.personaEditada.PEV_PATENTE || '',
         PEV_MARCA: this.personaEditada.PEV_MARCA || '',
         PEV_MODELO: this.personaEditada.PEV_MODELO || '',
-        // Vehicle fields: only keep those stored in DB (patente, marca, modelo)
+        // Campos de vehículo: solo mantener los almacenados en BD (patente, marca, modelo)
       });
       this.personaEditada = Object.assign({}, this.personaEditada, defaults);
       this.newHistEntry = { fecha: '', descripcion: '' };
@@ -1638,9 +1793,10 @@ export default {
       this.personaSeleccionada = persona;
       this.pendingSave = false;
       
+      // Si tiene COM_ID pero falta REG_ID o PRO_ID, intentar inferirlos
       if (this.personaEditada.COM_ID && (!this.personaEditada.REG_ID || !this.personaEditada.PRO_ID)) {
         try {
-          // Prefer existing cached options; fallback to API only if empty
+          // Preferir opciones en caché existentes; recurrir a API solo si está vacío
           let comunas = Array.isArray(this.comunaOptionsEditar) && this.comunaOptionsEditar.length
                       ? this.comunaOptionsEditar.map(c => ({ COM_ID: c.value, PRO_ID: c.PRO_ID }))
             : null;
@@ -1648,33 +1804,39 @@ export default {
             try { comunas = await mantenedoresService.comuna.list(); } catch { comunas = []; }
           }
           const comunaActual = (comunas || []).find(c => c.COM_ID === this.personaEditada.COM_ID);
-          if (comunaActual) {
+          if (comunaActual && !this.personaEditada.PRO_ID) {
             this.personaEditada.PRO_ID = comunaActual.PRO_ID;
-            // Provincias: use cached options only; skip backend calls to avoid 500
+          }
+          // Inferir región desde provincia si falta
+          if ((this.personaEditada.PRO_ID) && !this.personaEditada.REG_ID) {
+            // Provincias: usar solo opciones en caché; omitir llamadas al backend para evitar error 500
             let provincias = Array.isArray(this.provinciaOptionsEditar) && this.provinciaOptionsEditar.length
               ? this.provinciaOptionsEditar.map(p => ({ PRO_ID: p.value, REG_ID: p.REG_ID }))
               : (Array.isArray(this.provinciaOptions) && this.provinciaOptions.length
                   ? this.provinciaOptions.map(p => ({ PRO_ID: p.value, REG_ID: p.REG_ID }))
                   : []);
-            const provinciaActual = (provincias || []).find(p => p.PRO_ID === comunaActual.PRO_ID);
+            const provinciaActual = (provincias || []).find(p => p.PRO_ID === this.personaEditada.PRO_ID);
             if (provinciaActual) {
               this.personaEditada.REG_ID = provinciaActual.REG_ID;
             }
           }
         } catch (error) {
-          console.warn('No se pudo derivar región/provincia de la comuna. Continuando en modo lectura.', error);
+          /* warn suppressed */
         }
       }
       
+      // Cargar cascada de select (región -> provincia -> comuna)
       try {
+        // Siempre cargar provincias si hay región
         if (this.personaEditada.REG_ID) {
           await this.cargarProvinciasPorRegionEditar();
         }
-                if (this.personaEditada.PRO_ID) {
+        // Siempre cargar comunas si hay provincia
+        if (this.personaEditada.PRO_ID) {
           await this.cargarComunasPorProvinciaEditar();
         }
       } catch {
-        // If backend fails (500), avoid blocking the modal
+        // Si el backend falla (500), evitar bloquear el modal
       }
     },
 
@@ -1683,6 +1845,21 @@ export default {
       this.$router.push({ 
         name: 'cursoscapacitaciones', 
         query: { cursoId: cursoId } 
+      });
+    },
+    
+    navegarAPagos(cursoId, persona) {
+      // Navegar a la vista de pagos con filtros aplicados
+      // Construir el texto de búsqueda con el nombre completo de la persona
+      const nombreCompleto = `${persona.PER_NOMBRES || ''} ${persona.PER_APELPTA || ''} ${persona.PER_APELMAT || ''}`.trim();
+      
+      this.$router.push({ 
+        name: 'pagos', 
+        query: { 
+          personaQuery: nombreCompleto || persona.PER_RUN,
+          cursoId: cursoId,
+          autoSearch: 'true'
+        } 
       });
     },
 
@@ -1706,29 +1883,31 @@ export default {
     cerrarDetalle() {
       this.personaSeleccionada = null;
     },
-    filtrar() {
-      if (this.filtrandoEnProceso) {
+    filtrar({ immediate = true } = {}) {
+      // Debounce cuando se llama desde tipeo; ejecutar inmediatamente al presionar Buscar
+      if (!immediate) {
+        clearTimeout(this._debounceTimer);
+        this._debounceTimer = setTimeout(() => this.filtrar({ immediate: true }), 150);
         return;
       }
+      if (this.filtrandoEnProceso) return;
       this.filtrandoEnProceso = true;
-
-      setTimeout(async () => {
+      (async () => {
         await this.ejecutarFiltrado();
-        // En móviles, al buscar colapsamos automáticamente los filtros para ahorrar espacio
-        try {
-          if (this.isMobile) {
-            this.filtrosColapsados = true
-          }
-        } catch (e) {
-          // si por alguna razón las refs no están disponibles, ignoramos
-          console.warn('No fue posible colapsar filtros automáticamente:', e)
-                }
-        // Recalcular altura disponible tras filtrar (si la función está expuesta)
-        try { if (window.__updateCardsViewportHeight) window.__updateCardsViewportHeight() } catch { /* ignore */ }
+        try { if (this.isMobile) this.filtrosColapsados = true } catch {}
+        try { if (window.__updateCardsViewportHeight) window.__updateCardsViewportHeight() } catch {}
         this.filtrandoEnProceso = false;
-      }, 10);
+      })();
     },
     async ejecutarFiltrado() {
+      // Abortar solicitud en curso anterior para evitar respuestas obsoletas
+      if (this.currentFetchController) {
+        try { this.currentFetchController.abort(); } catch {}
+        this.currentFetchController = null;
+      }
+      const controller = new AbortController();
+      this.currentFetchController = controller;
+      const t0 = performance && performance.now ? performance.now() : Date.now();
       const q = (this.searchQuery || '').toLowerCase().trim();
       const selectedRoleNorm = (this.selectedRole || '').toString().trim();
       const selectedRamaNorm = (this.selectedRama || '').toString().trim();
@@ -1745,93 +1924,76 @@ export default {
       this.filtroAplicado = true;
       this.personaSeleccionada = null;
 
-      console.log('🔍 Aplicando filtros:', {
-        busqueda: q,
-        rol: selectedRoleNorm,
-        rama: selectedRamaNorm,
-        grupo: selectedCourseNorm,
-        curso: selectedCursoNorm
-      });
-      console.log('📊 Total personas disponibles:', this.personas.length);
+      /* logs suppressed */
+      // Server-side filtering: build query params and fetch only what’s needed
+      const params = {};
+      if (q) params.q = q;
+      if (selectedRoleNorm) params.PER_ROL = selectedRoleNorm;
+      if (selectedRamaNorm) params.PER_RAMA = selectedRamaNorm;
+      if (selectedCourseNorm) params.PER_GRUPO = selectedCourseNorm;
+      // Sugerir paginación al backend para reducir payload (si es compatible)
+      params.page_size = 25;
+      // Evitar proyección de `fields` a menos que esté confirmado el soporte del backend
 
-      // Debug: show a small sample of persona IDs to help diagnosis
+      // Clave de caché para resultados filtrados
+      const cacheKey = `gs_personas_filtered_v1:${JSON.stringify({ q, rol:selectedRoleNorm, rama:selectedRamaNorm, grupo:selectedCourseNorm, curso:selectedCursoNorm })}`;
+      const nowTs = Date.now();
       try {
-        console.log('🔢 Muestra personas (primeros 10):', this.personas.slice(0, 10).map(p => ({ PER_ID: p.PER_ID, PER_RUN: p.PER_RUN, PER_NOMBRES: p.PER_NOMBRES })));
-      } catch (e) {
-        console.warn('No se pudo mostrar muestra de personas:', e);
-      }
-
-      // If a specific course enrollment filter is selected, use the persona-cursos relation
-      // as the authoritative source. Some backend endpoints may ignore CUS_ID on the persons
-      // endpoint and return the full list, which produced the bug where any course showed all persons.
-      let personaIdsEnCurso = null;
-      if (selectedCursoNorm) {
-        try {
-          let personaCursosResp = await personasService.personaCursos.list({ CUS_ID: selectedCursoNorm });
-          console.log('📡 Respuesta personaCursos.list():', Array.isArray(personaCursosResp) ? `array(${personaCursosResp.length})` : personaCursosResp && personaCursosResp.results ? `paginated(results=${personaCursosResp.results.length})` : typeof personaCursosResp);
-          let arr = Array.isArray(personaCursosResp) ? personaCursosResp : (personaCursosResp && Array.isArray(personaCursosResp.results) ? personaCursosResp.results : []);
-
-                    // Debug: show sample of relation rows (raw)
-          try { console.log('📋 Muestra persona_curso (raw, primeros 8):', arr.slice(0, 8).map(x => ({ PEC_ID: x.PEC_ID, PER_ID: x.PER_ID, CUS_ID: x.CUS_ID }))); } catch { /* ignore */ }
-
-          // Ensure we only keep rows that match the requested CUS_ID. Some backend
-          // implementations return the full table ignoring query params, so always
-          // filter client-side by CUS_ID.
-          const beforeFilterCount = arr.length;
-          try {
-            arr = arr.filter(x => String(x.CUS_ID) === String(selectedCursoNorm));
-          } catch (e) {
-            console.warn('Error filtrando arr por CUS_ID:', e);
-          }
-
-          if (!arr.length) {
-            // If after filtering we have nothing, try a fallback: fetch all rows
-            // and filter (best-effort). This handles servers that paginate or
-            // ignore the query param on the filtered call.
-            try {
-              const allResp = await personasService.personaCursos.list();
-              const allArr = Array.isArray(allResp) ? allResp : (allResp && Array.isArray(allResp.results) ? allResp.results : []);
-              arr = allArr.filter(x => String(x.CUS_ID) === String(selectedCursoNorm));
-              console.log('🔁 Fallback: personaCursos.list() total rows=', allArr.length, ' -> matched=', arr.length);
-            } catch (innerErr) {
-              console.warn('Fallback: no fue posible recuperar todas las inscripciones de cursos:', innerErr);
-            }
-          } else {
-            console.log('🔎 personaCursos.list() devolvió', beforeFilterCount, 'filas; tras filtrar por CUS_ID quedan', arr.length);
-          }
-
-          personaIdsEnCurso = new Set(arr.map(x => Number(x.PER_ID)).filter(v => !Number.isNaN(v)));
-          console.log('🔎 Personas (relation) inscritas en curso', selectedCursoNorm, '->', personaIdsEnCurso.size);
-        } catch (error) {
-          console.warn('No fue posible cargar inscripciones de curso para filtrar (error):', error);
-          personaIdsEnCurso = new Set();
+        const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+        if (cached && (nowTs - cached.ts) < 2 * 60 * 1000) { // TTL de 2 minutos
+          this.personas = cached.data;
+          this.filteredPersonas = cached.data;
+          this.currentFetchController = null;
+          return;
         }
+      } catch {}
+
+      let fetched = [];
+      let tFetchEnd = t0;
+      try {
+        const resp = await personasService.personas.list(params, { signal: controller.signal });
+        tFetchEnd = performance && performance.now ? performance.now() : Date.now();
+        fetched = Array.isArray(resp) ? resp : (resp && Array.isArray(resp.results) ? resp.results : []);
+      } catch (e) {
+        fetched = [];
       }
 
-      this.filteredPersonas = this.personas.filter((p) => {
-        const nombre = (p.PER_NOMBRES || '').toLowerCase();
-        const apellidoPat = (p.PER_APELPTA || '').toLowerCase();
-        const apellidoMat = (p.PER_APELMAT || '').toLowerCase();
-        const nombreCompleto = `${nombre} ${apellidoPat} ${apellidoMat}`.toLowerCase();
-        const rut = (p.PER_RUN || '').toString().toLowerCase();
-        const email = (p.PER_MAIL || '').toLowerCase();
+      // Omitir llamadas a relaciones secundarias para mantener el filtrado instantáneo.
+      // Confiar en parámetros del backend; si no es compatible, el filtro del lado del cliente aproximará.
 
-        const coincideBusqueda = !q || nombreCompleto.includes(q) || rut.includes(q) || email.includes(q);
+      // Filtro defensivo del lado del cliente en caso de que el backend ignore los parámetros de consulta
+      if (fetched.length) {
+        const qLower = q;
+        fetched = fetched.filter(p => {
+          const nombre = (p.PER_NOMBRES || '').toLowerCase();
+          const apellidoPat = (p.PER_APELPTA || p.PER_APELPAT || '').toLowerCase();
+          const apellidoMat = (p.PER_APELMAT || '').toLowerCase();
+          const nombreCompleto = `${nombre} ${apellidoPat} ${apellidoMat}`.trim();
+          const rutStr = (p.PER_RUN || '').toString().toLowerCase();
+          const emailStr = (p.PER_MAIL || p.PER_EMAIL || '').toLowerCase();
 
-        const pRol = (p.PER_ROL || '').toString().trim();
-        const pRama = (p.PER_RAMA || '').toString().trim();
-        const pGrupo = (p.PER_GRUPO || '').toString().trim();
+          const coincideBusqueda = !qLower || nombreCompleto.includes(qLower) || rutStr.includes(qLower) || emailStr.includes(qLower);
 
-        const coincideRol = !selectedRoleNorm || pRol === selectedRoleNorm;
-        const coincideRama = !selectedRamaNorm || pRama === selectedRamaNorm;
-        const coincideGrupo = !selectedCourseNorm || pGrupo === selectedCourseNorm;
-        const pIdNum = Number(p.PER_ID || p.PER_RUN || p.PER_ID);
-        const coincideCurso = !selectedCursoNorm || (personaIdsEnCurso ? personaIdsEnCurso.has(pIdNum) : true);
+          const pRol = (p.PER_ROL || '').toString().trim();
+          const pRama = (p.PER_RAMA || '').toString().trim();
+          const pGrupo = (p.PER_GRUPO || '').toString().trim();
 
-        return coincideBusqueda && coincideRol && coincideRama && coincideGrupo && coincideCurso;
-      });
+          const coincideRol = !selectedRoleNorm || pRol === selectedRoleNorm;
+          const coincideRama = !selectedRamaNorm || pRama === selectedRamaNorm;
+          const coincideGrupo = !selectedCourseNorm || pGrupo === selectedCourseNorm;
+          return coincideBusqueda && coincideRol && coincideRama && coincideGrupo;
+        });
+      }
+
+      // Solo establecer lista filtrada para la tabla; evitar watchers extra en `personas`
+      const tProcessEnd = performance && performance.now ? performance.now() : Date.now();
+      this.latenciaMs = Math.round((tFetchEnd - t0));
+      this.latenciaDetalle = `red: ${Math.round(tFetchEnd - t0)}ms, proc: ${Math.round(tProcessEnd - tFetchEnd)}ms`;
+      this.filteredPersonas = fetched;
+      try { localStorage.setItem(cacheKey, JSON.stringify({ ts: nowTs, data: fetched })); } catch {}
+      this.currentFetchController = null;
       
-      console.log('✅ Personas filtradas:', this.filteredPersonas.length);
+      // debug eliminado
 
       this.$nextTick(() => {
         const el = document.querySelector('.table-wrapper');
@@ -1841,9 +2003,9 @@ export default {
     enrichPersonas() {
   const now = new Date().toISOString();
   this.personas = (this.personas || []).map((p, idx) => {
-    // Prefer existing PER_* fields from the API payload (upper or lower case).
+    // Preferir campos PER_* existentes del payload de la API (mayúsculas o minúsculas).
     
-    // Parse RUT
+    // Procesar RUT
     let per_run = p.PER_RUN !== undefined ? p.PER_RUN : p.per_run;
     if (typeof per_run === 'string') {
         per_run = Number(per_run.replace(/\./g, '')) || null;
@@ -1852,12 +2014,12 @@ export default {
     let per_dv = p.PER_DV !== undefined ? p.PER_DV : p.per_dv;
     if (per_dv === undefined || per_dv === null) per_dv = '';
 
-    // Names
+    // Nombres
     let per_nombres = p.PER_NOMBRES || p.per_nombres;
     let per_apelpat = p.PER_APELPTA || p.per_apelpta || p.PER_APELPAT || p.per_apelpat;
     let per_apelmat = p.PER_APELMAT || p.per_apelmat;
 
-    // Fallback for names if not found
+    // Respaldo para nombres si no se encuentran
     if (!per_nombres && p.nombre) {
       const nameParts = String(p.nombre || '').trim().split(/\s+/);
       if (nameParts.length >= 3) {
@@ -1872,10 +2034,10 @@ export default {
       }
     }
 
-    // Email and phone
+    // Email y teléfono
     const per_mail = p.PER_MAIL || p.per_mail || p.PER_EMAIL || p.email || '';
     const per_fono = p.PER_FONO || p.per_fono || p.telefono || p.PER_CEL || '';
-    const per_rol = p.PER_ROL || p.per_rol; // Backend might send 'per_rol' (string description) if serialized
+    const per_rol = p.PER_ROL || p.per_rol; // El backend podría enviar 'per_rol' (descripción string) si está serializado
 
     // ID
     const existingPerId = p.PER_ID !== undefined ? p.PER_ID : p.per_id;
@@ -1883,6 +2045,8 @@ export default {
     const enriched = Object.assign({}, p, {
       PER_ID: Number(existingPerId || per_run || (idx + 1)),
       ESC_ID: p.ESC_ID || p.esc_id || null,
+      REG_ID: p.REG_ID || p.reg_id || null,
+      PRO_ID: p.PRO_ID || p.pro_id || null,
       COM_ID: p.COM_ID || p.com_id || null,
       USU_ID: p.USU_ID || p.usu_id || null,
       PER_FECHA_HORA: p.PER_FECHA_HORA || p.per_fecha_hora || now,
@@ -1894,7 +2058,7 @@ export default {
       PER_MAIL: per_mail,
       PER_FECHA_NAC: p.PER_FECHA_NAC || p.per_fecha_nac || p.fecha_nac || '1900-01-01',
       PER_DIRECCION: p.PER_DIRECCION || p.per_direccion || p.direccion || '',
-      PER_TIPO_FONO: p.PER_TIPO_FONO || p.per_tipo_fono || 'Móvil', // Ensure fallback
+      PER_TIPO_FONO: p.PER_TIPO_FONO || p.per_tipo_fono || 'Móvil', // Asegurar respaldo
       PER_FONO: per_fono,
       PER_ALERGIA_ENFERMEDAD: p.PER_ALERGIA_ENFERMEDAD || p.per_alergia_enfermedad || '',
       PER_LIMITACION: p.PER_LIMITACION || p.per_limitacion || '',
@@ -1909,7 +2073,7 @@ export default {
       PER_APODO: p.PER_APODO || p.per_apodo || '',
       PER_FOTO: p.PER_FOTO || p.per_foto || null,
       PER_VIGENTE: (p.PER_VIGENTE !== undefined ? p.PER_VIGENTE : (p.per_vigente !== undefined ? p.per_vigente : true)),
-      PER_ROL: per_rol || 'Sin rol', // Display value
+      PER_ROL: per_rol || 'Sin rol', // Valor de visualización
       cursos: p.cursos || [],
       historial: p.historial || []
     });
@@ -2005,7 +2169,7 @@ export default {
     
     async confirmarGuardado() {
       if (this.guardandoPersona) {
-        console.log('⚠️ Ya se está guardando, ignorando solicitud duplicada');
+        /* log suppressed */
         return;
       }
       
@@ -2021,13 +2185,12 @@ export default {
         
         if (!this.personaEditada.PER_ID) {
           alert('Error: No se encontró el ID de la persona');
-          console.error('❌ Persona sin ID:', this.personaEditada);
+          /* error suppressed */
           this.guardandoPersona = false;
           return;
         }
         
-        console.log('💾 Guardando cambios en persona:', this.personaEditada);
-        console.log('📝 ID de persona:', this.personaEditada.PER_ID);
+        /* logs suppressed */
         
         if (!this.personaEditada.PER_NOMBRES) {
           alert('El nombre es obligatorio');
@@ -2066,6 +2229,7 @@ export default {
           PER_FONO: this.personaEditada.PER_FONO ? '+56' + this.personaEditada.PER_FONO.replace(/^\+56/, '') : null,
           PER_APODO: this.personaEditada.PER_APODO || null,
           PER_PROFESION: this.personaEditada.PER_PROFESION || null,
+          PER_ROL: this.personaEditada.PER_ROL || null,
           PER_NOM_EMERGENCIA: this.personaEditada.PER_NOM_EMERGENCIA || null,
           PER_FONO_EMERGENCIA: this.personaEditada.PER_FONO_EMERGENCIA ? '+56' + this.personaEditada.PER_FONO_EMERGENCIA.replace(/^\+56/, '') : null,
           PER_ALERGIA_ENFERMEDAD: this.personaEditada.PER_ALERGIA_ENFERMEDAD || null,
@@ -2075,22 +2239,42 @@ export default {
           PER_TIEMPO_ADULTO: this.personaEditada.PER_TIEMPO_ADULTO || null,
           PER_NUM_MMA: this.personaEditada.PER_NUM_MMA || null,
           PER_OTROS: this.personaEditada.PER_OTROS || null,
-          PER_FOTO: this.personaEditada.foto || null,
           ESC_ID: this.personaEditada.ESC_ID && this.personaEditada.ESC_ID !== '' ? Number(this.personaEditada.ESC_ID) : 1,
+          REG_ID: this.personaEditada.REG_ID && this.personaEditada.REG_ID !== '' ? Number(this.personaEditada.REG_ID) : null,
+          PRO_ID: this.personaEditada.PRO_ID && this.personaEditada.PRO_ID !== '' ? Number(this.personaEditada.PRO_ID) : null,
           COM_ID: this.personaEditada.COM_ID && this.personaEditada.COM_ID !== '' ? Number(this.personaEditada.COM_ID) : 1,
           PER_VIGENTE: this.personaEditada.PER_VIGENTE !== undefined ? this.personaEditada.PER_VIGENTE : true,
           TIENE_VEHICULO: this.personaEditada.TIENE_VEHICULO !== undefined ? this.personaEditada.TIENE_VEHICULO : false
         };
         
-        console.log('📤 Datos a enviar:', datosActualizados);
-        console.log('🌐 URL de actualización: personas/personas/' + this.personaEditada.PER_ID + '/');
-        
-        const personaActualizada = await personasService.personas.partialUpdate(
-          this.personaEditada.PER_ID, 
-          datosActualizados
-        );
-        
-        console.log('✅ Persona actualizada:', personaActualizada);
+        let personaActualizada;
+        try {
+          personaActualizada = await personasService.personas.partialUpdate(
+            this.personaEditada.PER_ID, 
+            datosActualizados
+          );
+        } catch (updateError) {
+          console.error('Error al actualizar persona:', updateError);
+          if (updateError.response?.data) {
+            console.error('Detalles del error:', updateError.response.data);
+            const errores = updateError.response.data;
+            let mensajeDetallado = 'Error al actualizar:\n\n';
+            
+            if (typeof errores === 'object') {
+              for (const [campo, mensajes] of Object.entries(errores)) {
+                const msg = Array.isArray(mensajes) ? mensajes.join(', ') : mensajes;
+                mensajeDetallado += `${campo}: ${msg}\n`;
+              }
+            } else {
+              mensajeDetallado += errores;
+            }
+            
+            alert(mensajeDetallado);
+          } else {
+            alert('Error al actualizar la persona. Por favor verifica los datos e intenta nuevamente.');
+          }
+          throw updateError;
+        }
         
         const personaId = this.personaEditada.PER_ID;
         
@@ -2107,16 +2291,16 @@ export default {
             
             if (grupoPersona) {
               await personasService.grupos.partialUpdate(grupoPersona.PEG_ID, grupoData);
-              console.log('✅ Grupo actualizado');
+              /* log suppressed */
             } else {
               await personasService.grupos.create({
                 PER_ID: personaId,
                 ...grupoData
               });
-              console.log('✅ Grupo asignado');
+              /* log suppressed */
             }
           } catch (error) {
-            console.warn('⚠️ No se pudo actualizar el grupo:', error);
+            /* warn suppressed */
           }
         }
         
@@ -2135,16 +2319,16 @@ export default {
             
             if (formadorPersona) {
               await personasService.formadores.partialUpdate(formadorPersona.PEF_ID, formadorData);
-              console.log('✅ Datos de formador actualizados');
+              /* log suppressed */
             } else {
               await personasService.formadores.create({
                 PER_ID: personaId,
                 ...formadorData
               });
-              console.log('✅ Datos de formador creados');
+              /* log suppressed */
             }
           } catch (error) {
-            console.warn('⚠️ No se pudieron actualizar datos de formador:', error);
+            /* warn suppressed */
           }
         }
         
@@ -2163,16 +2347,16 @@ export default {
             
             if (individualPersona) {
               await personasService.individuales.partialUpdate(individualPersona.PEI_ID, individualData);
-              console.log('✅ Información individual actualizada');
+              /* log suppressed */
             } else {
               await personasService.individuales.create({
                 PER_ID: personaId,
                 ...individualData
               });
-              console.log('✅ Información individual creada');
+              /* log suppressed */
             }
           } catch (error) {
-            console.warn('⚠️ No se pudo actualizar información individual:', error);
+            /* warn suppressed */
           }
         }
         
@@ -2203,16 +2387,16 @@ export default {
             
             if (nivelPersona) {
               await personasService.niveles.partialUpdate(nivelPersona.PEN_ID, nivelData);
-              console.log('✅ Nivel y rama actualizados');
+              /* log suppressed */
             } else if (ramaIdFinal) {
               await personasService.niveles.create({
                 PER_ID: personaId,
                 ...nivelData
               });
-              console.log('✅ Nivel y rama asignados');
+              /* log suppressed */
             }
           } catch (error) {
-            console.warn('⚠️ No se pudo actualizar nivel y rama:', error);
+            /* warn suppressed */
           }
         }
 
@@ -2226,7 +2410,7 @@ export default {
           if (cursoPersona) {
             if (aliIdToSet !== null && Number(cursoPersona.ALI_ID) !== aliIdToSet) {
               await personasService.personaCursos.partialUpdate(cursoPersona.PEC_ID, { ALI_ID: aliIdToSet });
-              console.log('✅ ALI_ID actualizado en Persona_Curso');
+              /* log suppressed */
             }
           } else if (aliIdToSet !== null) {
             // Intentar crear Persona_Curso si existe CUS_ID o PER tiene CUS_ID asignado
@@ -2238,21 +2422,21 @@ export default {
                 const rolFound = rolesList.find(r => r.ROL_DESCRIPCION === this.personaEditada.PER_ROL || String(r.ROL_ID) === String(this.personaEditada.PER_ROL));
                 if (rolFound) rolIdToUse = rolFound.ROL_ID;
               } catch (e) {
-                console.warn('No se pudo resolver ROL_ID desde mantenedores al actualizar ALI_ID:', e);
+                /* warn suppressed */
               }
             }
 
             if (cusIdToUse && rolIdToUse) {
               try {
                 await personasService.personaCursos.create({ PER_ID: personaId, CUS_ID: cusIdToUse, ROL_ID: rolIdToUse, ALI_ID: aliIdToSet });
-                console.log('✅ Persona_Curso creado para almacenar ALI_ID');
+                /* log suppressed */
               } catch (e) {
-                console.warn('No se pudo crear Persona_Curso para ALI_ID:', e);
+                /* warn suppressed */
               }
             }
           }
         } catch (error) {
-          console.warn('⚠️ No se pudo actualizar/crear Persona_Curso para ALI_ID:', error);
+          /* warn suppressed */
         }
         
         // Actualizar/Crear Vehículo (ahora requiere PEC_ID desde Persona_Curso)
@@ -2275,7 +2459,7 @@ export default {
                   const rolFound = rolesList.find(r => r.ROL_DESCRIPCION === this.personaEditada.PER_ROL || String(r.ROL_ID) === String(this.personaEditada.PER_ROL));
                   if (rolFound) rolIdToUse = rolFound.ROL_ID;
                 } catch (e) {
-                  console.warn('No se pudo obtener lista de roles para resolver ROL_ID:', e);
+                  /* warn suppressed */
                 }
               }
               // fallback a primer rol disponible
@@ -2291,9 +2475,9 @@ export default {
               if (cusIdToUse && rolIdToUse) {
                 const nuevoCurso = await personasService.personaCursos.create({ PER_ID: personaId, CUS_ID: cusIdToUse, ROL_ID: rolIdToUse });
                 pecId = nuevoCurso.PEC_ID;
-                console.log('✅ Persona_Curso creado para vehículo, PEC_ID:', pecId);
+                /* log suppressed */
               } else {
-                console.warn('No se pudo determinar CUS_ID o ROL_ID para crear Persona_Curso; vehículo no creado. CUS_ID:', cusIdToUse, 'ROL_ID:', rolIdToUse);
+                /* warn suppressed */
               }
             }
 
@@ -2318,24 +2502,24 @@ export default {
                   PEV_MODELO: vehPayload.PEV_MODELO
                 };
                 await personasService.vehiculos.partialUpdate(vehiculoPersona.PEV_ID, updatePayload);
-                console.log('✅ Vehículo actualizado');
+                /* log suppressed */
               } else {
                 await personasService.vehiculos.create(vehPayload);
-                console.log('✅ Vehículo creado');
+                /* log suppressed */
               }
             }
           } catch (error) {
-            console.warn('⚠️ No se pudo actualizar el vehículo:', error);
+            /* warn suppressed */
           }
         }
         
-        console.log('🔄 Recargando lista de personas... (forzada)');
+        /* log suppressed */
         await this.cargarPersonas(true);
         // Forzar recarga de filtros para actualizar cache inmediatamente
-        try { await this.cargarOpcionesFiltros(true); } catch(e){ console.warn('No se pudo forzar recarga de filtros tras actualización:', e); }
+        try { await this.cargarOpcionesFiltros(true); } catch(e){ /* warn suppressed */ }
         
         if (this.filtroAplicado) {
-          console.log('🔍 Reaplicando filtros...');
+          /* log suppressed */
           await this.filtrar();
         }
         
@@ -2343,17 +2527,10 @@ export default {
         this.personaEditada = null;
         this.personaSeleccionada = null;
         
-        console.log('✅ ¡Persona actualizada exitosamente!');
-        alert('¡Persona actualizada exitosamente!');
+        alert('✅ Persona actualizada exitosamente!');
         
       } catch (error) {
-        console.error('❌ Error actualizando persona:', error);
-        console.error('📋 Detalles del error:', {
-          status: error.status,
-          statusText: error.statusText,
-          message: error.message,
-          response: error.response
-        });
+        /* errors suppressed */
         
         let detallesError = '';
         if (error.response) {
@@ -2368,7 +2545,7 @@ export default {
         
         if (error.status === 400) {
           mensajeError += 'Datos inválidos. Verifica que todos los campos estén correctos.' + detallesError;
-          console.error('🔍 Error de validación al actualizar persona');
+          /* error suppressed */
         } else if (error.status === 404) {
           mensajeError += 'Persona no encontrada.';
         } else if (error.status === 500) {
@@ -2377,7 +2554,7 @@ export default {
           mensajeError += 'Verifica tu conexión e intenta nuevamente.';
         }
         
-        alert(mensajeError);
+        
       } finally {
         this.guardandoPersona = false;
       }
@@ -2400,52 +2577,50 @@ export default {
     async confirmarAnulacion() {
       if (!this.personaAAnular) return;
       
-      console.log('🔵 INICIO confirmarAnulacion - Timestamp:', Date.now());
+      /* log suppressed */
       
       try {
-        console.log('🔄 Anulando persona en BD:', this.personaAAnular.PER_NOMBRES);
-        console.log('📋 ID de persona:', this.personaAAnular.PER_ID);
+        /* logs suppressed */
         
         const datosAnulacion = {
           PER_VIGENTE: false
         };
         
-        console.log('📝 Datos a enviar:', datosAnulacion);
+        /* log suppressed */
         
         const resultado = await personasService.personas.partialUpdate(this.personaAAnular.PER_ID, datosAnulacion);
         
-        console.log('✅ Persona anulada en BD:', resultado);
-        console.log('🟢 MOSTRANDO ALERT DE ÉXITO - Timestamp:', Date.now());
+        /* logs suppressed */
         
-        alert('✅ Persona anulada correctamente en la base de datos');
+        
         
         this.confirmModalAnularVisible = false;
         this.personaAAnular = null;
         
       } catch (error) {
-        console.error('❌ Error al anular persona:', error);
+        /* error suppressed */
         
         let mensajeError = 'Error al anular la persona. ';
         if (error.message) {
           mensajeError += error.message;
         }
-        alert('❌ ' + mensajeError);
+        
         return;
       }
       
       try {
-        console.log('🔄 Recargando lista de personas... (forzada)');
+        /* log suppressed */
         await this.cargarPersonas(true);
         
         if (this.filtroAplicado) {
-          console.log('🔍 Reaplicando filtros...');
+          /* log suppressed */
           await this.filtrar();
         }
       } catch (error) {
-        console.warn('⚠️ Error al recargar datos:', error);
+        /* warn suppressed */
       }
       
-      console.log('🔵 FIN confirmarAnulacion - Timestamp:', Date.now());
+      /* log suppressed */
     },
     
     reactivarPersona(persona) {
@@ -2462,20 +2637,20 @@ export default {
       if (!this.personaAReactivar) return;
       
       try {
-        console.log('🔄 Reactivando persona en BD:', this.personaAReactivar.PER_NOMBRES);
-        console.log('📋 ID de persona:', this.personaAReactivar.PER_ID);
+        
+        
         
         const datosReactivacion = {
           PER_VIGENTE: true
         };
         
-        console.log('📝 Datos a enviar:', datosReactivacion);
+        
         
         const resultado = await personasService.personas.partialUpdate(this.personaAReactivar.PER_ID, datosReactivacion);
         
-        console.log('✅ Persona reactivada en BD:', resultado);
         
-        alert('✅ Persona reactivada correctamente en la base de datos');
+        
+        
         
         this.confirmModalReactivarVisible = false;
         this.personaAReactivar = null;
@@ -2533,6 +2708,65 @@ export default {
     },
     
     handleFileUpload(event, modo) {
+      // Prevenir procesamiento duplicado
+      if (this._processingFile) return;
+      this._processingFile = true;
+      
+      const file = event.target.files[0];
+      if (!file) {
+        this._processingFile = false;
+        return;
+      }
+      
+      const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+      if (!allowedTypes.includes(file.type.toLowerCase())) {
+        alert('Por favor selecciona solo imágenes en formato PNG o JPG.');
+        event.target.value = '';
+        this._processingFile = false;
+        return;
+      }
+      
+      if (file.size > 5 * 1024 * 1024) {
+        alert('El archivo es demasiado grande. Por favor selecciona una imagen menor a 5MB.');
+        event.target.value = '';
+        this._processingFile = false;
+        return;
+      }
+      
+      this.openCropper(event, modo);
+      
+      // Liberar el flag después de un breve delay
+      setTimeout(() => {
+        this._processingFile = false;
+      }, 500);
+    },
+    
+    openCropper(event, modo) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      // Limpiar inmediatamente el input para prevenir eventos duplicados
+      const targetInput = event.target;
+      targetInput.value = '';
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.cropperImageUrl = e.target.result;
+        this.cropperModo = modo;
+        this.cropZoom = 1;
+        this.cropOffsetX = 0;
+        this.cropOffsetY = 0;
+        this.cropperVisible = true;
+      };
+      
+      reader.onerror = () => {
+        alert('Error al leer el archivo. Por favor intenta nuevamente.');
+      };
+      
+      reader.readAsDataURL(file);
+    },
+    
+    changeImageInCropper(event) {
       const file = event.target.files[0];
       if (!file) return;
       
@@ -2551,60 +2785,174 @@ export default {
       
       const reader = new FileReader();
       reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          
-          const targetSize = 300;
-          canvas.width = targetSize;
-          canvas.height = targetSize;
-          
-          let sx, sy, sWidth, sHeight;
-          
-          if (img.width > img.height) {
-            sHeight = img.height;
-            sWidth = img.height;
-            sx = (img.width - img.height) / 2;
-            sy = 0;
-          } else {
-            sWidth = img.width;
-            sHeight = img.width;
-            sx = 0;
-            sy = (img.height - img.width) / 2;
-          }
-          
-          ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, targetSize, targetSize);
-          
-          const resizedBase64 = canvas.toDataURL('image/jpeg', 0.60);
-          
-          const finalSize = Math.round((resizedBase64.length * 3) / 4 / 1024); // KB
-          console.log(`📸 Foto redimensionada: ${finalSize}KB (original: ${Math.round(file.size / 1024)}KB)`);
-          
-          if (modo === 'nueva') {
-            this.personaNueva.foto = resizedBase64;
-          } else {
-            this.personaEditada.foto = resizedBase64;
-          }
-          
-          event.target.value = '';
-        };
-        
-        img.onerror = () => {
-          alert('Error al procesar la imagen. Por favor intenta con otra imagen.');
-          event.target.value = '';
-        };
-        
-        img.src = e.target.result;
+        this.cropperImageUrl = e.target.result;
+        this.cropZoom = 1;
+        this.cropOffsetX = 0;
+        this.cropOffsetY = 0;
       };
       
       reader.onerror = () => {
         alert('Error al leer el archivo. Por favor intenta nuevamente.');
-        event.target.value = '';
       };
       
       reader.readAsDataURL(file);
+      event.target.value = '';
     },
+    
+    closeCropper() {
+      this.cropperVisible = false;
+      this.cropperImageUrl = '';
+      this.cropperModo = '';
+      // Limpiar el input de archivo del cropper
+      if (this.$refs.cropperFileInput) {
+        this.$refs.cropperFileInput.value = '';
+      }
+    },
+    
+    cropStyle() {
+      return {
+        transform: `translate(-50%, -50%) translate(${this.cropOffsetX}px, ${this.cropOffsetY}px) scale(${this.cropZoom})`
+      };
+    },
+    
+    async finalizeCrop() {
+      const img = new Image();
+      img.onload = async () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        const targetSize = 300;
+        canvas.width = targetSize;
+        canvas.height = targetSize;
+        
+        const frameSize = 280; // Tamaño del círculo de preview
+        const scale = this.cropZoom;
+        const offsetX = this.cropOffsetX;
+        const offsetY = this.cropOffsetY;
+        
+        // Calcular el tamaño de la imagen en el frame (ajustada por contain)
+        let imgDisplayWidth, imgDisplayHeight;
+        const imgAspect = img.width / img.height;
+        
+        if (imgAspect > 1) {
+          // Imagen horizontal
+          imgDisplayWidth = frameSize;
+          imgDisplayHeight = frameSize / imgAspect;
+        } else {
+          // Imagen vertical o cuadrada
+          imgDisplayHeight = frameSize;
+          imgDisplayWidth = frameSize * imgAspect;
+        }
+        
+        // Aplicar el zoom
+        imgDisplayWidth *= scale;
+        imgDisplayHeight *= scale;
+        
+        // Calcular la posición inicial de la imagen (centrada + offset)
+        // La imagen está centrada en el frame, luego se aplica el offset
+        const imgLeft = (frameSize - imgDisplayWidth) / 2 + offsetX;
+        const imgTop = (frameSize - imgDisplayHeight) / 2 + offsetY;
+        
+        // Calcular qué porción de la imagen original vemos en el círculo
+        // El círculo va de 0 a frameSize, entonces la porción visible es:
+        const cropLeft = -imgLeft;
+        const cropTop = -imgTop;
+        const cropWidth = frameSize;
+        const cropHeight = frameSize;
+        
+        // Convertir estas coordenadas de display a coordenadas de la imagen original
+        const displayToOriginal = img.width / imgDisplayWidth;
+        
+        const sx = Math.max(0, cropLeft * displayToOriginal);
+        const sy = Math.max(0, cropTop * displayToOriginal);
+        const sWidth = Math.min(img.width - sx, cropWidth * displayToOriginal);
+        const sHeight = Math.min(img.height - sy, cropHeight * displayToOriginal);
+        
+        // Si hay áreas fuera de la imagen, llenar con blanco
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, targetSize, targetSize);
+        
+        // Calcular dónde dibujar en el canvas de salida
+        const dx = Math.max(0, -cropLeft * displayToOriginal) * (targetSize / (cropWidth * displayToOriginal));
+        const dy = Math.max(0, -cropTop * displayToOriginal) * (targetSize / (cropHeight * displayToOriginal));
+        const dWidth = sWidth * (targetSize / (cropWidth * displayToOriginal));
+        const dHeight = sHeight * (targetSize / (cropHeight * displayToOriginal));
+        
+        // Dibujar la porción visible
+        ctx.drawImage(img, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight);
+        
+        const resizedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+        
+        // TODO: IMPLEMENTAR SUBIDA DE IMAGEN A SERVIDOR
+        // Cuando esté listo el backend, descomentar y configurar:
+        /*
+        try {
+          // Subir imagen al servidor (Hostinger u otro)
+          const imageUrl = await this.uploadImageToServer(resizedBase64);
+          
+          // Guardar la URL en la persona
+          if (this.cropperModo === 'nueva') {
+            this.personaNueva.PER_FOTO = imageUrl; // URL del servidor
+            this.personaNueva.foto = resizedBase64; // Preview local
+          } else if (this.cropperModo === 'editar') {
+            this.personaEditada.PER_FOTO = imageUrl; // URL del servidor
+            this.personaEditada.foto = resizedBase64; // Preview local
+          }
+        } catch (uploadError) {
+          console.error('Error al subir imagen:', uploadError);
+          alert('Error al subir la imagen al servidor. La foto se guardará solo localmente.');
+          // Continuar sin URL del servidor
+        }
+        */
+        
+        // Por ahora, guardar solo localmente para preview
+        if (this.cropperModo === 'nueva') {
+          this.personaNueva.foto = resizedBase64;
+        } else if (this.cropperModo === 'editar') {
+          this.personaEditada.foto = resizedBase64;
+        }
+        
+        this.closeCropper();
+      };
+      
+      img.onerror = () => {
+        alert('Error al procesar la imagen. Por favor intenta con otra imagen.');
+        this.closeCropper();
+      };
+      
+      img.src = this.cropperImageUrl;
+    },
+    
+    // TODO: IMPLEMENTAR MÉTODO PARA SUBIR IMAGEN AL SERVIDOR
+    // Este método deberá conectarse con el backend para subir la imagen a Hostinger
+    // y retornar la URL pública de la imagen
+    /*
+    async uploadImageToServer(base64Image) {
+      // Convertir base64 a Blob
+      const blob = await fetch(base64Image).then(r => r.blob());
+      
+      // Crear FormData
+      const formData = new FormData();
+      formData.append('image', blob, 'avatar.jpg');
+      
+      // TODO: Reemplazar con tu endpoint real
+      const response = await fetch('/api/upload-image', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Authorization': `Bearer ${authService.getAccessToken()}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al subir imagen');
+      }
+      
+      const data = await response.json();
+      // El backend debe retornar algo como: { url: 'https://tu-dominio.com/images/avatar-123.jpg' }
+      return data.url;
+    },
+    */
     
     removePhoto(modo) {
       if (modo === 'nueva') {
@@ -2625,13 +2973,29 @@ export default {
     async cargarPersonas(force = false) {
       // Only load persons if explicitly forced or if filters were applied.
       if (!force && !this.filtroAplicado) {
-        console.log('Carga de personas omitida: no se aplicaron filtros y no se forzó la carga');
         this.personas = [];
         return;
             }
 
+      // Fast path: hydrate from localStorage cache if available to meet <1s perceived load
+      try {
+        const cacheKey = 'gs_personas_cache_v1';
+        const raw = localStorage.getItem(cacheKey);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const now = Date.now();
+          const ttlMs = 5 * 60 * 1000; // 5 minutes TTL
+          if (parsed && parsed.timestamp && (now - parsed.timestamp) < ttlMs && Array.isArray(parsed.items)) {
+            // Defer hydration for cache; do not enrich to avoid UI stall
+            this.personas = parsed.items;
+            // cache hit
+          }
+        }
+      } catch (e) {
+        /* warn suppressed */
+      }
+
       if (this.cargandoPersonasInFlight) {
-        console.log('Carga de personas ya en curso — omitiendo llamada duplicada');
         return;
       }
       this.cargandoPersonasInFlight = true;
@@ -2639,9 +3003,9 @@ export default {
         this.cargandoPersonas = true;
         this.errorCarga = null;
         
-        console.log('🔄 Intentando cargar personas con relaciones desde API...');
+        // fetch personas
         const response = await personasService.personasCompletas.list();
-        console.log('📡 Respuesta de la API:', response);
+        // response received
 
         if (Array.isArray(response)) {
           // Backend returned flat array
@@ -2652,25 +3016,41 @@ export default {
           this.personas = [];
         }
 
-        // Normalize/enrich personas so PER_ID and PER_RUN exist consistently
+        // Skip enrich during bulk load; enrich only on demand (detail/export)
+        // personas loaded
+        // Save slim cache for fast subsequent loads (<1s perceived)
         try {
-          this.enrichPersonas();
+          const slim = (this.personas || []).map(p => ({
+            PER_ID: p.PER_ID,
+            PER_RUN: p.PER_RUN,
+            PER_DV: p.PER_DV,
+            PER_NOMBRES: p.PER_NOMBRES,
+            PER_APELPTA: p.PER_APELPTA || p.PER_APELPAT,
+            PER_APELMAT: p.PER_APELMAT,
+            PER_MAIL: p.PER_MAIL,
+            PER_ROL: p.PER_ROL,
+            PER_FONO: p.PER_FONO,
+            PER_CEL: p.PER_CEL,
+            PER_VIGENTE: p.PER_VIGENTE,
+            PER_RAMA: p.PER_RAMA,
+            PER_GRUPO: p.PER_GRUPO
+          }));
+          localStorage.setItem('gs_personas_cache_v1', JSON.stringify({ timestamp: Date.now(), items: slim }));
         } catch (e) {
-          console.warn('No fue posible enriquecer personas automáticamente:', e);
+          /* warn suppressed */
         }
-        console.log('✅ Personas cargadas:', this.personas.length);
         
-        // Si es carga forzada (al inicio), mostrar todo sin requerir filtro manual
+        // En carga forzada, solo precargar datos; NO marcar filtro aplicado
         if (force) {
-          console.log('⚡ Carga forzada: mostrando todos los datos automáticamente');
-          this.filteredPersonas = [...this.personas];
-          this.filtroAplicado = true;
+          /* log suppressed */
+          this.filteredPersonas = [];
+          // mantener filtroAplicado = false para que la tabla no se muestre
         }
         // Cargar opciones de filtros (desde mantenedores). No derivamos filtros desde personas paginadas.
         await this.cargarOpcionesFiltros();
         
       } catch (error) {
-        console.error('❌ Error cargando personas:', error);
+        /* error suppressed */
         this.errorCarga = 'Error al cargar las personas. Verifica que el backend esté funcionando.';
         this.personas = [];
       } finally {
@@ -2693,7 +3073,7 @@ export default {
                 // Validate that critical filter lists exist in cache; if some are missing, skip cache
                 const hasCritical = parsed.alimentacionOptions && parsed.nivelesOptions && parsed.cursosOptions;
                 if (!hasCritical) {
-                  console.log('Cache encontrada pero incompleta, ignorando y recargando desde servidor');
+                  /* log suppressed */
                 } else {
                   // Restore cached options (all saved keys)
                   this.roleOptions = parsed.roleOptions || this.roleOptions;
@@ -2710,27 +3090,26 @@ export default {
                   this.alimentacionOptions = parsed.alimentacionOptions || this.alimentacionOptions;
                   this.gruposOptions = parsed.gruposOptions || this.gruposOptions;
                   this.filtersCachedAt = parsed.timestamp;
-                  console.log('Usando filtros completos desde cache (localStorage)');
+                  // cache used
                   return;
                 }
               }
             } catch (e) {
-              console.warn('Cache de filtros inválida, se ignora:', e);
+              /* warn suppressed */
             }
           }
         } else {
-          console.log('Forzando recarga de opciones de filtros (forceReload=true)');
+          // force reload
         }
       } catch (e) {
-        console.warn('No se pudo acceder a localStorage para filtros:', e);
+        /* warn suppressed */
       }
       try {
-        console.log('Cargando opciones de filtros desde Base de Datos...');
         // Parallelizar requests a mantenedores para reducir latencia
         const mantenedorPromises = [
-          mantenedoresService.rol.list().catch(e => { console.warn('rol list failed', e); return []; }),
-          mantenedoresService.rama.list().catch(e => { console.warn('rama list failed', e); return []; }),
-          mantenedoresService.grupo.list().catch(e => { console.warn('grupo list failed', e); return []; })
+          mantenedoresService.rol.list().catch(() => []),
+          mantenedoresService.rama.list().catch(() => []),
+          mantenedoresService.grupo.list().catch(() => [])
         ];
 
         const [rolesData, ramasData, gruposData] = await Promise.all(mantenedorPromises);
@@ -2749,10 +3128,9 @@ export default {
 
         // Obtener opciones derivadas desde mantenedores y (siempre) desde endpoints específicos
         // No derivamos filtros desde la lista paginada de personas porque sería incompleto.
-        const rolesPersonas = await personasService.obtenerRoles().catch(e => { console.warn('obtenerRoles failed', e); return []; });
-        const ramasPersonas = await personasService.obtenerRamas().catch(e => { console.warn('obtenerRamas failed', e); return []; });
-        const gruposPersonas = await personasService.obtenerGrupos().catch(e => { console.warn('obtenerGrupos failed', e); return []; });
-        console.log('Valores de personas (fetched) - Roles:', rolesPersonas.length, 'Ramas:', ramasPersonas.length, 'Grupos:', gruposPersonas.length);
+        const rolesPersonas = await personasService.obtenerRoles().catch(() => []);
+        const ramasPersonas = await personasService.obtenerRamas().catch(() => []);
+        const gruposPersonas = await personasService.obtenerGrupos().catch(() => []);
         
 
         
@@ -2774,83 +3152,57 @@ export default {
         this.ramasOptions = [{ value: '', label: 'Seleccione Rama' }, ...ramasMantenedorForSelect];
         this.courseOptions = [{ value: '', label: 'Todos los grupos' }, ...combinarOpciones(gruposMantenedor, gruposPersonas)];
         
-        try {
-          const estadosCiviles = await mantenedoresService.estadoCivil.list();
-          this.estadoCivilOptions = [
-            { value: '', label: 'Seleccione Estado Civil' },
-            ...estadosCiviles
-              .filter(ec => ec.ESC_VIGENTE !== false)
-              .map(ec => ({ value: ec.ESC_ID, label: ec.ESC_DESCRIPCION }))
-          ];
-          console.log('Estados Civiles cargados:', this.estadoCivilOptions.length - 1);
-        } catch (error) {
-          console.warn('No se pudieron cargar estados civiles:', error.message);
-        }
-        
-        try {
-          const regiones = await mantenedoresService.region.list();
-          this.regionOptions = [
-            { value: '', label: 'Seleccione Región' },
-            ...regiones
-              .filter(reg => reg.REG_VIGENTE !== false)
-              .map(reg => ({ value: reg.REG_ID, label: reg.REG_DESCRIPCION }))
-          ];
-          console.log('Regiones cargadas:', this.regionOptions.length - 1);
-        } catch (error) {
-          console.warn('No se pudieron cargar regiones:', error.message);
-        }
-        
-        try {
-          const cargos = await mantenedoresService.cargo.list();
-          this.cargosOptions = [
-            { value: '', label: 'Seleccione Cargo' },
-            ...cargos
-              .filter(cargo => cargo.CAR_VIGENTE !== false)
-              .map(cargo => ({ value: cargo.CAR_ID, label: cargo.CAR_DESCRIPCION }))
-          ];
-          console.log('Cargos cargados:', this.cargosOptions.length - 1);
-        } catch (error) {
-          console.warn('No se pudieron cargar cargos:', error.message);
-        }
-        
-        try {
-          const distritos = await mantenedoresService.distrito.list();
-          this.distritosOptions = [
-            { value: '', label: 'Seleccione Distrito' },
-            ...distritos
-              .filter(distrito => distrito.DIS_VIGENTE !== false)
-              .map(distrito => ({ value: distrito.DIS_ID, label: distrito.DIS_DESCRIPCION }))
-          ];
-          console.log('Distritos cargados:', this.distritosOptions.length - 1);
-        } catch (error) {
-          console.warn('No se pudieron cargar distritos:', error.message);
-        }
-        
-        try {
-          const zonas = await mantenedoresService.zona.list();
-          this.zonasOptions = [
-            { value: '', label: 'Seleccione Zona' },
-            ...zonas
-              .filter(zona => zona.ZON_VIGENTE !== false)
-              .map(zona => ({ value: zona.ZON_ID, label: zona.ZON_DESCRIPCION }))
-          ];
-          console.log('Zonas cargadas:', this.zonasOptions.length - 1);
-        } catch (error) {
-          console.warn('No se pudieron cargar zonas:', error.message);
-        }
-        
-        try {
-          const niveles = await mantenedoresService.nivel.list();
-          this.nivelesOptions = [
-            { value: '', label: 'Seleccione Nivel' },
-            ...niveles
-              .filter(nivel => nivel.NIV_VIGENTE !== false)
-              .map(nivel => ({ value: nivel.NIV_ID, label: nivel.NIV_DESCRIPCION }))
-          ];
-          console.log('Niveles cargados:', this.nivelesOptions.length - 1);
-        } catch (error) {
-          console.warn('No se pudieron cargar niveles:', error.message);
-        }
+        // Batch-load mantenedores in parallel to reduce latency
+        const [estadosCiviles, regiones, cargos, distritos, zonas, niveles] = await Promise.all([
+          mantenedoresService.estadoCivil.list().catch(() => []),
+          mantenedoresService.region.list().catch(() => []),
+          mantenedoresService.cargo.list().catch(() => []),
+          mantenedoresService.distrito.list().catch(() => []),
+          mantenedoresService.zona.list().catch(() => []),
+          mantenedoresService.nivel.list().catch(() => []),
+        ]);
+
+        this.estadoCivilOptions = [
+          { value: '', label: 'Seleccione Estado Civil' },
+          ...estadosCiviles
+            .filter(ec => ec.ESC_VIGENTE !== false)
+            .map(ec => ({ value: ec.ESC_ID, label: ec.ESC_DESCRIPCION }))
+        ];
+
+        this.regionOptions = [
+          { value: '', label: 'Seleccione Región' },
+          ...regiones
+            .filter(reg => reg.REG_VIGENTE !== false)
+            .map(reg => ({ value: reg.REG_ID, label: reg.REG_DESCRIPCION }))
+        ];
+
+        this.cargosOptions = [
+          { value: '', label: 'Seleccione Cargo' },
+          ...cargos
+            .filter(cargo => cargo.CAR_VIGENTE !== false)
+            .map(cargo => ({ value: cargo.CAR_ID, label: cargo.CAR_DESCRIPCION }))
+        ];
+
+        this.distritosOptions = [
+          { value: '', label: 'Seleccione Distrito' },
+          ...distritos
+            .filter(distrito => distrito.DIS_VIGENTE !== false)
+            .map(distrito => ({ value: distrito.DIS_ID, label: distrito.DIS_DESCRIPCION }))
+        ];
+
+        this.zonasOptions = [
+          { value: '', label: 'Seleccione Zona' },
+          ...zonas
+            .filter(zona => zona.ZON_VIGENTE !== false)
+            .map(zona => ({ value: zona.ZON_ID, label: zona.ZON_DESCRIPCION }))
+        ];
+
+        this.nivelesOptions = [
+          { value: '', label: 'Seleccione Nivel' },
+          ...niveles
+            .filter(nivel => nivel.NIV_VIGENTE !== false)
+            .map(nivel => ({ value: nivel.NIV_ID, label: nivel.NIV_DESCRIPCION }))
+        ];
         try {
           // Use course sections (secciones) as the source for enrollment selects (CUS_ID)
           const seccionesResp = await cursosService.secciones.list();
@@ -2862,9 +3214,9 @@ export default {
               label: s.CUR_DESCRIPCION ? `${s.CUR_DESCRIPCION} — Sección ${s.CUS_SECCION}` : (`Sección ${s.CUS_SECCION} (ID ${s.CUS_ID || s.id})`)
             }))
           ];
-          console.log('Secciones (cursos) cargadas para formulario:', this.cursosOptions.length - 1);
+          // secciones loaded
         } catch (error) {
-          console.warn('No se pudieron cargar secciones de cursos:', error.message);
+          /* warn suppressed */
           // Fallback: intentar cargar cursos principales si secciones no están disponibles
           try {
             const cursos = await cursosService.cursos.list({ page_size: 20 });
@@ -2873,9 +3225,9 @@ export default {
               { value: '', label: 'Seleccione Curso' },
               ...cursosArray.map(c => ({ value: c.CUR_ID || c.id, label: c.CUR_DESCRIPCION || c.CUR_NOMBRE || (`Curso ${c.CUR_ID || c.id}`) }))
             ];
-            console.log('Cursos cargados para formulario (fallback):', this.cursosOptions.length - 1);
+            // cursos fallback loaded
           } catch (err2) {
-            console.warn('Fallback también falló al cargar cursos:', err2.message);
+            /* warn suppressed */
           }
         }
         
@@ -2888,9 +3240,9 @@ export default {
               .filter(a => a.ALI_VIGENTE !== false)
               .map(a => ({ value: a.ALI_ID, label: a.ALI_DESCRIPCION }))
           ];
-          console.log('Opciones de alimentación cargadas:', this.alimentacionOptions.length - 1);
+          // alimentaciones loaded
         } catch (error) {
-          console.warn('No se pudo cargar alimentacion desde mantenedores:', error.message);
+          /* warn suppressed */
           // Fallback a opciones básicas si el endpoint falla
           this.alimentacionOptions = [
             { value: '', label: 'Seleccione' },
@@ -2910,43 +3262,16 @@ export default {
               .filter(grupo => grupo.GRU_VIGENTE !== false)
               .map(grupo => ({ value: grupo.GRU_ID, label: grupo.GRU_DESCRIPCION }))
           ];
-          console.log('Grupos para formulario cargados:', this.gruposOptions.length - 1);
-        } catch (error) {
-          console.warn('No se pudieron cargar grupos para formulario:', error.message);
-        }
-        
-        console.log('Filtros cargados: Roles:', this.roleOptions.length - 1, 'Ramas:', this.ramaOptions.length - 1, 'Grupos:', this.courseOptions.length - 1);
-        // Guardar en cache local para evitar recargas frecuentes
-        try {
-          const cacheKey = 'gs_filters_v1';
-          const payload = {
-            timestamp: Date.now(),
-            roleOptions: this.roleOptions,
-            ramaOptions: this.ramaOptions,
-            courseOptions: this.courseOptions,
-            estadoCivilOptions: this.estadoCivilOptions,
-            regionOptions: this.regionOptions,
-            cargosOptions: this.cargosOptions,
-            distritosOptions: this.distritosOptions,
-            zonasOptions: this.zonasOptions,
-            nivelesOptions: this.nivelesOptions,
-            cursosOptions: this.cursosOptions,
-            alimentacionOptions: this.alimentacionOptions,
-            gruposOptions: this.gruposOptions
-          };
-          localStorage.setItem(cacheKey, JSON.stringify(payload));
-          this.filtersCachedAt = payload.timestamp;
-          console.log('Filtros guardados en cache.');
         } catch (e) {
-          console.warn('No se pudo guardar cache de filtros:', e);
+          /* warn suppressed */
+          this.gruposOptions = [{ value: '', label: 'Seleccione Grupo' }];
         }
         
       } catch (error) {
-        console.error('Error cargando opciones de filtros:', error);
+        /* error suppressed */
         this.roleOptions = [{ value: '', label: 'Todos los roles' }];
         this.ramaOptions = [{ value: '', label: 'Todas las ramas' }];
         this.courseOptions = [{ value: '', label: 'Todos los grupos' }];
-        console.log('No se pudieron cargar filtros. Filtros vacíos aplicados.');
       }
     },
 
@@ -2954,48 +3279,23 @@ export default {
       const persona = modo === 'nueva' ? this.personaNueva : this.personaEditada;
       const optionsKey = modo === 'nueva' ? 'provinciaOptions' : 'provinciaOptionsEditar';
       const comunasKey = modo === 'nueva' ? 'comunaOptions' : 'comunaOptionsEditar';
-      
-      if (!persona.REG_ID) {
+      if (!persona || !persona.REG_ID) {
         this[optionsKey] = [];
         this[comunasKey] = [];
-        persona.PRO_ID = '';
-        persona.COM_ID = '';
+        if (persona) { persona.PRO_ID = ''; persona.COM_ID = ''; }
         return;
       }
-      
       try {
-        console.log(`🔍 [${modo}] Cargando provincias para región:`, persona.REG_ID);
-        // Try cached province options if they carry REG_ID metadata
-        let provincias = null;
-        if (Array.isArray(this.provinciaOptions) && this.provinciaOptions.some(p => 'REG_ID' in p)) {
-          provincias = this.provinciaOptions.map(p => ({ PRO_ID: p.value, PRO_DESCRIPCION: p.label, REG_ID: p.REG_ID, PRO_VIGENTE: true }));
-        }
-        if (!provincias) {
-                    try {
-            provincias = await mantenedoresService.provincia.list();
-          } catch {
-            provincias = [];
-          }
-        }
-        const regionIdSeleccionada = Number(persona.REG_ID);
+        const provincias = await mantenedoresService.provincia.list().catch(() => []);
+        const regId = Number(persona.REG_ID);
         this[optionsKey] = (provincias || [])
-          .filter(prov => Number(prov.REG_ID) === regionIdSeleccionada && prov.PRO_VIGENTE !== false)
+          .filter(prov => Number(prov.REG_ID) === regId && prov.PRO_VIGENTE !== false)
           .map(prov => ({ value: prov.PRO_ID, label: prov.PRO_DESCRIPCION }));
-        console.log(`✅ [${modo}] Provincias filtradas:`, this[optionsKey].length);
-        if (modo === 'editar' && persona.PRO_ID) {
-          const provinciaExiste = this[optionsKey].some(p => p.value === persona.PRO_ID);
-          if (!provinciaExiste) {
-            persona.PRO_ID = '';
-            persona.COM_ID = '';
-            this[comunasKey] = [];
-          }
-        } else {
-          persona.PRO_ID = '';
-          persona.COM_ID = '';
-                    this[comunasKey] = [];
-        }
-      } catch {
-        // Avoid throwing/logging noisy errors when backend returns 500
+        // reset dependent values when province changes
+        if (modo === 'nueva') { persona.PRO_ID = ''; persona.COM_ID = ''; this[comunasKey] = []; }
+        /* log suppressed */
+      } catch (e) {
+        /* warn suppressed */
         this[optionsKey] = [];
       }
     },
@@ -3003,41 +3303,21 @@ export default {
     async cargarComunasPorProvincia(modo = 'nueva') {
       const persona = modo === 'nueva' ? this.personaNueva : this.personaEditada;
       const optionsKey = modo === 'nueva' ? 'comunaOptions' : 'comunaOptionsEditar';
-      
-      if (!persona.PRO_ID) {
+      if (!persona || !persona.PRO_ID) {
         this[optionsKey] = [];
-        persona.COM_ID = '';
+        if (persona) persona.COM_ID = '';
         return;
       }
-      
       try {
-        console.log(`🔍 [${modo}] Cargando comunas para provincia:`, persona.PRO_ID);
-        // Try cached comuna options if they carry PRO_ID metadata
-        let comunas = null;
-        if (Array.isArray(this.comunaOptions) && this.comunaOptions.some(c => 'PRO_ID' in c)) {
-          comunas = this.comunaOptions.map(c => ({ COM_ID: c.value, COM_DESCRIPCION: c.label, PRO_ID: c.PRO_ID, COM_VIGENTE: true }));
-        }
-        if (!comunas) {
-                    try {
-            comunas = await mantenedoresService.comuna.list();
-          } catch {
-            comunas = [];
-          }
-        }
-        const provinciaIdSeleccionada = Number(persona.PRO_ID);
+        const comunas = await mantenedoresService.comuna.list().catch(() => []);
+        const proId = Number(persona.PRO_ID);
         this[optionsKey] = (comunas || [])
-          .filter(com => Number(com.PRO_ID) === provinciaIdSeleccionada && com.COM_VIGENTE !== false)
+          .filter(com => Number(com.PRO_ID) === proId && com.COM_VIGENTE !== false)
           .map(com => ({ value: com.COM_ID, label: com.COM_DESCRIPCION }));
-        console.log(`✅ [${modo}] Comunas filtradas:`, this[optionsKey].length);
-        if (modo === 'editar' && persona.COM_ID) {
-          const comunaExiste = this[optionsKey].some(c => c.value === persona.COM_ID);
-          if (!comunaExiste) {
-            persona.COM_ID = '';
-          }
-        } else {
-                    persona.COM_ID = '';
-        }
-      } catch {
+        if (modo === 'nueva') { persona.COM_ID = ''; }
+        /* log suppressed */
+      } catch (e) {
+        /* warn suppressed */
         this[optionsKey] = [];
       }
     },
@@ -3135,11 +3415,17 @@ export default {
       this.rutPopup.run = '';
       this.rutPopup.dv = '';
       this.rutPopup.searching = false;
+      this.rutPopupInvalido = false;
     },
 
     async buscarRutPopup() {
       if (!this.rutPopup.run) {
         alert('Ingresa un RUT para buscar.');
+        return;
+      }
+      // Validar que el RUT sea válido antes de buscar
+      if (this.rutPopupInvalido) {
+        alert('Debe ingresar un RUT válido antes de buscar.');
         return;
       }
       this.rutPopup.searching = true;
@@ -3150,12 +3436,12 @@ export default {
       try {
         encontrados = await personasService.personas.list({ PER_RUN: run });
       } catch (err) {
-        console.warn('Busqueda por PER_RUN falló, intentando obtener lista completa:', err && err.message ? err.message : err);
+        /* warn suppressed */
         try {
           const all = await personasService.personas.list();
           encontrados = Array.isArray(all) ? all.filter(p => String(p.PER_RUN).replace(/[^0-9]/g, '') === run) : [];
         } catch (err2) {
-          console.error('No se pudo obtener lista de personas para buscar RUT:', err2);
+          /* error suppressed */
           encontrados = [];
         }
       }
@@ -3244,7 +3530,7 @@ export default {
 
     abrirSelectorExcel() {
       if (this.seleccionandoArchivo) {
-        console.log('⚠️ Ya hay un selector abierto, ignorando');
+        /* log suppressed */
         return;
       }
       
@@ -3271,7 +3557,7 @@ export default {
 
     handleFileSelect(event) {
       const archivo = event.target.files[0];
-      console.log('📁 handleFileSelect ejecutado, archivo:', archivo?.name || 'ninguno');
+      /* log suppressed */
       
       if (!archivo) {
         return;
@@ -3369,7 +3655,7 @@ export default {
 
     async procesarArchivoExcel(archivo) {
       try {
-        console.log('📁 Procesando archivo:', archivo.name);
+        /* log suppressed */
         
         const reader = new FileReader();
         
@@ -3402,23 +3688,23 @@ export default {
               return Object.values(objeto).some(valor => valor && valor.toString().trim() !== '');
             });
             
-            console.log('✅ Archivo procesado:', this.datosVistaPreviaExcel.length, 'filas encontradas');
+            /* log suppressed */
             
           } catch (error) {
-            console.error('❌ Error al procesar el contenido del archivo:', error);
+            /* error suppressed */
             alert('Error al procesar el archivo. Verifica que sea un archivo Excel válido.');
           }
         };
         
         reader.onerror = () => {
-          console.error('❌ Error al leer el archivo');
+          /* error suppressed */
           alert('Error al leer el archivo');
         };
         
         reader.readAsArrayBuffer(archivo);
         
       } catch (error) {
-        console.error('❌ Error procesando archivo Excel:', error);
+        /* error suppressed */
         alert('Error al procesar el archivo. Verifica que sea un archivo Excel válido.');
       }
     },
@@ -3432,7 +3718,7 @@ export default {
       try {
         this.importandoPersonas = true;
         
-        console.log('📥 Iniciando importación de', this.datosVistaPreviaExcel.length, 'personas');
+        /* log suppressed */
         
         let personasImportadas = 0;
         let errores = [];
@@ -3446,11 +3732,11 @@ export default {
             const dv = fila['DV'] || fila['PER_DV'] || '';
             const email = fila['Email'] || fila['PER_MAIL'] || '';
             
-            console.log('📋 Procesando fila:', { nombres, apellidoPaterno, rut, dv, email });
+            /* log suppressed */
             
             if (!nombres || !rut || !dv) {
               const error = `Fila con datos incompletos: ${nombres || 'Sin nombre'} - RUT: ${rut || 'Sin RUT'}`;
-              console.warn('⚠️', error);
+              /* warn suppressed */
               errores.push(error);
               continue;
             }
@@ -3487,7 +3773,7 @@ export default {
               }
             }
             
-            console.log(`🔄 Conversiones - Tipo Fono: ${tipoTelefono}, Estado Civil: ${estadoCivilId} (de: "${estadoCivilTexto}")`);
+            /* log suppressed */
 
             // Obtener IDs de ubicación buscando por nombre
             let regionId = null;
@@ -3640,12 +3926,12 @@ export default {
               PER_VIGENTE: vigente
             };
 
-            console.log('📤 Creando persona:', datosPersona);
+            /* log suppressed */
 
             try {
               const response = await personasService.personas.create(datosPersona);
               personasImportadas++;
-              console.log(`✅ Persona ${nombres} ${apellidoPaterno} importada exitosamente`, response);
+              /* log suppressed */
             } catch (createError) {
               // Verificar si realmente falló o si es solo un código de estado inesperado
               // Códigos 200-299 se consideran éxito
@@ -3654,7 +3940,7 @@ export default {
               if (status >= 200 && status < 300) {
                 // Es un éxito, solo que el formato de respuesta fue inesperado
                 personasImportadas++;
-                console.log(`✅ Persona ${nombres} ${apellidoPaterno} creada exitosamente (código ${status})`);
+                /* log suppressed */
               } else {
                 // Es un error real
                 throw createError;
@@ -3662,7 +3948,7 @@ export default {
             }
 
           } catch (error) {
-            console.error('❌ Error creando persona:', error);
+            /* error suppressed */
             const nombreError = `${fila['Nombres'] || fila['PER_NOMBRES'] || 'Desconocido'} ${fila['Apellido Paterno'] || fila['PER_APELPTA'] || ''}`.trim();
             const rutError = fila['RUT'] || fila['PER_RUN'] || '';
             const dvError = fila['DV'] || fila['PER_DV'] || '';
@@ -3690,7 +3976,7 @@ export default {
           }
         }
 
-        console.log(`📊 Resumen de importación: ${personasImportadas} exitosas, ${errores.length} errores`);
+        /* log suppressed */
 
         await this.cargarPersonas();
 
@@ -3722,7 +4008,7 @@ export default {
         }
 
       } catch (error) {
-        console.error('❌ Error en importación:', error);
+        /* error suppressed */
         alert('Error durante la importación. Verifica los datos e intenta nuevamente.');
       } finally {
         this.importandoPersonas = false;
@@ -3756,11 +4042,25 @@ export default {
 
     calcularDvNueva() {
       if (this.personaNueva && this.personaNueva.PER_RUN) {
+        // Limpiar el RUT de caracteres no numéricos
         this.personaNueva.PER_RUN = this.personaNueva.PER_RUN.replace(/[^0-9]/g, '');
         
         if (this.personaNueva.PER_RUN.length >= 7) {
-          this.personaNueva.PER_DV = this.calcularDv(this.personaNueva.PER_RUN);
+          // Calcular dígito verificador automáticamente
+          const dvCalculado = this.calcularDv(this.personaNueva.PER_RUN);
+          this.personaNueva.PER_DV = dvCalculado;
+          
+          // Validar el RUT completo
+          this.rutNuevoInvalido = !this.validarRutChileno(this.personaNueva.PER_RUN, dvCalculado);
+        } else {
+          // Si el RUT es muy corto, limpiar el DV y marcar como inválido si hay algo escrito
+          this.personaNueva.PER_DV = '';
+          this.rutNuevoInvalido = this.personaNueva.PER_RUN.length > 0;
         }
+      } else {
+        // Si no hay RUT, limpiar validación
+        this.rutNuevoInvalido = false;
+        this.personaNueva.PER_DV = '';
       }
     },
 
@@ -3771,6 +4071,24 @@ export default {
         if (this.personaEditada.PER_RUN.length >= 7) {
           this.personaEditada.PER_DV = this.calcularDv(this.personaEditada.PER_RUN);
         }
+      }
+    },
+
+    calcularDvPopup() {
+      // Limpiar el RUT de caracteres no numéricos
+      this.rutPopup.run = this.rutPopup.run.replace(/[^0-9]/g, '');
+      
+      if (this.rutPopup.run.length >= 7) {
+        // Calcular dígito verificador automáticamente
+        const dvCalculado = this.calcularDv(this.rutPopup.run);
+        this.rutPopup.dv = dvCalculado;
+        
+        // Validar el RUT completo
+        this.rutPopupInvalido = !this.validarRutChileno(this.rutPopup.run, dvCalculado);
+      } else {
+        // Si el RUT es muy corto, limpiar el DV y marcar como inválido si hay algo escrito
+        this.rutPopup.dv = '';
+        this.rutPopupInvalido = this.rutPopup.run.length > 0;
       }
     },
 
@@ -3796,7 +4114,7 @@ export default {
       else if (dvCalculado === 10) dvCalculado = 'K';
       else dvCalculado = dvCalculado.toString();
       
-      console.log('🔍 Validación RUT:', rutString, '- DV ingresado:', String(dv).toUpperCase(), '- DV calculado:', dvCalculado, '- ¿Válido?', String(dv).toUpperCase() === dvCalculado);
+      /* log suppressed */
       
       return String(dv).toUpperCase() === dvCalculado;
     },
@@ -3809,7 +4127,7 @@ export default {
 
     async guardarPersonaNueva() {
       if (this.guardandoPersona) {
-        console.log('⚠️ Ya se está guardando, ignorando click duplicado');
+        /* log suppressed */
         return;
       }
       let datosPersona = null;
@@ -3836,8 +4154,7 @@ export default {
           return;
         }
         
-        console.log('📝 Validando RUT:', this.personaNueva.PER_RUN, 'DV:', this.personaNueva.PER_DV);
-        console.log('📝 Tipo RUT:', typeof this.personaNueva.PER_RUN, 'Tipo DV:', typeof this.personaNueva.PER_DV);
+        /* logs suppressed */
         
         if (!this.validarRutChileno(this.personaNueva.PER_RUN, this.personaNueva.PER_DV)) {
           alert('El RUT ingresado no es válido');
@@ -3872,7 +4189,7 @@ export default {
         try {
           currentUser = await authService.getCurrentUser();
         } catch (e) {
-          console.warn('No se pudo resolver usuario actual desde authService:', e);
+          /* warn suppressed */
         }
 
         datosPersona = {
@@ -3890,6 +4207,7 @@ export default {
           PER_FONO: this.personaNueva.PER_FONO ? '+56' + this.personaNueva.PER_FONO.replace(/^\+56/, '') : '',
           PER_APODO: this.personaNueva.PER_APODO || '',
           PER_PROFESION: this.personaNueva.PER_PROFESION || null,
+          PER_ROL: this.personaNueva.PER_ROL || null,
           PER_NOM_EMERGENCIA: this.personaNueva.PER_NOM_EMERGENCIA || null,
           PER_FONO_EMERGENCIA: this.personaNueva.PER_FONO_EMERGENCIA ? '+56' + this.personaNueva.PER_FONO_EMERGENCIA.replace(/^\+56/, '') : null,
           PER_ALERGIA_ENFERMEDAD: this.personaNueva.PER_ALERGIA_ENFERMEDAD || null,
@@ -3899,10 +4217,11 @@ export default {
           PER_TIEMPO_ADULTO: this.personaNueva.PER_TIEMPO_ADULTO || null,
           PER_NUM_MMA: this.personaNueva.PER_NUM_MMA || null,
           PER_OTROS: this.personaNueva.PER_OTROS || null,
-          PER_FOTO: this.personaNueva.foto || null,
           PER_VIGENTE: this.personaNueva.PER_VIGENTE !== undefined ? this.personaNueva.PER_VIGENTE : true,
           TIENE_VEHICULO: this.personaNueva.TIENE_VEHICULO !== undefined ? this.personaNueva.TIENE_VEHICULO : false,
           ESC_ID: this.personaNueva.ESC_ID && this.personaNueva.ESC_ID !== '' ? Number(this.personaNueva.ESC_ID) : 1,
+          REG_ID: this.personaNueva.REG_ID && this.personaNueva.REG_ID !== '' ? Number(this.personaNueva.REG_ID) : null,
+          PRO_ID: this.personaNueva.PRO_ID && this.personaNueva.PRO_ID !== '' ? Number(this.personaNueva.PRO_ID) : null,
           COM_ID: this.personaNueva.COM_ID && this.personaNueva.COM_ID !== '' ? Number(this.personaNueva.COM_ID) : 1
         };
 
@@ -3939,14 +4258,14 @@ export default {
               }
               datosPersona.USU_ID = Number(resolvedId);
             } catch (e) {
-              console.warn('Error comprobando existencia de usuario en backend:', e);
+              /* warn suppressed */
               alert('No se pudo verificar el usuario en el servidor. Revisa tu conexión e intenta nuevamente.');
               this.guardandoPersona = false;
               return;
             }
           }
         } catch (e) {
-          console.warn('No se pudo asignar USU_ID al payload de persona:', e);
+          /* warn suppressed */
         }
 
         // Validaciones adicionales antes de enviar: asegurar que USU_ID y FKs exist en opciones cargadas
@@ -4000,9 +4319,9 @@ export default {
         datosPersona.PER_APODO = datosPersona.PER_APODO || '';
         
                 try {
-          console.log('💾 Guardando nueva persona (orquestador):', JSON.stringify(datosPersona, null, 2));
+          /* log suppressed */
         } catch {
-          console.log('💾 Guardando nueva persona (orquestador):', datosPersona);
+          /* log suppressed */
         }
 
         // Preparar datos opcionales para curso y vehículo
@@ -4019,7 +4338,7 @@ export default {
             const rolFound = rolesList.find(r => r.ROL_DESCRIPCION === this.personaNueva.PER_ROL || String(r.ROL_ID) === String(this.personaNueva.PER_ROL));
             if (rolFound) rolIdToUse = rolFound.ROL_ID;
           } catch (e) {
-            console.warn('No se pudo resolver ROL_ID desde mantenedores:', e);
+            /* warn suppressed */
           }
         }
 
@@ -4045,7 +4364,7 @@ export default {
         try {
           personaCreada = await personasService.personas.create(datosPersona);
           personaId = personaCreada.PER_ID;
-          console.log('✅ Persona creada:', personaCreada);
+          /* log suppressed */
         
         // Si corresponde, crear Persona_Curso para almacenar ALI_ID y obtener PEC_ID
         let personaCursoCreado = null;
@@ -4060,10 +4379,10 @@ export default {
               cursoPayload.ALI_ID = Number(cursoData.ALI_ID);
             }
             personaCursoCreado = await personasService.personaCursos.create(cursoPayload);
-            console.log('✅ Persona_Curso creado tras creación de persona:', personaCursoCreado);
+            /* log suppressed */
           }
         } catch (err) {
-          console.warn('⚠️ Error creando Persona_Curso tras creación de persona:', err);
+          /* warn suppressed */
         }
 
         // Crear vehículo si se proporcionó y tenemos PEC_ID
@@ -4071,7 +4390,7 @@ export default {
           if (vehiculoData) {
             const pecId = vehiculoData.PEC_ID || (personaCursoCreado && personaCursoCreado.PEC_ID) || null;
             if (!pecId) {
-              console.warn('No se dispone de PEC_ID para crear vehículo; omitiendo creación de vehículo.');
+              /* warn suppressed */
             } else {
               const vehPayload = {
                 PEC_ID: pecId,
@@ -4080,15 +4399,14 @@ export default {
                 PEV_MODELO: vehiculoData.PEV_MODELO || ''
               };
               const vehCreado = await personasService.vehiculos.create(vehPayload);
-              console.log('✅ Vehículo creado tras creación de persona:', vehCreado);
+              /* log suppressed */
             }
           }
         } catch (err) {
-          console.warn('⚠️ Error creando vehículo tras creación de persona:', err);
+          /* warn suppressed */
         }
         } catch (err) {
-          console.error('❌ Error creando persona (primer paso):', err);
-          if (err && err.response) console.error('Detalle servidor:', err.response);
+          /* errors suppressed */
           throw err;
         }
         
@@ -4100,9 +4418,9 @@ export default {
               GRU_ID: Number(this.personaNueva.GRU_ID),
               PEG_VIGENTE: this.personaNueva.PEG_VIGENTE !== undefined ? this.personaNueva.PEG_VIGENTE : true
             });
-            console.log('✅ Grupo asignado:', this.personaNueva.GRU_ID);
+            /* log suppressed */
           } catch (error) {
-            console.warn('⚠️ No se pudo asignar el grupo:', error);
+            /* warn suppressed */
           }
         }
         
@@ -4116,9 +4434,9 @@ export default {
               PEF_VERIF: this.personaNueva.PEF_VERIF !== undefined ? this.personaNueva.PEF_VERIF : false,
               PEF_HISTORIAL: this.personaNueva.PEF_HISTORIAL || null
             });
-            console.log('✅ Datos de formador guardados');
+            /* log suppressed */
           } catch (error) {
-            console.warn('⚠️ No se pudieron guardar datos de formador:', error);
+            /* warn suppressed */
           }
         }
         
@@ -4132,9 +4450,9 @@ export default {
               ZON_ID: this.personaNueva.ZON_ID && this.personaNueva.ZON_ID !== '' ? Number(this.personaNueva.ZON_ID) : null,
               PEI_VIGENTE: this.personaNueva.PEI_VIGENTE !== undefined ? this.personaNueva.PEI_VIGENTE : true
             });
-            console.log('✅ Información individual guardada');
+            /* log suppressed */
           } catch (error) {
-            console.warn('⚠️ No se pudo guardar información individual:', error);
+            /* warn suppressed */
           }
         }
         
@@ -4161,10 +4479,10 @@ export default {
                 NIV_ID: this.personaNueva.NIV_ID && this.personaNueva.NIV_ID !== '' ? Number(this.personaNueva.NIV_ID) : 1,
                 RAM_ID: ramaIdFinal
               });
-              console.log('✅ Nivel y rama asignados');
+              /* log suppressed */
             }
           } catch (error) {
-            console.warn('⚠️ No se pudo asignar nivel y rama:', error);
+            /* warn suppressed */
           }
         }
         
@@ -4230,13 +4548,7 @@ export default {
         alert('¡Persona creada exitosamente!');
         
       } catch (error) {
-        console.error('❌ Error creando persona:', error);
-        console.error('📋 Detalles del error:', {
-          status: error.status,
-          statusText: error.statusText,
-          message: error.message,
-          response: error.response
-        });
+        /* errors suppressed */
         
         let mensajeError = 'Error al crear la persona. ';
         if (error.response) {
@@ -4249,10 +4561,10 @@ export default {
           mensajeError += error.message || 'Verifica los datos e intenta nuevamente.';
         }
         
-                try {
-          console.error('🔍 Datos que se intentaron enviar:', datosPersona ? JSON.stringify(datosPersona, null, 2) : datosPersona);
+        try {
+          /* errors suppressed */
         } catch {
-          console.error('🔍 Datos que se intentaron enviar (no serializable):', datosPersona);
+          /* errors suppressed */
         }
         alert(mensajeError);
       } finally {
@@ -4293,16 +4605,10 @@ export default {
   },
   
   async mounted() {
-    // Auto-load filter options on view entry so selects are ready for the user.
-    try {
-      // Force reload filters to ensure fresh data and avoid empty dropdowns
-      await this.cargarOpcionesFiltros(true);
-    } catch (e) {
-      console.warn('Error cargando filtros en mounted:', e);
-    }
-    // Auto-load personas on mount so the table is populated
-    this.cargarPersonas(true);
-  }
+    // Do NOT auto-load mantenedores/filter options on mount to avoid 401 delays.
+    // Lazy-load when the user opens each dropdown.
+    // Do NOT auto-load personas on mount; wait until the user applies filtros.
+  },
 };
 </script>
 
@@ -4331,23 +4637,65 @@ export default {
   overflow: hidden;
   transition: all 0.3s ease;
   position: relative;
+
+  /* Provide BaseButton design tokens locally so variants render correctly */
+  --color-primary: #1d4ed8;              /* blue */
+  --color-primary-hover: #1e40af;        /* darker blue */
+  --color-secondary: #4b5563;            /* gray */
+  --color-secondary-hover: #374151;      /* darker gray */
+  --color-success: #16a34a;              /* green */
+  --color-success-hover: #15803d;
+  --color-info: #3b82f6;                 /* info blue */
+  --color-info-hover: #1d4ed8;
+  --color-warning: #f59e0b;              /* amber */
+  --color-warning-hover: #d97706;
+  --color-danger: #ef4444;               /* red */
+  --color-danger-hover: #dc2626;
+  --color-text: #111827;
+  --btn-radius: 8px;
+  --btn-font-weight: 600;
+  --btn-shadow: 0 2px 8px rgba(40,92,168,0.08);
+  --ring-color: rgba(33, 78, 156, 0.25);
+  --ring-color-weak: rgba(75, 85, 99, 0.25);
 }
 
-.header h2 {
-  background-color: var(--color-primary);
-  color: #fff;
-  padding: 14px 18px;
-  border-radius: 6px;
-  margin: 0 0 4px 0;
+.gestion-personas .header h2 {
+  color: #111;
+  font-size: 1.5rem; /* ~24px, similar a Envío de Correos */
+  font-weight: 700;
+  line-height: 1.25;
+  margin: 0 0 6px 0;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  text-align: left !important;
+  text-transform: none !important;
+  text-shadow: none !important;
+  letter-spacing: normal !important;
 }
 
-.header h3 {
-  margin: 6px 0 0 0;
-  color: #444;
+.gestion-personas .header h3 {
+  margin: 0 0 8px 0;
+  color: #6b7280; /* gris suave */
   font-weight: 500;
+  font-size: 0.95rem; /* ~15px */
+  line-height: 1.5;
+  background: transparent !important;
+  text-align: left !important;
+  text-transform: none !important;
+  text-shadow: none !important;
+  letter-spacing: normal !important;
 }
 
-.filtros {
+/* Header container styled like Emails screen: plain text with subtle divider */
+.gestion-personas .header {
+  padding: 4px 0 10px 0;
+  border-bottom: 1px solid #e5e7eb; /* línea fina como en la imagen */
+  margin-bottom: 12px;
+  background: transparent !important;
+}
+
+.gestion-personas .filtros {
   display: flex;
   gap: 10px;
   align-items: center;
@@ -4361,12 +4709,32 @@ export default {
   z-index: 10;
   border-bottom: 1px solid #e0e0e0;
 }
+.gestion-personas .filtros-left { display:flex; gap:12px; align-items:center; flex: 1 1 auto; min-width: 0 }
+.gestion-personas .filtros-right { display:flex; gap:10px; align-items:center; justify-content:flex-end; flex: 0 0 auto }
+
+.gestion-personas .filtros input,
+.gestion-personas .filtros select {
+  padding: 10px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  color: #222;
+  background: var(--color-background-soft);
+}
+
+.gestion-personas .filtros input { flex: 1 1 0; }
+.gestion-personas .filtros select { flex: 0 0 160px; }
+
+.gestion-personas .filtros .base-input { flex: 1 1 420px; min-width: 180px; max-width: 720px; margin-bottom: 0; }
+.gestion-personas .filtros .base-input .base-field { padding: 10px 12px; font-size: 14px; }
+.gestion-personas .filtros .base-select { flex: 0 0 160px; min-width: 120px; max-width: 220px; margin-bottom: 0; }
+.gestion-personas .filtros .base-select .base-select__element { padding: 8px 10px; font-size: 14px; }
+.gestion-personas .filtros button { flex: 0 0 auto; flex-shrink: 0; }
 
 .filtros-left { display:flex; gap:12px; align-items:center; flex: 1 1 auto; min-width: 0 }
 .filtros-right { display:flex; gap:10px; align-items:center; justify-content:flex-end; flex: 0 0 auto }
 
 /* Acciones principales (siempre visibles) */
-.acciones-top {
+.gestion-personas .acciones-top {
   display: flex;
   gap: 10px;
   align-items: center;
@@ -4374,6 +4742,14 @@ export default {
   padding: 8px 24px;
   box-sizing: border-box;
 }
+.gestion-personas .acciones-top-desktop {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.gestion-personas .filtros-right { display:flex; gap:10px; align-items:center; justify-content:flex-end; flex: 0 0 auto }
 
 /* Desktop placement: actions inside the filters right area (do not overlap content) */
 .acciones-top-desktop {
@@ -4387,12 +4763,12 @@ export default {
 .filtros-right { display:flex; gap:10px; align-items:center; justify-content:flex-end; flex: 0 0 auto }
 
 @media (max-width: 768px) {
-  .acciones-top { padding-left: 16px; padding-right: 16px; gap: 10px; justify-content: space-between; }
+  .gestion-personas .acciones-top { padding-left: 16px; padding-right: 16px; gap: 10px; justify-content: space-between; }
 }
 
 /* Very narrow mobile screens (tall 21:9 phones): stack buttons vertically for usability */
 @media (max-width: 420px), (max-aspect-ratio: 9/21) {
-  .acciones-top {
+  .gestion-personas .acciones-top {
     display: flex !important;
     flex-direction: column !important;
     gap: 10px !important;
@@ -4403,7 +4779,7 @@ export default {
     white-space: normal !important;
   }
 
-  .acciones-top .btn-standard {
+  .gestion-personas .acciones-top .btn-standard {
     width: 100% !important;
     min-width: 0 !important;
     padding: 12px 14px !important;
@@ -4419,7 +4795,7 @@ export default {
    user's screenshot. Buttons will center and shrink as required on narrow
    viewports while keeping labels visible. */
 @media (max-width: 480px) {
-  .acciones-top {
+  .gestion-personas .acciones-top {
     flex-direction: row;
     flex-wrap: wrap;
     gap: 10px;
@@ -4433,7 +4809,7 @@ export default {
     max-height: none !important;
   }
 
-  .acciones-top .btn-standard {
+  .gestion-personas .acciones-top .btn-standard {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -4447,22 +4823,22 @@ export default {
     white-space: nowrap !important;
   }
 
-  .acciones-top .btn-add {
+  .gestion-personas .acciones-top .btn-add {
     background: linear-gradient(180deg,#1e40af,#1e3a8a) !important;
     color: #fff !important;
     border: none !important;
   }
 
-  .acciones-top .btn-import,
-  .acciones-top .btn-export {
+  .gestion-personas .acciones-top .btn-import,
+  .gestion-personas .acciones-top .btn-export {
     background: linear-gradient(180deg,#6b7280,#4b5563) !important;
     color: #fff !important;
     border: none !important;
   }
 
   /* Keep icons tidy */
-  .acciones-top .btn-standard svg,
-  .acciones-top .btn-standard .icon {
+  .gestion-personas .acciones-top .btn-standard svg,
+  .gestion-personas .acciones-top .btn-standard .icon {
     width: 16px;
     height: 16px;
   }
@@ -4475,7 +4851,7 @@ export default {
   /* Keep top action buttons on a single horizontal line on mobile; allow
      horizontal scroll if needed. Maintain mobile sizing but prevent collapse
      into stacked layout. */
-  .acciones-top {
+  .gestion-personas .acciones-top {
     display: flex !important;
     flex-direction: row !important;
     gap: 10px !important;
@@ -4487,7 +4863,7 @@ export default {
     white-space: nowrap !important;
   }
 
-  .acciones-top .btn-standard {
+  .gestion-personas .acciones-top .btn-standard {
     flex: 0 0 auto !important;
     min-width: 120px !important;
     padding: 10px 12px !important;
@@ -4500,32 +4876,32 @@ export default {
     gap: 8px !important;
   }
 
-  .acciones-top .btn-add {
+  .gestion-personas .acciones-top .btn-add {
     background: linear-gradient(180deg,#1e40af,#1e3a8a) !important;
     color: #fff !important;
     border: none !important;
   }
 
-  .acciones-top .btn-import,
-  .acciones-top .btn-export {
+  .gestion-personas .acciones-top .btn-import,
+  .gestion-personas .acciones-top .btn-export {
     background: linear-gradient(180deg,#6b7280,#4b5563) !important;
     color: #fff !important;
     border: none !important;
   }
 
-  .acciones-top .btn-standard svg,
-  .acciones-top .btn-standard .icon {
+  .gestion-personas .acciones-top .btn-standard svg,
+  .gestion-personas .acciones-top .btn-standard .icon {
     width: 16px !important;
     height: 16px !important;
   }
 
   /* Ensure top actions always show labels on mobile */
-  .acciones-top .btn-label { display: inline !important; }
+  .gestion-personas .acciones-top .btn-label { display: inline !important; }
 }
 
 /* Medium-small screens: allow wrapping so buttons always quepan on screen */
 @media (max-width: 768px) and (min-width: 481px) {
-  .acciones-top {
+  .gestion-personas .acciones-top {
     flex-wrap: wrap;
     gap: 10px;
     padding-left: 16px;
@@ -4534,7 +4910,7 @@ export default {
   }
 
   /* Make buttons share the row but allow them to shrink and wrap */
-  .acciones-top .btn-standard {
+  .gestion-personas .acciones-top .btn-standard {
     flex: 1 1 calc(33.333% - 12px);
     min-width: 0;
     padding: 10px 12px;
@@ -4544,16 +4920,16 @@ export default {
   }
 
   /* If space is too narrow, two per row is fine — the calc will wrap */
-  .acciones-top .btn-add { order: 0; }
-  .acciones-top .btn-import { order: 1; }
-  .acciones-top .btn-export { order: 2; }
+  .gestion-personas .acciones-top .btn-add { order: 0; }
+  .gestion-personas .acciones-top .btn-import { order: 1; }
+  .gestion-personas .acciones-top .btn-export { order: 2; }
 }
 
 /* Small tweak to avoid large horizontal shadows causing overflow */
-.acciones-top .btn-standard { overflow: hidden; }
+.gestion-personas .acciones-top .btn-standard { overflow: hidden; }
 
-.filtros input,
-.filtros select {
+.gestion-personas .filtros input,
+.gestion-personas .filtros select {
   padding: 10px 12px;
   border: 1px solid #e0e0e0;
   border-radius: 4px;
@@ -4561,67 +4937,63 @@ export default {
   background: var(--color-background-soft);
 }
 
-.filtros input {
+.gestion-personas .filtros input {
   flex: 1 1 0;
 }
-.filtros select {
+.gestion-personas .filtros select {
   flex: 0 0 160px;
 }
 
 
-.filtros .base-input {
+.gestion-personas .filtros .base-input {
   flex: 1 1 420px; 
   min-width: 180px;
   max-width: 720px;
   margin-bottom: 0; 
 }
-.filtros .base-input .base-field {
+.gestion-personas .filtros .base-input .base-field {
   padding: 10px 12px;
   font-size: 14px;
 }
-.filtros .base-select {
+.gestion-personas .filtros .base-select {
   flex: 0 0 160px; 
   min-width: 120px;
   max-width: 220px;
   margin-bottom: 0;
 }
-.filtros .base-select .base-select__element {
+.gestion-personas .filtros .base-select .base-select__element {
   padding: 8px 10px;
   font-size: 14px;
 }
-.filtros button {
+.gestion-personas .filtros button {
   flex: 0 0 auto;
   flex-shrink: 0; 
 }
 
-.buscar, .exportar {
+.gestion-personas .buscar, .gestion-personas .exportar {
   border: none;
   padding: 8px 12px;
   border-radius: 6px;
   cursor: pointer;
 }
-.btn-search, .buscar { background: linear-gradient(180deg,#2b6cb0,#154c8c); color: #fff; box-shadow: 0 6px 18px rgba(33,78,156,0.12); border: none; }
-.btn-export, .exportar { background: linear-gradient(180deg,#16a34a,#15803d); color: #fff; box-shadow: 0 6px 18px rgba(16,185,129,0.08); border: none; }
+/* Let BaseButton control visual styling via its variant classes */
+/* (Do not override background/color for BaseButton instances) */
 
-.btn-edit { background: linear-gradient(180deg,#facc15,#f59e0b); color: #111; box-shadow: 0 6px 18px rgba(250,204,21,0.08); }
-.btn-ver { background: linear-gradient(180deg,#3b82f6,#1d4ed8); color: #fff; box-shadow: 0 6px 18px rgba(59,130,246,0.12); }
-.btn-editar { background: linear-gradient(180deg,#facc15,#f59e0b); color: #111; box-shadow: 0 6px 18px rgba(250,204,21,0.08); }
-.btn-anular { background: linear-gradient(180deg,#ef4444,#dc2626); color: #fff; box-shadow: 0 6px 18px rgba(239,68,68,0.12); }
-.btn-save { background: linear-gradient(180deg,#2563eb,#1e40af); color:#fff; box-shadow: 0 8px 24px rgba(37,99,235,0.12); }
-.btn-confirm { background: linear-gradient(180deg,#059669,#047857); color:#fff; box-shadow: 0 8px 24px rgba(5,150,105,0.12); }
+/* Action buttons use BaseButton variants; avoid overriding their visuals here */
 
-.btn-search, .btn-export, .btn-edit, .btn-ver, .btn-editar, .btn-anular, .btn-save, .btn-confirm {
+.gestion-personas .btn-search, .gestion-personas .btn-export, .gestion-personas .btn-edit, .gestion-personas .btn-ver, .gestion-personas .btn-editar, .gestion-personas .btn-anular, .gestion-personas .btn-save, .gestion-personas .btn-confirm {
   padding: 8px 14px;
   border-radius: 8px;
   font-weight:700;
   transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
 }
-.btn-search:hover, .btn-export:hover, .btn-edit:hover, .btn-ver:hover, .btn-editar:hover, .btn-anular:hover, .btn-save:hover, .btn-confirm:hover { transform: translateY(-2px); }
-.btn-search:active, .btn-export:active, .btn-edit:active, .btn-ver:active, .btn-editar:active, .btn-anular:active, .btn-save:active, .btn-confirm:active { transform: translateY(0); }
-.btn-search:focus, .btn-export:focus, .btn-edit:focus, .btn-ver:focus, .btn-editar:focus, .btn-anular:focus, .btn-save:focus, .btn-confirm:focus { outline: 3px solid rgba(33,78,156,0.12); }
+.gestion-personas .btn-search:hover, .gestion-personas .btn-export:hover, .gestion-personas .btn-edit:hover, .gestion-personas .btn-ver:hover, .gestion-personas .btn-editar:hover, .gestion-personas .btn-anular:hover, .gestion-personas .btn-save:hover, .gestion-personas .btn-confirm:hover { transform: translateY(-2px); }
+.gestion-personas .btn-search:active, .gestion-personas .btn-export:active, .gestion-personas .btn-edit:active, .gestion-personas .btn-ver:active, .gestion-personas .btn-editar:active, .gestion-personas .btn-anular:active, .gestion-personas .btn-save:active, .gestion-personas .btn-confirm:active { transform: translateY(0); }
+/* Allow BaseButton to render its focus ring */
+.gestion-personas .btn-search:focus, .gestion-personas .btn-export:focus, .gestion-personas .btn-edit:focus, .gestion-personas .btn-ver:focus, .gestion-personas .btn-editar:focus, .gestion-personas .btn-anular:focus, .gestion-personas .btn-save:focus, .gestion-personas .btn-confirm:focus { outline: auto; }
 
 /* Nuevos estilos estandarizados basados en la pantalla de correos */
-.btn-standard {
+.gestion-personas .btn-standard {
   min-width: 160px !important;
   padding: 10px 16px !important;
   font-size: 1rem !important;
@@ -4635,13 +5007,13 @@ export default {
   gap: 8px !important;
 }
 
-.btn-standard:hover {
+.gestion-personas .btn-standard:hover {
   filter: brightness(0.95) !important;
   box-shadow: 0 4px 16px rgba(40,92,168,0.13) !important;
   transform: translateY(-1px) !important;
 }
 
-.btn-action {
+.gestion-personas .btn-action {
   padding: 6px 12px !important;
   font-size: 0.875rem !important;
   font-weight: 600 !important;
@@ -4655,13 +5027,13 @@ export default {
   min-width: auto !important;
 }
 
-.btn-action:hover {
+.gestion-personas .btn-action:hover {
   filter: brightness(0.95) !important;
   box-shadow: 0 2px 8px rgba(40,92,168,0.1) !important;
   transform: translateY(-1px) !important;
 }
 
-.btn-modal {
+.gestion-personas .btn-modal {
   min-width: 120px !important;
   padding: 10px 16px !important;
   font-size: 1rem !important;
@@ -4972,32 +5344,109 @@ th {
 
 /* Responsive para móviles (incluyendo 21:9) */
 @media (max-width: 768px) {
+  /* Hide desktop-only actions on mobile */
+  .acciones-top-desktop { display: none !important; }
+  /* Do not show desktop actions embedded in filters on mobile */
+  .filtros-right { display: none !important; }
+
   .gestion-personas {
     border-radius: 0;
   }
   
-  .filtros {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-    padding: 8px 0;
+  /* Two-row mobile layout: Row 1 = search (full width), Row 2 = selects + Buscar arranged into two columns */
+  .filtros-mobile {
+    display: grid;
+    grid-template-columns: 260px 260px; /* fixed widths for symmetric columns */
+    grid-auto-rows: auto;
+    align-items: start;
+    justify-content: center; /* center the grid itself */
+    gap: 8px 12px;
+    padding: 8px 12px;
+    max-width: 560px;
+    margin: 0 auto;
   }
   
-  .filtros-left,
-  .filtros-right {
+  .filtros-mobile .filtros-left,
+  .filtros-mobile .filtros-right {
     width: 100%;
-    flex-direction: column;
-    gap: 10px;
+    display: contents; /* let children participate directly in the grid */
   }
   
-  .filtros input,
-  .filtros select,
-  .filtros .base-input,
-  .filtros .base-select,
-  .filtros .btn-standard {
-    width: 100%;
-    max-width: 100%;
-    flex: 1 1 auto;
+  /* Row 1: the first input (search) spans full width */
+  .filtros-mobile .base-input:first-child {
+    grid-row: 1;
+    grid-column: 1 / -1;
+    width: 100% !important;
+    max-width: 560px !important;
+    margin: 0 auto !important;
+  }
+
+  /* Row 2+: subsequent controls fill the two columns and wrap as needed */
+  .filtros-mobile .base-select,
+  .filtros-mobile .btn-search,
+  .filtros-mobile .base-button.btn-search {
+    grid-row: auto;
+    grid-column: span 1;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+    max-width: 260px !important;
+    justify-self: center; /* center each control inside its grid cell */
+  }
+
+  /* Place Buscar button spanning both columns at the end for clarity */
+  .filtros-mobile .btn-search {
+    grid-column: 1 / -1;
+    max-width: 560px !important;
+    justify-content: center;
+    justify-self: center; /* ensure centered spanning button */
+  }
+
+  /* Ensure inner elements fill their containers for consistent sizes */
+  .filtros-mobile .base-input .base-field,
+  .filtros-mobile .base-select .base-select__element {
+    width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  /* Make the row scroll horizontally on very narrow screens rather than stacking into many rows */
+  .filtros-mobile { overflow-x: hidden; }
+
+  /* Reduce vertical whitespace between filter controls on mobile */
+  .filtros-mobile .base-input,
+  .filtros-mobile .base-select,
+  .filtros-mobile .btn-search {
+    margin: 0 !important; /* remove extra margins added by inner components */
+  }
+  .filtros-mobile .base-input .base-field,
+  .filtros-mobile .base-select .base-select__element {
+    margin: 0 !important;
+  }
+  /* Compact padding to avoid tall gaps */
+  .filtros-mobile .base-input .base-field {
+    padding: 10px 12px !important;
+  }
+  .filtros-mobile .base-select .base-select__element {
+    padding: 10px 12px !important;
+  }
+
+  /* Reduce vertical whitespace between filter controls on mobile */
+  .filtros-mobile .base-input,
+  .filtros-mobile .base-select,
+  .filtros-mobile .btn-search {
+    margin: 0 !important; /* remove extra margins added by inner components */
+  }
+  .filtros-mobile .base-input .base-field,
+  .filtros-mobile .base-select .base-select__element {
+    margin: 0 !important;
+  }
+  /* Compact padding to avoid tall gaps */
+  .filtros-mobile .base-input .base-field {
+    padding: 10px 12px !important;
+  }
+  .filtros-mobile .base-select .base-select__element {
+    padding: 10px 12px !important;
   }
   
   /* Tabla responsiva estilo tarjetas */
@@ -5051,8 +5500,8 @@ th {
   /* Botón toggle de filtros en móvil */
   .filtros-toggle-mobile {
     display: block;
-    text-align: right;
-    padding: 0 16px;
+    text-align: center; /* center the toggle */
+    padding: 0 16px 8px;
     z-index: 120; /* keep toggle above other elements */
     position: relative;
   }
@@ -5063,26 +5512,27 @@ th {
     padding: 8px 12px;
     font-size: 14px;
     border-radius: 8px;
+    margin: 0 auto; /* center inline-flex button */
     /* No sobrescribir colores/box-shadow: usar las reglas de `.btn-standard` para mantener diseño consistente */
   }
 
   /* Cuando está colapsado en móvil, minimizar visualmente la barra */
-  .filtros.filtros-collapsed {
+  .filtros-mobile.filtros-collapsed {
     background: transparent !important;
     border-bottom: none !important;
     padding-top: 6px !important;
     padding-bottom: 6px !important;
     min-height: 0 !important;
   }
-  .filtros.filtros-collapsed .filtros-left,
-  .filtros.filtros-collapsed .filtros-right {
+  .filtros-mobile.filtros-collapsed .filtros-left,
+  .filtros-mobile.filtros-collapsed .filtros-right {
     display: none !important;
   }
   /* Fuerza ocultamiento de componentes internos (InputBase, BaseSelect, botón Buscar) */
-  .filtros.filtros-collapsed .base-input,
-  .filtros.filtros-collapsed .base-select,
-  .filtros.filtros-collapsed .btn-search,
-  .filtros.filtros-collapsed .base-button:not(.btn-toggle-filtros) {
+  .filtros-mobile.filtros-collapsed .base-input,
+  .filtros-mobile.filtros-collapsed .base-select,
+  .filtros-mobile.filtros-collapsed .btn-search,
+  .filtros-mobile.filtros-collapsed .base-button:not(.btn-toggle-filtros) {
     display: none !important;
     visibility: hidden !important;
     height: 0 !important;
@@ -5839,7 +6289,6 @@ td[data-label="RUT"] {
   }
 }
 
-
 </style>
 
 <style scoped>
@@ -6177,6 +6626,15 @@ td[data-label="RUT"] {
   max-width: 60px !important;
   text-align: center;
   flex: none !important;
+}
+
+/* Mensaje de error para validación */
+.error-message {
+  color: #dc2626;
+  font-size: 12px;
+  margin-top: 4px;
+  display: block;
+  font-weight: 500;
 }
 
 /* Estiloss para foto de perfil */
@@ -6598,14 +7056,15 @@ td[data-label="RUT"] {
   border-radius: 8px;
   border: 1px solid #e2e8f0;
   background: var(--color-surface);
-  cursor: pointer;
   transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .historial-curso-item:hover {
   background: #f1f5f9;
   border-color: #3b82f6;
-  transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
 }
 
@@ -6613,6 +7072,29 @@ td[data-label="RUT"] {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  cursor: pointer;
+  flex: 1;
+}
+
+.curso-item-content:hover {
+  opacity: 0.9;
+}
+
+.curso-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding-top: 8px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.btn-ver-pagos {
+  font-size: 13px;
+  padding: 6px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
 }
 
 .curso-header {
@@ -7371,6 +7853,256 @@ td[data-label="RUT"] {
   border-radius: 12px !important;
   overflow: hidden !important;
   margin: 16px auto !important;
+}
+
+/* ===========================
+   CROPPER MODAL STYLES
+   =========================== */
+.modal-cropper-foto :deep(.modal-content) {
+  max-width: 680px;
+  width: 95%;
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal-cropper {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+.modal-header-cropper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 28px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border-bottom: none;
+}
+
+.modal-header-cropper .header-title {
+  flex: 1;
+}
+
+.modal-header-cropper .header-title h2 {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff;
+}
+
+.modal-header-cropper .header-title .subtitle {
+  font-size: 14px;
+  opacity: 0.9;
+  margin: 0;
+  font-weight: 400;
+}
+
+.modal-header-cropper .btn-modal-header {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #fff;
+  backdrop-filter: blur(10px);
+  transition: all 0.2s ease;
+}
+
+.modal-header-cropper .btn-modal-header:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+.cropper-content {
+  display: flex;
+  gap: 24px;
+  padding: 28px;
+  background: #f9fafb;
+}
+
+.cropper-preview-section {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.cropper-frame {
+  position: relative;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #1a1a1a;
+  border: 4px solid #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.cropper-image {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  transform-origin: center center;
+}
+
+.cropper-mask {
+  position: absolute;
+  inset: 0;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
+}
+
+.preview-hint {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0;
+  text-align: center;
+  font-weight: 500;
+}
+
+.cropper-controls {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 12px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.control-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.control-slider-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.slider-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #667eea;
+  min-width: 42px;
+  text-align: right;
+}
+
+.control-range {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: #e5e7eb;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.control-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(102, 126, 234, 0.4);
+  transition: all 0.2s ease;
+}
+
+.control-range::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 3px 10px rgba(102, 126, 234, 0.6);
+}
+
+.control-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 6px rgba(102, 126, 234, 0.4);
+  transition: all 0.2s ease;
+}
+
+.control-range::-moz-range-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 3px 10px rgba(102, 126, 234, 0.6);
+}
+
+.upload-group {
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.btn-upload {
+  width: 100%;
+  justify-content: center;
+}
+
+.modal-footer-cropper {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 20px 28px;
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+}
+
+@media (max-width: 768px) {
+  .cropper-content {
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    gap: 20px;
+  }
+
+  .cropper-frame {
+    width: 240px;
+    height: 240px;
+  }
+
+  .cropper-controls {
+    width: 100%;
+  }
+
+  .modal-header-cropper {
+    padding: 20px;
+  }
+
+  .modal-header-cropper .header-title h2 {
+    font-size: 20px;
+  }
+
+  .modal-footer-cropper {
+    padding: 16px 20px;
+  }
 }
 </style>
 
