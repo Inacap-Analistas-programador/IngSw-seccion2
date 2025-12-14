@@ -829,6 +829,13 @@ onMounted(() => {
       }
     }, 800)
   } else {
+    // Si viene parametro search, aplicarlo
+    const { search } = route.query
+    if (search) {
+      filtros.value.searchQuery = search
+      // Esperar un tick para que reactividad funcione o llamar directo
+      setTimeout(() => aplicarFiltros(), 100) 
+    }
     checkRouteActions()
   }
 })
@@ -1626,7 +1633,8 @@ function formatDateSimple(dateStr) {
 function getPersonaName(id) {
   const p = personasList.value.find(x => Number(x.PER_ID ?? x.ID ?? x.id) === Number(id))
   const nombre = p?.PER_NOMBRES || p?.PER_NOMBRE || p?.NOMBRE || p?.nombre || ''
-  const apellido = p?.PER_APELPTA || p?.PER_APELLIDO_PATERNO || p?.APELLIDO || p?.apellido || ''
+  const apellido = p?.PER_APELPAT || p?.PER_APELLIDO_PATERNO || p?.APELLIDO || p?.apellido || ''
+  if (p && !apellido) console.log('[DEBUG] Missing surname for persona:', p)
   const full = `${(nombre || '').trim()} ${(apellido || '').trim()}`.trim()
   return p ? (full || nombre || '-') : 'No asignado'
 }

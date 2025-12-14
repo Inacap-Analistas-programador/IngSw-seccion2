@@ -223,6 +223,18 @@ import BaseButton from '@/components/BaseButton.vue'
 import AppIcons from '@/components/icons/AppIcons.vue'
 import { request } from '@/services/apiClient.js'
 
+// Helper to normalize keys to Uppercase
+const toUpperKeys = (obj) => {
+  if (!obj || typeof obj !== 'object') return obj
+  const newObj = Array.isArray(obj) ? [] : {}
+  for (const key in obj) {
+    const upperKey = key.toUpperCase()
+    newObj[upperKey] = obj[key]
+    if (upperKey !== key) newObj[key] = obj[key]
+  }
+  return newObj
+}
+
 const props = defineProps({
   cursoId: {
     type: Number,
@@ -299,7 +311,7 @@ async function cargarDatos() {
     // Cargar datos del curso - primero intentar obtener de la lista
     try {
       const cursosData = await request(`/cursos/cursos/${props.cursoId}/`)
-      curso.value = cursosData || {}
+      curso.value = toUpperKeys(cursosData) || {}
       console.log('Curso cargado:', curso.value)
     } catch {
       // Si falla, intentar obtenerlo de la lista completa
@@ -319,11 +331,11 @@ async function cargarDatos() {
       request(`/cursos/cuotas/?CUR_ID=${props.cursoId}&page_size=200`),
     ])
 
-    secciones.value = Array.isArray(seccionesData?.results) ? seccionesData.results : (seccionesData || [])
-    formadores.value = Array.isArray(formadoresData?.results) ? formadoresData.results : (formadoresData || [])
-    coordinadores.value = Array.isArray(coordinadoresData?.results) ? coordinadoresData.results : (coordinadoresData || [])
-    alimentaciones.value = Array.isArray(alimentacionData?.results) ? alimentacionData.results : (alimentacionData || [])
-    pagos.value = Array.isArray(pagosData?.results) ? pagosData.results : (pagosData || [])
+    secciones.value = (Array.isArray(seccionesData?.results) ? seccionesData.results : (seccionesData || [])).map(toUpperKeys)
+    formadores.value = (Array.isArray(formadoresData?.results) ? formadoresData.results : (formadoresData || [])).map(toUpperKeys)
+    coordinadores.value = (Array.isArray(coordinadoresData?.results) ? coordinadoresData.results : (coordinadoresData || [])).map(toUpperKeys)
+    alimentaciones.value = (Array.isArray(alimentacionData?.results) ? alimentacionData.results : (alimentacionData || [])).map(toUpperKeys)
+    pagos.value = (Array.isArray(pagosData?.results) ? pagosData.results : (pagosData || [])).map(toUpperKeys)
 
     console.log('Secciones:', secciones.value.length, 'Formadores:', formadores.value.length, 'Coordinadores:', coordinadores.value.length, 'Alimentaciones:', alimentaciones.value.length, 'Pagos:', pagos.value.length)
     
@@ -336,11 +348,11 @@ async function cargarDatos() {
       request('/mantenedores/alimentacion/?page_size=200'),
     ])
 
-    personas.value = Array.isArray(personasData?.results) ? personasData.results : (personasData || [])
-    roles.value = Array.isArray(rolesData?.results) ? rolesData.results : (rolesData || [])
-    ramas.value = Array.isArray(ramasData?.results) ? ramasData.results : (ramasData || [])
-    cargos.value = Array.isArray(cargosData?.results) ? cargosData.results : (cargosData || [])
-    alimentacionCatalogo.value = Array.isArray(aliData?.results) ? aliData.results : (aliData || [])
+    personas.value = (Array.isArray(personasData?.results) ? personasData.results : (personasData || [])).map(toUpperKeys)
+    roles.value = (Array.isArray(rolesData?.results) ? rolesData.results : (rolesData || [])).map(toUpperKeys)
+    ramas.value = (Array.isArray(ramasData?.results) ? ramasData.results : (ramasData || [])).map(toUpperKeys)
+    cargos.value = (Array.isArray(cargosData?.results) ? cargosData.results : (cargosData || [])).map(toUpperKeys)
+    alimentacionCatalogo.value = (Array.isArray(aliData?.results) ? aliData.results : (aliData || [])).map(toUpperKeys)
     
     console.log('Todos los datos cargados correctamente')
     
