@@ -70,6 +70,17 @@ class PersonaFilter(django_filters.FilterSet):
         lookup_expr='icontains',
         label='Filtrar por descripción de curso')
     
+    # --- Filtros de Roles y Ramas (a través de Persona_Curso) ---
+    rol_id = django_filters.NumberFilter(
+        field_name='persona_curso__rol_id',
+        label='Filtrar por ID de rol'
+    )
+    ram_id = django_filters.NumberFilter(
+        field_name='persona_curso__niv_id__ram_id',
+        label='Filtrar por ID de rama'
+    )
+    # -----------------------------------------------------------
+    
     # --- Filtros de usuario y vigencia ---
     usuario_nombre = django_filters.CharFilter(field_name='usu_id__usu_username',lookup_expr='icontains',
         label='Filtrar por nombre de usuario')
@@ -96,6 +107,8 @@ class PersonaFilter(django_filters.FilterSet):
                   'acreditado',
                   'curso_codigo',
                   'curso_descripcion',
+                  'rol_id',
+                  'ram_id',
                   'usuario_nombre',
                   'usuario_id',
                   'vigente'
@@ -196,6 +209,11 @@ class PersonaCursoFilter(django_filters.FilterSet):
         label='Filtrar por correo QR enviado'
     )
 
+    grupo_id = django_filters.NumberFilter(
+        field_name='per_id__persona_grupo__gru_id',
+        label='Filtrar por Grupo (Trae cursos de personas en este grupo)'
+    )
+
     class Meta:
         model = Persona_Curso
         fields = [
@@ -210,6 +228,7 @@ class PersonaCursoFilter(django_filters.FilterSet):
             'registrado',
             'acreditado',
             'correo_qr_enviado',
+            'grupo_id',
         ]
 
 

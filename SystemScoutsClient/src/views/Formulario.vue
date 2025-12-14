@@ -54,25 +54,13 @@
           <p class="label-principal">Descarga y rellena tu ficha médica</p>
           <p class="label-secundario">¡Te la pediremos más adelante!</p>
         </div>
-        <a href="/Ficha Medica.docx" download class="btn-download">
-          <div class="svg-wrapper-1">
-            <div class="svg-wrapper">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                width="24"
-                height="24"
-              >
-                <path fill="none" d="M0 0h24v24H0z"></path>
-                <path
-                  fill="currentColor"
-                  d="M1.946 9.315c-.522-.174-.527-.455.01-.634l19.087-6.362c.529-.176.832.12.684.638l-5.454 19.086c-.15.529-.455.547-.679.045L12 14l6-8-8 6-8.054-2.685z"
-                ></path>
-              </svg>
-            </div>
-          </div>
-          <span>Descargar Ficha</span>
-        </a>
+        <BaseButton 
+          variant="primary" 
+          @click="descargarFicha"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          Descargar Ficha
+        </BaseButton>
       </div>
     </div>
 
@@ -669,25 +657,13 @@
 
   <!-- Botón para subir ficha médica -->
   <div class="contenedor-boton-subir">
-    <a href="#" @click.prevent="abrirSelectorArchivo" class="btn-subir-ficha">
-      <div class="svg-wrapper-1">
-        <div class="svg-wrapper">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            width="24"
-            height="24"
-          >
-            <path fill="none" d="M0 0h24v24H0z"></path>
-            <path
-              fill="currentColor"
-              d="M1.946 9.315c-.522-.174-.527-.455.01-.634l19.087-6.362c.529-.176.832.12.684.638l-5.454 19.086c-.15.529-.455.547-.679.045L12 14l6-8-8 6-8.054-2.685z"
-            ></path>
-          </svg>
-        </div>
-      </div>
-      <span>Subir Ficha Médica</span>
-    </a>
+    <BaseButton 
+      variant="primary" 
+      @click.prevent="abrirSelectorArchivo"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+      Subir Ficha Médica
+    </BaseButton>
     <input 
       type="file" 
       ref="fichaMedicaInput" 
@@ -852,9 +828,9 @@
   </transition>
 
   <!--:::::::::::::::::::::: BOTONES DE ACCIÓN ::::::::::::::::::::::::::::::::::-->
-        <div class="botones-formulario" style="display: flex; justify-content: center; align-items: center; gap: 20px; width: 100%;">
-          <button type="button" class="btn-vaciar" @click="limpiarFormulario">VACIAR</button>
-          <button type="submit" class="btn-enviar" @click.prevent="enviarFormulario">ENVIAR</button>
+        <div class="botones-formulario botones-acciones">
+          <BaseButton type="button" variant="outline" size="xl" @click="limpiarFormulario">VACIAR</BaseButton>
+          <BaseButton type="submit" variant="primary" size="xl" :loading="false" @click.prevent="enviarFormulario">ENVIAR</BaseButton>
         </div>
     
       </form>
@@ -871,6 +847,7 @@
 
 <script setup>
 import { regionApi } from '../services/regionService';
+import BaseButton from '@/components/BaseButton.vue';
 const listaRegionApi = ref([]);
 import { watch } from 'vue';
 // :::::::::::::::::: IMPORTS Y WEAS :::::::::::::::::::::::::
@@ -923,7 +900,7 @@ const detalleLimitacion = ref("");
 const zonaSeleccionada = ref("");
 const otraZona = ref("");
 const grupoPertenece = ref("");
-const nombre = ref("");
+
 const apellidoPaterno = ref("");
 const apellidoMaterno = ref("");
 const rut = ref("");
@@ -1002,6 +979,15 @@ const regionSeleccionada = ref("");
 const provinciaSeleccionada = ref("");
 
 
+
+const descargarFicha = () => {
+  const link = document.createElement('a');
+  link.href = '/Ficha Medica.docx';
+  link.setAttribute('download', 'Ficha Medica.docx');
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
 
 onMounted(async () => {
   // Cargar ramas
@@ -1445,12 +1431,19 @@ function eliminarFoto() {
 //   }
 //   return [];
 // });
-import personasService from '../services/personasService'; // Importar servicio de personas
+import authService from '../services/authService';
 
 // ... (existing code)
 
 const enviarFormulario = async () => {
   try {
+    // 0. Validar usuario logueado
+    const currentUser = await authService.getCurrentUser();
+    if (!currentUser || !currentUser.id) {
+      alert("Error: No se pudo identificar al usuario actual. Por favor inicie sesión nuevamente.");
+      return;
+    }
+
     // 1. Validaciones básicas
     if (!rut.value || !nombres.value || !apellidoPaterno.value || !email.value) {
       alert("Por favor complete los campos obligatorios del postulante.");
@@ -1466,6 +1459,7 @@ const enviarFormulario = async () => {
     
     // Mapeo de campos según persona_model.py
     const personaData = {
+      usu_id: currentUser.id, // ID del usuario que crea el registro
       per_run: run,
       per_dv: dv || '', // Manejar caso sin guion si rut viene limpio
       per_nombres: nombres.value,
@@ -1496,11 +1490,12 @@ const enviarFormulario = async () => {
     if (anosTrabajoNinos.value) personaData.per_tiempo_nnaj = anosTrabajoNinos.value;
     // if (anosTiempoBeneficiario.value) personaData.per_tiempo_adulto = ...;
 
+
     // 3. Preparar datos de Curso (Persona_Curso)
     const cursoData = {
-      CUS_ID: seccionCurso.value,
-      ROL_ID: rolSeleccionado.value,
-      ALI_ID: tipoAlimentacion.value,
+      cus_id: seccionCurso.value,
+      rol_id: rolSeleccionado.value,
+      ali_id: tipoAlimentacion.value,
       niv_id: nivelFormacion.value
     };
 
@@ -1508,45 +1503,33 @@ const enviarFormulario = async () => {
     let vehiculoData = null;
     if (vehiculoPropio.value === 'si') {
       vehiculoData = {
-        PEV_PATENTE: patente.value,
-        PEV_MARCA: marcaVehiculo.value,
-        PEV_MODELO: modeloVehiculo.value
+        pev_patente: patentePropia.value,
+        pev_marca: marcaPropia.value, 
+        pev_modelo: modeloPropio.value
       };
     }
 
     // 5. Preparar datos de Formador (Persona_Formador)
     let formadorData = null;
-    // Si se seleccionó checkbox esFormador o si hay datos relevantes
-    // Ojo: el modelo tiene 'pef_hab_1', etc.
-    // Verificamos si hay algún dato chequeado en las habilidades o verificado
     if (habilidad1.value || habilidad2.value || verificado.value) {
       formadorData = {
-        pef_hab_1: habilidad1.value,
-        pef_hab_2: habilidad2.value,
-        pef_verif: verificado.value,
-        pef_historial: '' // No hay input explícito para historial en este form?
+        pef_hab_1: habilidad1.value === 'si' || habilidad1.value === true, // Ensure boolean
+        pef_hab_2: habilidad2.value === 'si' || habilidad2.value === true,
+        pef_verif: verificado.value === 'si' || verificado.value === true,
+        pef_historial: ''
       };
     }
 
     // 6. Preparar datos de Ramas (Persona_Nivel)
-    // Necesitamos los IDs de nivel para Medio y Avanzado.
-    // Asumiremos IDs fijos o buscaremos en 'listaNivelApi' si es posible, 
-    // pero por ahora usaremos lógica: si el usuario seleccionó ramas, las enviamos.
-    // IMPORTANTE: Necesitamos el ID del Nivel asociado a la rama.
-    // Si 'ramasMedioSeleccionadas' son de Nivel Medio y 'ramasAvanzadoSeleccionadas' de Avanzado.
-    // Supuesto: Medio = 2, Avanzado = 3 (Esto debería ser dinámico pero para MVP...).
-    // Mejor: Buscar en listaNivelApi el id donde descripcion='Medio' etc.
-    
     let ramasData = [];
     
-    // Función auxiliar para buscar ID de nivel por nombre (si listaNivelApi está poblada)
     const getNivelId = (nombre) => {
       const nivel = listaNivelApi.value.find(n => n.niv_descripcion && n.niv_descripcion.toLowerCase().includes(nombre.toLowerCase()));
       return nivel ? nivel.niv_id : null;
     };
 
-    const idMedio = getNivelId('Medio') || 2; // Fallback a 2
-    const idAvanzado = getNivelId('Avanzado') || 3; // Fallback a 3
+    const idMedio = getNivelId('Medio') || 2; 
+    const idAvanzado = getNivelId('Avanzado') || 3; 
 
     if (ramasMedioSeleccionadas.value.length > 0) {
       ramasMedioSeleccionadas.value.forEach(rId => {
@@ -1559,18 +1542,28 @@ const enviarFormulario = async () => {
       });
     }
 
-    // 7. Enviar al Backend
-    console.log("Enviando formulario:", { personaData, cursoData, vehiculoData, formadorData, ramasData });
+    // 7. Preparar datos de Grupo (Persona_Grupo)
+    let grupoData = null;
+    if (grupoPertenece.value) {
+      grupoData = {
+        gru_id: grupoPertenece.value,
+        peg_vigente: true
+      };
+    }
+
+    // 8. Enviar al Backend
+    console.log("Enviando formulario:", { personaData, cursoData, vehiculoData, formadorData, ramasData, grupoData });
     const result = await personasService.createPersonaWithCourseAndVehicle({
       personaData,
       cursoData,
       vehiculoData,
       formadorData,
-      ramasData
+      ramasData,
+      grupoData
     });
 
     console.log("Resultado envío:", result);
-    alert("Formulario enviado exitosamente!");
+    alert("Formulario enviado exitosamente y todos los datos registrados!");
     limpiarFormulario();
 
   } catch (error) {
@@ -1591,46 +1584,8 @@ const enviarFormulario = async () => {
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;600;700&family=Montserrat:wght@700&family=Poppins:wght@400&display=swap');
 
 /* :::::::::::::::::::: H1 PRE-REGISTRO :::::::::::::::::::: */
-@keyframes slideInScale {
-  0% {
-    opacity: 0;
-    transform: translateY(-30px) scale(0.9);
-  }
-  60% {
-    opacity: 1;
-    transform: translateY(0) scale(1.05);
-  }
-  100% {
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes expandLine {
-  0% {
-    width: 0;
-  }
-  100% {
-    width: 400px;
-  }
-}
-
+/* :::::::::::::::::::: H1 PRE-REGISTRO :::::::::::::::::::: */
 .titulo-pre-registro {
-  font-family: 'Poppins', 'Montserrat', Arial, sans-serif !important;
-  font-weight: 400 !important;
-  font-size: 2.5rem !important;
-  color: #2563eb !important;
-  text-align: center !important;
-  margin-bottom: 1.5rem !important;
-  letter-spacing: 1px !important;
-  line-height: 1.1 !important;
-  width: 100% !important;
-  position: relative !important;
-  animation: slideInScale 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
-  padding-top: 15px !important;
-  text-transform: none !important;
-}
-
-.titulo-pre-registro::after {
   content: '';
   position: absolute;
   bottom: -8px;
@@ -3057,68 +3012,28 @@ input:focus, select:focus, textarea:focus {
   font-style: italic !important;
 }
 
-/* :::::::::::::::::::: BOTÓN DE DESCARGA (uiverse.io) :::::::::::::::::::: */
-.btn-download {
-  font-family: inherit;
-  font-size: 15px;
-  background: linear-gradient(to bottom, #4dc7d9 0%, #66a6ff 100%);
-  color: white;
-  padding: 0.8em 1.2em;
+/* :::::::::::::::::::: BOTÓN DE DESCARGA (BaseButton used) :::::::::::::::::::: */
+/* Styles removed as we use BaseButton component */
+
+/* :::::::::::::::::::: BOTONES ACCIONES (Vaciar / Enviar) :::::::::::::::::::: */
+.botones-acciones {
   display: flex;
-  align-items: center;
   justify-content: center;
-  border: none;
-  border-radius: 25px;
-  box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.2);
-  transition: all 0.3s;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.btn-download:hover {
-  transform: translateY(-3px);
-  box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.3);
-}
-
-.btn-download:active {
-  transform: scale(0.95);
-  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
-}
-
-.btn-download span {
-  display: block;
-  margin-left: 0.4em;
-  transition: all 0.3s;
-  font-weight: 500;
-}
-
-.btn-download svg {
-  width: 18px;
-  height: 18px;
-  fill: white;
-  transition: all 0.3s;
-  transform: rotate(45deg);
-}
-
-.btn-download .svg-wrapper {
-  display: flex;
   align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.2);
-  margin-right: 0.5em;
-  transition: all 0.3s;
+  gap: 20px;
+  width: 100%;
+  margin-top: 20px;
 }
 
-.btn-download:hover .svg-wrapper {
-  background-color: #4ba0f4;
-}
-
-.btn-download:hover svg {
-  transform: rotate(135deg);
-  fill: white;
+@media (max-width: 600px) {
+  .botones-acciones {
+    flex-direction: column;
+    gap: 15px;
+  }
+  .botones-acciones > * {
+    width: 100% !important; 
+    /* Force full width on mobile for better touch targets */
+  }
 }
 
 /* :::::::::::::::::::: BOTÓN SUBIR FICHA MÉDICA :::::::::::::::::::: */
@@ -3131,69 +3046,6 @@ input:focus, select:focus, textarea:focus {
   margin-bottom: 20px;
 }
 
-.btn-subir-ficha {
-  font-family: inherit;
-  font-size: 15px;
-  background: linear-gradient(to bottom, #4dc7d9 0%, #66a6ff 100%);
-  color: white;
-  padding: 0.8em 1.2em;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 25px;
-  box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.2);
-  transition: all 0.3s;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.btn-subir-ficha:hover {
-  transform: translateY(-3px);
-  box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.3);
-}
-
-.btn-subir-ficha:active {
-  transform: scale(0.95);
-  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
-}
-
-.btn-subir-ficha span {
-  display: block;
-  margin-left: 0.4em;
-  transition: all 0.3s;
-  font-weight: 500;
-}
-
-.btn-subir-ficha svg {
-  width: 18px;
-  height: 18px;
-  fill: white;
-  transition: all 0.3s;
-  transform: rotate(45deg); /* Inicialmente apunta hacia la derecha (al texto) */
-}
-
-.btn-subir-ficha .svg-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.2);
-  margin-right: 0.5em;
-  transition: all 0.3s;
-}
-
-.btn-subir-ficha:hover .svg-wrapper {
-  background-color: #4ba0f4;
-}
-
-.btn-subir-ficha:hover svg {
-  transform: rotate(-45deg); /* Al hacer hover gira hacia arriba */
-  fill: white;
-}
-
 .archivo-seleccionado {
   font-size: 13px;
   color: #4ade80;
@@ -3202,110 +3054,7 @@ input:focus, select:focus, textarea:focus {
   margin-top: 5px;
 }
 
-/* :::::::::::::::::::: BOTONES :::::::::::::::::::: */ 
-  .btn-enviar {
-    margin-top: 20px;
-    position: relative;
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    min-width: 160px;
-    padding: 16px 40px;
-    font-size: 1.1rem;
-    font-weight: 700;
-    line-height: 1;
-    color: #fff;
-    text-decoration: none;
-    background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
-    border: none;
-    border-radius: 12px;
-    cursor: pointer;
-    overflow: hidden;
-    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
-    letter-spacing: 1px;
-  }
 
-  .btn-enviar::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-    transition: left 0.6s;
-  }
-
-  .btn-enviar:hover {
-    transform: translateY(-6px) scale(1.05);
-    box-shadow: 0 20px 40px rgba(59, 130, 246, 0.6);
-    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-  }
-
-  .btn-enviar:hover::before {
-    left: 100%;
-  }
-
-  .btn-enviar:active {
-    transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.5);
-  } 
-/*:::::::::::::::::::::::::::::::::::::::::::::::::::::::*/
-  .btn-vaciar {
-    margin-top: 20px;
-    margin-right: 15px;
-    position: relative;
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    min-width: 160px;
-    padding: 16px 40px;
-    font-size: 1.1rem;
-    font-weight: 700;
-    line-height: 1;
-    color: #10b981;
-    text-decoration: none;
-    background-color: transparent;
-    border: 3px solid #10b981;
-    border-radius: 12px;
-    cursor: pointer;
-    overflow: hidden;
-    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
-    letter-spacing: 1px;
-  }
-
-  .btn-vaciar::before {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    border-radius: 50%;
-    background: rgba(16, 185, 129, 0.1);
-    transform: translate(-50%, -50%);
-    transition: width 0.6s, height 0.6s;
-  }
-
-  .btn-vaciar:hover {
-    transform: translateY(-6px) scale(1.05);
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    color: #fff;
-    border-color: #059669;
-    box-shadow: 0 15px 30px rgba(16, 185, 129, 0.4);
-  }
-
-  .btn-vaciar:hover::before {
-    width: 300px;
-    height: 300px;
-  }
-
-  .btn-vaciar:active {
-    transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);
-  }
 
 /* :::::::::::::::::::: NAVEGACIÓN FLOTANTE :::::::::::::::::::: */
 .nav-flotante {

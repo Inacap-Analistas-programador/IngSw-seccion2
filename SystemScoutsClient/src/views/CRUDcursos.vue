@@ -698,6 +698,15 @@ function debounce(fn, wait = 250) {
 // Abort support for fetch: guardamos el controller y cancelamos la carga anterior
 const lastController = { ctrl: null }
 
+// Helper safe data extraction
+const getData = (resp) => {
+  if (!resp) return []
+  if (Array.isArray(resp)) return resp
+  // soportar distintas envolturas de respuesta
+  const r = resp
+  return r.results || (r.data?.results) || r.data || r.items || []
+}
+
 async function cargarDatos({ page = 1, page_size = 20, search = '' } = {}) {
   if (isLoadingData.value) return
   // Requerir al menos un filtro antes de cargar
@@ -709,14 +718,11 @@ async function cargarDatos({ page = 1, page_size = 20, search = '' } = {}) {
   isLoadingData.value = true
   isLoading.value = true
 
-  // No bloquear por token aquí: permitimos que el cliente HTTP maneje 401/refresh
-
   // cancelar carga previa si existe
   try {
     if (lastController.ctrl) lastController.ctrl.abort()
-    } catch { /* noop */ }
+  } catch { /* noop */ }
   lastController.ctrl = new AbortController()
-  // const signal = lastController.ctrl.signal // Unused for now
 
   try {
     // Pedir cursos desde el servicio específico y catálogos relacionados
@@ -732,7 +738,6 @@ async function cargarDatos({ page = 1, page_size = 20, search = '' } = {}) {
     const cursosData = await cursosDataPromise
 
     // Catálogos y recursos asociados (usar servicios concretos)
-    // Solo solicitar catálogos que aún no estén cargados en memoria.
     const fetchPromises = []
 
     const personasPromise = (Array.isArray(personasList.value) && personasList.value.length) ? Promise.resolve(personasList.value) : personasService.personas.list()
@@ -765,13 +770,12 @@ async function cargarDatos({ page = 1, page_size = 20, search = '' } = {}) {
     const [personasApi, tiposApi, ramasApi, seccionesData, fechasData, comunasApi, cargosApi, rolesApi, alimentacionCat] = await Promise.all(fetchPromises)
 
     // Normalizar cursos (puede venir paginado)
-    let cursosArray = Array.isArray(cursosData) ? cursosData : (cursosData?.results || [])
+    let cursosArray = getData(cursosData)
     cursosArray = cursosArray.map(toUpperKeys)
 
     // Normalizar listas relacionadas
-    const fechasListNorm = (Array.isArray(fechasData) ? fechasData : (fechasData?.results || [])).map(toUpperKeys)
-    const seccionesListNorm = (Array.isArray(seccionesData) ? seccionesData : (seccionesData?.results || [])).map(toUpperKeys)
-    // formadoresListNorm, alimentacionListNorm, cuotasListNorm, coordinadoresListNorm se cargan bajo demanda
+    const fechasListNorm = getData(fechasData).map(toUpperKeys)
+    const seccionesListNorm = getData(seccionesData).map(toUpperKeys)
 
     // Enlazar fechas a cada curso para mostrar rango en la tabla si tenemos fechas
     const fechasByCurso = fechasListNorm.reduce((acc, f) => {
@@ -786,16 +790,16 @@ async function cargarDatos({ page = 1, page_size = 20, search = '' } = {}) {
       fechas: fechasByCurso[c.CUR_ID] ? fechasByCurso[c.CUR_ID].sort((a,b) => new Date(a.CUF_FECHA_INICIO) - new Date(b.CUF_FECHA_INICIO)) : []
     }))
 
-    // Asignar catálogos (normalizar resultados si vienen paginados)
-    personasList.value = (Array.isArray(personasApi) ? personasApi : (personasApi?.results || [])).map(toUpperKeys)
-    tiposCursoList.value = (Array.isArray(tiposApi) ? tiposApi : (tiposApi?.results || [])).map(toUpperKeys)
-    ramaslist.value = (Array.isArray(ramasApi) ? ramasApi : (ramasApi?.results || [])).map(toUpperKeys)
+    // Asignar catálogos
+    personasList.value = getData(personasApi).map(toUpperKeys)
+    tiposCursoList.value = getData(tiposApi).map(toUpperKeys)
+    ramaslist.value = getData(ramasApi).map(toUpperKeys)
     fechasCursoList.value = fechasListNorm
     seccionesList.value = seccionesListNorm
-    comunasList.value = (Array.isArray(comunasApi) ? comunasApi : (comunasApi?.results || [])).map(toUpperKeys)
-    cargosList.value = (Array.isArray(cargosApi) ? cargosApi : (cargosApi?.results || [])).map(toUpperKeys)
-    rolesList.value = (Array.isArray(rolesApi) ? rolesApi : (rolesApi?.results || [])).map(toUpperKeys)
-    alimentacionCatalogo.value = (Array.isArray(alimentacionCat) ? alimentacionCat : (alimentacionCat?.results || [])).map(toUpperKeys)
+    comunasList.value = getData(comunasApi).map(toUpperKeys)
+    cargosList.value = getData(cargosApi).map(toUpperKeys)
+    rolesList.value = getData(rolesApi).map(toUpperKeys)
+    alimentacionCatalogo.value = getData(alimentacionCat).map(toUpperKeys)
 
     // Filtrado cliente como fallback; cuando uses búsqueda remota, pasar `search` hará que el servidor filtre
     aplicarFiltros()
