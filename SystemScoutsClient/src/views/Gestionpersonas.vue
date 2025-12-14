@@ -1759,7 +1759,7 @@ export default {
         try {
           const cursosData = await personasService.obtenerCursosPersona(this.personaEditada.PER_ID);
           this.personaEditada.cursosHistorial = cursosData || [];
-        } catch (_error) {
+        } catch {
           /* error suppressed */
           this.personaEditada.cursosHistorial = [];
         }
@@ -1820,7 +1820,7 @@ export default {
               this.personaEditada.REG_ID = provinciaActual.REG_ID;
             }
           }
-        } catch (_error) {
+        } catch {
           /* warn suppressed */
         }
       }
@@ -1954,7 +1954,7 @@ export default {
         const resp = await personasService.personas.list(params, { signal: controller.signal });
         tFetchEnd = performance && performance.now ? performance.now() : Date.now();
         fetched = Array.isArray(resp) ? resp : (resp && Array.isArray(resp.results) ? resp.results : []);
-      } catch (_e) {
+      } catch {
         fetched = [];
       }
 
@@ -2298,7 +2298,7 @@ export default {
               });
               /* log suppressed */
             }
-          } catch (_error) {
+          } catch {
             /* warn suppressed */
           }
         }
@@ -2326,7 +2326,7 @@ export default {
               });
               /* log suppressed */
             }
-          } catch (_error) {
+          } catch {
             /* warn suppressed */
           }
         }
@@ -2354,7 +2354,7 @@ export default {
               });
               /* log suppressed */
             }
-          } catch (_error) {
+          } catch {
             /* warn suppressed */
           }
         }
@@ -2394,7 +2394,7 @@ export default {
               });
               /* log suppressed */
             }
-          } catch (_error) {
+          } catch {
             /* warn suppressed */
           }
         }
@@ -2420,7 +2420,7 @@ export default {
                 const rolesList = await mantenedoresService.rol.list();
                 const rolFound = rolesList.find(r => r.ROL_DESCRIPCION === this.personaEditada.PER_ROL || String(r.ROL_ID) === String(this.personaEditada.PER_ROL));
                 if (rolFound) rolIdToUse = rolFound.ROL_ID;
-              } catch (_e) {
+              } catch {
                 /* warn suppressed */
               }
             }
@@ -2429,12 +2429,12 @@ export default {
               try {
                 await personasService.personaCursos.create({ PER_ID: personaId, CUS_ID: cusIdToUse, ROL_ID: rolIdToUse, ALI_ID: aliIdToSet });
                 /* log suppressed */
-              } catch (_e) {
+              } catch {
                 /* warn suppressed */
               }
             }
           }
-        } catch (_error) {
+        } catch {
           /* warn suppressed */
         }
         
@@ -2457,7 +2457,7 @@ export default {
                   const rolesList = await mantenedoresService.rol.list();
                   const rolFound = rolesList.find(r => r.ROL_DESCRIPCION === this.personaEditada.PER_ROL || String(r.ROL_ID) === String(this.personaEditada.PER_ROL));
                   if (rolFound) rolIdToUse = rolFound.ROL_ID;
-                } catch (_e) {
+                } catch {
                   /* warn suppressed */
                 }
               }
@@ -2507,7 +2507,7 @@ export default {
                 /* log suppressed */
               }
             }
-          } catch (_error) {
+          } catch {
             /* warn suppressed */
           }
         }
@@ -2515,7 +2515,7 @@ export default {
         /* log suppressed */
         await this.cargarPersonas(true);
         // Forzar recarga de filtros para actualizar cache inmediatamente
-        try { await this.cargarOpcionesFiltros(true); } catch(_e){ /* warn suppressed */ }
+        try { await this.cargarOpcionesFiltros(true); } catch{ /* warn suppressed */ }
         
         if (this.filtroAplicado) {
           /* log suppressed */
@@ -2594,10 +2594,8 @@ export default {
         this.confirmModalAnularVisible = false;
         this.personaAAnular = null;
         
-      } catch (error) {
+      } catch {
         /* error suppressed */
-        
-        let mensajeError = 'Error al anular la persona. ';
         
         return;
       }
@@ -2610,7 +2608,7 @@ export default {
           /* log suppressed */
           await this.filtrar();
         }
-      } catch (_error) {
+      } catch {
         /* warn suppressed */
       }
       
@@ -2985,7 +2983,7 @@ export default {
             // cache hit
           }
         }
-      } catch (_e) {
+      } catch {
         /* warn suppressed */
       }
 
@@ -3030,7 +3028,7 @@ export default {
             PER_GRUPO: p.PER_GRUPO
           }));
           localStorage.setItem('gs_personas_cache_v1', JSON.stringify({ timestamp: Date.now(), items: slim }));
-        } catch (_e) {
+        } catch {
           /* warn suppressed */
         }
         
@@ -3095,7 +3093,7 @@ export default {
         } else {
           // force reload
         }
-      } catch (_e) {
+      } catch {
         /* warn suppressed */
       }
       try {
@@ -3220,7 +3218,7 @@ export default {
               ...cursosArray.map(c => ({ value: c.CUR_ID || c.id, label: c.CUR_DESCRIPCION || c.CUR_NOMBRE || (`Curso ${c.CUR_ID || c.id}`) }))
             ];
             // cursos fallback loaded
-          } catch (_err2) {
+          } catch {
             /* warn suppressed */
           }
         }
@@ -3235,7 +3233,7 @@ export default {
               .map(a => ({ value: a.ALI_ID, label: a.ALI_DESCRIPCION }))
           ];
           // alimentaciones loaded
-        } catch (_error) {
+        } catch {
           /* warn suppressed */
           // Fallback a opciones básicas si el endpoint falla
           this.alimentacionOptions = [
@@ -3256,7 +3254,7 @@ export default {
               .filter(grupo => grupo.GRU_VIGENTE !== false)
               .map(grupo => ({ value: grupo.GRU_ID, label: grupo.GRU_DESCRIPCION }))
           ];
-        } catch (_e) {
+        } catch {
           /* warn suppressed */
           this.gruposOptions = [{ value: '', label: 'Seleccione Grupo' }];
         }
@@ -3288,7 +3286,7 @@ export default {
         // reset dependent values when province changes
         if (modo === 'nueva') { persona.PRO_ID = ''; persona.COM_ID = ''; this[comunasKey] = []; }
         /* log suppressed */
-      } catch (_e) {
+      } catch {
         /* warn suppressed */
         this[optionsKey] = [];
       }
@@ -3310,7 +3308,7 @@ export default {
           .map(com => ({ value: com.COM_ID, label: com.COM_DESCRIPCION }));
         if (modo === 'nueva') { persona.COM_ID = ''; }
         /* log suppressed */
-      } catch (_e) {
+      } catch {
         /* warn suppressed */
         this[optionsKey] = [];
       }
@@ -3429,12 +3427,12 @@ export default {
       let encontrados = [];
       try {
         encontrados = await personasService.personas.list({ PER_RUN: run });
-      } catch (_err) {
+      } catch {
         /* warn suppressed */
         try {
           const all = await personasService.personas.list();
           encontrados = Array.isArray(all) ? all.filter(p => String(p.PER_RUN).replace(/[^0-9]/g, '') === run) : [];
-        } catch (_err2) {
+        } catch {
           /* error suppressed */
           encontrados = [];
         }
@@ -4001,7 +3999,7 @@ export default {
           alert(mensaje);
         }
 
-      } catch (_error) {
+      } catch {
         /* error suppressed */
         alert('Error durante la importación. Verifica los datos e intenta nuevamente.');
       } finally {
@@ -4182,7 +4180,7 @@ export default {
         let currentUser = null;
         try {
           currentUser = await authService.getCurrentUser();
-        } catch (_e) {
+        } catch {
           /* warn suppressed */
         }
 
@@ -4251,14 +4249,14 @@ export default {
                 return;
               }
               datosPersona.USU_ID = Number(resolvedId);
-            } catch (_e) {
+            } catch {
               /* warn suppressed */
               alert('No se pudo verificar el usuario en el servidor. Revisa tu conexión e intenta nuevamente.');
               this.guardandoPersona = false;
               return;
             }
           }
-        } catch (_e) {
+        } catch {
           /* warn suppressed */
         }
 
@@ -4331,7 +4329,7 @@ export default {
             const rolesList = await mantenedoresService.rol.list();
             const rolFound = rolesList.find(r => r.ROL_DESCRIPCION === this.personaNueva.PER_ROL || String(r.ROL_ID) === String(this.personaNueva.PER_ROL));
             if (rolFound) rolIdToUse = rolFound.ROL_ID;
-          } catch (_e) {
+          } catch {
             /* warn suppressed */
           }
         }
@@ -4355,10 +4353,9 @@ export default {
         // Crear persona paso a paso (persona -> persona_curso -> vehiculo) para aislar errores
         let personaCreada = null;
         let personaId = null;
-        try {
-          personaCreada = await personasService.personas.create(datosPersona);
-          personaId = personaCreada.PER_ID;
-          /* log suppressed */
+        personaCreada = await personasService.personas.create(datosPersona);
+        personaId = personaCreada.PER_ID;
+        /* log suppressed */
         
         // Si corresponde, crear Persona_Curso para almacenar ALI_ID y obtener PEC_ID
         let personaCursoCreado = null;
@@ -4392,12 +4389,8 @@ export default {
               /* log suppressed */
             }
           }
-        } catch (_err) {
+        } catch {
           /* warn suppressed */
-        }
-        } catch (err) {
-          /* errors suppressed */
-          throw err;
         }
         
         // Guardar Grupo Scout
@@ -4409,7 +4402,7 @@ export default {
               PEG_VIGENTE: this.personaNueva.PEG_VIGENTE !== undefined ? this.personaNueva.PEG_VIGENTE : true
             });
             /* log suppressed */
-          } catch (_error) {
+          } catch {
             /* warn suppressed */
           }
         }
@@ -4425,7 +4418,7 @@ export default {
               PEF_HISTORIAL: this.personaNueva.PEF_HISTORIAL || null
             });
             /* log suppressed */
-          } catch (_error) {
+          } catch {
             /* warn suppressed */
           }
         }
@@ -4441,7 +4434,7 @@ export default {
               PEI_VIGENTE: this.personaNueva.PEI_VIGENTE !== undefined ? this.personaNueva.PEI_VIGENTE : true
             });
             /* log suppressed */
-          } catch (_error) {
+          } catch {
             /* warn suppressed */
           }
         }
