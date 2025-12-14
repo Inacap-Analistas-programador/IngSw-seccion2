@@ -170,59 +170,71 @@ export default {
   obtenerRamas,
   obtenerGrupos,
   // Orquestador: crear Persona -> Persona_Curso -> Persona_Vehiculo
-  createPersonaWithCourseAndVehicle: async ({ personaData, cursoData = null, vehiculoData = null, formadorData = null, ramasData = null }) => {
+  createPersonaWithCourseAndVehicle: async ({ personaData, cursoData = null, vehiculoData = null, formadorData = null, ramasData = null, grupoData = null }) => {
     // 1) Crear persona
     const personaCreada = await personas.create(personaData);
 
     let personaCursoCreado = null;
     let vehiculoCreado = null;
+    let formadorCreado = null;
+    let grupoCreado = null;
+    let ramasCreadas = [];
+
+    // Validar ID de persona (puede venir como per_id o PER_ID según serializador)
+    const perId = personaCreada.per_id || personaCreada.PER_ID;
 
     // 2) Si se solicita crear curso (Persona_Curso)
-    if (cursoData && cursoData.CUS_ID && cursoData.ROL_ID) {
+    if (cursoData && cursoData.cus_id && cursoData.rol_id) {
       const cursoPayload = {
-        PER_ID: personaCreada.PER_ID,
-        CUS_ID: Number(cursoData.CUS_ID),
-        ROL_ID: Number(cursoData.ROL_ID)
+        per_id: perId,
+        cus_id: Number(cursoData.cus_id),
+        rol_id: Number(cursoData.rol_id)
       };
-      // Incluir ALI_ID si fue provisto (Tipo de Alimentación)
-      if (cursoData.ALI_ID !== undefined && cursoData.ALI_ID !== null && cursoData.ALI_ID !== '') {
-        cursoPayload.ALI_ID = Number(cursoData.ALI_ID);
+      // Incluir ali_id si fue provisto
+      if (cursoData.ali_id) {
+        cursoPayload.ali_id = Number(cursoData.ali_id);
       }
+      // Incluir niv_id si fue provisto
+      if (cursoData.niv_id) {
+        cursoPayload.niv_id = Number(cursoData.niv_id);
+      }
+
       try {
         personaCursoCreado = await personaCursos.create(cursoPayload);
       } catch (err) {
-        // Propagar información pero continuar (vehículo depende de PEC_ID)
-        throw new Error(`Error creando Persona_Curso: ${err && err.message ? err.message : err}`);
+        // Propagar información pero continuar
+        console.warn(`Error creando Persona_Curso: ${err && err.message ? err.message : err}`);
+        // No lanzamos error fatal porque queremos intentar guardar lo demás
       }
     }
 
-    // 3) Si se solicita crear vehículo y tenemos PEC_ID (de personaCursoCreado)
+    // 3) Si se solicita crear vehículo
     if (vehiculoData) {
-      // Preferir PEC_ID si es entregado; si no y se creó personaCurso, usar su PEC_ID
-      const pecId = vehiculoData.PEC_ID || (personaCursoCreado && personaCursoCreado.PEC_ID) || null;
-      if (!pecId) {
-        throw new Error('PEC_ID no disponible para crear vehículo. Crea primero Persona_Curso o proporciona PEC_ID.');
-      }
+      // Necesitamos pec_id. Puede venir de personaCursoCreado (si se creó recién) o de input si ya existía (no es el caso común aquí)
+      const pecId = (personaCursoCreado && (personaCursoCreado.pec_id || personaCursoCreado.PEC_ID)) || vehiculoData.pec_id || null;
 
-      const vehPayload = {
-        PEC_ID: pecId,
-        PEV_PATENTE: vehiculoData.PEV_PATENTE,
-        PEV_MARCA: vehiculoData.PEV_MARCA || '',
-        PEV_MODELO: vehiculoData.PEV_MODELO || ''
-      };
+      if (pecId) {
+        const vehPayload = {
+          pec_id: pecId,
+          pev_patente: vehiculoData.pev_patente,
+          pev_marca: vehiculoData.pev_marca || '',
+          pev_modelo: vehiculoData.pev_modelo || ''
+        };
 
-      try {
-        vehiculoCreado = await vehiculos.create(vehPayload);
-      } catch (err) {
-        throw new Error(`Error creando Persona_Vehiculo: ${err && err.message ? err.message : err}`);
+        try {
+          vehiculoCreado = await vehiculos.create(vehPayload);
+        } catch (err) {
+          console.warn(`Error creando Persona_Vehiculo: ${err}`);
+        }
+      } else {
+        console.warn('No se pudo crear vehículo: falta PEC_ID (curso no creado o falló)');
       }
     }
 
     // 4) Si se solicita crear datos de Formador (Persona_Formador)
-    let formadorCreado = null;
     if (formadorData) {
       const formadorPayload = {
-        per_id: personaCreada.PER_ID, // Usar snake_case si el serializer lo espera, o mayusculas si es raw
+        per_id: perId,
         pef_hab_1: formadorData.pef_hab_1 || false,
         pef_hab_2: formadorData.pef_hab_2 || false,
         pef_verif: formadorData.pef_verif || false,
@@ -233,17 +245,14 @@ export default {
         formadorCreado = await formadores.create(formadorPayload);
       } catch (err) {
         console.warn("Error creando Formador:", err);
-        // No lanzar error fatal, permitir continuar
       }
     }
 
     // 5) Si se solicitan Ramas (Persona_Nivel)
-    // ramasData debe ser un array de objetos: { niv_id, ram_id }
-    let ramasCreadas = [];
     if (ramasData && Array.isArray(ramasData) && ramasData.length > 0) {
       for (const rama of ramasData) {
         const ramaPayload = {
-          per_id: personaCreada.PER_ID,
+          per_id: perId,
           niv_id: rama.niv_id,
           ram_id: rama.ram_id
         };
@@ -256,12 +265,42 @@ export default {
       }
     }
 
+    // 6) Si se solicita crear Grupo (Persona_Grupo)
+    if (grupoData && grupoData.gru_id) {
+      const grupoPayload = {
+        per_id: perId,
+        gru_id: grupoData.gru_id,
+        peg_vigente: grupoData.peg_vigente !== undefined ? grupoData.peg_vigente : true
+      };
+      try {
+        grupoCreado = await personaGrupos.create(grupoPayload);
+      } catch (err) {
+        console.warn("Error creando Persona_Grupo:", err);
+      }
+    }
+
+    // 7) Crear estado inicial curso (Persona_Estado_Curso)
+    // Estado 1 = Pre Inscrito (según modelo)
+    if (personaCursoCreado && personaCursoCreado.pec_id) {
+      try {
+        await estadoCursos.create({
+          usu_id: personaData.usu_id, // Same user who created persona
+          pec_id: personaCursoCreado.pec_id,
+          peu_estado: 1, // Pre Inscrito
+          peu_vigente: true
+        });
+      } catch (err) {
+        console.warn("Error creando Estado inicial de Curso:", err);
+      }
+    }
+
     return {
       persona: personaCreada,
       personaCurso: personaCursoCreado,
       vehiculo: vehiculoCreado,
       formador: formadorCreado,
-      ramas: ramasCreadas
+      ramas: ramasCreadas,
+      grupo: grupoCreado
     };
   },
   // Método personalizado para obtener cursos de una persona

@@ -368,8 +368,9 @@
       </div>
 
       <!-- Tabla -->
-      <div class="table-wrapper" v-if="!cargandoPagos && !errorPagos">
-        <table>
+      <!-- Tabla -->
+      <div class="table-container" v-if="!cargandoPagos && !errorPagos">
+        <table class="courses-table">
           <thead>
             <tr>
               <th style="width: 32px;">
@@ -503,8 +504,8 @@
               <BaseButton size="sm" variant="secondary" @click="toggleSelectAllComprobante(false)">Deseleccionar</BaseButton>
             </div>
           </div>
-          <div class="table-wrapper" style="max-height: 300px;">
-            <table>
+          <div class="table-container" style="max-height: 300px;">
+            <table class="courses-table">
               <thead>
                 <tr>
                   <th style="width: 32px;"><input type="checkbox" @change="toggleSelectAllComprobante($event.target.checked)" /></th>
@@ -983,11 +984,22 @@ export default {
     buscarPersonaQ(newQuery) {
       if (this.debounceTimer) clearTimeout(this.debounceTimer);
       this.debounceTimer = setTimeout(() => this.buscarPersonas(newQuery), 300);
-      },
-    // Implementa debounce para la búsqueda en el histórico
+    },
+    /* Se elimina el watcher de filtroQ para búsqueda manual
     filtroQ() {
       if (this.debounceTimer) clearTimeout(this.debounceTimer);
       this.debounceTimer = setTimeout(() => this.cargarPagos(true), 300);
+    }
+    */
+    'formMasivo.GRU_ID'(newVal) {
+      if (newVal) {
+        this.cargarCursosPorGrupo(newVal)
+        this.formMasivo.CUR_ID = null // Reset course selection
+      } else {
+        // Restore all courses if group is cleared
+        this.cursoOptions = [...this.allCursoOptions]
+        this.formMasivo.CUR_ID = null
+      }
     }
   },
   computed: {
@@ -1046,28 +1058,47 @@ export default {
     // ===================================================================
     // MÉTODOS DE CARGA DE DATOS Y CATÁLOGOS
     // ===================================================================
+    
+    // Helpers internos (similares a CRUDcursos/Mantenedores)
+    getData (resp) {
+      if (!resp) return []
+      if (Array.isArray(resp)) return resp
+      const r = resp
+      return r.results || (r.data?.results) || r.data || r.items || []
+    },
+    toUpperKeys (obj) {
+      if (!obj) return {}
+      const newObj = {}
+      Object.keys(obj).forEach(k => {
+        newObj[k.toUpperCase()] = obj[k]
+      })
+      return newObj
+    },
+
     /**
      * Carga los catálogos de cursos y grupos desde la API.
      * Estos datos se usan en los selectores de los formularios.
      */
     async cargarCatalogos () {
       try {
-        const cursosResponse = await cursosService.cursos.list({ page_size: 20 })
-        const cursos = Array.isArray(cursosResponse)
-          ? cursosResponse
-          : cursosResponse.results || []
-        this.cursoOptions = cursos.map(c => ({
+        const cursosResponse = await cursosService.cursos.list({ page_size: 100 }) // Aumentar page_size para traer todos
+        const cursos = this.getData(cursosResponse).map(this.toUpperKeys)
+        
+        this.allCursoOptions = cursos.map(c => ({
           value: c.CUR_ID,
           label: c.CUR_DESCRIPCION || `Curso ${c.CUR_ID}`
         }))
+        this.cursoOptions = [...this.allCursoOptions]
       } catch (e) {
         console.error('Error cargando cursos:', e)
         this.cursoOptions = []
+        this.allCursoOptions = []
       }
 
       try {
         const gruposResponse = await mantenedoresService.grupo.list()
-        const grupos = Array.isArray(gruposResponse) ? gruposResponse : (gruposResponse.results || [])
+        const grupos = this.getData(gruposResponse).map(this.toUpperKeys)
+        
         this.grupoOptions = grupos.map(g => ({
           value: g.GRU_ID,
           label: g.GRU_DESCRIPCION || `Grupo ${g.GRU_ID}`
@@ -1079,7 +1110,8 @@ export default {
 
       try {
         const conceptosResponse = await mantenedoresService.conceptoContable.list();
-        const conceptos = Array.isArray(conceptosResponse) ? conceptosResponse : (conceptosResponse.results || []);
+        const conceptos = this.getData(conceptosResponse).map(this.toUpperKeys)
+        
         this.conceptosOptions = conceptos.map(c => ({
           value: c.COC_ID,
           label: c.COC_DESCRIPCION,
@@ -1088,6 +1120,56 @@ export default {
       } catch (e) {
         console.error('Error cargando conceptos contables:', e);
         this.conceptosOptions = [];
+      }
+    },
+    
+    /**
+     * Carga los cursos en los que están inscritos los miembros de un grupo específico.
+     * @param {number} gruId - El ID del grupo seleccionado.
+     */
+    async cargarCursosPorGrupo (gruId) {
+      if (!gruId) {
+        this.cursoOptions = [...this.allCursoOptions]
+        return
+      }
+
+      try {
+        // Filtrar usando el nuevo backend filter grupo_id en Persona_Curso
+        const response = await personasService.personaCursos.list({ 
+          grupo_id: gruId, 
+          page_size: 1000 
+        })
+        const items = this.getData(response).map(this.toUpperKeys)
+        
+        // Extraer cursos únicos
+        const cursosMap = new Map()
+        items.forEach(item => {
+          // item es un registro Persona_Curso
+          // Necesitamos extraer info del curso
+          // El serializador PersonaCursoSerializer tiene campos como cur_id, cur_descripcion
+          // que agregamos 'flattened' o anidados.
+          // Revisar PersonaCursoSerializer:
+          // cur_id = Int
+          // cur_descripcion = String
+          if (item.CUR_ID && item.CUR_DESCRIPCION) {
+            cursosMap.set(item.CUR_ID, item.CUR_DESCRIPCION)
+          }
+        })
+
+        if (cursosMap.size > 0) {
+          this.cursoOptions = Array.from(cursosMap.entries()).map(([id, label]) => ({
+            value: id,
+            label: label
+          }))
+        } else {
+          // Si no encuentra cursos específicos, mejor no mostrar nada o todos?
+          // La solicitud dice "los cursos en los que se encuentran". Si no hay, lista vacía.
+          this.cursoOptions = []
+        }
+      } catch (e) {
+        console.error('Error cargando cursos del grupo:', e)
+        // Fallback a todos los cursos o vaciar?
+        this.cursoOptions = [] 
       }
     },
 
@@ -1115,8 +1197,8 @@ export default {
         return
       }
 
-      // Normalizar entrada (quitar puntos, espacios)
-      const termClean = termRaw.replace(/\./g, '').replace(/\s+/g, '')
+      // Normalizar entrada (quitar puntos, guiones, espacios)
+      const termClean = termRaw.replace(/[\.\-\s]/g, '')
       let params = {}
 
       // Detectar si es solo dígitos (parcial o completo RUT)
@@ -1139,7 +1221,7 @@ export default {
       this.buscandoPersonas = true
       try {
         const response = await personasService.personas.list(params)
-        const arr = Array.isArray(response) ? response : (response.results || [])
+        const arr = this.getData(response).map(this.toUpperKeys)
         this.personasEncontradas = arr.map(p => ({
           id: p.PER_ID || p.id,
           nombre: `${p.PER_NOMBRES || ''} ${p.PER_APELPTA || ''}`.trim(),
@@ -1202,31 +1284,31 @@ export default {
       this.submittingIndividual = true
       try {
         const fd = new FormData()
-        // Campos esperados por el backend (modelo): PER_ID, CUR_ID, USU_ID, PAP_VALOR, PAP_FECHA_HORA, PAP_OBSERVACION, PAP_TIPO
-        fd.append('PER_ID', this.formInd.personaId)
-        if (this.formInd.CUR_ID) fd.append('CUR_ID', this.formInd.CUR_ID)
-        // PAP_VALOR en vez de PAP_MONTO (modelo usa PAP_VALOR)
-        if (this.formInd.PAP_MONTO !== null && this.formInd.PAP_MONTO !== undefined) fd.append('PAP_VALOR', this.formInd.PAP_MONTO)
-        if (this.formInd.COC_ID) fd.append('COC_ID', this.formInd.COC_ID)
-        // En el backend se usa PAP_FECHA_HORA; enviar la fecha seleccionada como PAP_FECHA_HORA
-        if (this.formInd.PAP_FECHA_PAGO) fd.append('PAP_FECHA_HORA', this.formInd.PAP_FECHA_PAGO)
+        // Campos esperados por el backend (modelo): per_id, cur_id, usu_id, pap_valor, pap_fecha_hora, pap_observacion, pap_tipo
+        fd.append('per_id', this.formInd.personaId)
+        if (this.formInd.CUR_ID) fd.append('cur_id', this.formInd.CUR_ID)
+        // pap_valor en vez de PAP_MONTO (modelo usa pap_valor)
+        if (this.formInd.PAP_MONTO !== null && this.formInd.PAP_MONTO !== undefined) fd.append('pap_valor', this.formInd.PAP_MONTO)
+        if (this.formInd.COC_ID) fd.append('coc_id', this.formInd.COC_ID)
+        // En el backend se usa pap_fecha_hora; enviar la fecha seleccionada como pap_fecha_hora
+        if (this.formInd.PAP_FECHA_PAGO) fd.append('pap_fecha_hora', this.formInd.PAP_FECHA_PAGO)
         if (this.formInd.observacion) {
-          fd.append('PAP_OBSERVACION', this.formInd.observacion)
+          fd.append('pap_observacion', this.formInd.observacion)
         }
         if (this.formInd.file) fd.append('comprobante', this.formInd.file)
-        // PAP_TIPO: 1 = Ingreso, 2 = Egreso
-        fd.append('PAP_TIPO', this.formInd.tipoPago === 'egreso' ? 2 : 1)
-        // PAP_ESTADO: 1 = Pagado (al registrar pago individual asumimos pagado)
-        fd.append('PAP_ESTADO', 1)
+        // pap_tipo: 1 = Ingreso, 2 = Egreso
+        fd.append('pap_tipo', this.formInd.tipoPago === 'egreso' ? 2 : 1)
+        // pap_estado: 1 = Pagado (al registrar pago individual asumimos pagado)
+        fd.append('pap_estado', 1)
 
-        // Intentar resolver USU_ID desde el token para cumplir con el campo requerido en el modelo
+        // Intentar resolver usu_id desde el token para cumplir con el campo requerido en el modelo
         try {
           const current = await authService.getCurrentUser()
-          const usuId = current && (current.id || current.USU_ID || (current.payload && current.payload.USU_ID)) ? (current.id || current.USU_ID || current.payload?.USU_ID) : null
-          if (usuId) fd.append('USU_ID', usuId)
+          const usuId = current && (current.id || current.usu_id || (current.payload && current.payload.usu_id)) ? (current.id || current.usu_id || current.payload?.usu_id) : null
+          if (usuId) fd.append('usu_id', usuId)
         } catch (e) {
           // no bloquear el envío si no se puede resolver el usuario; el backend puede inferirlo
-          console.warn('No se pudo resolver USU_ID localmente:', e && e.message)
+          console.warn('No se pudo resolver usu_id localmente:', e && e.message)
         }
 
         await pagosService.pagos.create(fd)
@@ -1267,13 +1349,13 @@ export default {
         const response = await personasService.personas.list({
           grupo: this.formMasivo.GRU_ID, curso: this.formMasivo.CUR_ID
         })
-        const arr = Array.isArray(response) ? response : (response.results || [])
+        const arr = this.getData(response).map(this.toUpperKeys)
         this.participantes = arr.map(p => ({
           id: p.PER_ID,
           nombre: `${p.PER_NOMBRES || ''} ${p.PER_APELPTA || ''}`.trim(),
           rut: (p.PER_RUN && p.PER_DV) ? `${p.PER_RUN}-${p.PER_DV}` : (p.PER_RUN || ''),
           email: p.PER_MAIL || ''
-                }))
+        }))
         this.seleccionados = []
       } catch {
         this.participantes = []
@@ -1317,21 +1399,29 @@ export default {
     async registrarPagoMasivo () {
       try {
         const fd = new FormData()
-        fd.append('GRU_ID', this.formMasivo.GRU_ID)
-        fd.append('CUR_ID', this.formMasivo.CUR_ID)
-        fd.append('PAP_MONTO', this.formMasivo.PAP_MONTO)
-        fd.append('COC_ID', this.formMasivo.COC_ID);
-        fd.append('PAP_FECHA_PAGO', this.formMasivo.PAP_FECHA_PAGO)
+        // fd.append('GRU_ID', this.formMasivo.GRU_ID) // Likely not needed by backend createMasivo, but kept if custom endpoint uses it
+        fd.append('cur_id', this.formMasivo.CUR_ID)
+        fd.append('pap_valor', this.formMasivo.PAP_MONTO)
+        fd.append('coc_id', this.formMasivo.COC_ID);
+        fd.append('pap_fecha_hora', this.formMasivo.PAP_FECHA_PAGO)
         if (this.formMasivo.observacion) {
-          fd.append('PAP_OBSERVACION', this.formMasivo.observacion)
+          fd.append('pap_observacion', this.formMasivo.observacion)
         }
-        // PAP_TIPO: 1 = Ingreso, 2 = Egreso
-        fd.append('PAP_TIPO', this.formMasivo.tipoPago === 'egreso' ? 2 : 1)
+        // pap_tipo: 1 = Ingreso, 2 = Egreso
+        fd.append('pap_tipo', this.formMasivo.tipoPago === 'egreso' ? 2 : 1)
+        
+        // Append user ID
+        try {
+             const current = await authService.getCurrentUser()
+             const usuId = current && (current.id || current.usu_id || (current.payload && current.payload.usu_id)) ? (current.id || current.usu_id || current.payload?.usu_id) : null
+             if (usuId) fd.append('usu_id', usuId)
+        } catch {}
+
         this.seleccionados.forEach(id =>
-          fd.append('PER_IDS', id)
+          fd.append('per_ids', id) // Ensure backend expects per_ids for list
         )
         fd.append('comprobante', this.formMasivo.file)
-        fd.append('MET_ID', 1) // Asumiendo 1 para Transferencia
+        fd.append('met_id', 1) // Asumiendo 1 para Transferencia
         
         await pagosService.pagos.createMasivo(fd)
 
@@ -1367,68 +1457,56 @@ export default {
      */
     async cargarPagos (force = false) {
       if (this.cargandoPagos && !force) return;
-      this.cargandoPagos = true
-      this.errorPagos = null
+      this.cargandoPagos = true;
+      this.errorPagos = null;
       try {
         let searchTerm = (this.filtroQ || '').trim();
         if (/^\d{7,8}$/.test(searchTerm)) {
           searchTerm = this.formatRut(searchTerm);
         }
 
-        const estadoMap = { pagado: 1, anulado: 2 }
-        const params = {}
-        if (searchTerm) params.search = searchTerm
-        if (this.filtroCurso) params.CUR_ID = this.filtroCurso
-        if (this.filtroGrupo) params.GRU_ID = this.filtroGrupo
+        const estadoMap = { pagado: 1, anulado: 2 };
+        const params = {};
+        if (searchTerm) params.search = searchTerm;
+        if (this.filtroCurso) params.CUR_ID = this.filtroCurso;
+        if (this.filtroGrupo) params.GRU_ID = this.filtroGrupo;
         if (this.filtroEstado) {
-          const mapped = estadoMap[this.filtroEstado]
-          if (mapped) params.estado = mapped
+          const mapped = estadoMap[this.filtroEstado];
+          if (mapped) params.estado = mapped;
         }
 
-        const response = await pagosService.pagos.list(params)
-        let rawList = []
-        if (Array.isArray(response)) rawList = response
-        else if (response && Array.isArray(response.results)) rawList = response.results
+        const response = await pagosService.pagos.list(params);
+        let rawList = [];
+        if (Array.isArray(response)) rawList = response;
+        else if (response && Array.isArray(response.results)) rawList = response.results;
         else {
-          console.warn('La respuesta de la API de pagos no es un array:', response)
-          rawList = []
+          console.warn('La respuesta de la API de pagos no es un array:', response);
+          rawList = [];
         }
 
-        // Normalizar cada pago para que la plantilla use campos consistentes
-        this.pagos = rawList.map(r => {
-          const persona = r.persona || r.PER_ID || null
-          const personaNombre = persona && (persona.PER_NOMBRES || persona.name || persona.nombre)
-            ? `${persona.PER_NOMBRES || ''} ${persona.PER_APELPTA || persona.PER_APELLIDO || ''}`.trim()
-            : (r.persona_nombre || r.PER_NOMBRE || '')
-          const personaRut = persona && (persona.PER_RUN || persona.run)
-            ? `${persona.PER_RUN || persona.run}${persona.PER_DV ? ('-' + persona.PER_DV) : ''}`
-            : (r.persona_rut || r.PER_RUN || '')
-
-          const monto = r.PAP_VALOR !== undefined ? Number(r.PAP_VALOR) : (r.PAP_MONTO !== undefined ? Number(r.PAP_MONTO) : null)
-          const fecha = r.PAP_FECHA_HORA || r.PAP_FECHA_PAGO || r.PAP_FECHA || null
-
+        // Helper to normalize payment objects
+        const normalizePago = (p) => {
           return {
-            // conservar campos originales por si otras funciones los usan
-            ...r,
-            id: r.PAP_ID || r.pap_id || r.id,
-            PAP_ID: r.PAP_ID || r.pap_id || r.id,
-            CUR_ID: r.CUR_ID || r.cur_id,
-            GRU_ID: r.GRU_ID || r.gru_id,
-            COC_ID: r.COC_ID || r.coc_id,
-            PAP_MONTO: monto,
-            PAP_VALOR: monto,
-            PAP_FECHA_PAGO: fecha,
-            persona_nombre: personaNombre || r.persona_nombre || '',
-            persona_rut: personaRut || r.persona_rut || '',
-            MET_DESCRIPCION: r.MET_DESCRIPCION || r.met_descripcion || r.METODO || 'Transferencia'
-          }
-        })
+            ...p,
+            PAP_ID: p.pap_id || p.PAP_ID,
+            CUR_ID: p.cur_id || p.CUR_ID,
+            PAP_MONTO: p.pap_valor || p.PAP_VALOR || p.pap_monto || p.PAP_MONTO,
+            PAP_FECHA_PAGO: p.pap_fecha_hora || p.PAP_FECHA_HORA,
+            MET_DESCRIPCION: p.met_descripcion || p.MET_DESCRIPCION,
+            PAP_RUTA_COMPROBANTE: p.pap_ruta_comprobante || p.PAP_RUTA_COMPROBANTE,
+            persona_nombre: p.persona_nombre || (p.persona ? (p.persona.per_nombres + ' ' + p.persona.per_apelpta) : ''),
+            persona_rut: p.persona_rut || (p.persona ? p.persona.per_run : '')
+          };
+        };
+
+        this.pagos = rawList.map(r => normalizePago(r));
+
       } catch (e) {
-        console.error('Error al cargar pagos:', e)
-        this.pagos = []
-        this.errorPagos = 'No fue posible cargar pagos. Verifica el backend.'
+        console.error('Error al cargar pagos:', e);
+        this.pagos = [];
+        this.errorPagos = 'No fue posible cargar pagos. Verifica el backend.';
       } finally {
-        this.cargandoPagos = false
+        this.cargandoPagos = false;
       }
     },
     /**
@@ -1584,7 +1662,7 @@ export default {
       }
 
       // Reutilizar la lógica de búsqueda por RUT/nombre
-      const termClean = qRaw.replace(/\./g, '').replace(/\s+/g, '')
+      const termClean = qRaw.replace(/[\.\-\s]/g, '')
       let params = {}
       if (/^\d+$/.test(termClean)) {
         params = { run: termClean }
@@ -1602,7 +1680,7 @@ export default {
       this.buscandoPersonasTransferir = true
       try {
         const response = await personasService.personas.list(params)
-        const arr = Array.isArray(response) ? response : (response.results || [])
+        const arr = this.getData(response).map(this.toUpperKeys)
         this.personasEncontradasTransferir = arr.map(p => ({
           id: p.PER_ID || p.id,
           nombre: `${p.PER_NOMBRES || ''} ${p.PER_APELPTA || ''}`.trim(),
@@ -2354,33 +2432,7 @@ label {
   color: #fff !important;
 }
 
-/* Tabla */
-.table-wrapper {
-  overflow-y: auto;
-  overflow-x: auto;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  background: #fff;
-  max-height: calc(100vh - var(--navbar-height) - var(--card-top-offset));
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-
-th,
-td {
-  padding: 10px 10px;
-  border-bottom: 1px solid #f3f4f6;
-  text-align: left;
-}
-
-th {
-  background: #f9fafb;
-  font-weight: 600;
-}
+/* Tabla Legacy Removed - Used .courses-table now */
 
 .placeholder {
   text-align: center;
@@ -2553,36 +2605,91 @@ th {
     width: 140px;
   }
 
-  /* Tabla responsiva */
-  .table-wrapper table thead {
-    display: none;
-  }
-  .table-wrapper table tr {
-    display: block;
-    margin-bottom: 1rem;
-    border: 1px solid #e5e7eb;
+  /* Tabla responsiva y Estándar */
+  .table-container {
+    background-color: #fff;
     border-radius: 8px;
-    padding: 0.5rem;
-  }
-  .table-wrapper table td {
-    display: flex;
-    justify-content: space-between;
-    border-bottom: 1px solid #f3f4f6;
-    padding: 0.75rem 0.5rem;
-  }
-  .table-wrapper table td[data-label]::before {
-    content: attr(data-label);
-    font-weight: 600;
-    margin-right: 1rem;
-    color: #374151;
-  }
-  .table-wrapper table td:last-child {
-    border-bottom: none;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    overflow-x: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+    position: relative;
   }
 
-  /* En móvil, permitir que los botones se envuelvan */
-  .acciones-buttons {
-    flex-wrap: wrap;
+  .courses-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: auto;
+    background-color: #ffffff;
+  }
+
+  .courses-table th, .courses-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #e5e7eb;
+    text-align: left;
+    font-size: 14px;
+    color: #1f2937;
+  }
+
+  .courses-table th {
+    background-color: #f9fafb;
+    font-weight: 600;
+    color: #374151;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    white-space: nowrap;
+  }
+
+  .courses-table tbody tr:hover { background: #f1f5f9; }
+
+  /* Badge Standard */
+  .badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: capitalize;
+  }
+  .badge.pagado { background-color: #d1fae5; color: #065f46; }
+  .badge.anulado { background-color: #fee2e2; color: #991b1b; }
+
+  /* Responsive Cards for Mobile */
+  @media (max-width: 768px) {
+    .courses-table, .courses-table thead, .courses-table tbody, .courses-table th, .courses-table td, .courses-table tr {
+      display: block;
+    }
+    .courses-table thead tr {
+      position: absolute;
+      top: -9999px;
+      left: -9999px;
+    }
+    .courses-table tr {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      padding: 12px;
+    }
+    .courses-table td {
+      border: none;
+      position: relative;
+      padding-left: 50%;
+      padding-top: 6px;
+      padding-bottom: 6px;
+      text-align: right;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .courses-table td::before {
+      content: attr(data-label);
+      font-weight: 600;
+      color: #6b7280;
+      font-size: 13px;
+      text-align: left;
+    }
   }
 }
 

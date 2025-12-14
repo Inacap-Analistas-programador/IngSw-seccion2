@@ -32,11 +32,6 @@
               </option>
             </select>
           </div>
-          
-          <div class="semaphore-container">
-            <div class="semaphore" v-if="cursoSeleccionado" :class="getSemaphoreClass(cursoSeleccionado)"></div>
-            <span class="semaphore-label" v-if="cursoSeleccionado">{{ getEstadoDisplay(cursoSeleccionadoInfo?.CUR_ESTADO) }}</span>
-          </div>
         </div>
       </section>
 
@@ -145,14 +140,24 @@
                 <td>{{ curso.CUR_DESCRIPCION }}</td>
                 <td>{{ curso.CUR_FECHA_HORA }}</td>
                 <td>{{ curso.CUR_LUGAR }}</td>
-                <td>{{ curso.CUR_ESTADO }}</td>
+                <td>
+                  <span class="badge" :class="getBadgeClass(curso.CUR_ESTADO_NUM)">
+                    {{ getEstadoLabel(curso.CUR_ESTADO_NUM) }}
+                  </span>
+                </td>
                 <td>{{ curso.inscripciones }}</td>
                 <td>{{ curso.acreditaciones }}</td>
                 <td>{{ curso.pendientesPago }}</td>
                 <td class="actions">
-                  <BaseButton class="mr-2" variant="info" size="sm" @click="verCurso(curso)">👁 Ver</BaseButton>
-                  <BaseButton class="mr-2" variant="warning" size="sm" @click="editarCurso(curso)">✏ Editar</BaseButton>
-                  <BaseButton variant="secondary" size="sm" @click="abrirModalCambioEstado(curso)">⚡ Estado</BaseButton>
+                  <BaseButton class="mr-2" variant="primary" size="sm" @click="verCurso(curso)">
+                    <AppIcons name="eye" :size="14" /> Ver
+                  </BaseButton>
+                  <BaseButton class="mr-2" variant="primary" size="sm" @click="editarCurso(curso)">
+                    <AppIcons name="edit" :size="14" /> Editar
+                  </BaseButton>
+                  <BaseButton variant="primary" size="sm" @click="abrirDashboard(curso)">
+                    <AppIcons name="chart-bar" :size="14" /> Dashboard
+                  </BaseButton>
                 </td>
               </tr>
             </tbody>
@@ -259,6 +264,7 @@ import dashboardService_2 from '@/services/dashboardService_2'
 import BaseModal from '@/components/BaseModal.vue'
 import BaseSelect from '@/components/BaseSelect.vue'
 import cursosService from '@/services/cursosService.js'
+import AppIcons from '@/components/icons/AppIcons.vue'
 
 export default {
   name: 'DashboardScout',
@@ -268,7 +274,8 @@ export default {
     DataCard,
     BaseButton,
     BaseModal,
-    BaseSelect
+    BaseSelect,
+    AppIcons
   },
   
   setup() {
@@ -440,6 +447,24 @@ export default {
       return estados[estado] || '' // Retornar vacío si no se conoce
     }
 
+    const getBadgeClass = (estadoNum) => {
+      switch (estadoNum) {
+        case 1: return 'badge-success' // Activo
+        case 2: return 'badge-warning' // Finalizado
+        case 3: return 'badge-danger'  // Cancelado
+        default: return 'badge-secondary'
+      }
+    }
+
+    const getEstadoLabel = (estado) => {
+      const estados = {
+        1: 'Activo',
+        2: 'Finalizado',
+        3: 'Cancelado'
+      }
+      return estados[estado] || 'Desconocido'
+    }
+
     const getSemaphoreClass = (cursoId) => {
       if (cursoId === 'todos' || !cursoId) return 'semaphore-gray'
       
@@ -460,7 +485,10 @@ export default {
     }
 
     const editarCurso = (curso) => {
-      router.push(`/cursos/editar/${curso.CUR_ID}`)
+      router.push({
+        name: 'cursoscapacitaciones',
+        query: { search: curso.CUR_DESCRIPCION }
+      })
     }
 
     // CORREGIDO: Mejor manejo de errores en la carga de datos
@@ -656,6 +684,14 @@ export default {
       }
     }
 
+    const abrirDashboard = (curso) => {
+      // Navegar a la vista de detalle del curso (Dashboard específico del curso)
+      router.push({
+        name: 'curso-detalle',
+        params: { id: curso.CUR_ID }
+      })
+    }
+
     return {
       cursoSeleccionado,
       alertas,
@@ -680,6 +716,8 @@ export default {
       removerAlerta,
       getEstadoDisplay,
       getSemaphoreClass,
+      getBadgeClass,
+      getEstadoLabel,
       cursos,
       personas,
       // Change Status
@@ -690,7 +728,9 @@ export default {
       opcionesEstado,
       abrirModalCambioEstado,
       cerrarModalCambioEstado,
-      guardarCambioEstado
+      guardarCambioEstado,
+      // Dashboard Overlay
+      abrirDashboard,
     }
   }
 }
@@ -1248,5 +1288,31 @@ export default {
   margin-top: 0;
   color: #2c5aa0;
   margin-bottom: 8px;
+}
+.badge {
+  display: inline-block;
+  padding: 4px 14px;
+  border-radius: 12px;
+  font-size: 0.9em;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  border: 1px solid transparent;
+}
+.badge-success {
+  background: #28a745;
+  color: #fff;
+}
+.badge-warning {
+  background: #ffc107;
+  color: #212529;
+}
+.badge-danger {
+  background: #dc3545;
+  color: #fff;
+}
+.badge-secondary {
+  background: #6c757d;
+  color: #fff;
 }
 </style>

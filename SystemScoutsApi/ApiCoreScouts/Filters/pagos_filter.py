@@ -1,8 +1,10 @@
 import django_filters
+from django.db.models import Q
 from ..Models.pago_model import *
 
 
 class PagoPersonaFilter(django_filters.FilterSet):
+	search = django_filters.CharFilter(method='filter_search', label='Búsqueda general (Nombre, Run, Email)')
 	persona_run = django_filters.CharFilter(field_name='per_id__per_run', lookup_expr='iexact', label='RUN de la persona')
 	curso_id = django_filters.NumberFilter(field_name='cur_id__cur_id', label='ID del curso')
 	usuario_id = django_filters.NumberFilter(field_name='usu_id__usu_id', label='ID de usuario')
@@ -13,7 +15,17 @@ class PagoPersonaFilter(django_filters.FilterSet):
 
 	class Meta:
 		model = Pago_Persona
-		fields = ['persona_run', 'curso_id', 'usuario_id', 'tipo', 'estado', 'fecha', 'valor']
+		fields = ['search', 'persona_run', 'curso_id', 'usuario_id', 'tipo', 'estado', 'fecha', 'valor']
+
+	def filter_search(self, queryset, name, value):
+		if not value:
+			return queryset
+		return queryset.filter(
+			Q(per_id__per_nombres__icontains=value) |
+			Q(per_id__per_apelpta__icontains=value) |
+			Q(per_id__per_run__icontains=value) |
+			Q(per_id__per_mail__icontains=value)
+		)
 
 
 class ComprobantePagoFilter(django_filters.FilterSet):
