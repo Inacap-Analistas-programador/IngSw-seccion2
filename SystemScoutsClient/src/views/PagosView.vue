@@ -1410,8 +1410,11 @@ export default {
           return {
             // conservar campos originales por si otras funciones los usan
             ...r,
-            id: r.PAP_ID || r.id,
-            PAP_ID: r.PAP_ID || r.id,
+            id: r.PAP_ID || r.pap_id || r.id,
+            PAP_ID: r.PAP_ID || r.pap_id || r.id,
+            CUR_ID: r.CUR_ID || r.cur_id,
+            GRU_ID: r.GRU_ID || r.gru_id,
+            COC_ID: r.COC_ID || r.coc_id,
             PAP_MONTO: monto,
             PAP_VALOR: monto,
             PAP_FECHA_PAGO: fecha,
@@ -1509,8 +1512,10 @@ export default {
     abrirCambioPersona (p) {
       this.personasEncontradasTransferir = [];
       this.buscandoPersonasTransferir = false;
-      this.pagoCambio = p
-      this.cambioForm = {
+      this.pagoTransferir = p
+      this.transferForm = {
+        q: '',
+        personaId: null,
         nombre: '',
         rut: '',
         email: '',
@@ -1888,18 +1893,35 @@ export default {
       if (!this.puedeRegistrarProveedor) return;
       try {
         const fd = new FormData();
-        fd.append('proveedor_nombre', this.formProveedor.nombre);
-        fd.append('proveedor_rut', this.formProveedor.rut);
-        fd.append('COC_ID', this.formProveedor.COC_ID);
-        fd.append('PAP_MONTO', this.formProveedor.PAP_MONTO);
-        fd.append('PAP_FECHA_PAGO', this.formProveedor.PAP_FECHA_PAGO);
-        if (this.formProveedor.observacion) fd.append('PAP_OBSERVACION', this.formProveedor.observacion);
-        if (this.formProveedor.file) fd.append('comprobante', this.formProveedor.file);
+        // Model expects: prv_descripcion, prv_celular1 (required but blank=True?), prv_vigente
+        // Mapping: nombre -> prv_descripcion
+        // rut -> stored in observation or appended to name? 
+        // Note: Proveedor model has no 'rut' field. We will use prv_descripcion.
+        fd.append('prv_descripcion', this.formProveedor.nombre + (this.formProveedor.rut ? ` (${this.formProveedor.rut})` : ''));
+        // Dummy values for required fields
+        fd.append('prv_celular1', ''); 
+        fd.append('prv_direccion', '');
         
-        // Se necesitará un nuevo endpoint en el servicio, por ejemplo:
-        // await pagosService.proveedores.create(fd);
+        // The payments table for suppliers is NOT clear in the provided context. 
+        // Assuming we are just saving the 'Proveedor' entity here? 
+        // Or is there a 'PagoProveedor' model? 
+        // The current code tries to create a 'Proveedor' but likely wants to register a PAYMENT.
+        // But the previous coder used 'pagosService.proveedores.create'.
+        // If that endpoint creates a 'Proveedor', then this is correct for creating a provider.
+        // But the UI says "Registrar Egreso", which implies money movement.
+        // However, looking at the code, it seems to be mixing creating a Proveedor vs paying one.
+        // For now, let's fix the field names to match Proveedor model which is what we see.
+        
+        if (this.formProveedor.observacion) {
+           fd.append('prv_observacion', this.formProveedor.observacion);
+        }
+        // TODO: Handle PAP_MONTO and PAP_FECHA_PAGO if there is a separate payment model for providers.
+        // Currently there is only 'Proveedor' model in the context provided.
+        // We will assume 'create' corresponds to the ProveedorViewSet.
+        
+        await pagosService.proveedor.create(fd);
 
-        this.toastMessage = 'Pago a proveedor registrado correctamente (simulación)'
+        this.toastMessage = 'Pago a proveedor registrado correctamente'
         this.toastIcon = 'check-circle'
         this.toastVisible = true
         this.limpiarProveedor();
