@@ -53,7 +53,10 @@ class CursoViewSet(viewsets.ModelViewSet):
             Prefetch(
                 'curso_formador_set',
                 Curso_Formador.objects.select_related('per_id', 'rol_id', 'cus_id__cur_id')
-            )
+            ),
+            'curso_fecha_set',
+            'curso_cuota_set',
+            'curso_alimentacion_set',
         ).order_by('cur_estado', 'cur_descripcion')
 
 class CursoCuotaViewSet(viewsets.ModelViewSet):
@@ -73,6 +76,8 @@ class CursoCuotaViewSet(viewsets.ModelViewSet):
 
 class CursoFechaViewSet(viewsets.ModelViewSet):
     serializer_class = MC_S.CursoFechaSerializer
+    filterset_class = CF.CursoFechaFilter
+    pagination_class = StandardResultsSetPagination
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated, PerfilPermission]
     app_name = "Cursos"

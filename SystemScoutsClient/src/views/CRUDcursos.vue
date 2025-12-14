@@ -451,7 +451,8 @@
     </BaseModal>
 
     <!-- Modal Cambio de Estado -->
-    <BaseModal :show="mostrarModalCambioEstado" @close="cerrarModalCambioEstado" title="Cambio de Estado">
+    <BaseModal v-model="mostrarModalCambioEstado" @close="cerrarModalCambioEstado">
+      <template #title>Cambio de Estado</template>
       <div class="modal-form">
         <div class="form-group">
           <label>Estado Actual: <strong>{{ cursoParaCambioEstado ? (opcionesEstado.find(e => e.value === cursoParaCambioEstado.CUR_ESTADO)?.text || 'Desconocido') : '-' }}</strong></label>
@@ -700,12 +701,7 @@ const lastController = { ctrl: null }
 
 async function cargarDatos({ page = 1, page_size = 20, search = '' } = {}) {
   if (isLoadingData.value) return
-  // Requerir al menos un filtro antes de cargar
-  if (!hasAnyFilter.value) {
-    cursosList.value = []
-    cursosFiltrados.value = []
-    return
-  }
+  // Permitir carga sin filtros para mostrar todos los cursos inicialmente
   isLoadingData.value = true
   isLoading.value = true
 
@@ -734,7 +730,10 @@ async function cargarDatos({ page = 1, page_size = 20, search = '' } = {}) {
     // Catálogos y recursos asociados (usar servicios concretos)
     // Solo solicitar catálogos que aún no estén cargados en memoria.
     const fetchPromises = []
-
+    
+    // Solo solicitar catálogos reales (personas, tipos, ramas, comunas, cargos, roles, alimentacion).
+    // Secciones, Fechas, Cuotas, etc. vienen anidados en el curso gracias al nuevo Serializer.
+    
     const personasPromise = (Array.isArray(personasList.value) && personasList.value.length) ? Promise.resolve(personasList.value) : personasService.personas.list()
     fetchPromises.push(personasPromise)
 
@@ -744,11 +743,8 @@ async function cargarDatos({ page = 1, page_size = 20, search = '' } = {}) {
     const ramasPromise = (Array.isArray(ramaslist.value) && ramaslist.value.length) ? Promise.resolve(ramaslist.value) : mantenedores.rama.list()
     fetchPromises.push(ramasPromise)
 
-    const seccionesPromise = (Array.isArray(seccionesList.value) && seccionesList.value.length) ? Promise.resolve(seccionesList.value) : seccionesApi.list()
-    fetchPromises.push(seccionesPromise)
-
-    const fechasPromise = (Array.isArray(fechasCursoList.value) && fechasCursoList.value.length) ? Promise.resolve(fechasCursoList.value) : fechasApi.list()
-    fetchPromises.push(fechasPromise)
+    // seccionesApi.list y fechasApi.list ELIMINADOS de aquí por ineficientes (traían todo paginado).
+    // Ahora vienen en el payload del curso.
 
     const comunasPromise = (Array.isArray(comunasList?.value) && comunasList.value.length) ? Promise.resolve(comunasList.value) : mantenedores.comuna.list()
     fetchPromises.push(comunasPromise)
@@ -762,40 +758,43 @@ async function cargarDatos({ page = 1, page_size = 20, search = '' } = {}) {
     const alimentacionPromise = (Array.isArray(alimentacionCatalogo.value) && alimentacionCatalogo.value.length) ? Promise.resolve(alimentacionCatalogo.value) : mantenedores.alimentacion.list()
     fetchPromises.push(alimentacionPromise)
 
-    const [personasApi, tiposApi, ramasApi, seccionesData, fechasData, comunasApi, cargosApi, rolesApi, alimentacionCat] = await Promise.all(fetchPromises)
+    const [personasApi, tiposApi, ramasApi, comunasApi, cargosApi, rolesApi, alimentacionCat] = await Promise.all(fetchPromises)
 
     // Normalizar cursos (puede venir paginado)
     let cursosArray = Array.isArray(cursosData) ? cursosData : (cursosData?.results || [])
     cursosArray = cursosArray.map(toUpperKeys)
 
-    // Normalizar listas relacionadas
-    const fechasListNorm = (Array.isArray(fechasData) ? fechasData : (fechasData?.results || [])).map(toUpperKeys)
-    const seccionesListNorm = (Array.isArray(seccionesData) ? seccionesData : (seccionesData?.results || [])).map(toUpperKeys)
-    // formadoresListNorm, alimentacionListNorm, cuotasListNorm, coordinadoresListNorm se cargan bajo demanda
-
-    // Enlazar fechas a cada curso para mostrar rango en la tabla si tenemos fechas
-    const fechasByCurso = fechasListNorm.reduce((acc, f) => {
-      const id = f.CUR_ID
-      if (!acc[id]) acc[id] = []
-      acc[id].push(f)
-      return acc
-    }, {})
-
-    cursosList.value = cursosArray.map(c => ({
-      ...c,
-      fechas: fechasByCurso[c.CUR_ID] ? fechasByCurso[c.CUR_ID].sort((a,b) => new Date(a.CUF_FECHA_INICIO) - new Date(b.CUF_FECHA_INICIO)) : []
-    }))
-
-    // Asignar catálogos (normalizar resultados si vienen paginados)
+    // Asignar catálogos
     personasList.value = (Array.isArray(personasApi) ? personasApi : (personasApi?.results || [])).map(toUpperKeys)
     tiposCursoList.value = (Array.isArray(tiposApi) ? tiposApi : (tiposApi?.results || [])).map(toUpperKeys)
     ramaslist.value = (Array.isArray(ramasApi) ? ramasApi : (ramasApi?.results || [])).map(toUpperKeys)
-    fechasCursoList.value = fechasListNorm
-    seccionesList.value = seccionesListNorm
     comunasList.value = (Array.isArray(comunasApi) ? comunasApi : (comunasApi?.results || [])).map(toUpperKeys)
     cargosList.value = (Array.isArray(cargosApi) ? cargosApi : (cargosApi?.results || [])).map(toUpperKeys)
     rolesList.value = (Array.isArray(rolesApi) ? rolesApi : (rolesApi?.results || [])).map(toUpperKeys)
     alimentacionCatalogo.value = (Array.isArray(alimentacionCat) ? alimentacionCat : (alimentacionCat?.results || [])).map(toUpperKeys)
+
+    // Procesar cursos para extraer listas anidadas normalizadas
+    cursosList.value = cursosArray.map(c => {
+      // Normalizar sub-listas si existen (backend response > toUpperKeys > propiedades FECHAS/SECCIONES/etc)
+      // Nota: toUpperKeys mantiene las claves originales, así que 'fechas' o 'FECHAS' funciona.
+      const rawFechas = c.FECHAS || c.fechas || []
+      const rawSecciones = c.SECCIONES || c.secciones || []
+      const rawFormadores = c.FORMADORES || c.formadores || []
+      
+      const fechasNorm = rawFechas.map(toUpperKeys).sort((a,b) => new Date(a.CUF_FECHA_INICIO) - new Date(b.CUF_FECHA_INICIO))
+      
+      return {
+        ...c,
+        fechas: fechasNorm, // Sobrescribir con normalizado
+        secciones: rawSecciones.map(toUpperKeys),
+        formadores: rawFormadores.map(toUpperKeys) 
+      }
+    })
+    
+    // Listas globales que antes se llenaban con TODO, ahora las dejamos vacías o con lo que traiga el primer curso si hace falta,
+    // pero realmente deberían ser específicas por curso.
+    fechasCursoList.value = [] 
+    seccionesList.value = []
 
     // Filtrado cliente como fallback; cuando uses búsqueda remota, pasar `search` hará que el servidor filtre
     aplicarFiltros()
@@ -814,11 +813,11 @@ async function cargarDatos({ page = 1, page_size = 20, search = '' } = {}) {
 }
 
 onMounted(() => {
-  // No cargar cursos sin filtros: el usuario debe aplicar al menos un filtro
-  // cargarDatos() se invocará cuando el usuario presione Buscar y haya filtros
-  // Cargar catálogos para filtros sin cargar cursos
   preloadCatalogosMin()
-  // Reintento diferido: si no había token al montar (login recién hecho en otra vista), esperar y reintentar
+  // Cargar datos inicialmente sin esperar filtros manuales
+  cargarDatos()
+  
+  // Reintento diferido: si no había token al montar (login recién hecho en otra pestaña), esperar y reintentar
   const tokenEarly = localStorage.getItem('accessToken') || localStorage.getItem('token')
   if (!tokenEarly) {
     setTimeout(() => {
@@ -936,13 +935,12 @@ function aplicarFiltros() {
   let items = [...cursosList.value]
   const { searchQuery, estado, tipoCurso, responsable } = filtros.value
   if (!hasAnyFilter.value) {
-    cursosFiltrados.value = []
+    cursosFiltrados.value = items
     return
   }
-  // Si no hay cursos cargados aún, solicitar al servidor con los filtros actuales
+  // Si no hay cursos cargados aún, solicitar al servidor
   if (!items.length) {
-    const search = (searchQuery || '').trim()
-    cargarDatos({ page: 1, page_size: 20, search })
+    cargarDatos({ page: 1, page_size: 20 })
     return
   }
   if (searchQuery) {
@@ -1543,10 +1541,13 @@ async function guardarCambioEstado() {
     return
   }
   
-  const selectedValue = typeof nuevoEstado.value === 'object' && nuevoEstado.value !== null
-    ? (nuevoEstado.value.value ?? nuevoEstado.value.VALOR ?? nuevoEstado.value)
-    : (nuevoEstado.value ?? nuevoEstado)
-  const estadoNumber = Number(selectedValue)
+  // Simplificar extracción de valor
+  let rawValue = nuevoEstado.value
+  if (rawValue && typeof rawValue === 'object') {
+     rawValue = rawValue.value ?? rawValue.VALOR ?? rawValue.id
+  }
+  const estadoNumber = Number(rawValue)
+  
   const estadoTexto = opcionesEstado.find(e => e.value === estadoNumber)?.text || 'Desconocido'
   if (!window.confirm(`¿Confirma cambiar el estado a "${estadoTexto}"?`)) return
   
@@ -1554,17 +1555,24 @@ async function guardarCambioEstado() {
   isDisabling.value = true
   
   try {
-    const actualizadoRaw = await cursosApi.partialUpdate(cursoParaCambioEstado.value.CUR_ID, toLowerKeys({ CUR_ESTADO: estadoNumber }))
+    const payload = toLowerKeys({ CUR_ESTADO: estadoNumber })
+    const actualizadoRaw = await cursosApi.partialUpdate(cursoParaCambioEstado.value.CUR_ID, payload)
     const actualizado = toUpperKeys(actualizadoRaw)
+    
+    // Actualizar en listas
     Object.assign(cursoParaCambioEstado.value, actualizado)
+    
+    // Actualizar también en cursosList global si referencia es distinta
+    const idx = cursosList.value.findIndex(c => c.CUR_ID === actualizado.CUR_ID)
+    if (idx !== -1) {
+       cursosList.value[idx] = { ...cursosList.value[idx], ...actualizado }
+    }
+
     aplicarFiltros()
     mostrarAlerta('Estado actualizado exitosamente.', 'success')
     cerrarModalCambioEstado()
   } catch (e) {
     console.error('Error al cambiar estado:', e)
-    console.error('Response:', e.response?.data)
-    console.error('Error al cambiar estado:', e)
-    console.error('Response:', e.response?.data)
     mostrarAlerta(`Error al cambiar estado: ${e.response?.data?.detail || e.message || 'Error desconocido'}`, 'error')
   } finally {
     isDisabling.value = false
