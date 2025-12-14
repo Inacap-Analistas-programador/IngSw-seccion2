@@ -769,7 +769,6 @@ async function cargarDatos({ page = 1, page_size = 20, search = '' } = {}) {
     let cursosArray = getData(cursosData)
     cursosArray = cursosArray.map(toUpperKeys)
 
-<<<<<<< HEAD
     // Asignar catálogos
     personasList.value = (Array.isArray(personasApi) ? personasApi : (personasApi?.results || [])).map(toUpperKeys)
     tiposCursoList.value = (Array.isArray(tiposApi) ? tiposApi : (tiposApi?.results || [])).map(toUpperKeys)
@@ -778,35 +777,6 @@ async function cargarDatos({ page = 1, page_size = 20, search = '' } = {}) {
     cargosList.value = (Array.isArray(cargosApi) ? cargosApi : (cargosApi?.results || [])).map(toUpperKeys)
     rolesList.value = (Array.isArray(rolesApi) ? rolesApi : (rolesApi?.results || [])).map(toUpperKeys)
     alimentacionCatalogo.value = (Array.isArray(alimentacionCat) ? alimentacionCat : (alimentacionCat?.results || [])).map(toUpperKeys)
-=======
-    // Normalizar listas relacionadas
-    const fechasListNorm = getData(fechasData).map(toUpperKeys)
-    const seccionesListNorm = getData(seccionesData).map(toUpperKeys)
-
-    // Enlazar fechas a cada curso para mostrar rango en la tabla si tenemos fechas
-    const fechasByCurso = fechasListNorm.reduce((acc, f) => {
-      const id = f.CUR_ID
-      if (!acc[id]) acc[id] = []
-      acc[id].push(f)
-      return acc
-    }, {})
-
-    cursosList.value = cursosArray.map(c => ({
-      ...c,
-      fechas: fechasByCurso[c.CUR_ID] ? fechasByCurso[c.CUR_ID].sort((a,b) => new Date(a.CUF_FECHA_INICIO) - new Date(b.CUF_FECHA_INICIO)) : []
-    }))
-
-    // Asignar catálogos
-    personasList.value = getData(personasApi).map(toUpperKeys)
-    tiposCursoList.value = getData(tiposApi).map(toUpperKeys)
-    ramaslist.value = getData(ramasApi).map(toUpperKeys)
-    fechasCursoList.value = fechasListNorm
-    seccionesList.value = seccionesListNorm
-    comunasList.value = getData(comunasApi).map(toUpperKeys)
-    cargosList.value = getData(cargosApi).map(toUpperKeys)
-    rolesList.value = getData(rolesApi).map(toUpperKeys)
-    alimentacionCatalogo.value = getData(alimentacionCat).map(toUpperKeys)
->>>>>>> temp-work
 
     // Procesar cursos para extraer listas anidadas normalizadas
     cursosList.value = cursosArray.map(c => {
