@@ -1759,7 +1759,7 @@ export default {
         try {
           const cursosData = await personasService.obtenerCursosPersona(this.personaEditada.PER_ID);
           this.personaEditada.cursosHistorial = cursosData || [];
-        } catch (error) {
+        } catch (_error) {
           /* error suppressed */
           this.personaEditada.cursosHistorial = [];
         }
@@ -1820,7 +1820,7 @@ export default {
               this.personaEditada.REG_ID = provinciaActual.REG_ID;
             }
           }
-        } catch (error) {
+        } catch (_error) {
           /* warn suppressed */
         }
       }
@@ -1954,7 +1954,7 @@ export default {
         const resp = await personasService.personas.list(params, { signal: controller.signal });
         tFetchEnd = performance && performance.now ? performance.now() : Date.now();
         fetched = Array.isArray(resp) ? resp : (resp && Array.isArray(resp.results) ? resp.results : []);
-      } catch (e) {
+      } catch (_e) {
         fetched = [];
       }
 
@@ -2247,9 +2247,8 @@ export default {
           TIENE_VEHICULO: this.personaEditada.TIENE_VEHICULO !== undefined ? this.personaEditada.TIENE_VEHICULO : false
         };
         
-        let personaActualizada;
         try {
-          personaActualizada = await personasService.personas.partialUpdate(
+          await personasService.personas.partialUpdate(
             this.personaEditada.PER_ID, 
             datosActualizados
           );
@@ -2299,7 +2298,7 @@ export default {
               });
               /* log suppressed */
             }
-          } catch (error) {
+          } catch (_error) {
             /* warn suppressed */
           }
         }
@@ -2327,7 +2326,7 @@ export default {
               });
               /* log suppressed */
             }
-          } catch (error) {
+          } catch (_error) {
             /* warn suppressed */
           }
         }
@@ -2355,7 +2354,7 @@ export default {
               });
               /* log suppressed */
             }
-          } catch (error) {
+          } catch (_error) {
             /* warn suppressed */
           }
         }
@@ -2395,7 +2394,7 @@ export default {
               });
               /* log suppressed */
             }
-          } catch (error) {
+          } catch (_error) {
             /* warn suppressed */
           }
         }
@@ -2421,7 +2420,7 @@ export default {
                 const rolesList = await mantenedoresService.rol.list();
                 const rolFound = rolesList.find(r => r.ROL_DESCRIPCION === this.personaEditada.PER_ROL || String(r.ROL_ID) === String(this.personaEditada.PER_ROL));
                 if (rolFound) rolIdToUse = rolFound.ROL_ID;
-              } catch (e) {
+              } catch (_e) {
                 /* warn suppressed */
               }
             }
@@ -2430,12 +2429,12 @@ export default {
               try {
                 await personasService.personaCursos.create({ PER_ID: personaId, CUS_ID: cusIdToUse, ROL_ID: rolIdToUse, ALI_ID: aliIdToSet });
                 /* log suppressed */
-              } catch (e) {
+              } catch (_e) {
                 /* warn suppressed */
               }
             }
           }
-        } catch (error) {
+        } catch (_error) {
           /* warn suppressed */
         }
         
@@ -2458,7 +2457,7 @@ export default {
                   const rolesList = await mantenedoresService.rol.list();
                   const rolFound = rolesList.find(r => r.ROL_DESCRIPCION === this.personaEditada.PER_ROL || String(r.ROL_ID) === String(this.personaEditada.PER_ROL));
                   if (rolFound) rolIdToUse = rolFound.ROL_ID;
-                } catch (e) {
+                } catch (_e) {
                   /* warn suppressed */
                 }
               }
@@ -2508,7 +2507,7 @@ export default {
                 /* log suppressed */
               }
             }
-          } catch (error) {
+          } catch (_error) {
             /* warn suppressed */
           }
         }
@@ -2516,7 +2515,7 @@ export default {
         /* log suppressed */
         await this.cargarPersonas(true);
         // Forzar recarga de filtros para actualizar cache inmediatamente
-        try { await this.cargarOpcionesFiltros(true); } catch(e){ /* warn suppressed */ }
+        try { await this.cargarOpcionesFiltros(true); } catch(_e){ /* warn suppressed */ }
         
         if (this.filtroAplicado) {
           /* log suppressed */
@@ -2550,8 +2549,6 @@ export default {
           mensajeError += 'Persona no encontrada.';
         } else if (error.status === 500) {
           mensajeError += 'Error interno del servidor.';
-        } else {
-          mensajeError += 'Verifica tu conexión e intenta nuevamente.';
         }
         
         
@@ -2588,7 +2585,7 @@ export default {
         
         /* log suppressed */
         
-        const resultado = await personasService.personas.partialUpdate(this.personaAAnular.PER_ID, datosAnulacion);
+        await personasService.personas.partialUpdate(this.personaAAnular.PER_ID, datosAnulacion);
         
         /* logs suppressed */
         
@@ -2601,9 +2598,6 @@ export default {
         /* error suppressed */
         
         let mensajeError = 'Error al anular la persona. ';
-        if (error.message) {
-          mensajeError += error.message;
-        }
         
         return;
       }
@@ -2616,7 +2610,7 @@ export default {
           /* log suppressed */
           await this.filtrar();
         }
-      } catch (error) {
+      } catch (_error) {
         /* warn suppressed */
       }
       
@@ -2646,7 +2640,7 @@ export default {
         
         
         
-        const resultado = await personasService.personas.partialUpdate(this.personaAReactivar.PER_ID, datosReactivacion);
+        await personasService.personas.partialUpdate(this.personaAReactivar.PER_ID, datosReactivacion);
         
         
         
@@ -2991,7 +2985,7 @@ export default {
             // cache hit
           }
         }
-      } catch (e) {
+      } catch (_e) {
         /* warn suppressed */
       }
 
@@ -3036,7 +3030,7 @@ export default {
             PER_GRUPO: p.PER_GRUPO
           }));
           localStorage.setItem('gs_personas_cache_v1', JSON.stringify({ timestamp: Date.now(), items: slim }));
-        } catch (e) {
+        } catch (_e) {
           /* warn suppressed */
         }
         
@@ -3101,7 +3095,7 @@ export default {
         } else {
           // force reload
         }
-      } catch (e) {
+      } catch (_e) {
         /* warn suppressed */
       }
       try {
@@ -3226,7 +3220,7 @@ export default {
               ...cursosArray.map(c => ({ value: c.CUR_ID || c.id, label: c.CUR_DESCRIPCION || c.CUR_NOMBRE || (`Curso ${c.CUR_ID || c.id}`) }))
             ];
             // cursos fallback loaded
-          } catch (err2) {
+          } catch (_err2) {
             /* warn suppressed */
           }
         }
@@ -3241,7 +3235,7 @@ export default {
               .map(a => ({ value: a.ALI_ID, label: a.ALI_DESCRIPCION }))
           ];
           // alimentaciones loaded
-        } catch (error) {
+        } catch (_error) {
           /* warn suppressed */
           // Fallback a opciones básicas si el endpoint falla
           this.alimentacionOptions = [
@@ -3262,7 +3256,7 @@ export default {
               .filter(grupo => grupo.GRU_VIGENTE !== false)
               .map(grupo => ({ value: grupo.GRU_ID, label: grupo.GRU_DESCRIPCION }))
           ];
-        } catch (e) {
+        } catch (_e) {
           /* warn suppressed */
           this.gruposOptions = [{ value: '', label: 'Seleccione Grupo' }];
         }
@@ -3294,7 +3288,7 @@ export default {
         // reset dependent values when province changes
         if (modo === 'nueva') { persona.PRO_ID = ''; persona.COM_ID = ''; this[comunasKey] = []; }
         /* log suppressed */
-      } catch (e) {
+      } catch (_e) {
         /* warn suppressed */
         this[optionsKey] = [];
       }
@@ -3316,7 +3310,7 @@ export default {
           .map(com => ({ value: com.COM_ID, label: com.COM_DESCRIPCION }));
         if (modo === 'nueva') { persona.COM_ID = ''; }
         /* log suppressed */
-      } catch (e) {
+      } catch (_e) {
         /* warn suppressed */
         this[optionsKey] = [];
       }
@@ -3435,12 +3429,12 @@ export default {
       let encontrados = [];
       try {
         encontrados = await personasService.personas.list({ PER_RUN: run });
-      } catch (err) {
+      } catch (_err) {
         /* warn suppressed */
         try {
           const all = await personasService.personas.list();
           encontrados = Array.isArray(all) ? all.filter(p => String(p.PER_RUN).replace(/[^0-9]/g, '') === run) : [];
-        } catch (err2) {
+        } catch (_err2) {
           /* error suppressed */
           encontrados = [];
         }
@@ -3929,7 +3923,7 @@ export default {
             /* log suppressed */
 
             try {
-              const response = await personasService.personas.create(datosPersona);
+              await personasService.personas.create(datosPersona);
               personasImportadas++;
               /* log suppressed */
             } catch (createError) {
@@ -4007,7 +4001,7 @@ export default {
           alert(mensaje);
         }
 
-      } catch (error) {
+      } catch (_error) {
         /* error suppressed */
         alert('Error durante la importación. Verifica los datos e intenta nuevamente.');
       } finally {
@@ -4188,7 +4182,7 @@ export default {
         let currentUser = null;
         try {
           currentUser = await authService.getCurrentUser();
-        } catch (e) {
+        } catch (_e) {
           /* warn suppressed */
         }
 
@@ -4257,14 +4251,14 @@ export default {
                 return;
               }
               datosPersona.USU_ID = Number(resolvedId);
-            } catch (e) {
+            } catch (_e) {
               /* warn suppressed */
               alert('No se pudo verificar el usuario en el servidor. Revisa tu conexión e intenta nuevamente.');
               this.guardandoPersona = false;
               return;
             }
           }
-        } catch (e) {
+        } catch (_e) {
           /* warn suppressed */
         }
 
@@ -4337,7 +4331,7 @@ export default {
             const rolesList = await mantenedoresService.rol.list();
             const rolFound = rolesList.find(r => r.ROL_DESCRIPCION === this.personaNueva.PER_ROL || String(r.ROL_ID) === String(this.personaNueva.PER_ROL));
             if (rolFound) rolIdToUse = rolFound.ROL_ID;
-          } catch (e) {
+          } catch (_e) {
             /* warn suppressed */
           }
         }
@@ -4368,8 +4362,7 @@ export default {
         
         // Si corresponde, crear Persona_Curso para almacenar ALI_ID y obtener PEC_ID
         let personaCursoCreado = null;
-        try {
-          if (cursoData && cursoData.CUS_ID && cursoData.ROL_ID) {
+        if (cursoData && cursoData.CUS_ID && cursoData.ROL_ID) {
             const cursoPayload = {
               PER_ID: personaId,
               CUS_ID: Number(cursoData.CUS_ID),
@@ -4381,9 +4374,6 @@ export default {
             personaCursoCreado = await personasService.personaCursos.create(cursoPayload);
             /* log suppressed */
           }
-        } catch (err) {
-          /* warn suppressed */
-        }
 
         // Crear vehículo si se proporcionó y tenemos PEC_ID
         try {
@@ -4398,11 +4388,11 @@ export default {
                 PEV_MARCA: vehiculoData.PEV_MARCA || '',
                 PEV_MODELO: vehiculoData.PEV_MODELO || ''
               };
-              const vehCreado = await personasService.vehiculos.create(vehPayload);
+              await personasService.vehiculos.create(vehPayload);
               /* log suppressed */
             }
           }
-        } catch (err) {
+        } catch (_err) {
           /* warn suppressed */
         }
         } catch (err) {
@@ -4419,7 +4409,7 @@ export default {
               PEG_VIGENTE: this.personaNueva.PEG_VIGENTE !== undefined ? this.personaNueva.PEG_VIGENTE : true
             });
             /* log suppressed */
-          } catch (error) {
+          } catch (_error) {
             /* warn suppressed */
           }
         }
@@ -4435,7 +4425,7 @@ export default {
               PEF_HISTORIAL: this.personaNueva.PEF_HISTORIAL || null
             });
             /* log suppressed */
-          } catch (error) {
+          } catch (_error) {
             /* warn suppressed */
           }
         }
@@ -4451,7 +4441,7 @@ export default {
               PEI_VIGENTE: this.personaNueva.PEI_VIGENTE !== undefined ? this.personaNueva.PEI_VIGENTE : true
             });
             /* log suppressed */
-          } catch (error) {
+          } catch (_error) {
             /* warn suppressed */
           }
         }
@@ -4497,8 +4487,8 @@ export default {
                 const rolesList = await mantenedoresService.rol.list();
                 const rolFound = rolesList.find(r => r.ROL_DESCRIPCION === this.personaNueva.PER_ROL || String(r.ROL_ID) === String(this.personaNueva.PER_ROL));
                 if (rolFound) rolIdToUse = rolFound.ROL_ID;
-              } catch (e) {
-                console.warn('No se pudo obtener lista de roles para resolver ROL_ID:', e);
+              } catch (_e) {
+                console.warn('No se pudo obtener lista de roles para resolver ROL_ID:', _e);
               }
             }
             if (!rolIdToUse) {
