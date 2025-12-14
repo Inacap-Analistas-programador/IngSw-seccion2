@@ -1,6 +1,5 @@
 <template>
   <div class="formulario">
-    <h1 class="titulo-pre-registro">Pre-Registro</h1>
     <div class="form-outer">
       <form class="form-inner">
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
@@ -9,45 +8,44 @@
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
   <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
   
+    <!--::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
   <!--::::::::::::::::::::::::::::::::::CURSO DE PARTICIPACIÓN::::::::::::::::::::::::::::::::::::::::-->
   <section>
     <div class="seleccioneCurso"></div> <!-- Titulo Eleccion de Cursos-->
           <h2 class="titulo-seleccion-curso">Selección de Curso</h2>
 
-    <div class="curso-container">
-      <div class="campos-curso-seccion">
-        <div class="campo-curso">
-          <select id="curso" v-model="cursoSeleccionado" required @change="handleCursoChange" style="color: #000;">
-            <option value="" disabled selected hidden></option>
-            <option v-for="curso in listaCursosApi" :key="curso.cur_id" :value="curso.cur_id" style="color: #000;">
+    <div class="curso-root-container">
+      <!-- Left Column: Inputs -->
+      <div class="curso-inputs-column">
+        <div class="campo" style="margin-bottom: 20px;">
+          <label for="curso">¿En qué curso participará?</label>
+          <select id="curso" v-model="cursoSeleccionado" required @change="handleCursoChange">
+            <option value="" disabled selected hidden>Seleccione un curso</option>
+            <option v-for="curso in listaCursosApi" :key="curso.cur_id" :value="curso.cur_id">
               {{ curso.cur_descripcion }}
             </option>
           </select>
-          <label for="curso">
-            <span style="transition-delay:450ms">¿</span><span style="transition-delay:400ms">E</span><span style="transition-delay:350ms">n</span><span style="transition-delay:300ms"> </span><span style="transition-delay:250ms">q</span><span style="transition-delay:200ms">u</span><span style="transition-delay:150ms">é</span><span style="transition-delay:100ms"> </span><span style="transition-delay:50ms">c</span><span style="transition-delay:0ms">u</span><span style="transition-delay:50ms">r</span><span style="transition-delay:100ms">s</span><span style="transition-delay:150ms">o</span><span style="transition-delay:200ms"> </span><span style="transition-delay:250ms">p</span><span style="transition-delay:300ms">a</span><span style="transition-delay:350ms">r</span><span style="transition-delay:400ms">t</span><span style="transition-delay:450ms">i</span><span style="transition-delay:500ms">c</span><span style="transition-delay:550ms">i</span><span style="transition-delay:600ms">p</span><span style="transition-delay:650ms">a</span><span style="transition-delay:700ms">r</span><span style="transition-delay:750ms">á</span><span style="transition-delay:800ms">?</span>
-          </label>
         </div>
 
         <transition name="desplegar">
-          <div v-if="cursoSeleccionado !== '' && cursoSeleccionado !== null && cursoSeleccionado !== undefined" class="campo-seccion">
+          <div v-if="cursoSeleccionado" class="campo">
+            <label for="seccionCurso">Selecciona sección <span style="color: red;">*</span></label>
             <select
               id="seccionCurso"
               v-model="seccionCurso"
               required
               @change="handleSeccionChange"
             >
-              <option value="" disabled selected hidden></option>
+              <option value="" disabled selected hidden>Seleccione una sección</option>
               <option v-for="seccion in listaSeccionesApi" :key="seccion.cus_id" :value="seccion.cus_id">
                 {{ seccion.sec_descripcion }}
               </option>
             </select>
-            <label for="seccionCurso">
-              <span style="transition-delay:400ms">S</span><span style="transition-delay:350ms">e</span><span style="transition-delay:300ms">l</span><span style="transition-delay:250ms">e</span><span style="transition-delay:200ms">c</span><span style="transition-delay:150ms">c</span><span style="transition-delay:100ms">i</span><span style="transition-delay:50ms">o</span><span style="transition-delay:0ms">n</span><span style="transition-delay:50ms">a</span><span style="transition-delay:100ms"> </span><span style="transition-delay:150ms">s</span><span style="transition-delay:200ms">e</span><span style="transition-delay:250ms">c</span><span style="transition-delay:300ms">c</span><span style="transition-delay:350ms">i</span><span style="transition-delay:400ms">ó</span><span style="transition-delay:450ms">n</span> <span style="color: red;">*</span>
-            </label>
           </div>
         </transition>
       </div>
 
+      <!-- Right Column: Download -->
       <div class="boton-descarga-container">
         <img src="/favicon.ico" alt="Logo Scout" class="logo-descarga" />
         <div class="label-descarga">
@@ -65,6 +63,8 @@
     </div>
 
   </section>
+
+
 <!--:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::-->
   <transition name="fade">
     <div v-if="cursoSeleccionado && seccionCurso" class="resto-formulario">
@@ -2826,146 +2826,45 @@ input:focus, select:focus, textarea:focus {
   width: 100%;
 }
 
-/* :::::::::::::::::::: CONTENEDOR CURSO + BOTÓN DESCARGA :::::::::::::::::::: */
-.curso-container {
-  display: grid;
-  grid-template-columns: auto auto;
-  gap: 50px;
-  align-items: start;
-  margin-bottom: 20px;
-  margin-top: 15px;
-  justify-content: center;
+
+
+
+/* :::::::::::::::::::: LAYOUT CURSO + DESCARGA :::::::::::::::::::: */
+.curso-root-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center; /* Align vertically centered */
+  justify-content: center; /* Center the group on page */
+  gap: 60px; /* Separation between inputs and download button */
+  margin-top: 20px;
+  max-width: 900px;
   margin-left: auto;
   margin-right: auto;
-  max-width: fit-content;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border: 2px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 30px 40px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
-.campos-curso-seccion {
-  width: auto;
+.curso-inputs-column {
+  flex: 0 1 400px; /* Flex-basis 400px (standard grid width), allows shrink */
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  align-items: flex-start;
-  margin-left: 0;
-  margin-top: 20px;
+  justify-content: center;
 }
 
-.campo-curso {
-  position: relative;
-  margin: 20px 0 40px;
+/* Ensure inputs fill the column width (standard "fill" behavior) */
+.curso-inputs-column .campo {
   width: 100%;
-  max-width: 400px;
 }
 
-.campo-curso select {
-  width: 100%;
-  min-width: 350px;
-  max-width: 500px;
-}
-
-.campo-curso select:invalid {
-  color: transparent;
-}
-
-.campo-curso select:focus,
-.campo-curso select:valid {
-  outline: 0;
-  border-bottom-color: #3b82f6;
-}
-
-.campo-curso label {
-  position: absolute !important;
-  top: 8px !important;
-  left: 50% !important;
-  transform: translateX(-50%);
-  pointer-events: none !important;
-  width: max-content;
-  text-align: center;
-}
-
-.campo-curso label span {
-  display: inline-block;
-  font-size: 18px;
-  min-width: 5px;
-  color: #94a3b8;
-  transition: 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-.campo-curso select:focus + label span,
-.campo-curso select:valid + label span {
-  color: #3b82f6;
-  transform: translateY(-38px);
-}
-
-.campo-seccion {
-  position: relative;
-  margin: 20px 0 40px;
-  width: 100%;
-  max-width: 400px;
-  animation: slideIn 0.4s ease-out;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-15px);
+@media (max-width: 768px) {
+  .curso-root-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  .curso-inputs-column {
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: 100%;
   }
-}
-
-.campo-seccion select {
-  background-color: transparent !important;
-  border: 0 !important;
-  border-bottom: 2px #cbd5e1 solid !important;
-  display: block !important;
-  width: 100% !important;
-  padding: 8px 0 6px 0 !important;
-  font-size: 18px !important;
-  color: #1e293b !important;
-  -webkit-appearance: none !important;
-  -moz-appearance: none !important;
-  appearance: none !important;
-  cursor: pointer !important;
-  line-height: 1.2 !important;
-}
-
-.campo-seccion select:invalid {
-  color: transparent;
-}
-
-.campo-seccion select:focus,
-.campo-seccion select:valid {
-  outline: 0;
-  border-bottom-color: #f59e0b;
-}
-
-.campo-seccion label {
-  position: absolute !important;
-  top: 8px !important;
-  left: 0 !important;
-  pointer-events: none !important;
-}
-
-.campo-seccion label span {
-  display: inline-block;
-  font-size: 18px;
-  min-width: 5px;
-  color: #94a3b8;
-  transition: 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-.campo-seccion select:focus + label span,
-.campo-seccion select:valid + label span {
-  color: #3b82f6;
-  transform: translateY(-38px);
 }
 
 .boton-descarga-container {
