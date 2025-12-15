@@ -7,6 +7,8 @@ class PagoPersonaFilter(django_filters.FilterSet):
 	search = django_filters.CharFilter(method='filter_search', label='Búsqueda general (Nombre, Run, Email)')
 	persona_run = django_filters.CharFilter(field_name='per_id__per_run', lookup_expr='iexact', label='RUN de la persona')
 	curso_id = django_filters.NumberFilter(field_name='cur_id__cur_id', label='ID del curso')
+	cur_id = django_filters.NumberFilter(field_name='cur_id__cur_id', label='ID del curso (alias)')
+	grupo_id = django_filters.NumberFilter(method='filter_grupo', label='ID del grupo')
 	usuario_id = django_filters.NumberFilter(field_name='usu_id__usu_id', label='ID de usuario')
 	tipo = django_filters.NumberFilter(field_name='pap_tipo', label='Tipo de pago (1=Ingreso,2=Egreso)')
 	estado = django_filters.NumberFilter(field_name='pap_estado', label='Estado de pago')
@@ -15,7 +17,7 @@ class PagoPersonaFilter(django_filters.FilterSet):
 
 	class Meta:
 		model = Pago_Persona
-		fields = ['search', 'persona_run', 'curso_id', 'usuario_id', 'tipo', 'estado', 'fecha', 'valor']
+		fields = ['search', 'persona_run', 'curso_id', 'cur_id', 'grupo_id', 'usuario_id', 'tipo', 'estado', 'fecha', 'valor']
 
 	def filter_search(self, queryset, name, value):
 		if not value:
@@ -26,6 +28,12 @@ class PagoPersonaFilter(django_filters.FilterSet):
 			Q(per_id__per_run__icontains=value) |
 			Q(per_id__per_mail__icontains=value)
 		)
+
+	def filter_grupo(self, queryset, name, value):
+		if not value:
+			return queryset
+		# Filter payments where the persona belongs to the selected group
+		return queryset.filter(per_id__persona_grupo__gru_id=value, per_id__persona_grupo__peg_vigente=True).distinct()
 
 
 class ComprobantePagoFilter(django_filters.FilterSet):

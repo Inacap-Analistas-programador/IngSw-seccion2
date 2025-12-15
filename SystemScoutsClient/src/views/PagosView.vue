@@ -445,7 +445,7 @@
             </tr>
             <tr v-if="!pagos.length">
               <td colspan="8" class="placeholder">
-                No hay pagos para mostrar
+                {{ hasAnyFilter ? 'No se encontraron pagos con los filtros seleccionados' : 'Ingrese filtros para buscar pagos' }}
               </td>
             </tr>
           </tbody>
@@ -1052,6 +1052,14 @@ export default {
              this.formProveedor.COC_ID &&
              this.formProveedor.PAP_MONTO > 0 &&
              this.formProveedor.PAP_FECHA_PAGO;
+    },
+    hasAnyFilter () {
+      return !!(
+        (this.filtroQ && this.filtroQ.trim()) ||
+        this.filtroCurso ||
+        this.filtroGrupo ||
+        this.filtroEstado
+      )
     }
   },
   methods: {
@@ -1467,12 +1475,28 @@ export default {
 
         const estadoMap = { pagado: 1, anulado: 2 };
         const params = {};
+        
+        // Fix: Use backend-compatible parameter names
+        // 'search' is standard DRF SearchFilter
         if (searchTerm) params.search = searchTerm;
-        if (this.filtroCurso) params.CUR_ID = this.filtroCurso;
-        if (this.filtroGrupo) params.GRU_ID = this.filtroGrupo;
+        // 'cur_id' added to backend alias
+        if (this.filtroCurso) params.cur_id = this.filtroCurso;
+        // 'grupo_id' added to backend filter logic
+        if (this.filtroGrupo) params.grupo_id = this.filtroGrupo;
+        
         if (this.filtroEstado) {
           const mapped = estadoMap[this.filtroEstado];
           if (mapped) params.estado = mapped;
+        }
+
+        // Logic Check: If no filters are applied, do not fetch data (User request)
+        const hasFilters = params.search || params.cur_id || params.grupo_id || params.estado;
+
+        if (!hasFilters) {
+          this.pagos = [];
+          this.errorPagos = null; // Clear error if any
+          this.cargandoPagos = false;
+          return; // Exit without API call
         }
 
         const response = await pagosService.pagos.list(params);
@@ -1664,13 +1688,13 @@ export default {
       // Reutilizar la lógica de búsqueda por RUT/nombre
       const termClean = qRaw.replace(/[\.\-\s]/g, '')
       let params = {}
-      if (/^\d+$/.test(termClean)) {
-        params = { run: termClean }
-      } else if (/^\d{7,8}[0-9kK]$/i.test(termClean)) {
+      if (/^\d{7,8}[0-9kK]$/i.test(termClean)) {
         const rutMatch = termClean.match(/^(\d{7,8})([0-9kK])$/i)
         if (rutMatch) {
           params = { run: rutMatch[1], dv: rutMatch[2].toUpperCase() }
         }
+      } else if (/^\d+$/.test(termClean)) {
+        params = { run: termClean }
       } else {
         const parts = qRaw.split(/\s+/)
         if (parts.length === 1) params = { nombre: qRaw }
@@ -2433,6 +2457,45 @@ label {
 }
 
 /* Tabla Legacy Removed - Used .courses-table now */
+/* Standard Table Styles (Desktop default) */
+.table-container {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  overflow-x: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+  margin-top: 10px;
+}
+
+.courses-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+  background-color: #ffffff;
+}
+
+.courses-table th, .courses-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+  font-size: 14px;
+  color: #1f2937;
+}
+
+.courses-table th {
+  background-color: #f9fafb;
+  font-weight: 600;
+  color: #374151;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  white-space: nowrap;
+}
+
+.courses-table tbody tr { transition: background-color .12s ease; }
+.courses-table tbody tr:hover { background: #f1f5f9; }
 
 .placeholder {
   text-align: center;
@@ -2442,8 +2505,8 @@ label {
 
 /* Botones acciones tabla */
 .acciones-buttons {
-  display: flex;
-  flex-wrap: nowrap;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 4px;
   justify-content: center;
   align-items: center;

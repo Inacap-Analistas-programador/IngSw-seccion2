@@ -1,5 +1,5 @@
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.response import Response
 
@@ -7,8 +7,8 @@ from ..Models.persona_model import Persona
 from ..Models.mantenedor_model import Tipo_Curso, Rol, Cargo, Rama
 
 @api_view(['GET'])
-@authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated])
+@authentication_classes([])
+@permission_classes([AllowAny])
 def personas_min(request):
     limit = int(request.query_params.get('limit', '50'))
     q = (request.query_params.get('q') or '').strip()
@@ -20,8 +20,8 @@ def personas_min(request):
     return Response({'results': data, 'count': len(data)})
 
 @api_view(['GET'])
-@authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated])
+@authentication_classes([])
+@permission_classes([AllowAny])
 def tipos_curso_min(request):
     limit = int(request.query_params.get('limit', '50'))
     q = (request.query_params.get('q') or '').strip()
@@ -33,8 +33,8 @@ def tipos_curso_min(request):
     return Response({'results': data, 'count': len(data)})
 
 @api_view(['GET'])
-@authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated])
+@authentication_classes([])
+@permission_classes([AllowAny])
 def roles_min(request):
     limit = int(request.query_params.get('limit', '50'))
     q = (request.query_params.get('q') or '').strip()
@@ -46,8 +46,8 @@ def roles_min(request):
     return Response({'results': data, 'count': len(data)})
 
 @api_view(['GET'])
-@authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated])
+@authentication_classes([])
+@permission_classes([AllowAny])
 def cargos_min(request):
     limit = int(request.query_params.get('limit', '50'))
     q = (request.query_params.get('q') or '').strip()
@@ -59,8 +59,8 @@ def cargos_min(request):
     return Response({'results': data, 'count': len(data)})
 
 @api_view(['GET'])
-@authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated])
+@authentication_classes([])
+@permission_classes([AllowAny])
 def ramas_min(request):
     limit = int(request.query_params.get('limit', '50'))
     q = (request.query_params.get('q') or '').strip()

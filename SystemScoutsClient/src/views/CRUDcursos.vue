@@ -451,7 +451,7 @@
     </BaseModal>
 
     <!-- Modal Cambio de Estado -->
-    <BaseModal v-model="mostrarModalCambioEstado" @close="cerrarModalCambioEstado">
+    <BaseModal v-model="mostrarModalCambioEstado" @close="cerrarModalCambioEstado" size="sm">
       <template #title>Cambio de Estado</template>
       <div class="modal-form">
         <div class="form-group">
@@ -819,21 +819,20 @@ async function cargarDatos({ page = 1, page_size = 20, search = '' } = {}) {
 
 onMounted(() => {
   preloadCatalogosMin()
-  // Cargar datos inicialmente sin esperar filtros manuales
-  cargarDatos()
+  // No cargar datos automáticamente. Esperar a que el usuario filtre.
+  // cargarDatos()
   
-  // Reintento diferido: si no había token al montar (login recién hecho en otra pestaña), esperar y reintentar
+  // Reintento diferido: solo si se requiere (por ejemplo si hubo un reload rápido), pero ahora supeditado a filtro
   const tokenEarly = localStorage.getItem('accessToken') || localStorage.getItem('token')
   if (!tokenEarly) {
+    // Si no hay token, esperamos un poco por si está en proceso de setearse (login redirect)
+    // Pero NO llamamos a cargarDatos a menos que haya filtros activos en URL
     setTimeout(() => {
-      const tokenLate = localStorage.getItem('accessToken') || localStorage.getItem('token')
-      if (tokenLate && cursosList.value.length === 0) {
-        console.info('[CRUDcursos] Token apareció luego del montaje. Reintentando carga de datos...')
-        cargarDatos().finally(() => checkRouteActions())
-      }
+       const tokenLate = localStorage.getItem('accessToken') || localStorage.getItem('token')
+       if (tokenLate) checkRouteActions() 
     }, 800)
   } else {
-    // Si viene parametro search, aplicarlo
+    // Si viene parametro search, aplicarlo y cargar
     const { search } = route.query
     if (search) {
       filtros.value.searchQuery = search
@@ -1561,7 +1560,7 @@ async function guardarCambioEstado() {
   const estadoNumber = Number(rawValue)
   
   const estadoTexto = opcionesEstado.find(e => e.value === estadoNumber)?.text || 'Desconocido'
-  if (!window.confirm(`¿Confirma cambiar el estado a "${estadoTexto}"?`)) return
+  // if (!window.confirm(`¿Confirma cambiar el estado a "${estadoTexto}"?`)) return
   
   if (isDisabling.value) return
   isDisabling.value = true

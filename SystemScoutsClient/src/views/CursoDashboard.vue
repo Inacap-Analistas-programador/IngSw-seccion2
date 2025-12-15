@@ -324,11 +324,11 @@ async function cargarDatos() {
     
     // Cargar datos del curso en paralelo para reducir tiempo
     const [seccionesData, formadoresData, coordinadoresData, alimentacionData, pagosData] = await Promise.all([
-      request(`/cursos/secciones/?CUR_ID=${props.cursoId}&page_size=200`),
-      request(`/cursos/formadores/?CUR_ID=${props.cursoId}&page_size=200`),
-      request(`/cursos/coordinadores/?CUR_ID=${props.cursoId}&page_size=200`),
-      request(`/cursos/alimentaciones/?CUR_ID=${props.cursoId}&page_size=200`),
-      request(`/cursos/cuotas/?CUR_ID=${props.cursoId}&page_size=200`),
+      request(`/cursos/secciones/?cur_id=${props.cursoId}&page_size=200`),
+      request(`/cursos/formadores/?cur_id=${props.cursoId}&page_size=200`),
+      request(`/cursos/coordinadores/?cur_id=${props.cursoId}&page_size=200`),
+      request(`/cursos/alimentaciones/?cur_id=${props.cursoId}&page_size=200`),
+      request(`/cursos/cuotas/?cur_id=${props.cursoId}&page_size=200`),
     ])
 
     secciones.value = (Array.isArray(seccionesData?.results) ? seccionesData.results : (seccionesData || [])).map(toUpperKeys)
@@ -339,19 +339,19 @@ async function cargarDatos() {
 
     console.log('Secciones:', secciones.value.length, 'Formadores:', formadores.value.length, 'Coordinadores:', coordinadores.value.length, 'Alimentaciones:', alimentaciones.value.length, 'Pagos:', pagos.value.length)
     
-    // Cargar catálogos luego, en paralelo y con menor page_size
+    // Cargar catálogos usando endpoints MIN para asegurar carga completa (solo IDs y Nombres)
     const [personasData, rolesData, ramasData, cargosData, aliData] = await Promise.all([
-      request('/personas/personas/?page_size=200'),
-      request('/mantenedores/rol/?page_size=200'),
-      request('/mantenedores/rama/?page_size=200'),
-      request('/mantenedores/cargo/?page_size=200'),
+      request('/personas/min?limit=5000'),
+      request('/mantenedores/roles/min?limit=500'),
+      request('/mantenedores/ramas/min?limit=500'),
+      request('/mantenedores/cargos/min?limit=500'),
       request('/mantenedores/alimentacion/?page_size=200'),
     ])
 
-    personas.value = (Array.isArray(personasData?.results) ? personasData.results : (personasData || [])).map(toUpperKeys)
-    roles.value = (Array.isArray(rolesData?.results) ? rolesData.results : (rolesData || [])).map(toUpperKeys)
-    ramas.value = (Array.isArray(ramasData?.results) ? ramasData.results : (ramasData || [])).map(toUpperKeys)
-    cargos.value = (Array.isArray(cargosData?.results) ? cargosData.results : (cargosData || [])).map(toUpperKeys)
+    personas.value = (Array.isArray(personasData?.results) ? personasData.results : (personasData || []))
+    roles.value = (Array.isArray(rolesData?.results) ? rolesData.results : (rolesData || []))
+    ramas.value = (Array.isArray(ramasData?.results) ? ramasData.results : (ramasData || []))
+    cargos.value = (Array.isArray(cargosData?.results) ? cargosData.results : (cargosData || []))
     alimentacionCatalogo.value = (Array.isArray(aliData?.results) ? aliData.results : (aliData || [])).map(toUpperKeys)
     
     console.log('Todos los datos cargados correctamente')
@@ -453,13 +453,14 @@ function verPagosPendientes() {
 
 // Helpers
 function getPersonaName(id) {
-  const persona = personas.value.find(p => p.PER_ID === id)
-  return persona ? `${persona.PER_NOMBRE} ${persona.PER_APELLIDO_PATERNO}` : '-'
+  // Los endpoints min retornan { id, nombre }
+  const persona = personas.value.find(p => p.id === id || p.PER_ID === id)
+  return persona ? (persona.nombre || persona.PER_NOMBRE) : '-'
 }
 
 function getRolName(id) {
-  const rol = roles.value.find(r => r.ROL_ID === id)
-  return rol ? rol.ROL_DESCRIPCION : '-'
+  const rol = roles.value.find(r => r.id === id || r.ROL_ID === id)
+  return rol ? (rol.nombre || rol.ROL_DESCRIPCION) : '-'
 }
 
 function getSeccionName(id) {
@@ -468,13 +469,13 @@ function getSeccionName(id) {
 }
 
 function getRamaName(id) {
-  const rama = ramas.value.find(r => r.RAM_ID === id)
-  return rama ? rama.RAM_DESCRIPCION : '-'
+  const rama = ramas.value.find(r => r.id === id || r.RAM_ID === id)
+  return rama ? (rama.nombre || rama.RAM_DESCRIPCION) : '-'
 }
 
 function getCargoName(id) {
-  const cargo = cargos.value.find(c => c.CAR_ID === id)
-  return cargo ? cargo.CAR_DESCRIPCION : '-'
+  const cargo = cargos.value.find(c => c.id === id || c.CAR_ID === id)
+  return cargo ? (cargo.nombre || cargo.CAR_DESCRIPCION) : '-'
 }
 
 function getAlimentacionTipo(id) {

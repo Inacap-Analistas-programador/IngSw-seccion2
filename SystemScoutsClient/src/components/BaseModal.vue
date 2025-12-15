@@ -1,6 +1,6 @@
 <template>
   <div v-if="modelValue" class="modal-overlay" @click.self="closeModal" role="dialog" aria-modal="true">
-    <div class="modal-content" role="document">
+    <div class="modal-content" :class="[`modal-size-${size}`]" role="document">
       <!-- Header opcional -->
       <div class="modal-header" v-if="$slots.title">
         <h3 class="modal-title"><slot name="title"></slot></h3>
@@ -26,7 +26,8 @@ import ModernMainScrollbar from './ModernMainScrollbar.vue'
 // const ModernMainScrollBar = ModernMainScrollbar
 
 const props = defineProps({
-  modelValue: { type: Boolean, default: false }
+  modelValue: { type: Boolean, default: false },
+  size: { type: String, default: 'xl' } // sm, md, lg, xl
 });
 
 const emit = defineEmits(['update:modelValue', 'close']);
@@ -55,7 +56,8 @@ const closeModal = () => {
   display: flex;
   flex-direction: column;
   width: 98%;
-  max-width: 1200px;
+  /* max-width se define por la clase de tamaño */
+  max-width: 1200px; /* Fallback */
   max-height: 92vh;
   overflow: hidden; /* Evita que el contenido se desborde */
   animation: modal-in .2s ease-out both;
@@ -77,7 +79,7 @@ const closeModal = () => {
 }
 
 .modal-body-content {
-  padding: 0;
+  padding: 24px;
   overflow-y: auto; /* Permite desplazamiento vertical del contenido largo */
   flex: 1;
   min-height: 0;
@@ -101,7 +103,7 @@ const closeModal = () => {
  .close-btn {
   position: absolute;
   top: 1rem;
-  right: 3.5rem; /* más separación del borde y scrollbar */
+  right: 1rem; /* Posicionado a la derecha */
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -164,4 +166,10 @@ const closeModal = () => {
     padding: 0 14px 16px 14px;
   }
 }
+
+/* Tamaños */
+.modal-size-sm { max-width: 320px; }
+.modal-size-md { max-width: 700px; }
+.modal-size-lg { max-width: 900px; }
+.modal-size-xl { max-width: 1200px; }
 </style>

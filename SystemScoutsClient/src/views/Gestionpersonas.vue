@@ -1551,11 +1551,11 @@
 
 <script>
 import { defineAsyncComponent } from 'vue'
-const InputBase = defineAsyncComponent(() => import('@/components/InputBase.vue'))
-const BaseSelect = defineAsyncComponent(() => import('@/components/BaseSelect.vue'))
-const BaseButton = defineAsyncComponent(() => import('@/components/BaseButton.vue'))
-const BaseModal = defineAsyncComponent(() => import('@/components/BaseModal.vue'))
-const AppIcons = defineAsyncComponent(() => import('@/components/icons/AppIcons.vue'))
+import InputBase from '@/components/InputBase.vue'
+import BaseSelect from '@/components/BaseSelect.vue'
+import BaseButton from '@/components/BaseButton.vue'
+import BaseModal from '@/components/BaseModal.vue'
+import AppIcons from '@/components/icons/AppIcons.vue'
 import personasService from '@/services/personasService.js'
 import mantenedoresService from '@/services/mantenedoresService.js'
 import cursosService from '@/services/cursosService.js'
@@ -1793,6 +1793,21 @@ export default {
       return this.filteredPersonas;
     }
   },
+  async mounted() {
+    // Verificar si hay parámetros de URL para prefiltrado (ej. desde Dashboard Curso)
+    if (this.$route.query.cursoId) {
+      const cId = Number(this.$route.query.cursoId);
+      if (!isNaN(cId)) {
+        console.log(`Pre-filtrando por curso ID: ${cId}`);
+        // Esperar a que carguen los filtros para tener la lista de cursos completa
+        await this.ensureFiltrosLoaded();
+        
+        this.selectedCurso = cId;
+        // Ejecutar filtro automáticamente
+        this.filtrar();
+      }
+    }
+  },
   methods: {
     authReady() {
       try {
@@ -1809,14 +1824,23 @@ export default {
       }
       this.exportarModalVisible = true;
     },
-        ensureFiltrosLoaded() {
-          // Evitar cargar mantenedores cuando no está autenticado para prevenir delays 401
-          if (!this.authReady()) return;
-          if (this.filtersCachedAt && (Date.now() - this.filtersCachedAt) < this.filtersCacheTTL) return;
-          if (this.cargandoFiltrosInFlight) return;
-          this.cargandoFiltrosInFlight = true;
-          this.cargarOpcionesFiltros().finally(() => { this.cargandoFiltrosInFlight = false; });
-        },
+    ensureFiltrosLoaded() {
+      // Evitar cargar mantenedores cuando no está autenticado para prevenir delays 401
+      if (!this.authReady()) return Promise.resolve();
+      if (this.filtersCachedAt && (Date.now() - this.filtersCachedAt) < this.filtersCacheTTL) return Promise.resolve();
+      if (this.cargandoFiltrosInFlight) {
+        return new Promise(resolve => {
+           const check = setInterval(() => {
+             if (!this.cargandoFiltrosInFlight) {
+               clearInterval(check);
+               resolve();
+             }
+           }, 100);
+        });
+      }
+      this.cargandoFiltrosInFlight = true;
+      return this.cargarOpcionesFiltros().finally(() => { this.cargandoFiltrosInFlight = false; });
+    },
     cerrarModalExportar() {
       this.exportarModalVisible = false;
     },
@@ -1872,7 +1896,20 @@ export default {
        if (this.personaEditada.PER_ID) {
          try {
            const cursosData = await personasService.obtenerCursosPersona(this.personaEditada.PER_ID);
-           this.personaEditada.cursosHistorial = cursosData || [];
+           // Helper local para normalizar keys (ya que el API retorna snake_case y el template usa UPPER_CASE legacy)
+           const toUpperKeys = (obj) => {
+              if (!obj || typeof obj !== 'object') return obj;
+              const newObj = Array.isArray(obj) ? [] : {};
+              for (const key in obj) {
+                const upperKey = key.toUpperCase();
+                newObj[upperKey] = obj[key];
+                if (upperKey !== key) newObj[key] = obj[key];
+                // Caso especial para anidados (ESTADO_APROBACION retornad object)
+                if (key === 'estado_aprobacion') newObj['ESTADO_APROBACION'] = obj[key]; // Mantener objeto interno tal cual o normalizar si necesario
+              }
+              return newObj;
+           };
+           this.personaEditada.cursosHistorial = (cursosData || []).map(toUpperKeys);
          } catch {
            this.personaEditada.cursosHistorial = [];
          }
@@ -3243,9 +3280,9 @@ export default {
           mantenedoresService.cargo.list().catch(() => []),
           mantenedoresService.distrito.list().catch(() => []),
           mantenedoresService.zona.list().catch(() => []),
-          mantenedoresService.nivel.list().catch(() => []),
-          cursosService.cursos.list().catch(() => []),
-          mantenedoresService.alimentacion.list().catch(() => [])
+          mantenedoresService.nivel.list({ page_size: 500 }).catch(() => []),
+          cursosService.cursos.list({ page_size: 1000 }).catch(() => []),
+          mantenedoresService.alimentacion.list({ page_size: 500 }).catch(() => [])
         ]);
 
         // Process Roles
@@ -5123,8 +5160,8 @@ export default {
   font-size: 13px;
 }
 
-/* Standardized Table Styles from CRUDcursos.vue */
-.table-container {
+/* Standardized Table Styles from CRUDcursos.vue - SCOPED to gestion-personas to avoid leaks */
+.gestion-personas .table-container {
   background-color: #fff;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
@@ -5134,14 +5171,14 @@ export default {
   position: relative;
 }
 
-.courses-table {
+.gestion-personas .courses-table {
   width: 100%;
   border-collapse: collapse;
   table-layout: auto;
   background-color: #ffffff; /* Explicit white background */
 }
 
-.courses-table th, .courses-table td {
+.gestion-personas .courses-table th, .gestion-personas .courses-table td {
   padding: 12px 16px;
   border-bottom: 1px solid #e5e7eb;
   text-align: left;
@@ -5149,7 +5186,7 @@ export default {
   color: #1f2937;
 }
 
-.courses-table th {
+.gestion-personas .courses-table th {
   background-color: #f9fafb;
   font-weight: 600;
   color: #374151;
@@ -5159,19 +5196,19 @@ export default {
   white-space: nowrap; /* Prevent headers from breaking awkwardly */
 }
 
-.courses-table tbody tr { transition: background-color .12s ease; }
-.courses-table tbody tr:hover { background:#f1f5f9; }
+.gestion-personas .courses-table tbody tr { transition: background-color .12s ease; }
+.gestion-personas .courses-table tbody tr:hover { background:#f1f5f9; }
 
 /* Column adjustments */
-.courses-table th:nth-child(1){ min-width:180px; } /* Nombre */
-.courses-table th:nth-child(2){ min-width:110px; } /* RUT */
-.courses-table th:nth-child(3){ min-width:160px; } /* Email */
-.courses-table th:nth-child(4){ min-width:120px; } /* Rol */
-.courses-table th:nth-child(5){ min-width:120px; } /* Fono */
-.courses-table th:nth-child(6){ min-width:100px; } /* Estado */
-.courses-table th:last-child { min-width: 180px; padding-right: 16px; } /* Acciones */
+.gestion-personas .courses-table th:nth-child(1){ min-width:180px; } /* Nombre */
+.gestion-personas .courses-table th:nth-child(2){ min-width:110px; } /* RUT */
+.gestion-personas .courses-table th:nth-child(3){ min-width:160px; } /* Email */
+.gestion-personas .courses-table th:nth-child(4){ min-width:120px; } /* Rol */
+.gestion-personas .courses-table th:nth-child(5){ min-width:120px; } /* Fono */
+.gestion-personas .courses-table th:nth-child(6){ min-width:100px; } /* Estado */
+.gestion-personas .courses-table th:last-child { min-width: 180px; padding-right: 16px; } /* Acciones */
 
-.actions-cell {
+.gestion-personas .actions-cell {
   display: flex;
   gap: 8px;
   align-items: center;
@@ -5835,21 +5872,21 @@ export default {
     table-layout: fixed;
     width: 100%;
   }
-  .table-wrapper table th:nth-child(7),
-  .table-wrapper table td:nth-child(7) {
+  .gestion-personas .table-wrapper table th:nth-child(7),
+  .gestion-personas .table-wrapper table td:nth-child(7) {
     /* Fixed width for actions column so buttons always fit */
-    width: 180px !important;
+    width: 240px !important;
   }
 
   /* Distribute remaining width among other columns proportionally using calc
      subtracting the fixed actions width so layout doesn't overflow when sidebar
      is expanded. Ratios sum to 1 (28%+10%+26%+18%+10%+8% = 100% of remaining). */
-  .table-wrapper table th:nth-child(1), .table-wrapper table td:nth-child(1) { width: calc((100% - 180px) * 0.28); } /* Nombre */
-  .table-wrapper table th:nth-child(2), .table-wrapper table td:nth-child(2) { width: calc((100% - 180px) * 0.10); } /* RUT */
-  .table-wrapper table th:nth-child(3), .table-wrapper table td:nth-child(3) { width: calc((100% - 180px) * 0.26); } /* Email */
-  .table-wrapper table th:nth-child(4), .table-wrapper table td:nth-child(4) { width: calc((100% - 180px) * 0.18); } /* Rol */
-  .table-wrapper table th:nth-child(5), .table-wrapper table td:nth-child(5) { width: calc((100% - 180px) * 0.10); } /* Tel */
-  .table-wrapper table th:nth-child(6), .table-wrapper table td:nth-child(6) { width: calc((100% - 180px) * 0.08); }  /* Estado */
+  .gestion-personas .table-wrapper table th:nth-child(1), .gestion-personas .table-wrapper table td:nth-child(1) { width: calc((100% - 240px) * 0.28); } /* Nombre */
+  .gestion-personas .table-wrapper table th:nth-child(2), .gestion-personas .table-wrapper table td:nth-child(2) { width: calc((100% - 240px) * 0.10); } /* RUT */
+  .gestion-personas .table-wrapper table th:nth-child(3), .gestion-personas .table-wrapper table td:nth-child(3) { width: calc((100% - 240px) * 0.26); } /* Email */
+  .gestion-personas .table-wrapper table th:nth-child(4), .gestion-personas .table-wrapper table td:nth-child(4) { width: calc((100% - 240px) * 0.18); } /* Rol */
+  .gestion-personas .table-wrapper table th:nth-child(5), .gestion-personas .table-wrapper table td:nth-child(5) { width: calc((100% - 240px) * 0.10); } /* Tel */
+  .gestion-personas .table-wrapper table th:nth-child(6), .gestion-personas .table-wrapper table td:nth-child(6) { width: calc((100% - 240px) * 0.08); }  /* Estado */
 
   /* Allow the inner truncate span to expand to the full column width on desktop */
   td[data-label] .truncate { max-width: 100%; display: inline-block; }
