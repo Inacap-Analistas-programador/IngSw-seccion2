@@ -17,25 +17,18 @@
     </div>
 
     <!-- Filtros y Acciones -->
-    <div class="filters-card">
-      <div class="filter-grid">
-        <div class="filter-item">
-          <InputBase v-model="filtros.searchQuery" placeholder="Buscar…" />
-        </div>
-        <div class="filter-item">
-          <BaseSelect v-model="filtros.estado" :options="opcionesEstado" placeholder="Estado" optionLabel="text" />
-        </div>
-        <div class="filter-item">
-          <BaseSelect v-model="filtros.tipoCurso" :options="tiposCursoOptions" placeholder="Tipo Curso" optionLabel="text" @focus="ensureCatalogo('tipos')" />
-        </div>
-        <div class="filter-item">
-          <BaseSelect v-model="filtros.responsable" :options="personasOptions" placeholder="Responsable" optionLabel="text" @focus="ensureCatalogo('personas')" />
-        </div>
+    <!-- Filtros y Acciones -->
+    <div class="filtros">
+      <div class="filtros-left">
+        <InputBase v-model="filtros.searchQuery" placeholder="Buscar…" class="search-input" />
+        <BaseSelect v-model="filtros.estado" :options="opcionesEstado" placeholder="Estado" optionLabel="text" />
+        <BaseSelect v-model="filtros.tipoCurso" :options="tiposCursoOptions" placeholder="Tipo Curso" optionLabel="text" @focus="ensureCatalogo('tipos')" />
+        <BaseSelect v-model="filtros.responsable" :options="personasOptions" placeholder="Responsable" optionLabel="text" @focus="ensureCatalogo('personas')" />
+        <BaseButton @click="aplicarFiltros" :disabled="!hasAnyFilter" variant="primary" class="btn-standard"><AppIcons name="search" :size="16" /> Buscar</BaseButton>
       </div>
-      <div class="filters-actions">
-        <BaseButton @click="aplicarFiltros" :disabled="!hasAnyFilter" variant="primary"><AppIcons name="search" :size="16" /> Buscar</BaseButton>
-        <BaseButton @click="limpiarFiltros" variant="neutral"><AppIcons name="x-circle" :size="16" /> Limpiar</BaseButton>
-        <BaseButton @click="abrirModalCrear" variant="success"><AppIcons name="plus" :size="16" /> Nuevo Curso</BaseButton>
+      <div class="filtros-right">
+        <BaseButton @click="limpiarFiltros" variant="neutral" class="btn-standard"><AppIcons name="x-circle" :size="16" /> Limpiar</BaseButton>
+        <BaseButton @click="abrirModalCrear" variant="primary" class="btn-add btn-standard"><AppIcons name="plus" :size="16" /> Nuevo Curso</BaseButton>
       </div>
     </div>
 
@@ -61,20 +54,24 @@
         </thead>
         <tbody>
           <tr v-for="c in cursosFiltrados" :key="c.CUR_ID">
-            <td>{{ c.CUR_DESCRIPCION || '-' }}</td>
-            <td>{{ c.CUR_CODIGO || '-' }}</td>
-            <td>{{ getTipoCursoName(c.TCU_ID) }}</td>
-            <td>{{ formatDates(c) }}</td>
-            <td>
+             <td data-label="Descripción">
+              <span class="truncate" :title="c.CUR_DESCRIPCION">{{ c.CUR_DESCRIPCION || '-' }}</span>
+            </td>
+            <td data-label="Código">{{ c.CUR_CODIGO || '-' }}</td>
+            <td data-label="Tipo">{{ getTipoCursoName(c.TCU_ID) }}</td>
+            <td data-label="Fechas">{{ formatDates(c) }}</td>
+            <td data-label="Responsable">
               <div>{{ getPersonaName(c.PER_ID_RESPONSABLE) }}</div>
               <div v-if="c.CAR_ID_RESPONSABLE" style="font-size: 0.85em; color: #666;">{{ getCargoName(c.CAR_ID_RESPONSABLE) }}</div>
             </td>
-            <td><span :class="['badge', getEstadoClass(c.CUR_ESTADO)]">{{ getEstadoText(c.CUR_ESTADO) }}</span></td>
+            <td data-label="Estado"><span :class="['badge', getEstadoClass(c.CUR_ESTADO)]">{{ getEstadoText(c.CUR_ESTADO) }}</span></td>
             <td class="actions-cell">
-              <BaseButton @click="abrirModalEditar(c)" variant="secondary" size="sm"><AppIcons name="edit" :size="14" /> Modificar</BaseButton>
-              <BaseButton @click="abrirModalCambioEstadoCurso(c)" variant="warning" size="sm"><AppIcons name="refresh" :size="14" /> Cambio Estado</BaseButton>
-              <BaseButton @click="abrirModalVer(c)" variant="info" size="sm"><AppIcons name="eye" :size="14" /> Ver</BaseButton>
-              <BaseButton @click="abrirDashboard(c)" variant="primary" size="sm"><AppIcons name="chart-bar" :size="14" /> Dashboard</BaseButton>
+              <div class="acciones-buttons">
+                <BaseButton @click="abrirModalVer(c)" variant="info" size="sm" class="btn-action" title="Ver"><AppIcons name="eye" :size="14" /></BaseButton>
+                <BaseButton @click="abrirModalEditar(c)" variant="secondary" size="sm" class="btn-action" title="Modificar"><AppIcons name="edit" :size="14" /></BaseButton>
+                <BaseButton @click="abrirModalCambioEstadoCurso(c)" variant="warning" size="sm" class="btn-action" title="Cambio Estado"><AppIcons name="refresh" :size="14" /></BaseButton>
+                <BaseButton @click="abrirDashboard(c)" variant="primary" size="sm" class="btn-action" title="Dashboard"><AppIcons name="chart-bar" :size="14" /></BaseButton>
+              </div>
             </td>
           </tr>
             <tr v-if="!hasAnyFilter">
@@ -90,9 +87,29 @@
     
 
     <!-- Modal de Creación/Edición de Curso -->
-    <BaseModal v-model="mostrarModal" @close="cerrarModal">
-      <template #title>{{ modoVer ? 'Detalle del Curso' : (esEdicion ? 'Editar Curso' : 'Crear Nuevo Curso') }}</template>
-      <div class="modal-body">
+    <BaseModal v-model="mostrarModal" @close="cerrarModal" class="curso-modal modal-editar-mejorado">
+      <template #default>
+       <div class="modal-edit">
+        <header class="modal-header-editar">
+          <div class="header-title">
+             <h2>{{ modoVer ? 'Detalle del Curso' : (isTrulyNew ? 'Crear Nuevo Curso' : 'Editar Curso') }}</h2>
+             <p class="subtitle" v-if="form.CUR_DESCRIPCION">{{ form.CUR_DESCRIPCION }}</p>
+          </div>
+          <div class="header-actions">
+               <BaseButton v-if="isTrulyNew" @click="cerrarModal" variant="secondary" class="btn-modal-header" :disabled="isSaving"><AppIcons name="x" :size="16" /> Cancelar</BaseButton>
+               <BaseButton v-if="!modoVer" @click="guardarCurso" variant="primary" class="btn-modal-header" :disabled="isSaving">
+                 <AppIcons :name="isSaving ? 'clock' : 'save'" :size="16" /> {{ isSaving ? 'Guardando...' : 'Guardar' }}
+               </BaseButton>
+          </div>
+        </header>
+      
+      <div class="modal-body-custom">
+        <!-- Bloqueo de UI durante guardado -->
+        <div v-if="isSaving" class="saving-overlay">
+          <div class="spinner"></div>
+          <span>Guardando cambios...</span>
+        </div>
+
         <div class="form-grid-modal">
           <!-- Campos del formulario -->
           <div class="form-group span-2"><label>Descripción del curso</label><InputBase v-model="form.CUR_DESCRIPCION" :disabled="modoVer" /><small class="field-hint">Ej: Curso Básico de Primeros Auxilios</small></div>
@@ -128,326 +145,65 @@
         </div>
 
         <!-- Sección de Gestión de Fechas -->
-        <div class="fechas-section" v-if="esEdicion">
-          <hr class="section-divider">
-          <div class="section-box">
-          <h4>Períodos del Curso</h4>
-          
-          <!-- Tabla de Fechas Existentes -->
-          <table class="fechas-table">
-            <thead>
-              <tr>
-                <th>Inicio</th>
-                <th>Término</th>
-                <th>Tipo</th>
-                <th v-if="!modoVer">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="fechasCurso.length === 0">
-                <td :colspan="modoVer ? 3 : 4" class="no-results-small">No hay períodos definidos.</td>
-              </tr>
-                <tr v-for="fecha in fechasCurso" :key="fecha.CUF_ID || ('tmp-' + (fecha.__tmpId || 0))">
-                  <td>{{ formatDateSimple(fecha.CUF_FECHA_INICIO) }}</td>
-                  <td>{{ formatDateSimple(fecha.CUF_FECHA_TERMINO) }}</td>
-                  <td>{{ opcionesTipoFecha.find(t => t.value === fecha.CUF_TIPO)?.text }}</td>
-                  <td v-if="!modoVer">
-                    <BaseButton @click="iniciarEdicionFecha(fecha)" variant="secondary" size="sm">Modificar</BaseButton>
-                    <BaseButton @click="eliminarFecha(fecha.CUF_ID || ('tmp-' + (fecha.__tmpId || 0)))" variant="danger" size="sm">Eliminar</BaseButton>
-                  </td>
-                </tr>
-            </tbody>
-          </table>
+        <CursoFechas 
+          v-if="esEdicion" 
+          v-model="fechasCurso" 
+          :modoVer="modoVer" 
+          @show-alert="mostrarAlerta($event.message, $event.type)"
+        />
 
-          <!-- Formulario para Añadir Nueva Fecha -->
-          <div class="add-fecha-form" v-if="!modoVer">
-            <div class="form-group">
-              <label>Fecha Inicio</label>
-              <InputBase type="date" v-model="nuevoPeriodo.CUF_FECHA_INICIO" />
-            </div>
-            <div class="form-group">
-              <label>Fecha Término</label>
-              <InputBase type="date" v-model="nuevoPeriodo.CUF_FECHA_TERMINO" />
-            </div>
-            <div class="form-group">
-              <label>Tipo</label>
-              <BaseSelect v-model="nuevoPeriodo.CUF_TIPO" :options="opcionesTipoFecha" optionLabel="text" />
-            </div>
-            <BaseButton v-if="!editandoFecha" @click="agregarFecha" class="add-button">Añadir Período</BaseButton>
-            <BaseButton v-if="editandoFecha" @click="guardarEdicionFecha" class="add-button" variant="primary">Guardar</BaseButton>
-            <BaseButton v-if="editandoFecha" @click="cancelarEdicionFecha" class="add-button" variant="secondary">Cancelar</BaseButton>
-          </div>
-          </div>
+        <!-- Sección de Gestión de Secciones -->
+        <CursoSecciones 
+          v-if="esEdicion" 
+          v-model="seccionesCurso" 
+          :modoVer="modoVer" 
+          :ramasOptions="ramasOptions"
+          @show-alert="mostrarAlerta($event.message, $event.type)"
+        />
 
-          <!-- Sección de Gestión de Secciones -->
-          <hr class="section-divider">
-          <div class="section-box">
-          <h4>Secciones del Curso</h4>
-          
-          <!-- Tabla de Secciones Existentes -->
-          <table class="fechas-table">
-            <thead>
-              <tr>
-                <th>Sección</th>
-                <th>Rama</th>
-                <th>Participantes</th>
-                <th v-if="!modoVer">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="seccionesCurso.length === 0">
-                <td :colspan="modoVer ? 3 : 4" class="no-results-small">No hay secciones definidas.</td>
-              </tr>
-                <tr v-for="seccion in seccionesCurso" :key="seccion.CUS_ID || ('tmp-' + (seccion.__tmpId || 0))">
-                  <td>{{ seccion.CUS_SECCION }}</td>
-                  <td>{{ getRamaName(seccion.RAM_ID) }}</td>
-                  <td>{{ seccion.CUS_CANT_PARTICIPANTE }}</td>
-                  <td v-if="!modoVer">
-                    <BaseButton @click="iniciarEdicionSeccion(seccion)" variant="secondary" size="sm">Modificar</BaseButton>
-                    <BaseButton @click="eliminarSeccion(seccion.CUS_ID || ('tmp-' + (seccion.__tmpId || 0)))" variant="danger" size="sm">Eliminar</BaseButton>
-                  </td>
-                </tr>
-            </tbody>
-          </table>
+        <!-- Sección Equipo Formadores -->
+        <CursoFormadores 
+          v-if="esEdicion" 
+          v-model="formadoresCurso" 
+          :modoVer="modoVer" 
+          :personasOptions="personasOptions"
+          :rolesOptions="rolesOptions"
+          :seccionesOptions="seccionesOptions"
+          @show-alert="mostrarAlerta($event.message, $event.type)"
+        />
 
-          <!-- Formulario para Añadir Nueva Sección -->
-          <div class="add-fecha-form" v-if="!modoVer">
-            <div class="form-group">
-              <label>Sección #</label>
-              <InputBase type="number" v-model="nuevaSeccion.CUS_SECCION" placeholder="Ej: 1, 2, 3..." />
-            </div>
-            <div class="form-group">
-              <label>Rama</label>
-              <BaseSelect v-model="nuevaSeccion.RAM_ID" :options="ramasOptions" optionLabel="text" />
-            </div>
-            <div class="form-group">
-              <label>Participantes</label>
-              <InputBase type="number" v-model="nuevaSeccion.CUS_CANT_PARTICIPANTE" placeholder="Cantidad" />
-            </div>
-            <BaseButton v-if="!editandoSeccion" @click="agregarSeccion" class="add-button">Añadir Sección</BaseButton>
-            <BaseButton v-if="editandoSeccion" @click="guardarEdicionSeccion" class="add-button" variant="primary">Guardar</BaseButton>
-            <BaseButton v-if="editandoSeccion" @click="cancelarEdicionSeccion" class="add-button" variant="secondary">Cancelar</BaseButton>
-          </div>
+        <!-- Sección Alimentación y Cuotas -->
+        <CursoAlimentacion 
+          v-if="esEdicion" 
+          v-model="alimentacionesCurso" 
+          :modoVer="modoVer" 
+          :alimentacionOptions="alimentacionOptions"
+          v-model:cuotaCon="form.CUR_COTA_CON_ALMUERZO"
+          v-model:cuotaSin="form.CUR_COTA_SIN_ALMUERZO"
+          @show-alert="mostrarAlerta($event.message, $event.type)"
+        />
 
-          </div>
+        <!-- Sección Cuotas del Curso -->
+        <CursoCuotas 
+          v-if="esEdicion" 
+          v-model="cuotasCurso" 
+          :modoVer="modoVer" 
+          @show-alert="mostrarAlerta($event.message, $event.type)"
+        />
 
-          <!-- Sección Equipo Formadores -->
-          <hr class="section-divider">
-          <div class="section-box">
-          <h4>Equipo Formadores</h4>
-          <table class="fechas-table">
-            <thead>
-              <tr>
-                <th>Persona</th>
-                <th>Rol</th>
-                <th>Sección</th>
-                <th>Director</th>
-                <th v-if="!modoVer">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="!formadoresCurso.length">
-                <td :colspan="modoVer ? 4 : 5" class="no-results-small">Sin formadores</td>
-              </tr>
-              <tr v-for="f in formadoresCurso" :key="f.CUF_ID || ('tmp-' + (f.__tmpId || 0))">
-                <td>{{ getPersonaName(f.PER_ID) }}</td>
-                <td>{{ rolesList.find(r => r.ROL_ID === f.ROL_ID)?.ROL_DESCRIPCION || '-' }}</td>
-                <td>{{ seccionesCurso.find(s => s.CUS_ID === f.CUS_ID)?.CUS_SECCION || '-' }}</td>
-                <td>{{ f.CUO_DIRECTOR ? 'Sí' : 'No' }}</td>
-                <td v-if="!modoVer">
-                  <BaseButton @click="iniciarEdicionFormador(f)" variant="secondary" size="sm">Modificar</BaseButton>
-                  <BaseButton @click="eliminarFormador(f)" variant="danger" size="sm">Eliminar</BaseButton>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          <div class="add-fecha-form add-formadores-form" v-if="!modoVer">
-            <div class="form-group">
-              <label>Persona</label>
-              <BaseSelect v-model="nuevaFormador.PER_ID" :options="personasOptions" optionLabel="text" />
-            </div>
-            <div class="form-group">
-              <label>Rol</label>
-              <BaseSelect v-model="nuevaFormador.ROL_ID" :options="rolesOptions" optionLabel="text" />
-            </div>
-            <div class="form-group">
-              <label>Sección</label>
-              <BaseSelect v-model="nuevaFormador.CUS_ID" :options="seccionesOptions" optionLabel="text" />
-            </div>
-            <div class="form-group">
-              <label>Director</label>
-              <input type="checkbox" v-model="nuevaFormador.CUO_DIRECTOR" />
-            </div>
-            <BaseButton v-if="!editandoFormador" @click="agregarFormador" class="add-button">Añadir Formador</BaseButton>
-            <BaseButton v-if="editandoFormador" @click="guardarEdicionFormador" class="add-button" variant="primary">Guardar</BaseButton>
-            <BaseButton v-if="editandoFormador" @click="cancelarEdicionFormador" class="add-button" variant="secondary">Cancelar</BaseButton>
-          </div>
-
-          </div>
-
-          <!-- Sección Alimentación -->
-          <hr class="section-divider">
-          <div class="section-box">
-          <h4>Cuotas y Alimentación</h4>
-          <div class="cuotas-grid">
-            <div class="form-group">
-              <label>Cuota con Almuerzo</label>
-              <InputBase type="number" v-model="form.CUR_COTA_CON_ALMUERZO" />
-              <small class="field-hint">Monto en CLP, ej: 15000</small>
-            </div>
-            <div class="form-group">
-              <label>Cuota sin Almuerzo</label>
-              <InputBase type="number" v-model="form.CUR_COTA_SIN_ALMUERZO" />
-              <small class="field-hint">Monto en CLP, ej: 10000</small>
-            </div>
-            <div class="form-group" v-if="!modoVer">
-               <label></label>
-            </div>
-          </div>
-          <table class="fechas-table">
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Tiempo</th>
-                <th>Tipo Alimentación</th>
-                <th>Descripción</th>
-                <th>Adic.</th>
-                <th v-if="!modoVer">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="!alimentacionesCurso.length">
-                <td :colspan="modoVer ? 5 : 6" class="no-results-small">Sin alimentación</td>
-              </tr>
-              <tr v-for="a in alimentacionesCurso" :key="a.CUA_ID || ('tmp-' + (a.__tmpId || 0))">
-                <td>{{ formatDateSimple(a.CUA_FECHA) }}</td>
-                <td>{{ tiempoAlimentacionOptions.find(t => t.value === a.CUA_TIEMPO)?.text }}</td>
-                <td>{{ alimentacionCatalogo.find(x => x.ALI_ID === a.ALI_ID)?.ALI_DESCRIPCION || '-' }}</td>
-                <td>{{ a.CUA_DESCRIPCION }}</td>
-                <td>{{ a.CUA_CANTIDAD_ADICIONAL }}</td>
-                <td v-if="!modoVer">
-                  <BaseButton @click="iniciarEdicionAlimentacion(a)" variant="secondary" size="sm">Modificar</BaseButton>
-                  <BaseButton @click="eliminarAlimentacion(a)" variant="danger" size="sm">Eliminar</BaseButton>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          <div class="add-fecha-form add-alimentacion-form" v-if="!modoVer">
-            <div class="form-group">
-              <label>Fecha</label>
-              <InputBase type="date" v-model="nuevaAlimentacion.CUA_FECHA" />
-            </div>
-            <div class="form-group">
-              <label>Tiempo</label>
-              <BaseSelect v-model="nuevaAlimentacion.CUA_TIEMPO" :options="tiempoAlimentacionOptions" optionLabel="text" />
-            </div>
-            <div class="form-group">
-              <label>Tipo Alimentación</label>
-              <BaseSelect v-model="nuevaAlimentacion.ALI_ID" :options="alimentacionOptions" optionLabel="text" />
-            </div>
-            <div class="form-group">
-              <label>Descripción</label>
-              <InputBase v-model="nuevaAlimentacion.CUA_DESCRIPCION" />
-            </div>
-            <div class="form-group">
-              <label>Adicional</label>
-              <InputBase type="number" v-model="nuevaAlimentacion.CUA_CANTIDAD_ADICIONAL" />
-            </div>
-            <BaseButton v-if="!editandoAlimentacion" @click="agregarAlimentacion" class="add-button">Añadir Alimentación</BaseButton>
-            <BaseButton v-if="editandoAlimentacion" @click="guardarEdicionAlimentacion" class="add-button" variant="primary">Guardar</BaseButton>
-            <BaseButton v-if="editandoAlimentacion" @click="cancelarEdicionAlimentacion" class="add-button" variant="secondary">Cancelar</BaseButton>
-          </div>
-
-          </div>
-
-          <!-- Sección Cuotas del Curso -->
-          <hr class="section-divider">
-          <div class="section-box">
-          <h4>Cuotas del Curso</h4>
-          <table class="fechas-table">
-            <thead>
-              <tr>
-                <th>Tipo</th>
-                <th>Fecha</th>
-                <th>Monto</th>
-                <th v-if="!modoVer">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="!cuotasCurso.length">
-                <td :colspan="modoVer ? 3 : 4" class="no-results-small">Sin cuotas</td>
-              </tr>
-              <tr v-for="c in cuotasCurso" :key="c.CUU_ID || ('tmp-' + (c.__tmpId || 0))">
-                <td>{{ c.CUU_TIPO === 1 ? 'Con Almuerzo' : 'Sin Almuerzo' }}</td>
-                <td>{{ formatDateSimple(c.CUU_FECHA) }}</td>
-                <td>${{ c.CUU_VALOR }}</td>
-                <td v-if="!modoVer">
-                  <BaseButton @click="eliminarCuota(c)" variant="danger" size="sm">Eliminar</BaseButton>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          <div class="add-fecha-form add-cuota-form" v-if="!modoVer">
-            <div class="form-group">
-              <label>Tipo</label>
-              <BaseSelect v-model="nuevaCuota.CUU_TIPO" :options="[{value:1,text:'Con Almuerzo'},{value:2,text:'Sin Almuerzo'}]" />
-            </div>
-            <div class="form-group">
-              <label>Fecha</label>
-              <InputBase type="date" v-model="nuevaCuota.CUU_FECHA" />
-            </div>
-            <div class="form-group">
-              <label>Monto</label>
-              <InputBase type="number" v-model="nuevaCuota.CUU_VALOR" placeholder="15000" />
-            </div>
-            <BaseButton @click="agregarCuota" class="add-button">Añadir Cuota</BaseButton>
-          </div>
-
-          </div>
-
-          <!-- Sección Coordinadores del Curso -->
-          <hr class="section-divider">
-          <div class="section-box">
-          <h4>Coordinadores del Curso</h4>
-          <table class="fechas-table">
-            <thead>
-              <tr>
-                <th>Persona</th>
-                <th>Cargo</th>
-                <th v-if="!modoVer">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="!coordinadoresCurso.length">
-                <td :colspan="modoVer ? 2 : 3" class="no-results-small">Sin coordinadores</td>
-              </tr>
-              <tr v-for="coord in coordinadoresCurso" :key="coord.CUC_ID || ('tmp-' + (coord.__tmpId || 0))">
-                <td>{{ getPersonaName(coord.PER_ID) }}</td>
-                <td>{{ cargosList.find(c => c.CAR_ID === coord.CAR_ID)?.CAR_DESCRIPCION || '-' }}</td>
-                <td v-if="!modoVer">
-                  <BaseButton @click="eliminarCoordinador(coord)" variant="danger" size="sm">Eliminar</BaseButton>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          <div class="add-fecha-form add-coordinador-form" v-if="!modoVer">
-            <div class="form-group">
-              <label>Persona</label>
-              <BaseSelect v-model="nuevoCoordinador.PER_ID" :options="personasOptions" optionLabel="text" />
-            </div>
-            <div class="form-group">
-              <label>Cargo</label>
-              <BaseSelect v-model="nuevoCoordinador.CAR_ID" :options="cargosOptions" optionLabel="text" />
-            </div>
-            <BaseButton @click="agregarCoordinador" class="add-button">Añadir Coordinador</BaseButton>
-          </div>
-          </div>
-        </div>
+        <!-- Sección Coordinadores del Curso -->
+        <CursoCoordinadores 
+          v-if="esEdicion" 
+          v-model="coordinadoresCurso" 
+          :modoVer="modoVer" 
+          :personasOptions="personasOptions"
+          :cargosOptions="cargosOptions"
+          @show-alert="mostrarAlerta($event.message, $event.type)"
+        />
       </div>
-      <template #footer>
-        <BaseButton @click="cerrarModal" variant="secondary">Cancelar</BaseButton>
-        <BaseButton v-if="!modoVer" @click="guardarCurso">Guardar Cambios</BaseButton>
+      </div> <!-- End modal-edit -->
       </template>
+      <!-- Footer removido para usar header actions -->
     </BaseModal>
 
     <!-- Modal Cambio de Estado -->
@@ -490,6 +246,14 @@ import cursosService from '@/services/cursosService.js'
 import CursoDashboard from './CursoDashboard.vue'
 import personasService from '@/services/personasService.js'
 import mantenedores from '@/services/mantenedoresService.js'
+
+// Import Sub-components
+import CursoFechas from '@/components/cursos/CursoFechas.vue'
+import CursoSecciones from '@/components/cursos/CursoSecciones.vue'
+import CursoFormadores from '@/components/cursos/CursoFormadores.vue'
+import CursoAlimentacion from '@/components/cursos/CursoAlimentacion.vue'
+import CursoCuotas from '@/components/cursos/CursoCuotas.vue'
+import CursoCoordinadores from '@/components/cursos/CursoCoordinadores.vue'
 
 // Local aliases matching legacy names used across this component
 const cursosApi = cursosService.cursos
@@ -556,22 +320,19 @@ const cursosList = ref([])
 const cursosFiltrados = ref([])
 const personasList = ref([])
 const tiposCursoList = ref([])
+// Listas locales para edición (v-model de subcomponentes)
 const fechasCurso = ref([])
-const fechasCursoList = ref([]) // Caché de todas las fechas
 const ramaslist = ref([])
-const seccionesList = ref([])
-const seccionesCurso = ref([])
+const seccionesCurso = ref([]) // Se eliminó cache global
 // Equipo y logística
+
 const rolesList = ref([])
 const formadoresCurso = ref([])
-const nuevaFormador = ref({ PER_ID: null, ROL_ID: null, CUS_ID: null, CUO_DIRECTOR: false })
 const alimentacionesCurso = ref([])
-const nuevaAlimentacion = ref({ ALI_ID: null, CUA_FECHA: '', CUA_TIEMPO: null, CUA_DESCRIPCION: '', CUA_CANTIDAD_ADICIONAL: 0 })
 const alimentacionCatalogo = ref([])
 const cuotasCurso = ref([])
-const nuevaCuota = ref({ CUU_TIPO: 1, CUU_FECHA: '', CUU_VALOR: '' })
 const coordinadoresCurso = ref([])
-const nuevoCoordinador = ref({ PER_ID: null, CAR_ID: null })
+
 const mostrarModalVer = ref(false)
 const cursoSeleccionado = ref(null)
 const mostrarDashboard = ref(false)
@@ -585,28 +346,14 @@ const esEdicion = ref(false)
 const modoVer = ref(false)
 const isTrulyNew = ref(false)
 const originalCursoBackup = ref(null)
+// Backups para detectar cambios en sublistas si se desea optimizar PATCH, 
+// aunque en integración completa solemos enviar todo o diffs.
 const originalBuffersBackup = ref({ fechas: [], secciones: [], formadores: [], alimentaciones: [] })
 const isSaving = ref(false) // Bandera para prevenir múltiples clics
 const isDisabling = ref(false) // Bandera para prevenir múltiples deshabilitar
-// Flags de sub-acciones para evitar doble clic
-const isAddingPeriodo = ref(false)
-const isDeletingPeriodo = ref(false)
-const isAddingSeccion = ref(false)
-const isDeletingSeccion = ref(false)
-const isAddingFormador = ref(false)
-const isDeletingFormador = ref(false)
-const isAddingAlimentacion = ref(false)
-const isDeletingAlimentacion = ref(false)
-const isAddingCuota = ref(false)
-const isDeletingCuota = ref(false)
-const isAddingCoordinador = ref(false)
-const isDeletingCoordinador = ref(false)
 
-// Estados de edición para cada sección
-const editandoFecha = ref(null)
-const editandoSeccion = ref(null)
-const editandoFormador = ref(null)
-const editandoAlimentacion = ref(null)
+// (Eliminados estados de edición manuales ahora en subcomponentes)
+
 
 const filtros = ref({
   searchQuery: '',
@@ -658,11 +405,6 @@ const opcionesModalidad = [
   { value: 3, text: 'Internado/Externado' },
 ]
 const opcionesTipoPresencial = [
-  { value: 1, text: 'Presencial' },
-  { value: 2, text: 'Online' },
-  { value: 3, text: 'Híbrido' },
-]
-const opcionesTipoFecha = [
   { value: 1, text: 'Presencial' },
   { value: 2, text: 'Online' },
   { value: 3, text: 'Híbrido' },
@@ -796,10 +538,7 @@ async function cargarDatos({ page = 1, page_size = 20, search = '' } = {}) {
       }
     })
     
-    // Listas globales que antes se llenaban con TODO, ahora las dejamos vacías o con lo que traiga el primer curso si hace falta,
-    // pero realmente deberían ser específicas por curso.
-    fechasCursoList.value = [] 
-    seccionesList.value = []
+    // Listas globales eliminadas
 
     // Filtrado cliente como fallback; cuando uses búsqueda remota, pasar `search` hará que el servidor filtre
     aplicarFiltros()
@@ -1015,12 +754,8 @@ async function abrirModalCrear() {
   alimentacionesCurso.value = []
   cuotasCurso.value = []
   coordinadoresCurso.value = []
-  nuevoPeriodo.value = { CUF_FECHA_INICIO: '', CUF_FECHA_TERMINO: '', CUF_TIPO: 1 }
-  nuevaSeccion.value = { CUS_SECCION: '', RAM_ID: null, CUS_CANT_PARTICIPANTE: '' }
-  nuevaFormador.value = { PER_ID: null, ROL_ID: null, CUS_ID: null, CUO_DIRECTOR: false }
-  nuevaAlimentacion.value = { ALI_ID: null, CUA_FECHA: '', CUA_TIEMPO: null, CUA_DESCRIPCION: '', CUA_CANTIDAD_ADICIONAL: 0 }
-  nuevaCuota.value = { CUC_NUMERO: '', CUC_MONTO: '', CUC_FECHA_VENCIMIENTO: '' }
-  nuevoCoordinador.value = { PER_ID: null, CAR_ID: null }
+// (Reset local implícito)
+
   // Si aún no se han cargado catálogos (persona, tipos, comunas, cargos, ramas) forzar carga rápida
   if (
     personasList.value.length === 0 ||
@@ -1066,242 +801,91 @@ async function abrirModalEditar(curso) {
     cuotas: JSON.parse(JSON.stringify(cuotasCurso.value)),
     coordinadores: JSON.parse(JSON.stringify(coordinadoresCurso.value)),
   }
-  nuevoPeriodo.value = { CUF_FECHA_INICIO: '', CUF_FECHA_TERMINO: '', CUF_TIPO: 1 }
-  nuevaSeccion.value = { CUS_SECCION: '', RAM_ID: null, CUS_CANT_PARTICIPANTE: '' }
-  nuevaFormador.value = { PER_ID: null, ROL_ID: null, CUS_ID: null, CUO_DIRECTOR: false }
-  nuevaAlimentacion.value = { ALI_ID: null, CUA_FECHA: '', CUA_TIEMPO: null, CUA_DESCRIPCION: '', CUA_CANTIDAD_ADICIONAL: 0 }
-  nuevaCuota.value = { CUU_TIPO: 1, CUU_FECHA: '', CUU_VALOR: '' }
-  nuevoCoordinador.value = { PER_ID: null, CAR_ID: null }
+// (Reset de sub-buffers locales implícito al asignar array vacío)
   mostrarModal.value = true
+
 }
 
 function cerrarModal() {
   mostrarModal.value = false
 }
 
-// --- Lógica de Fechas del Curso ---
-const nuevoPeriodo = ref({
-  CUF_FECHA_INICIO: '',
-  CUF_FECHA_TERMINO: '',
-  CUF_TIPO: 1,
-})
+// --- Funciones de Carga de Sub-Entidades (Solo Lectura Inicial) ---
 
-// --- Lógica de Fechas del Curso ---
 async function cargarFechasDelCurso(cursoId) {
   if (!cursoId) {
     fechasCurso.value = []
     return
   }
   try {
-    // Solo cargar si aún no tenemos fechas en caché
-    // Cargar directamente solo las fechas del curso para evitar traer todas
     const res = await fechasApi.list({ CUR_ID: cursoId, page_size: 20 })
     const raw = Array.isArray(res?.results) ? res.results : (Array.isArray(res) ? res : [])
-    fechasCursoList.value = raw.map(toUpperKeys)
-    fechasCurso.value = (fechasCursoList.value || []).filter(f => Number(f.CUR_ID) === Number(cursoId))
+    // Mapeo directo a local state
+    fechasCurso.value = raw.map(toUpperKeys)
   } catch (e) {
     console.error('Error cargando fechas:', e)
     fechasCurso.value = []
   }
 }
 
-async function agregarFecha() {
-  if (isAddingPeriodo.value) return
-  if (!nuevoPeriodo.value.CUF_FECHA_INICIO || !nuevoPeriodo.value.CUF_FECHA_TERMINO) {
-    mostrarAlerta('Debe seleccionar fecha de inicio y término.', 'warning')
-    return
-  }
-  // Validación simple de rango
-  if (new Date(nuevoPeriodo.value.CUF_FECHA_TERMINO) < new Date(nuevoPeriodo.value.CUF_FECHA_INICIO)) {
-    mostrarAlerta('La fecha de término no puede ser anterior al inicio.', 'warning')
-    return
-  }
-  try {
-    isAddingPeriodo.value = true
-    if (!form.value.CUR_ID) {
-      // buffer temporal hasta guardar curso
-      fechasCurso.value.push({ ...nuevoPeriodo.value, __tmpId: Date.now() })
-    } else {
-      const creadaRaw = await fechasApi.create(toLowerKeys({ ...nuevoPeriodo.value, CUR_ID: form.value.CUR_ID }))
-      const creada = toUpperKeys(creadaRaw)
-      fechasCurso.value.push(creada)
-      fechasCursoList.value.push(creada) // Actualizar caché
-    }
-    nuevoPeriodo.value.CUF_FECHA_INICIO = ''
-    nuevoPeriodo.value.CUF_FECHA_TERMINO = ''
-    mostrarAlerta('Período agregado exitosamente.', 'success')
-  } finally { isAddingPeriodo.value = false }
-}
-
-function iniciarEdicionFecha(fecha) {
-  editandoFecha.value = fecha.CUF_ID || `tmp-${fecha.__tmpId}`
-  nuevoPeriodo.value = { ...fecha }
-}
-
-async function guardarEdicionFecha() {
-  if (!nuevoPeriodo.value.CUF_FECHA_INICIO || !nuevoPeriodo.value.CUF_FECHA_TERMINO) {
-    mostrarAlerta('Debe completar fecha de inicio y término.', 'warning')
-    return
-  }
-  if (new Date(nuevoPeriodo.value.CUF_FECHA_TERMINO) < new Date(nuevoPeriodo.value.CUF_FECHA_INICIO)) {
-    mostrarAlerta('La fecha de término no puede ser anterior al inicio.', 'warning')
-    return
-  }
-  try {
-    if (typeof editandoFecha.value === 'string' && editandoFecha.value.startsWith('tmp-')) {
-      // Actualizar en buffer temporal
-      const idx = fechasCurso.value.findIndex(f => `tmp-${f.__tmpId}` === editandoFecha.value)
-      if (idx !== -1) fechasCurso.value[idx] = { ...nuevoPeriodo.value }
-    } else {
-      // Actualizar en API
-      await fechasApi.update(editandoFecha.value, toLowerKeys(nuevoPeriodo.value))
-      const idx = fechasCurso.value.findIndex(f => f.CUF_ID === editandoFecha.value)
-      if (idx !== -1) fechasCurso.value[idx] = { ...nuevoPeriodo.value, CUF_ID: editandoFecha.value }
-      // Actualizar caché
-      const cacheIdx = fechasCursoList.value.findIndex(f => f.CUF_ID === editandoFecha.value)
-      if (cacheIdx !== -1) fechasCursoList.value[cacheIdx] = { ...nuevoPeriodo.value, CUF_ID: editandoFecha.value }
-    }
-    cancelarEdicionFecha()
-    mostrarAlerta('Período actualizado exitosamente.', 'success')
-  } catch (e) {
-    console.error('Error actualizando período:', e)
-    mostrarAlerta('Error al actualizar el período.', 'error')
-  }
-}
-
-function cancelarEdicionFecha() {
-  editandoFecha.value = null
-  nuevoPeriodo.value = { CUF_FECHA_INICIO: '', CUF_FECHA_TERMINO: '', CUF_TIPO: 1 }
-}
-
-async function eliminarFecha(fechaId) {
-  // Si es temporal (__tmpId), remover directo
-  if (!fechaId && fechaId !== 0) return
-  if (typeof fechaId === 'string' && fechaId.startsWith('tmp-')) {
-    fechasCurso.value = fechasCurso.value.filter(f => `tmp-${f.__tmpId}` !== fechaId)
-    return
-  }
-  if (!window.confirm('¿Seguro que desea eliminar este período?')) return
-  if (isDeletingPeriodo.value) return
-  try {
-    isDeletingPeriodo.value = true
-    await fechasApi.remove(fechaId)
-    fechasCurso.value = fechasCurso.value.filter(f => f.CUF_ID !== fechaId)
-    fechasCursoList.value = fechasCursoList.value.filter(f => f.CUF_ID !== fechaId) // Actualizar caché
-    mostrarAlerta('Período eliminado exitosamente.', 'success')
-  } catch (e) {
-    // Manejar 404 silencioso si ya no existe
-    if (/404/.test(String(e?.message))) {
-      fechasCurso.value = fechasCurso.value.filter(f => f.CUF_ID !== fechaId)
-      fechasCursoList.value = fechasCursoList.value.filter(f => f.CUF_ID !== fechaId)
-    } else { throw e }
-  } finally { isDeletingPeriodo.value = false }
-}
-
-// --- Lógica de Secciones del Curso ---
-const nuevaSeccion = ref({
-  CUS_SECCION: '',
-  RAM_ID: null,
-  CUS_CANT_PARTICIPANTE: '',
-})
-
 async function cargarSeccionesDelCurso(cursoId) {
   try {
-    // Cargar directamente solo las secciones del curso para evitar traer todas
     const all = await seccionesApi.list({ CUR_ID: cursoId, page_size: 500 })
     const raw = Array.isArray(all?.results) ? all.results : (Array.isArray(all) ? all : [])
-    seccionesList.value = raw.map(toUpperKeys)
-    seccionesCurso.value = (seccionesList.value || []).filter(s => Number(s.CUR_ID) === Number(cursoId))
+    seccionesCurso.value = raw.map(toUpperKeys)
   } catch (e) {
     console.error('Error cargando secciones:', e)
     seccionesCurso.value = []
   }
 }
 
-async function agregarSeccion() {
-  if (!nuevaSeccion.value.CUS_SECCION || !nuevaSeccion.value.RAM_ID || !nuevaSeccion.value.CUS_CANT_PARTICIPANTE) {
-    mostrarAlerta('Debe llenar todos los campos de la sección.', 'warning')
-    return
-  }
-  if (isAddingSeccion.value) return
-  const payload = {
-    CUR_ID: form.value.CUR_ID,
-    CUS_SECCION: Number(nuevaSeccion.value.CUS_SECCION),
-    RAM_ID: Number(nuevaSeccion.value.RAM_ID),
-    CUS_CANT_PARTICIPANTE: Number(nuevaSeccion.value.CUS_CANT_PARTICIPANTE)
-  }
-  try {
-    isAddingSeccion.value = true
-    if (!form.value.CUR_ID) {
-      seccionesCurso.value.push({ ...payload, __tmpId: Date.now() })
-    } else {
-      const creadaRaw = await seccionesApi.create(toLowerKeys(payload))
-      const creada = toUpperKeys(creadaRaw)
-      seccionesCurso.value.push(creada)
-      seccionesList.value.push(creada)
+// --- Sync Helper for Sub-Entities ---
+async function syncCollection(api, currentList, originalList, idField, curId, transformPayload, onCreated) {
+  // 1. Delete: Items present in original but not in current (based on ID)
+  // Filter out any temp IDs from the current list's ID set
+  const currentIds = new Set(
+    currentList
+      .map(x => x[idField])
+      .filter(id => id && typeof id !== 'string' && !String(id).startsWith('tmp'))
+  )
+  
+  for (const original of originalList) {
+    if (original[idField] && !currentIds.has(original[idField])) {
+       try { 
+         await api.remove(original[idField]) 
+       } catch (e) { 
+         console.warn(`[Sync] Delete failed for ${idField}=${original[idField]}:`, e) 
+       }
     }
-    nuevaSeccion.value.CUS_SECCION = ''
-    nuevaSeccion.value.RAM_ID = null
-    nuevaSeccion.value.CUS_CANT_PARTICIPANTE = ''
-    mostrarAlerta('Sección agregada exitosamente.', 'success')
-  } finally { isAddingSeccion.value = false }
-}
-
-function iniciarEdicionSeccion(seccion) {
-  editandoSeccion.value = seccion.CUS_ID || `tmp-${seccion.__tmpId}`
-  nuevaSeccion.value = { ...seccion }
-}
-
-async function guardarEdicionSeccion() {
-  if (!nuevaSeccion.value.CUS_SECCION || !nuevaSeccion.value.RAM_ID || !nuevaSeccion.value.CUS_CANT_PARTICIPANTE) {
-    mostrarAlerta('Debe completar todos los campos.', 'warning')
-    return
   }
-  try {
-    if (typeof editandoSeccion.value === 'string' && editandoSeccion.value.startsWith('tmp-')) {
-      const idx = seccionesCurso.value.findIndex(s => `tmp-${s.__tmpId}` === editandoSeccion.value)
-      if (idx !== -1) seccionesCurso.value[idx] = { ...nuevaSeccion.value }
-    } else {
-      await seccionesApi.update(editandoSeccion.value, toLowerKeys(nuevaSeccion.value))
-      const idx = seccionesCurso.value.findIndex(s => s.CUS_ID === editandoSeccion.value)
-      if (idx !== -1) seccionesCurso.value[idx] = { ...nuevaSeccion.value, CUS_ID: editandoSeccion.value }
-      const cacheIdx = seccionesList.value.findIndex(s => s.CUS_ID === editandoSeccion.value)
-      if (cacheIdx !== -1) seccionesList.value[cacheIdx] = { ...nuevaSeccion.value, CUS_ID: editandoSeccion.value }
-    }
-    cancelarEdicionSeccion()
-    mostrarAlerta('Sección actualizada exitosamente.', 'success')
-  } catch (e) {
-    console.error('Error actualizando sección:', e)
-    mostrarAlerta('Error al actualizar la sección.', 'error')
-  }
-}
 
-function cancelarEdicionSeccion() {
-  editandoSeccion.value = null
-  nuevaSeccion.value = { CUS_SECCION: '', RAM_ID: null, CUS_CANT_PARTICIPANTE: '' }
-}
-
-async function eliminarSeccion(seccionId) {
-  // Si es temporal
-  if (typeof seccionId === 'string' && seccionId.startsWith('tmp-')) {
-    seccionesCurso.value = seccionesCurso.value.filter(s => `tmp-${s.__tmpId}` !== seccionId)
-    return
-  }
-  if (!window.confirm('¿Seguro que desea eliminar esta sección?')) return
-  if (isDeletingSeccion.value) return
-  try {
-    isDeletingSeccion.value = true
-    await seccionesApi.remove(seccionId)
-    seccionesCurso.value = seccionesCurso.value.filter(s => s.CUS_ID !== seccionId)
-    seccionesList.value = seccionesList.value.filter(s => s.CUS_ID !== seccionId)
+  // 2. Create / Update
+  for (const item of currentList) {
+    const payload = transformPayload(item)
+    payload.CUR_ID = curId // Ensure context
     
-    mostrarAlerta('Sección eliminada exitosamente.', 'success')
-  } catch (e) {
-    if (/404/.test(String(e?.message))) {
-      seccionesCurso.value = seccionesCurso.value.filter(s => s.CUS_ID !== seccionId)
-      seccionesList.value = seccionesList.value.filter(s => s.CUS_ID !== seccionId)
-    } else { throw e }
-  } finally { isDeletingSeccion.value = false }
+    const idVal = item[idField]
+    const isNew = !idVal || String(idVal).startsWith('tmp')
+    
+    try {
+      if (isNew) {
+         const res = await api.create(toLowerKeys(payload))
+         const saved = toUpperKeys(res)
+         // Update local item with real ID and data
+         const exactId = saved[idField]
+         if (exactId) {
+            item[idField] = exactId
+            Object.assign(item, saved)
+         }
+         if (onCreated) onCreated(item, saved)
+      } else {
+         // Update existing
+         await api.update(idVal, toLowerKeys(payload))
+      }
+    } catch (e) {
+      console.warn(`[Sync] Save failed for item:`, item, e)
+    }
+  }
 }
 
 // --- Lógica de Guardado Principal ---
@@ -1330,13 +914,18 @@ async function guardarCurso() {
     }
 
     const payload = { ...form.value }
-    // Sanitizar payload: eliminar campos calculados / solo lectura
+    // Sanitizar payload: eliminar buffers locales
     delete payload.fechas
     delete payload.secciones
+    delete payload.formadores
+    delete payload.alimentaciones
+    delete payload.cuotas
+    delete payload.coordinadores
     delete payload.CUR_FECHA_HORA
+    
+    // Casteos
     payload.CUR_COTA_CON_ALMUERZO = Number(payload.CUR_COTA_CON_ALMUERZO)
     payload.CUR_COTA_SIN_ALMUERZO = Number(payload.CUR_COTA_SIN_ALMUERZO)
-    // Convertir FKs y enums a números por seguridad
     payload.TCU_ID = Number(payload.TCU_ID)
     payload.PER_ID_RESPONSABLE = Number(payload.PER_ID_RESPONSABLE)
     payload.CAR_ID_RESPONSABLE = payload.CAR_ID_RESPONSABLE ? Number(payload.CAR_ID_RESPONSABLE) : null
@@ -1344,6 +933,7 @@ async function guardarCurso() {
     payload.CUR_MODALIDAD = Number(payload.CUR_MODALIDAD || 1)
     payload.CUR_TIPO_CURSO = Number(payload.CUR_TIPO_CURSO || 1)
     payload.CUR_ADMINISTRA = Number(payload.CUR_ADMINISTRA || 1)
+    
     // Estado automático: si estaba Anulado (2), mantener; si no, calcular según períodos
     const originalEstado = originalCursoBackup.value?.CUR_ESTADO
     if (Number(originalEstado) === 2) {
@@ -1352,159 +942,125 @@ async function guardarCurso() {
       payload.CUR_ESTADO = computeAutoEstadoFromFechas(fechasCurso.value)
     }
 
+    // CLEANUP: Filtrar solo las llaves en mayúscula (source of truth del formulario)
+    // para evitar que llaves minúsculas antiguas (inyectadas por toUpperKeys) sobrescriban los cambios
+    const cleanPayload = {}
+    Object.keys(payload).forEach(key => {
+      // Asumimos que las llaves editables son las que están en Main Uppercase o Snake Uppercase
+      // Si existe una versión mayúscula y una minúscula, la mayúscula es la que tiene el v-model
+      if (key === key.toUpperCase()) {
+        cleanPayload[key] = payload[key]
+      }
+    })
+
     // Prepare payload for API (lowercase)
-    const apiPayload = toLowerKeys(payload)
+    const apiPayload = toLowerKeys(cleanPayload)
+    let cursoGuardado = null
 
     if (isTrulyNew.value) {
-      // Obtener usuario actual para USU_ID
-      // TODO: Implementar endpoint 'auth/perfil' real en backend
-      apiPayload.usu_id = 1 // Por ahora usar ID 1 (Admin/Default)
-
+      // Creation
+      apiPayload.usu_id = 1 // TODO: Implementar identity real
       const creadoRaw = await cursosApi.create(apiPayload)
-      const creado = toUpperKeys(creadoRaw)
-      cursosList.value.unshift(creado)
-      // Persistir buffers (fechas, secciones, formadores, alimentación)
-      // Fechas
-      for (const f of (fechasCurso.value || [])) {
-        if (!f.CUF_ID) {
-          try {
-            const createdFRaw = await fechasApi.create(toLowerKeys({
-              CUR_ID: creado.CUR_ID,
-              CUF_FECHA_INICIO: f.CUF_FECHA_INICIO,
-              CUF_FECHA_TERMINO: f.CUF_FECHA_TERMINO,
-              CUF_TIPO: f.CUF_TIPO,
-            }))
-            const createdF = toUpperKeys(createdFRaw)
-            Object.assign(f, createdF)
-            fechasCursoList.value.push(createdF)
-          } catch (e) { console.warn('No se pudo crear período post-curso:', e) }
-        }
-      }
-      // Secciones
-      for (const s of (seccionesCurso.value || [])) {
-        if (!s.CUS_ID) {
-          try {
-            const createdSRaw = await seccionesApi.create(toLowerKeys({
-              CUR_ID: creado.CUR_ID,
-              CUS_SECCION: s.CUS_SECCION,
-              RAM_ID: s.RAM_ID,
-              CUS_CANT_PARTICIPANTE: s.CUS_CANT_PARTICIPANTE,
-            }))
-            const createdS = toUpperKeys(createdSRaw)
-            Object.assign(s, createdS)
-            seccionesList.value.push(createdS)
-          } catch (e) { console.warn('No se pudo crear sección post-curso:', e) }
-        }
-      }
-      // Formadores
-      for (const fm of (formadoresCurso.value || [])) {
-        if (!fm.CUF_ID) {
-          try {
-            // Remap seccion temporal si corresponde
-            let resolvedCusId = null
-            if (typeof fm.CUS_ID === 'number') {
-              resolvedCusId = fm.CUS_ID
-            } else if (typeof fm.CUS_ID === 'string' && fm.CUS_ID.startsWith('tmp-')) {
-              const tmpNumeric = Number(fm.CUS_ID.replace('tmp-', ''))
-              const matched = seccionesCurso.value.find(s => s.__tmpId === tmpNumeric)
-              if (matched && matched.CUS_ID) resolvedCusId = matched.CUS_ID
-            }
-            const createdFmRaw = await formadoresApi.create(toLowerKeys({
-              CUR_ID: creado.CUR_ID,
-              PER_ID: fm.PER_ID,
-              ROL_ID: fm.ROL_ID,
-              CUS_ID: resolvedCusId,
-              CUO_DIRECTOR: !!fm.CUO_DIRECTOR,
-            }))
-            const createdFm = toUpperKeys(createdFmRaw)
-            Object.assign(fm, createdFm)
-          } catch (e) { console.warn('No se pudo crear formador post-curso:', e) }
-        }
-      }
-      // Alimentaciones
-      for (const al of (alimentacionesCurso.value || [])) {
-        if (!al.CUA_ID) {
-          try {
-            const createdAlRaw = await alimentacionesApi.create(toLowerKeys({
-              CUR_ID: creado.CUR_ID,
-              ALI_ID: al.ALI_ID,
-              CUA_FECHA: al.CUA_FECHA,
-              CUA_TIEMPO: al.CUA_TIEMPO,
-              CUA_DESCRIPCION: al.CUA_DESCRIPCION,
-              CUA_CANTIDAD_ADICIONAL: Number(al.CUA_CANTIDAD_ADICIONAL || 0),
-            }))
-            const createdAl = toUpperKeys(createdAlRaw)
-            Object.assign(al, createdAl)
-          } catch (e) { console.warn('No se pudo crear alimentación post-curso:', e) }
-        }
-      }
-      // Cuotas
-      for (const cuota of (cuotasCurso.value || [])) {
-        if (!cuota.CUU_ID) {
-          try {
-            const createdCuotaRaw = await cuotasApi.create(toLowerKeys({
-              CUR_ID: creado.CUR_ID,
-              CUU_TIPO: Number(cuota.CUU_TIPO),
-              CUU_FECHA: cuota.CUU_FECHA,
-              CUU_VALOR: Number(cuota.CUU_VALOR),
-            }))
-            const createdCuota = toUpperKeys(createdCuotaRaw)
-            Object.assign(cuota, createdCuota)
-          } catch (e) { console.warn('No se pudo crear cuota post-curso:', e) }
-        }
-      }
-      // Coordinadores
-      for (const coord of (coordinadoresCurso.value || [])) {
-        if (!coord.CUC_ID) {
-          try {
-            const createdCoordRaw = await coordinadoresApi.create(toLowerKeys({
-              CUR_ID: creado.CUR_ID,
-              PER_ID: coord.PER_ID,
-              CAR_ID: coord.CAR_ID,
-            }))
-            const createdCoord = toUpperKeys(createdCoordRaw)
-            Object.assign(coord, createdCoord)
-          } catch (e) { console.warn('No se pudo crear coordinador post-curso:', e) }
-        }
-      }
-      await cargarFechasDelCurso(creado.CUR_ID)
-      await cargarSeccionesDelCurso(creado.CUR_ID)
-      isTrulyNew.value = false
-      mostrarAlerta('Curso creado exitosamente.', 'success')
+      cursoGuardado = toUpperKeys(creadoRaw)
+      cursosList.value.unshift(cursoGuardado)
+      // En modo 'Nuevo', todos los buffers son para crear, y originalBuffersBackup debería estar vacío.
     } else {
-      // En edición: prevenir update si no hay cambios relevantes
+      // Update
       const camposClave = ['CUR_DESCRIPCION','CUR_CODIGO','TCU_ID','PER_ID_RESPONSABLE','CUR_FECHA_SOLICITUD','CUR_COTA_CON_ALMUERZO','CUR_COTA_SIN_ALMUERZO','CUR_MODALIDAD','CUR_TIPO_CURSO','CUR_LUGAR','CUR_COORD_LATITUD','CUR_COORD_LONGITUD','CUR_ESTADO','CUR_OBSERVACION','CUR_ADMINISTRA','COM_ID_LUGAR','CAR_ID_RESPONSABLE']
-      const huboCambios = camposClave.some(k => String(originalCursoBackup.value?.[k] ?? '') !== String(payload[k] ?? ''))
-      if (!huboCambios) {
-        mostrarAlerta('No hay cambios para guardar.', 'info')
-        return
-      }
-      // Usar PATCH para edición parcial y evitar requerir todos los campos
+      // Check changes? (Optional optimization, but we probably want to save anyway to trigger sub-entity sync)
       const actualizadoRaw = await cursosApi.partialUpdate(payload.CUR_ID, apiPayload)
-      const actualizado = toUpperKeys(actualizadoRaw)
+      cursoGuardado = toUpperKeys(actualizadoRaw)
+      
       const index = cursosList.value.findIndex(c => c.CUR_ID === payload.CUR_ID)
       if (index !== -1) {
-        // preservar fechas y secciones ya cargadas en memoria si existen
-        const fechasLocal = cursosList.value[index].fechas
-        const seccionesLocal = cursosList.value[index].secciones
-        cursosList.value[index] = { ...actualizado, fechas: fechasLocal || [], secciones: seccionesLocal || [] }
+        // preserve nested arrays to avoid flicker
+        const old = cursosList.value[index]
+        cursosList.value[index] = { ...cursoGuardado, fechas: old.fechas, secciones: old.secciones } 
       }
-      originalCursoBackup.value = JSON.parse(JSON.stringify(form.value))
-      originalBuffersBackup.value = {
+    }
+    
+    const curId = cursoGuardado.CUR_ID
+    const origBuffers = originalBuffersBackup.value || {}
+
+    // --- Persistir Sub-Entidades (Sync) ---
+    
+    // 1. Fechas
+    await syncCollection(fechasApi, fechasCurso.value, origBuffers.fechas || [], 'CUF_ID', curId, (item) => ({
+        CUF_FECHA_INICIO: item.CUF_FECHA_INICIO,
+        CUF_FECHA_TERMINO: item.CUF_FECHA_TERMINO,
+        CUF_TIPO: item.CUF_TIPO
+    }))
+
+    // 2. Secciones (Mapping temp IDs needed for Formadores)
+    const sectionsMap = {} // __tmpId -> real CUS_ID
+    await syncCollection(seccionesApi, seccionesCurso.value, origBuffers.secciones || [], 'CUS_ID', curId, (item) => ({
+        CUS_SECCION: item.CUS_SECCION,
+        RAM_ID: item.RAM_ID,
+        CUS_CANT_PARTICIPANTE: item.CUS_CANT_PARTICIPANTE
+    }), (item, saved) => {
+        if (item.__tmpId) sectionsMap[item.__tmpId] = saved.CUS_ID
+    })
+
+    // 3. Formadores
+    await syncCollection(formadoresApi, formadoresCurso.value, origBuffers.formadores || [], 'CUF_ID', curId, (item) => {
+        let rCusId = item.CUS_ID
+        // Resolve temp reference
+        if (typeof rCusId === 'string' && rCusId.startsWith('tmp-')) {
+          const tId = Number(rCusId.replace('tmp-', ''))
+          if (sectionsMap[tId]) rCusId = sectionsMap[tId]
+        }
+        return {
+           PER_ID: item.PER_ID,
+           ROL_ID: item.ROL_ID,
+           CUS_ID: typeof rCusId === 'number' ? rCusId : null,
+           CUO_DIRECTOR: !!item.CUO_DIRECTOR
+        }
+    })
+
+    // 4. Alimentaciones
+    await syncCollection(alimentacionesApi, alimentacionesCurso.value, origBuffers.alimentaciones || [], 'CUA_ID', curId, (item) => ({
+        ALI_ID: item.ALI_ID,
+        CUA_FECHA: item.CUA_FECHA,
+        CUA_TIEMPO: item.CUA_TIEMPO,
+        CUA_DESCRIPCION: item.CUA_DESCRIPCION,
+        CUA_CANTIDAD_ADICIONAL: Number(item.CUA_CANTIDAD_ADICIONAL || 0)
+    }))
+
+    // 5. Cuotas
+    await syncCollection(cuotasApi, cuotasCurso.value, origBuffers.cuotas || [], 'CUU_ID', curId, (item) => ({
+        CUU_TIPO: Number(item.CUU_TIPO),
+        CUU_FECHA: item.CUU_FECHA,
+        CUU_VALOR: Number(item.CUU_VALOR)
+    }))
+
+    // 6. Coordinadores
+    await syncCollection(coordinadoresApi, coordinadoresCurso.value, origBuffers.coordinadores || [], 'CUC_ID', curId, (item) => ({
+        PER_ID: item.PER_ID,
+        CAR_ID: item.CAR_ID
+    }))
+
+    // Update Backups for next edit
+    originalCursoBackup.value = JSON.parse(JSON.stringify(form.value))
+    originalBuffersBackup.value = {
         fechas: JSON.parse(JSON.stringify(fechasCurso.value)),
         secciones: JSON.parse(JSON.stringify(seccionesCurso.value)),
         formadores: JSON.parse(JSON.stringify(formadoresCurso.value)),
         alimentaciones: JSON.parse(JSON.stringify(alimentacionesCurso.value)),
         cuotas: JSON.parse(JSON.stringify(cuotasCurso.value)),
         coordinadores: JSON.parse(JSON.stringify(coordinadoresCurso.value)),
-      }
-      mostrarAlerta('Curso actualizado exitosamente.', 'success')
     }
+    
+    // Refrescar buffers locales (para asegurar IDs limpios y orden)
+    await cargarFechasDelCurso(curId)
+    await cargarSeccionesDelCurso(curId)
+
+    mostrarAlerta(isTrulyNew.value ? 'Curso creado exitosamente.' : 'Curso actualizado exitosamente.', 'success')
+    isTrulyNew.value = false
     aplicarFiltros()
     cerrarModal()
+
   } catch (e) {
     console.error('Error al guardar el curso:', e)
-    console.error('Response:', e.response?.data)
     mostrarAlerta(`Error al guardar: ${e.response?.data?.detail || e.message || 'Error desconocido'}`, 'error')
   } finally {
     isSaving.value = false
@@ -1552,15 +1108,11 @@ async function guardarCambioEstado() {
     return
   }
   
-  // Simplificar extracción de valor
   let rawValue = nuevoEstado.value
   if (rawValue && typeof rawValue === 'object') {
      rawValue = rawValue.value ?? rawValue.VALOR ?? rawValue.id
   }
   const estadoNumber = Number(rawValue)
-  
-  const estadoTexto = opcionesEstado.find(e => e.value === estadoNumber)?.text || 'Desconocido'
-  // if (!window.confirm(`¿Confirma cambiar el estado a "${estadoTexto}"?`)) return
   
   if (isDisabling.value) return
   isDisabling.value = true
@@ -1570,10 +1122,9 @@ async function guardarCambioEstado() {
     const actualizadoRaw = await cursosApi.partialUpdate(cursoParaCambioEstado.value.CUR_ID, payload)
     const actualizado = toUpperKeys(actualizadoRaw)
     
-    // Actualizar en listas
     Object.assign(cursoParaCambioEstado.value, actualizado)
     
-    // Actualizar también en cursosList global si referencia es distinta
+    // Update global list
     const idx = cursosList.value.findIndex(c => c.CUR_ID === actualizado.CUR_ID)
     if (idx !== -1) {
        cursosList.value[idx] = { ...cursosList.value[idx], ...actualizado }
@@ -1584,7 +1135,7 @@ async function guardarCambioEstado() {
     cerrarModalCambioEstado()
   } catch (e) {
     console.error('Error al cambiar estado:', e)
-    mostrarAlerta(`Error al cambiar estado: ${e.response?.data?.detail || e.message || 'Error desconocido'}`, 'error')
+    mostrarAlerta(`Error al cambiar estado: ${e.response?.data?.detail || e.message}`, 'error')
   } finally {
     isDisabling.value = false
   }
@@ -1594,37 +1145,32 @@ async function guardarCambioEstado() {
 const personasOptions = computed(() => personasList.value.map(p => ({ value: p.PER_ID || p.id, text: (p.PER_NOMBRES || p.PER_NOMBRE || p.nombre || '').trim() })))
 
 const tiposCursoOptions = computed(() => 
-  tiposCursoList.value.map(tc => ({ value: tc.TCU_ID || tc.id, text: tc.TCU_DESCRIPCION || tc.nombre }))
+  tiposCursoList.value.map(tc => ({ value: tc.TCU_ID || tc.id, text: tc.TCU_DESCRIPCION || tc.nombre || tc.NOMBRE || 'Sin descripción' }))
 )
 
 const comunasList = ref([])
 const cargosList = ref([])
 const comunasOptions = computed(() => comunasList.value.map(c => ({ value: c.COM_ID, text: c.COM_DESCRIPCION })))
 
-// Ubicar mapa según comuna seleccionada (coordenadas importadas de todas las comunas de Chile)
+// Ubicar mapa según comuna seleccionada
 const comunaCoords = comunasCoords
 
 watch(() => form.value.COM_ID_LUGAR, (newComunaId) => {
   if (!newComunaId) return
   const comunaObj = comunasList.value.find(c => Number(c.COM_ID) === Number(newComunaId))
-  if (!comunaObj) {
-    console.warn('[CRUDcursos] Comuna no encontrada con ID:', newComunaId)
-    return
-  }
-  const nombre = comunaObj.COM_DESCRIPCION
-  console.log('[CRUDcursos] Comuna seleccionada:', nombre)
-  const coords = comunaCoords[nombre]
+  if (!comunaObj) return
+  const colName = comunaObj.COM_DESCRIPCION
+  const coords = comunaCoords[colName]
   if (coords) {
-    console.log('[CRUDcursos] Actualizando coordenadas a:', coords)
     form.value.CUR_COORD_LATITUD = coords.lat
     form.value.CUR_COORD_LONGITUD = coords.lng
   } else {
-    console.warn('[CRUDcursos] No hay coordenadas definidas para:', nombre)
-    // Usar coordenadas por defecto de Santiago
+    // Default STGO
     form.value.CUR_COORD_LATITUD = -33.45694
     form.value.CUR_COORD_LONGITUD = -70.64827
   }
 })
+
 const cargosOptions = computed(() => cargosList.value.map(c => ({ value: c.CAR_ID, text: c.CAR_DESCRIPCION })))
 
 function formatDates(curso) {
@@ -1644,21 +1190,20 @@ function formatDateSimple(dateStr) {
 
 function getPersonaName(id) {
   const p = personasList.value.find(x => Number(x.PER_ID ?? x.ID ?? x.id) === Number(id))
-  const nombre = p?.PER_NOMBRES || p?.PER_NOMBRE || p?.NOMBRE || p?.nombre || ''
+  const nombre = p?.PER_NOMBRES || p?.PER_NOMBRE || p?.nombre || ''
   const apellido = p?.PER_APELPAT || p?.PER_APELLIDO_PATERNO || p?.APELLIDO || p?.apellido || ''
-  if (p && !apellido) console.log('[DEBUG] Missing surname for persona:', p)
   const full = `${(nombre || '').trim()} ${(apellido || '').trim()}`.trim()
   return p ? (full || nombre || '-') : 'No asignado'
 }
 
 function getCargoName(id) {
   const c = cargosList.value.find(x => Number(x.CAR_ID ?? x.ID ?? x.id) === Number(id))
-  return c ? (c.CAR_DESCRIPCION || c.DESCRIPCION || c.nombre || c.NOMBRE || '-') : ''
+  return c ? (c.CAR_DESCRIPCION || c.DESCRIPCION || c.nombre || '-') : ''
 }
 
 function getTipoCursoName(id) {
   const tc = tiposCursoList.value.find(x => Number(x.TCU_ID ?? x.ID ?? x.id) === Number(id))
-  return tc ? (tc.TCU_DESCRIPCION || tc.DESCRIPCION || tc.nombre || tc.NOMBRE || 'No definido') : 'No definido'
+  return tc ? (tc.TCU_DESCRIPCION || tc.NOMBRE || tc.nombre || '-') : 'No definido'
 }
 
 function getEstadoText(e) {
@@ -1675,267 +1220,14 @@ const opcionesAdministra = [
   { value: 2, text: 'Distrito' },
 ]
 
-// ====== Equipo Formadores ======
 const rolesOptions = computed(() => rolesList.value.map(r => ({ value: r.ROL_ID, text: r.ROL_DESCRIPCION })))
 const seccionesOptions = computed(() => seccionesCurso.value.map(s => {
   const rama = ramaslist.value.find(r => r.RAM_ID === s.RAM_ID)
   const ramaText = rama ? rama.RAM_DESCRIPCION : ''
   return { value: s.CUS_ID || `tmp-${s.__tmpId}`, text: `SECCION N° ${s.CUS_SECCION} (${ramaText})` }
 }))
-async function agregarFormador() {
-  if (isAddingFormador.value) return
-  const f = nuevaFormador.value
-  if (!f.PER_ID || !f.ROL_ID) { mostrarAlerta('Completa persona y rol.', 'warning'); return }
-  try {
-    isAddingFormador.value = true
-    if (!form.value.CUR_ID) {
-      formadoresCurso.value.push({ ...f, __tmpId: Date.now() })
-    } else {
-      const creadoRaw = await formadoresApi.create(toLowerKeys({
-        CUR_ID: form.value.CUR_ID,
-        PER_ID: f.PER_ID,
-        ROL_ID: f.ROL_ID,
-        CUS_ID: typeof f.CUS_ID === 'number' ? f.CUS_ID : null,
-        CUO_DIRECTOR: !!f.CUO_DIRECTOR,
-      }))
-      const creado = toUpperKeys(creadoRaw)
-      formadoresCurso.value.push(creado)
-    }
-    nuevaFormador.value = { PER_ID: null, ROL_ID: null, CUS_ID: null, CUO_DIRECTOR: false }
-  } finally { isAddingFormador.value = false }
-}
 
-function iniciarEdicionFormador(formador) {
-  editandoFormador.value = formador.CUF_ID || `tmp-${formador.__tmpId}`
-  nuevaFormador.value = { ...formador }
-}
 
-async function guardarEdicionFormador() {
-  const f = nuevaFormador.value
-  if (!f.PER_ID || !f.ROL_ID) {
-    mostrarAlerta('Completa persona y rol.', 'warning')
-    return
-  }
-  try {
-    if (typeof editandoFormador.value === 'string' && editandoFormador.value.startsWith('tmp-')) {
-      const idx = formadoresCurso.value.findIndex(x => `tmp-${x.__tmpId}` === editandoFormador.value)
-      if (idx !== -1) formadoresCurso.value[idx] = { ...f }
-    } else {
-      await formadoresApi.update(editandoFormador.value, toLowerKeys({
-        CUR_ID: form.value.CUR_ID,
-        PER_ID: f.PER_ID,
-        ROL_ID: f.ROL_ID,
-        CUS_ID: typeof f.CUS_ID === 'number' ? f.CUS_ID : null,
-        CUO_DIRECTOR: !!f.CUO_DIRECTOR,
-      }))
-      const idx = formadoresCurso.value.findIndex(x => x.CUF_ID === editandoFormador.value)
-      if (idx !== -1) formadoresCurso.value[idx] = { ...f, CUF_ID: editandoFormador.value }
-    }
-    cancelarEdicionFormador()
-    mostrarAlerta('Formador actualizado exitosamente.', 'success')
-  } catch (e) {
-    console.error('Error actualizando formador:', e)
-    mostrarAlerta('Error al actualizar el formador.', 'error')
-  }
-}
-
-function cancelarEdicionFormador() {
-  editandoFormador.value = null
-  nuevaFormador.value = { PER_ID: null, ROL_ID: null, CUS_ID: null, CUO_DIRECTOR: false }
-}
-
-async function eliminarFormador(item) {
-  if (!item) return
-  if (!item.CUF_ID) {
-    formadoresCurso.value = formadoresCurso.value.filter(x => x !== item)
-    return
-  }
-  if (!confirm('Eliminar formador?')) return
-  if (isDeletingFormador.value) return
-  try {
-    isDeletingFormador.value = true
-    await formadoresApi.remove(item.CUF_ID)
-    formadoresCurso.value = formadoresCurso.value.filter(x => x.CUF_ID !== item.CUF_ID)
-  } catch (e) {
-    if (/404/.test(String(e?.message))) {
-      formadoresCurso.value = formadoresCurso.value.filter(x => x.CUF_ID !== item.CUF_ID)
-    } else { throw e }
-  } finally { isDeletingFormador.value = false }
-}
-
-// ====== Alimentación ======
-const alimentacionOptions = computed(() => alimentacionCatalogo.value.map(a => ({ value: a.ALI_ID, text: a.ALI_DESCRIPCION })))
-const tiempoAlimentacionOptions = [
-  { value: 1, text: 'Desayuno' },
-  { value: 2, text: 'Almuerzo' },
-  { value: 3, text: 'Once' },
-  { value: 4, text: 'Cena' },
-  { value: 5, text: 'Once/Cena' },
-]
-async function agregarAlimentacion() {
-  if (isAddingAlimentacion.value) return
-  const a = nuevaAlimentacion.value
-  if (!a.ALI_ID || !a.CUA_FECHA || !a.CUA_TIEMPO || !a.CUA_DESCRIPCION) { mostrarAlerta('Completa todos los campos.', 'warning'); return }
-  try {
-    isAddingAlimentacion.value = true
-    if (!form.value.CUR_ID) {
-      alimentacionesCurso.value.push({ ...a, __tmpId: Date.now() })
-    } else {
-      const creadoRaw = await alimentacionesApi.create(toLowerKeys({
-        CUR_ID: form.value.CUR_ID,
-        ALI_ID: a.ALI_ID,
-        CUA_FECHA: a.CUA_FECHA,
-        CUA_TIEMPO: a.CUA_TIEMPO,
-        CUA_DESCRIPCION: a.CUA_DESCRIPCION,
-        CUA_CANTIDAD_ADICIONAL: Number(a.CUA_CANTIDAD_ADICIONAL || 0),
-      }))
-      const creado = toUpperKeys(creadoRaw)
-      alimentacionesCurso.value.push(creado)
-    }
-    nuevaAlimentacion.value = { ALI_ID: null, CUA_FECHA: '', CUA_TIEMPO: null, CUA_DESCRIPCION: '', CUA_CANTIDAD_ADICIONAL: 0 }
-  } finally { isAddingAlimentacion.value = false }
-}
-
-function iniciarEdicionAlimentacion(alimentacion) {
-  editandoAlimentacion.value = alimentacion.CUA_ID || `tmp-${alimentacion.__tmpId}`
-  nuevaAlimentacion.value = { ...alimentacion }
-}
-
-async function guardarEdicionAlimentacion() {
-  const a = nuevaAlimentacion.value
-  if (!a.ALI_ID || !a.CUA_FECHA || !a.CUA_TIEMPO || !a.CUA_DESCRIPCION) {
-    mostrarAlerta('Completa todos los campos.', 'warning')
-    return
-  }
-  try {
-    if (typeof editandoAlimentacion.value === 'string' && editandoAlimentacion.value.startsWith('tmp-')) {
-      const idx = alimentacionesCurso.value.findIndex(x => `tmp-${x.__tmpId}` === editandoAlimentacion.value)
-      if (idx !== -1) alimentacionesCurso.value[idx] = { ...a }
-    } else {
-      await alimentacionesApi.update(editandoAlimentacion.value, toLowerKeys({
-        CUR_ID: form.value.CUR_ID,
-        ALI_ID: a.ALI_ID,
-        CUA_FECHA: a.CUA_FECHA,
-        CUA_TIEMPO: a.CUA_TIEMPO,
-        CUA_DESCRIPCION: a.CUA_DESCRIPCION,
-        CUA_CANTIDAD_ADICIONAL: Number(a.CUA_CANTIDAD_ADICIONAL || 0),
-      }))
-      const idx = alimentacionesCurso.value.findIndex(x => x.CUA_ID === editandoAlimentacion.value)
-      if (idx !== -1) alimentacionesCurso.value[idx] = { ...a, CUA_ID: editandoAlimentacion.value }
-    }
-    cancelarEdicionAlimentacion()
-    mostrarAlerta('Alimentación actualizada exitosamente.', 'success')
-  } catch (e) {
-    console.error('Error actualizando alimentación:', e)
-    mostrarAlerta('Error al actualizar la alimentación.', 'error')
-  }
-}
-
-function cancelarEdicionAlimentacion() {
-  editandoAlimentacion.value = null
-  nuevaAlimentacion.value = { ALI_ID: null, CUA_FECHA: '', CUA_TIEMPO: null, CUA_DESCRIPCION: '', CUA_CANTIDAD_ADICIONAL: 0 }
-}
-
-async function eliminarAlimentacion(item) {
-  if (!item) return
-  if (!item.CUA_ID) {
-    alimentacionesCurso.value = alimentacionesCurso.value.filter(x => x !== item)
-    return
-  }
-  if (!confirm('Eliminar alimentación?')) return
-  if (isDeletingAlimentacion.value) return
-  try {
-    isDeletingAlimentacion.value = true
-    await alimentacionesApi.remove(item.CUA_ID)
-    alimentacionesCurso.value = alimentacionesCurso.value.filter(x => x.CUA_ID !== item.CUA_ID)
-  } catch (e) {
-    if (/404/.test(String(e?.message))) {
-      alimentacionesCurso.value = alimentacionesCurso.value.filter(x => x.CUA_ID !== item.CUA_ID)
-    } else { throw e }
-  } finally { isDeletingAlimentacion.value = false }
-}
-
-// ====== Cuotas del Curso ======
-async function agregarCuota() {
-  if (isAddingCuota.value) return
-  const c = nuevaCuota.value
-  if (!c.CUU_TIPO || !c.CUU_FECHA || !c.CUU_VALOR) { mostrarAlerta('Completa todos los campos.', 'warning'); return }
-  try {
-    isAddingCuota.value = true
-    if (!form.value.CUR_ID) {
-      cuotasCurso.value.push({ ...c, __tmpId: Date.now() })
-    } else {
-      const creadoRaw = await cuotasApi.create(toLowerKeys({
-        CUR_ID: form.value.CUR_ID,
-        CUU_TIPO: Number(c.CUU_TIPO),
-        CUU_FECHA: c.CUU_FECHA,
-        CUU_VALOR: Number(c.CUU_VALOR),
-      }))
-      const creado = toUpperKeys(creadoRaw)
-      cuotasCurso.value.push(creado)
-    }
-    nuevaCuota.value = { CUU_TIPO: 1, CUU_FECHA: '', CUU_VALOR: '' }
-  } finally { isAddingCuota.value = false }
-}
-async function eliminarCuota(item) {
-  if (!item) return
-  if (!item.CUU_ID) {
-    cuotasCurso.value = cuotasCurso.value.filter(x => x !== item)
-    return
-  }
-  if (!confirm('¿Eliminar cuota?')) return
-  if (isDeletingCuota.value) return
-  try {
-    isDeletingCuota.value = true
-    await cuotasApi.remove(item.CUU_ID)
-    cuotasCurso.value = cuotasCurso.value.filter(x => x.CUU_ID !== item.CUU_ID)
-  } catch (e) {
-    if (/404/.test(String(e?.message))) {
-      cuotasCurso.value = cuotasCurso.value.filter(x => x.CUU_ID !== item.CUU_ID)
-    } else { throw e }
-  } finally { isDeletingCuota.value = false }
-}
-
-// ====== Coordinadores del Curso ======
-// cargosOptions ya está definido arriba en la sección de edición
-async function agregarCoordinador() {
-  if (isAddingCoordinador.value) return
-  const coord = nuevoCoordinador.value
-  if (!coord.PER_ID || !coord.CAR_ID) { mostrarAlerta('Completa persona y cargo.', 'warning'); return }
-  try {
-    isAddingCoordinador.value = true
-    if (!form.value.CUR_ID) {
-      coordinadoresCurso.value.push({ ...coord, __tmpId: Date.now() })
-    } else {
-      const creadoRaw = await coordinadoresApi.create(toLowerKeys({
-        CUR_ID: form.value.CUR_ID,
-        PER_ID: coord.PER_ID,
-        CAR_ID: coord.CAR_ID,
-      }))
-      const creado = toUpperKeys(creadoRaw)
-      coordinadoresCurso.value.push(creado)
-    }
-    nuevoCoordinador.value = { PER_ID: null, CAR_ID: null }
-  } finally { isAddingCoordinador.value = false }
-}
-async function eliminarCoordinador(item) {
-  if (!item) return
-  if (!item.CUC_ID) {
-    coordinadoresCurso.value = coordinadoresCurso.value.filter(x => x !== item)
-    return
-  }
-  if (!confirm('¿Eliminar coordinador?')) return
-  if (isDeletingCoordinador.value) return
-  try {
-    isDeletingCoordinador.value = true
-    await coordinadoresApi.remove(item.CUC_ID)
-    coordinadoresCurso.value = coordinadoresCurso.value.filter(x => x.CUC_ID !== item.CUC_ID)
-  } catch (e) {
-    if (/404/.test(String(e?.message))) {
-      coordinadoresCurso.value = coordinadoresCurso.value.filter(x => x.CUC_ID !== item.CUC_ID)
-    } else { throw e }
-  } finally { isDeletingCoordinador.value = false }
-}
 
 async function abrirModalVer(curso) {
   // Reutilizar la lógica de carga de edición pero en modo solo lectura
@@ -1966,6 +1258,16 @@ function cerrarDashboard() {
   font-family: 'Inter', sans-serif;
 }
 
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  pointer-events: none;
+}
+
 .page-header {
   margin-bottom: 24px;
 }
@@ -1981,24 +1283,47 @@ function cerrarDashboard() {
   color: #6b7280;
 }
 
-.filters-card {
-  background-color: #fff;
-  padding: 16px;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+.filtros {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
-.filter-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px;
-  flex-grow: 1;
-  margin-right: 16px;
+.filtros-left {
+  display: flex;
+  gap: 12px;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
 }
+
+.search-input {
+  width: 240px !important; /* Fixed width to prevent breaking layout */
+  flex-shrink: 0;
+} 
+/* Ensure deep input also respects width if needed, though usually InputBase handles it */
+.search-input :deep(input) {
+  width: 100%;
+}
+
+.filtros-right {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-standard {
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  font-weight: 500;
+}
+
+
 
 .table-container {
   background-color: #fff;
@@ -2039,8 +1364,99 @@ function cerrarDashboard() {
 .courses-table th:nth-child(7){min-width:200px}
 
 .actions-cell {
+  white-space: nowrap;
+}
+
+.acciones-buttons {
   display: flex;
-  gap: 8px;
+  gap: 6px;
+}
+
+.btn-action {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  padding: 0 !important; /* Force no padding for icon centering */
+}
+.btn-action :deep(.icon) {
+  margin: 0 !important; /* Ensure icon has no margins */
+}
+
+.truncate {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+/* Modal Styling Improvements */
+.modal-edit {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 90vh;
+}
+
+.modal-header-editar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #fff;
+}
+
+.header-title h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.header-title .subtitle {
+  margin: 4px 0 0;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.modal-body-custom {
+  padding: 24px;
+  overflow-y: auto;
+  position: relative; /* For overlay */
+}
+
+.form-grid-modal {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.saving-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-weight: 500;
+  color: #2563eb;
+  backdrop-filter: blur(2px);
 }
 
 .no-results {
@@ -2272,5 +1688,15 @@ function cerrarDashboard() {
   background: white;
   z-index: 9999;
   overflow-y: auto;
+}
+
+.btn-close-x {
+  opacity: 0.6;
+  transition: opacity 0.2s;
+  padding: 4px !important;
+}
+.btn-close-x:hover {
+  opacity: 1;
+  background: #f3f4f6;
 }
 </style>
