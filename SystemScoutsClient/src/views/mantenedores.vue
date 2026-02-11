@@ -53,59 +53,11 @@
       <!-- Header eliminado para un diseño más limpio -->
       
       <!-- Zonas -->
-      <div v-if="activeTab === 'zonas'" class="mantenedor-section-expanded">
-        <div class="mantenedor-header">
-          <h2>🗺️ Gestión de Zonas</h2>
-          <BaseButton variant="primary" @click="abrirModalCrear('zona')">
-            <AppIcons name="plus" :size="16" /> Nueva Zona
-          </BaseButton>
-        </div>
-        
-        <div class="search-bar search-bar--compact">
-          <input 
-            type="text" 
-            class="search-input" 
-            placeholder="BUSCAR ZONA POR DESCRIPCIÓN..."
-            v-model="searchZonas"
-            @input="searchZonas = searchZonas.toUpperCase()"
-          >
-          <BaseButton class="search-button" variant="primary" @click="buscarZonas">
-            <AppIcons name="search" :size="16" /> Buscar
-          </BaseButton>
-        </div>
-        
-        <ModernMainScrollbar>
-        <div class="table-container-expanded">
-          <table class="data-table-expanded">
-            <thead>
-              <tr>
-                <th>DESCRIPCIÓN</th>
-                <th>UNILATERAL</th>
-                <th>ESTADO</th>
-                <th>ACCIONES</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="zona in filteredZonas" :key="zona.id">
-                <td>{{ zona.descripcion }}</td>
-                <td>{{ zona.unilateral ? 'SÍ' : 'NO' }}</td>
-                <td>
-                  <span class="status-badge" :class="zona.vigente ? 'status-active' : 'status-inactive'">
-                    {{ zona.vigente ? 'VIGENTE' : 'NO VIGENTE' }}
-                  </span>
-                </td>
-                <td class="actions">
-                  <BaseButton variant="secondary" class="btn-action" @click="verElemento('zona', zona)"><AppIcons name="eye" :size="16" /> Ver</BaseButton>
-                  <BaseButton variant="secondary" class="btn-action" @click="editarElemento('zona', zona)"><AppIcons name="edit" :size="16" /> Editar</BaseButton>
-                  <BaseButton v-if="zona.vigente" variant="secondary" class="btn-action" @click="abrirConfirmacion('zona', zona)"><AppIcons name="block" :size="16" /> Anular</BaseButton>
-                  <BaseButton v-else variant="primary" class="btn-action" @click="abrirConfirmacion('zona', zona, 'activar')"><AppIcons name="check" :size="16" /> Activar</BaseButton>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        </ModernMainScrollbar>
-      </div>
+      <MantenedorZonas 
+        v-if="activeTab === 'zonas'" 
+        @show-message="handleMessage"
+        @confirm-action="handleConfirmAction"
+      />
 
       <!-- Modal de Confirmación Anular/Activar -->
       <div v-if="confirmModal && confirmModal.visible" class="modal-overlay" role="dialog" aria-modal="true">
@@ -132,390 +84,52 @@
       </div>
       
       <!-- Distritos -->
-      <div v-if="activeTab === 'distritos'" class="mantenedor-section-expanded">
-        <div class="mantenedor-header">
-          <h2>📍 Gestión de Distritos</h2>
-          <BaseButton variant="primary" @click="abrirModalCrear('distrito')">
-            <AppIcons name="plus" :size="16" /> Nuevo Distrito
-          </BaseButton>
-        </div>
-        
-        <div class="search-bar search-bar--compact">
-          <input 
-            type="text" 
-            class="search-input" 
-            placeholder="BUSCAR DISTRITO..."
-            v-model="searchDistritos"
-            @input="searchDistritos = searchDistritos.toUpperCase()"
-          >
-          <select class="select-filter" v-model="filtroZona">
-            <option value="">TODAS LAS ZONAS</option>
-            <option v-for="zona in zonas" :key="zona.id" :value="zona.descripcion">
-              {{ zona.descripcion }}
-            </option>
-          </select>
-          <BaseButton class="search-button" variant="primary" @click="buscarDistritos">
-            <AppIcons name="search" :size="16" /> Buscar
-          </BaseButton>
-        </div>
-        
-        <ModernMainScrollbar>
-        <div class="table-container-expanded">
-          <table class="data-table-expanded">
-            <thead>
-              <tr>
-                <th>DESCRIPCIÓN</th>
-                <th>ZONA</th>
-                <th>ESTADO</th>
-                <th>ACCIONES</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="distrito in filteredDistritos" :key="distrito.id">
-                <td>{{ distrito.descripcion }}</td>
-                <td>{{ getZonaNombre(distrito.zona_id) }}</td>
-                <td>
-                  <span class="status-badge" :class="distrito.vigente ? 'status-active' : 'status-inactive'">
-                    {{ distrito.vigente ? 'VIGENTE' : 'NO VIGENTE' }}
-                  </span>
-                </td>
-                <td class="actions">
-                  <BaseButton variant="secondary" class="btn-action" @click="verElemento('distrito', distrito)"><AppIcons name="eye" :size="16" /> Ver</BaseButton>
-                  <BaseButton variant="secondary" class="btn-action" @click="editarElemento('distrito', distrito)"><AppIcons name="edit" :size="16" /> Editar</BaseButton>
-                  <BaseButton v-if="distrito.vigente" variant="secondary" class="btn-action" @click="abrirConfirmacion('distrito', distrito)"><AppIcons name="block" :size="16" /> Anular</BaseButton>
-                  <BaseButton v-else variant="primary" class="btn-action" @click="abrirConfirmacion('distrito', distrito, 'activar')"><AppIcons name="check" :size="16" /> Activar</BaseButton>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        </ModernMainScrollbar>
-      </div>
+      <MantenedorDistritos
+        v-if="activeTab === 'distritos'"
+        @show-message="handleMessage"
+        @confirm-action="handleConfirmAction"
+      />
       
       <!-- Grupos -->
-      <div v-if="activeTab === 'grupos'" class="mantenedor-section-expanded">
-        <div class="mantenedor-header">
-          <h2>👥 Gestión de Grupos</h2>
-          <BaseButton variant="primary" @click="abrirModalCrear('grupo')">
-            <AppIcons name="plus" :size="16" /> Nuevo Grupo
-          </BaseButton>
-        </div>
-        
-        <div class="search-bar search-bar--compact">
-          <input 
-            type="text" 
-            class="search-input" 
-            placeholder="BUSCAR GRUPO..."
-            v-model="searchGrupos"
-            @input="searchGrupos = searchGrupos.toUpperCase()"
-          >
-          <select class="select-filter" v-model="filtroDistrito">
-            <option value="">TODOS LOS DISTRITOS</option>
-            <option v-for="distrito in distritos" :key="distrito.id" :value="distrito.descripcion">
-              {{ distrito.descripcion }}
-            </option>
-          </select>
-          <BaseButton class="search-button" variant="primary" @click="buscarGrupos">
-            <AppIcons name="search" :size="16" /> Buscar
-          </BaseButton>
-        </div>
-        
-        <ModernMainScrollbar>
-        <div class="table-container-expanded">
-          <table class="data-table-expanded">
-            <thead>
-              <tr>
-                <th>DESCRIPCIÓN</th>
-                <th>DISTRITO</th>
-                <th>ESTADO</th>
-                <th>ACCIONES</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="grupo in filteredGrupos" :key="grupo.id">
-                <td>{{ grupo.descripcion }}</td>
-                <td>{{ getDistritoNombre(grupo.distrito_id) }}</td>
-                <td>
-                  <span class="status-badge" :class="grupo.vigente ? 'status-active' : 'status-inactive'">
-                    {{ grupo.vigente ? 'VIGENTE' : 'NO VIGENTE' }}
-                  </span>
-                </td>
-                <td class="actions">
-                  <BaseButton variant="secondary" class="btn-action" @click="verElemento('grupo', grupo)"><AppIcons name="eye" :size="16" /> Ver</BaseButton>
-                  <BaseButton variant="secondary" class="btn-action" @click="editarElemento('grupo', grupo)"><AppIcons name="edit" :size="16" /> Editar</BaseButton>
-                  <BaseButton v-if="grupo.vigente" variant="secondary" class="btn-action" @click="abrirConfirmacion('grupo', grupo)"><AppIcons name="block" :size="16" /> Anular</BaseButton>
-                  <BaseButton v-else variant="primary" class="btn-action" @click="abrirConfirmacion('grupo', grupo, 'activar')"><AppIcons name="check" :size="16" /> Activar</BaseButton>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        </ModernMainScrollbar>
-      </div>
+      <MantenedorGrupos
+        v-if="activeTab === 'grupos'"
+        @show-message="handleMessage"
+        @confirm-action="handleConfirmAction"
+      />
       
         <!-- Ramas -->
-        <div v-if="activeTab === 'ramas'" class="mantenedor-section-expanded">
-          <div class="mantenedor-header">
-            <h2>🏕️ Gestión de Ramas</h2>
-            <BaseButton variant="primary" @click="abrirModalCrear('rama')">
-              <AppIcons name="plus" :size="16" /> Nueva Rama
-            </BaseButton>
-          </div>
-
-          <ModernMainScrollbar>
-          <div class="table-container-expanded">
-            <table class="data-table-expanded">
-              <thead>
-                <tr>
-                  <th>DESCRIPCIÓN</th>
-                  <th>ESTADO</th>
-                  <th>ACCIONES</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="rama in ramas" :key="rama.id">
-                  <td>{{ rama.descripcion }}</td>
-                  <td>
-                    <span class="status-badge" :class="rama.vigente ? 'status-active' : 'status-inactive'">
-                      {{ rama.vigente ? 'VIGENTE' : 'NO VIGENTE' }}
-                    </span>
-                  </td>
-                  <td class="actions">
-                    <BaseButton variant="secondary" class="btn-action" @click="verElemento('rama', rama)"><AppIcons name="eye" :size="16" /> Ver</BaseButton>
-                    <BaseButton variant="secondary" class="btn-action" @click="editarElemento('rama', rama)"><AppIcons name="edit" :size="16" /> Editar</BaseButton>
-                    <BaseButton v-if="rama.vigente" variant="secondary" class="btn-action" @click="abrirConfirmacion('rama', rama)"><AppIcons name="block" :size="16" /> Anular</BaseButton>
-                    <BaseButton v-else variant="primary" class="btn-action" @click="abrirConfirmacion('rama', rama, 'activar')"><AppIcons name="check" :size="16" /> Activar</BaseButton>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          </ModernMainScrollbar>
-        </div>
+        <MantenedorRamas v-if="activeTab === 'ramas'" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
 
         <!-- Tipos de Curso -->
-      <div v-if="activeTab === 'tipos-curso'" class="mantenedor-section-expanded">
-        <div class="mantenedor-header">
-          <h2>📚 Gestión de Tipos de Curso</h2>
-          <BaseButton variant="primary" @click="abrirModalCrear('tipoCurso')">
-            <AppIcons name="plus" :size="16" /> Nuevo Tipo
-          </BaseButton>
-        </div>
-        
-        <ModernMainScrollbar>
-        <div class="table-container-expanded">
-          <table class="data-table-expanded">
-            <thead>
-              <tr>
-                <th>DESCRIPCIÓN</th>
-                <th>TIPO</th>
-                <th>CANT. PARTICIPANTES</th>
-                <th>ESTADO</th>
-                <th>ACCIONES</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="tipoCurso in tiposCurso" :key="tipoCurso.id">
-                <td>{{ tipoCurso.descripcion }}</td>
-                <td>{{ tipoCurso.tipo }}</td>
-                <td>{{ tipoCurso.cant_participante }}</td>
-                <td>
-                  <span class="status-badge" :class="tipoCurso.vigente ? 'status-active' : 'status-inactive'">
-                    {{ tipoCurso.vigente ? 'VIGENTE' : 'NO VIGENTE' }}
-                  </span>
-                </td>
-                <td class="actions">
-                  <BaseButton variant="secondary" class="btn-action" @click="verElemento('tipoCurso', tipoCurso)"><AppIcons name="eye" :size="16" /> Ver</BaseButton>
-                  <BaseButton variant="secondary" class="btn-action" @click="editarElemento('tipoCurso', tipoCurso)"><AppIcons name="edit" :size="16" /> Editar</BaseButton>
-                  <BaseButton v-if="tipoCurso.vigente" variant="secondary" class="btn-action" @click="abrirConfirmacion('tipoCurso', tipoCurso)"><AppIcons name="block" :size="16" /> Anular</BaseButton>
-                  <BaseButton v-else variant="primary" class="btn-action" @click="abrirConfirmacion('tipoCurso', tipoCurso, 'activar')"><AppIcons name="check" :size="16" /> Activar</BaseButton>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        </ModernMainScrollbar>
-      </div>
+        <MantenedorTiposCurso v-if="activeTab === 'tipos-curso'" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
       
       <!-- Cargos -->
-      <div v-if="activeTab === 'cargos'" class="mantenedor-section-expanded">
-        <div class="mantenedor-header">
-          <h2>👔 Gestión de Cargos</h2>
-          <BaseButton variant="primary" @click="abrirModalCrear('cargo')">
-            <AppIcons name="plus" :size="16" /> Nuevo Cargo
-          </BaseButton>
-        </div>
-        
-        <ModernMainScrollbar>
-        <div class="table-container-expanded">
-          <table class="data-table-expanded">
-            <thead>
-              <tr>
-                <th>DESCRIPCIÓN</th>
-                <th>ESTADO</th>
-                <th>ACCIONES</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="cargo in cargos" :key="cargo.id">
-                <td>{{ cargo.descripcion }}</td>
-                <td>
-                  <span class="status-badge" :class="cargo.vigente ? 'status-active' : 'status-inactive'">
-                    {{ cargo.vigente ? 'VIGENTE' : 'NO VIGENTE' }}
-                  </span>
-                </td>
-                <td class="actions">
-                  <BaseButton variant="secondary" class="btn-action" @click="verElemento('cargo', cargo)"><AppIcons name="eye" :size="16" /> Ver</BaseButton>
-                  <BaseButton variant="secondary" class="btn-action" @click="editarElemento('cargo', cargo)"><AppIcons name="edit" :size="16" /> Editar</BaseButton>
-                  <BaseButton v-if="cargo.vigente" variant="secondary" class="btn-action" @click="abrirConfirmacion('cargo', cargo)"><AppIcons name="block" :size="16" /> Anular</BaseButton>
-                  <BaseButton v-else variant="primary" class="btn-action" @click="abrirConfirmacion('cargo', cargo, 'activar')"><AppIcons name="check" :size="16" /> Activar</BaseButton>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        </ModernMainScrollbar>
-      </div>
+      <MantenedorCargos
+        v-if="activeTab === 'cargos'"
+        @show-message="handleMessage"
+        @confirm-action="handleConfirmAction"
+      />
       
       <!-- Proveedores -->
-      <div v-if="activeTab === 'proveedores'" class="mantenedor-section-expanded">
-        <div class="mantenedor-header">
-          <h2>🏷️ Gestión de Proveedores</h2>
-          <BaseButton variant="primary" @click="abrirModalCrear('proveedor')">
-            <AppIcons name="plus" :size="16" /> Nuevo Proveedor
-          </BaseButton>
-        </div>
-        
-        <ModernMainScrollbar>
-        <div class="table-container-expanded">
-          <table class="data-table-expanded">
-            <thead>
-              <tr>
-                <th>DESCRIPCIÓN</th>
-                <th>CELULAR</th>
-                <th>DIRECCIÓN</th>
-                <th>ESTADO</th>
-                <th>ACCIONES</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="prov in proveedores" :key="prov.id">
-                <td>{{ prov.descripcion }}</td>
-                <td>{{ prov.celular1 }}<span v-if="prov.celular2"> / {{ prov.celular2 }}</span></td>
-                <td>{{ prov.direccion }}</td>
-                <td>
-                  <span class="status-badge" :class="prov.vigente ? 'status-active' : 'status-inactive'">
-                    {{ prov.vigente ? 'VIGENTE' : 'NO VIGENTE' }}
-                  </span>
-                </td>
-                <td class="actions">
-                  <BaseButton variant="secondary" class="btn-action" @click="verElemento('proveedor', prov)"><AppIcons name="eye" :size="16" /> Ver</BaseButton>
-                  <BaseButton variant="secondary" class="btn-action" @click="editarElemento('proveedor', prov)"><AppIcons name="edit" :size="16" /> Editar</BaseButton>
-                  <BaseButton v-if="prov.vigente" variant="secondary" class="btn-action" @click="abrirConfirmacion('proveedor', prov)"><AppIcons name="block" :size="16" /> Anular</BaseButton>
-                  <BaseButton v-else variant="primary" class="btn-action" @click="abrirConfirmacion('proveedor', prov, 'activar')"><AppIcons name="check" :size="16" /> Activar</BaseButton>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        </ModernMainScrollbar>
-      </div>
+      <MantenedorProveedores
+        v-if="activeTab === 'proveedores'"
+        @show-message="handleMessage"
+        @confirm-action="handleConfirmAction"
+      />
 
       <!-- Alimentación -->
-      <div v-if="activeTab === 'alimentacion'" class="mantenedor-section-expanded">
-        <div class="mantenedor-header">
-          <h2>🍽️ Gestión de Alimentación</h2>
-          <BaseButton variant="primary" @click="abrirModalCrear('alimentacion')">
-            <AppIcons name="plus" :size="16" /> Nueva Alimentación
-          </BaseButton>
-        </div>
-        
-        <ModernMainScrollbar>
-        <div class="table-container-expanded">
-          <table class="data-table-expanded">
-            <thead>
-              <tr>
-                <th>DESCRIPCIÓN</th>
-                <th>TIPO</th>
-                <th>ACCIONES</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="alimentacionItem in alimentacion" :key="alimentacionItem.id">
-                <td>{{ alimentacionItem.descripcion }}</td>
-                <td>{{ alimentacionItem.tipo }}</td>
-                <td>
-                  <span class="status-badge" :class="alimentacionItem.vigente ? 'status-active' : 'status-inactive'">
-                    {{ alimentacionItem.vigente ? 'VIGENTE' : 'NO VIGENTE' }}
-                  </span>
-                </td>
-                <td class="actions">
-                  <BaseButton variant="secondary" class="btn-action" @click="verElemento('alimentacion', alimentacionItem)"><AppIcons name="eye" :size="16" /> Ver</BaseButton>
-                  <BaseButton variant="secondary" class="btn-action" @click="editarElemento('alimentacion', alimentacionItem)"><AppIcons name="edit" :size="16" /> Editar</BaseButton>
-                  <BaseButton v-if="alimentacionItem.vigente" variant="secondary" class="btn-action" @click="abrirConfirmacion('alimentacion', alimentacionItem)"><AppIcons name="block" :size="16" /> Anular</BaseButton>
-                  <BaseButton v-else variant="primary" class="btn-action" @click="abrirConfirmacion('alimentacion', alimentacionItem, 'activar')"><AppIcons name="check" :size="16" /> Activar</BaseButton>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        </ModernMainScrollbar>
-      </div>
+      <MantenedorAlimentacion
+        v-if="activeTab === 'alimentacion'"
+        @show-message="handleMessage"
+        @confirm-action="handleConfirmAction"
+      />
 
       <!-- Comunas -->
-      <div v-if="activeTab === 'comunas'" class="mantenedor-section-expanded">
-        <div class="mantenedor-header">
-          <h2>🏘️ Gestión de Comunas</h2>
-          <BaseButton variant="primary" @click="abrirModalCrear('comuna')">
-            <AppIcons name="plus" :size="16" /> Nueva Comuna
-          </BaseButton>
-        </div>
-        
-        <div class="search-bar search-bar--compact">
-          <input 
-            type="text" 
-            class="search-input" 
-            placeholder="BUSCAR COMUNA..."
-            v-model="searchComunas"
-            @input="searchComunas = searchComunas.toUpperCase()"
-          >
-          <BaseButton class="search-button" variant="primary" @click="buscarComunas">
-            <AppIcons name="search" :size="16" /> Buscar
-          </BaseButton>
-        </div>
-        
-        <ModernMainScrollbar>
-        <div class="table-container-expanded">
-          <table class="data-table-expanded">
-            <thead>
-              <tr>
-                <th>DESCRIPCIÓN</th>
-                <th>PROVINCIA</th>
-                <th>ESTADO</th>
-                <th>ACCIONES</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="comuna in comunas" :key="comuna.id">
-                <td>{{ comuna.descripcion }}</td>
-                <td>{{ getProvinciaNombre(comuna.provincia_id) }}</td>
-                <td>
-                  <span class="status-badge" :class="comuna.vigente ? 'status-active' : 'status-inactive'">
-                    {{ comuna.vigente ? 'VIGENTE' : 'NO VIGENTE' }}
-                  </span>
-                </td>
-                <td class="actions">
-                  <BaseButton variant="secondary" class="btn-action" @click="verElemento('comuna', comuna)"><AppIcons name="eye" :size="16" /> Ver</BaseButton>
-                  <BaseButton variant="secondary" class="btn-action" @click="editarElemento('comuna', comuna)"><AppIcons name="edit" :size="16" /> Editar</BaseButton>
-                  <BaseButton v-if="comuna.vigente" variant="secondary" class="btn-action" @click="abrirConfirmacion('comuna', comuna)"><AppIcons name="block" :size="16" /> Anular</BaseButton>
-                  <BaseButton v-else variant="primary" class="btn-action" @click="abrirConfirmacion('comuna', comuna, 'activar')"><AppIcons name="check" :size="16" /> Activar</BaseButton>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        </ModernMainScrollbar>
-      </div>
+      <MantenedorComunas
+        v-if="activeTab === 'comunas'"
+        @show-message="handleMessage"
+        @confirm-action="handleConfirmAction"
+      />
 
       <!-- Provincias -->
       <div v-if="activeTab === 'provincias'" class="mantenedor-section-expanded">
@@ -853,157 +467,15 @@
       </div>
     </div>
 
-    <!-- Modal de Edición/Creación para Zonas -->
-    <div v-if="modalActivo === 'crear-zona' || modalActivo === 'editar-zona'" class="modal-overlay" @click="cerrarModal">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h3>{{ editando ? 'EDITAR' : 'NUEVA' }} ZONA</h3>
-          <button class="modal-close" @click="cerrarModal">×</button>
-        </div>
-        <div class="modal-body">
-          <form @submit.prevent="guardarZona">
-            <div class="form-group">
-              <label class="form-label">DESCRIPCIÓN:</label>
-              <input 
-                type="text" 
-                class="form-control" 
-                v-model="formZona.descripcion"
-                @input="formZona.descripcion = formZona.descripcion.toUpperCase()"
-                placeholder="EJ: ZONA NORTE BIOBÍO"
-                required
-              >
-            </div>
-            <div class="form-group">
-              <label class="form-checkbox">
-                <input type="checkbox" v-model="formZona.unilateral">
-                ZONA UNILATERAL
-              </label>
-            </div>
-            <div class="form-actions">
-              <BaseButton variant="secondary" @click="cerrarModal"><AppIcons name="close" :size="16" /> Cancelar</BaseButton>
-              <BaseButton type="submit" variant="primary" :disabled="saving">
-                <AppIcons name="save" :size="16" />
-                <span v-if="!saving">{{ editando ? 'ACTUALIZAR' : 'GUARDAR' }}</span><span v-else>Procesando...</span>
-              </BaseButton>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
 
-    <!-- Modal de Edición/Creación para Distritos -->
-    <div v-if="modalActivo === 'crear-distrito' || modalActivo === 'editar-distrito'" class="modal-overlay" @click="cerrarModal">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h3>{{ editando ? 'EDITAR' : 'NUEVO' }} DISTRITO</h3>
-          <button class="modal-close" @click="cerrarModal">×</button>
-        </div>
-        <div class="modal-body">
-          <form @submit.prevent="guardarDistrito">
-            <div class="form-group">
-              <label class="form-label">DESCRIPCIÓN:</label>
-              <input 
-                type="text" 
-                class="form-control" 
-                v-model="formDistrito.descripcion"
-                @input="formDistrito.descripcion = formDistrito.descripcion.toUpperCase()"
-                placeholder="EJ: DISTRITO CONCEPCIÓN"
-                required
-              >
-            </div>
-            <div class="form-group">
-              <label class="form-label">ZONA:</label>
-              <select class="form-control" v-model="formDistrito.zona_id" required>
-                <option value="">SELECCIONE UNA ZONA</option>
-                <option v-for="zona in zonas" :key="zona.id" :value="zona.id">
-                  {{ zona.descripcion }}
-                </option>
-              </select>
-            </div>
-            <div class="form-actions">
-              <BaseButton variant="secondary" @click="cerrarModal"><AppIcons name="close" :size="16" /> Cancelar</BaseButton>
-              <BaseButton type="submit" variant="primary" :disabled="saving">
-                <AppIcons name="save" :size="16" />
-                <span v-if="!saving">{{ editando ? 'ACTUALIZAR' : 'GUARDAR' }}</span><span v-else>Procesando...</span>
-              </BaseButton>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
+    <!-- Modal de Edición/Creación para Zonas ELIMINADO (Manejado por MantenedorZonas.vue) -->
 
-    <!-- Modal de Edición/Creación para Grupos -->
-    <div v-if="modalActivo === 'crear-grupo' || modalActivo === 'editar-grupo'" class="modal-overlay" @click="cerrarModal">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h3>{{ editando ? 'EDITAR' : 'NUEVO' }} GRUPO</h3>
-          <button class="modal-close" @click="cerrarModal">×</button>
-        </div>
-        <div class="modal-body">
-          <form @submit.prevent="guardarGrupo">
-            <div class="form-group">
-              <label class="form-label">DESCRIPCIÓN:</label>
-              <input 
-                type="text" 
-                class="form-control" 
-                v-model="formGrupo.descripcion"
-                @input="formGrupo.descripcion = formGrupo.descripcion.toUpperCase()"
-                placeholder="EJ: GRUPO ARAUCO"
-                required
-              >
-            </div>
-            <div class="form-group">
-              <label class="form-label">DISTRITO:</label>
-              <select class="form-control" v-model="formGrupo.distrito_id" required>
-                <option value="">SELECCIONE UN DISTRITO</option>
-                <option v-for="distrito in distritos" :key="distrito.id" :value="distrito.id">
-                  {{ distrito.descripcion }}
-                </option>
-              </select>
-            </div>
-            <div class="form-actions">
-              <BaseButton variant="secondary" @click="cerrarModal"><AppIcons name="close" :size="16" /> Cancelar</BaseButton>
-              <BaseButton type="submit" variant="primary" :disabled="saving">
-                <AppIcons name="save" :size="16" />
-                <span v-if="!saving">{{ editando ? 'ACTUALIZAR' : 'GUARDAR' }}</span><span v-else>Procesando...</span>
-              </BaseButton>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
+    <!-- Modal de Edición/Creación para Distritos ELIMINADO (Manejado por MantenedorDistritos.vue) -->
+
+    <!-- Modal de Edición/Creación para Grupos ELIMINADO (Manejado por MantenedorGrupos.vue) -->
 
     <!-- Modal de Edición/Creación para Ramas -->
-    <div v-if="modalActivo === 'crear-rama' || modalActivo === 'editar-rama'" class="modal-overlay" @click="cerrarModal">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h3>{{ editando ? 'EDITAR' : 'NUEVA' }} RAMA</h3>
-          <button class="modal-close" @click="cerrarModal">×</button>
-        </div>
-        <div class="modal-body">
-          <form @submit.prevent="guardarRama">
-            <div class="form-group">
-              <label class="form-label">DESCRIPCIÓN:</label>
-              <input 
-                type="text" 
-                class="form-control" 
-                v-model="formRama.descripcion"
-                @input="formRama.descripcion = formRama.descripcion.toUpperCase()"
-                placeholder="EJ: LOBATOS"
-                required
-              >
-            </div>
-            <div class="form-actions">
-              <BaseButton variant="secondary" @click="cerrarModal"><AppIcons name="close" :size="16" /> Cancelar</BaseButton>
-              <BaseButton type="submit" variant="primary" :disabled="saving">
-                <AppIcons name="save" :size="16" />
-                <span v-if="!saving">{{ editando ? 'ACTUALIZAR' : 'GUARDAR' }}</span><span v-else>Procesando...</span>
-              </BaseButton>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
+    <!-- Modal de Edición/Creación para Ramas ELIMINADO (Manejado por MantenedorRamas.vue) -->
 
     <!-- Modal de Edición/Creación para Tipos de Curso -->
     <div v-if="modalActivo === 'crear-tipoCurso' || modalActivo === 'editar-tipoCurso'" class="modal-overlay" @click="cerrarModal">
@@ -1490,10 +962,19 @@ import * as mantenedoresService from '@/services/mantenedoresService'
 import BaseButton from '@/components/BaseButton.vue'
 import AppIcons from '@/components/icons/AppIcons.vue'
 import ModernMainScrollbar from '@/components/ModernMainScrollbar.vue'
+import MantenedorZonas from '@/components/mantenedores/MantenedorZonas.vue'
+import MantenedorDistritos from '@/components/mantenedores/MantenedorDistritos.vue'
+import MantenedorGrupos from '@/components/mantenedores/MantenedorGrupos.vue'
+import MantenedorRamas from '@/components/mantenedores/MantenedorRamas.vue'
+import MantenedorTiposCurso from '@/components/mantenedores/MantenedorTiposCurso.vue'
+import MantenedorCargos from '@/components/mantenedores/MantenedorCargos.vue'
+import MantenedorProveedores from '@/components/mantenedores/MantenedorProveedores.vue'
+import MantenedorAlimentacion from '@/components/mantenedores/MantenedorAlimentacion.vue'
+import MantenedorComunas from '@/components/mantenedores/MantenedorComunas.vue'
 
 export default {
   name: 'MantenedoresScouts',
-  components: { BaseButton, AppIcons, ModernMainScrollbar },
+  components: { BaseButton, AppIcons, ModernMainScrollbar, MantenedorZonas, MantenedorDistritos, MantenedorGrupos, MantenedorRamas, MantenedorTiposCurso, MantenedorCargos, MantenedorProveedores, MantenedorAlimentacion, MantenedorComunas },
   setup() {
     // Estado reactivo
     const activeTab = ref('zonas')
@@ -1508,12 +989,12 @@ export default {
     const confirmModal = reactive({ visible: false, titulo: '', mensaje: '', accion: 'anular', tipo: '', elemento: null })
     const confirmLoading = ref(false)
     const saving = ref(false)
+    const pendingConfirmAction = ref(null)
     
     // Estados de búsqueda
     const searchZonas = ref('')
     const searchDistritos = ref('')
     const searchGrupos = ref('')
-    const searchComunas = ref('')
     const filtroZona = ref('')
     const filtroDistrito = ref('')
 
@@ -1523,7 +1004,6 @@ export default {
       { id: 'distritos', label: 'Distritos', icon: '📍' },
       { id: 'grupos', label: 'Grupos', icon: '👥' },
       { id: 'ramas', label: 'Ramas', icon: '🏕️' },
-      { id: 'tipos-curso', label: 'Tipos Curso', icon: '📚' },
       { id: 'cargos', label: 'Cargos', icon: '👔' },
       { id: 'proveedores', label: 'Proveedores', icon: '🏷️' },
       { id: 'alimentacion', label: 'Alimentación', icon: '🍽️' },
@@ -1538,24 +1018,15 @@ export default {
     ]
 
     // Datos reactivos para todos los mantenedores (inicialmente vacíos, se llenan desde la API)
-    const zonas = ref([])
-    const distritos = ref([])
-    const grupos = ref([])
-    const ramas = ref([])
-    const tiposCurso = ref([])
-    const cargos = ref([])
-    const alimentacion = ref([])
-    const comunas = ref([])
-    const provincias = ref([])
     const regiones = ref([])
+    const cargos = ref([])
+    const provincias = ref([])
     const niveles = ref([])
     const estadosCiviles = ref([])
     const roles = ref([])
     const conceptosContables = ref([])
     const tiposArchivo = ref([])
-    const proveedores = ref([])
 
-    const searchProveedores = ref('')
 
     // Carga perezosa por pestaña: solo traer lo necesario según la vista activa
     const cargarDatos = async () => {
@@ -1574,72 +1045,7 @@ export default {
         const tab = activeTab.value
         const normalize = (arr, mapFn) => (arr || []).map(mapFn)
 
-        if (tab === 'zonas') {
-          const respZonas = await mantenedoresService.zona.list().catch(e => { console.error('Zonas:', e); return [] })
-          const rawZonas = getData(respZonas)
-          zonas.value = normalize(rawZonas, z => ({
-            id: z.zon_id ?? z.ZON_ID ?? z.id,
-            descripcion: (z.zon_descripcion ?? z.ZON_DESCRIPCION ?? z.DESCRIPCION ?? z.descripcion ?? z.descripción ?? '').toString(),
-            unilateral: (z.zon_unilateral ?? z.ZON_UNILATERAL ?? z.unilateral ?? false) ? true : false,
-            vigente: (z.zon_vigente ?? z.ZON_VIGENTE ?? z.vigente ?? true) ? true : false
-          }))
-        } else if (tab === 'distritos') {
-          const [respDistritos, respZonas] = await Promise.all([
-            mantenedoresService.distrito.list().catch(e => { console.error('Distritos:', e); return [] }),
-            mantenedoresService.zona.list().catch(e => { console.error('Zonas:', e); return [] })
-          ])
-          const rawDistritos = getData(respDistritos)
-          const rawZonas = getData(respZonas)
-          zonas.value = normalize(rawZonas, z => ({ id: z.zon_id ?? z.ZON_ID ?? z.id, descripcion: (z.zon_descripcion ?? z.ZON_DESCRIPCION ?? z.DESCRIPCION ?? z.descripcion ?? '').toString(), unilateral: (z.zon_unilateral ?? z.ZON_UNILATERAL ?? z.unilateral ?? false) ? true : false, vigente: (z.zon_vigente ?? z.ZON_VIGENTE ?? z.vigente ?? true) ? true : false }))
-          distritos.value = normalize(rawDistritos, d => ({
-            id: d.dis_id ?? d.DIS_ID ?? d.id,
-            descripcion: (d.dis_descripcion ?? d.DIS_DESCRIPCION ?? d.DESCRIPCION ?? d.descripcion ?? '').toString(),
-            zona_id: (d.zon_id?.zon_id ?? d.ZON_ID?.ZON_ID ?? d.zon_id ?? d.ZON_ID ?? d.zona_id ?? null),
-            vigente: (d.dis_vigente ?? d.DIS_VIGENTE ?? d.vigente ?? true) ? true : false
-          }))
-        } else if (tab === 'grupos') {
-          const [respGrupos, respDistritos] = await Promise.all([
-            mantenedoresService.grupo.list().catch(e => { console.error('Grupos:', e); return [] }),
-            mantenedoresService.distrito.list().catch(e => { console.error('Distritos:', e); return [] })
-          ])
-          const rawGrupos = getData(respGrupos)
-          const rawDistritos = getData(respDistritos)
-          grupos.value = normalize(rawGrupos, g => ({
-            id: g.gru_id ?? g.GRU_ID ?? g.id,
-            descripcion: (g.gru_descripcion ?? g.GRU_DESCRIPCION ?? g.DESCRIPCION ?? g.descripcion ?? '').toString(),
-            distrito_id: (g.dis_id?.dis_id ?? g.DIS_ID?.DIS_ID ?? g.dis_id ?? g.DIS_ID ?? g.distrito_id ?? null),
-            vigente: (g.gru_vigente ?? g.GRU_VIGENTE ?? g.vigente ?? true) ? true : false
-          }))
-          distritos.value = normalize(rawDistritos, d => ({
-            id: d.dis_id ?? d.DIS_ID ?? d.id,
-            descripcion: (d.dis_descripcion ?? d.DIS_DESCRIPCION ?? d.DESCRIPCION ?? d.descripcion ?? '').toString(),
-            zona_id: (d.zon_id?.zon_id ?? d.ZON_ID?.ZON_ID ?? d.zon_id ?? d.ZON_ID ?? d.zona_id ?? null),
-            vigente: (d.dis_vigente ?? d.DIS_VIGENTE ?? d.vigente ?? true) ? true : false
-          }))
-        } else if (tab === 'ramas') {
-          const respRamas = await mantenedoresService.rama.list().catch(e => { console.error('Ramas:', e); return [] })
-          const rawRamas = getData(respRamas)
-          ramas.value = normalize(rawRamas, r => ({ id: r.ram_id ?? r.RAM_ID ?? r.id, descripcion: (r.ram_descripcion ?? r.RAM_DESCRIPCION ?? r.DESCRIPCION ?? r.descripcion ?? '').toString(), vigente: (r.ram_vigente ?? r.RAM_VIGENTE ?? r.vigente ?? true) ? true : false }))
-        } else if (tab === 'tipos-curso') {
-          const respTiposCurso = await mantenedoresService.tipoCursos.list().catch(e => { console.error('TiposCurso:', e); return [] })
-          const rawTiposCurso = getData(respTiposCurso)
-          tiposCurso.value = normalize(rawTiposCurso, t => ({ id: t.tcu_id ?? t.TCU_ID ?? t.id, descripcion: (t.tcu_descripcion ?? t.TCU_DESCRIPCION ?? t.DESCRIPCION ?? t.descripcion ?? '').toString(), tipo: t.tcu_tipo ?? t.TCU_TIPO ?? t.tipo ?? '', cant_participante: t.tcu_cant_participante ?? t.TCU_CANT_PARTICIPANTE ?? t.cant_participante ?? 0, vigente: (t.tcu_vigente ?? t.TCU_VIGENTE ?? t.vigente ?? true) ? true : false }))
-        } else if (tab === 'cargos') {
-          const respCargos = await mantenedoresService.cargo.list().catch(e => { console.error('Cargos:', e); return [] })
-          const rawCargos = getData(respCargos)
-          cargos.value = normalize(rawCargos, c => ({ id: c.car_id ?? c.CAR_ID ?? c.id, descripcion: (c.car_descripcion ?? c.CAR_DESCRIPCION ?? c.DESCRIPCION ?? c.descripcion ?? '').toString(), vigente: (c.car_vigente ?? c.CAR_VIGENTE ?? c.vigente ?? true) ? true : false }))
-        } else if (tab === 'alimentacion') {
-          const respAlimentacion = await mantenedoresService.alimentacion.list().catch(e => { console.error('Alimentacion:', e); return [] })
-          const rawAlimentacion = getData(respAlimentacion)
-          alimentacion.value = normalize(rawAlimentacion, a => ({ id: a.ali_id ?? a.ALI_ID ?? a.id, descripcion: (a.ali_descripcion ?? a.ALI_DESCRIPCION ?? a.DESCRIPCION ?? a.descripcion ?? '').toString(), tipo: a.ali_tipo ?? a.ALI_TIPO ?? a.tipo ?? '', vigente: (a.ali_vigente ?? a.ALI_VIGENTE ?? a.vigente ?? true) ? true : false }))
-        } else if (tab === 'comunas') {
-          const [respComunas, respProvincias] = await Promise.all([
-            mantenedoresService.comuna.list().catch(e => { console.error('Comunas:', e); return [] }),
-            mantenedoresService.provincia.list().catch(e => { console.error('Provincias:', e); return [] })
-          ])
-          comunas.value = normalize(getData(respComunas), c => ({ id: c.com_id ?? c.COM_ID ?? c.id, descripcion: (c.com_descripcion ?? c.COM_DESCRIPCION ?? c.DESCRIPCION ?? c.descripcion ?? '').toString(), provincia_id: (c.pro_id?.pro_id ?? c.PRO_ID?.PRO_ID ?? c.pro_id ?? c.PRO_ID ?? c.provincia_id ?? null), vigente: (c.com_vigente ?? c.COM_VIGENTE ?? c.vigente ?? true) ? true : false }))
-          provincias.value = normalize(getData(respProvincias), p => ({ id: p.pro_id ?? p.PRO_ID ?? p.id, descripcion: (p.pro_descripcion ?? p.PRO_DESCRIPCION ?? p.DESCRIPCION ?? p.descripcion ?? '').toString(), region_id: (p.reg_id?.reg_id ?? p.REG_ID?.REG_ID ?? p.reg_id ?? p.REG_ID ?? p.region_id ?? null), vigente: (p.pro_vigente ?? p.PRO_VIGENTE ?? p.vigente ?? true) ? true : false }))
-        } else if (tab === 'provincias') {
+        if (tab === 'provincias') {
           const [respProvincias, respRegiones] = await Promise.all([
             mantenedoresService.provincia.list().catch(e => { console.error('Provincias:', e); return [] }),
             mantenedoresService.region.list().catch(e => { console.error('Regiones:', e); return [] })
@@ -1664,10 +1070,6 @@ export default {
         } else if (tab === 'tipos-archivo') {
           const respTiposArchivo = await mantenedoresService.tipoArchivos.list().catch(e => { console.error('TiposArchivo:', e); return [] })
           tiposArchivo.value = normalize(getData(respTiposArchivo), t => ({ id: t.tar_id ?? t.TAR_ID ?? t.id, descripcion: (t.tar_descripcion ?? t.TAR_DESCRIPCION ?? t.DESCRIPCION ?? t.descripcion ?? '').toString(), extension: t.TAR_EXTENSION ?? t.extension ?? '', vigente: (t.tar_vigente ?? t.TAR_VIGENTE ?? t.vigente ?? true) ? true : false }))
-          } else if (tab === 'proveedores') {
-            const respProveedores = await mantenedoresService.proveedorPago.list().catch(e => { console.error('Proveedores:', e); return [] })
-            const rawProveedores = getData(respProveedores)
-            proveedores.value = normalize(rawProveedores, p => ({ id: p.prv_id ?? p.PRV_ID ?? p.id, descripcion: (p.prv_descripcion ?? p.PRV_DESCRIPCION ?? p.DESCRIPCION ?? p.descripcion ?? '').toString(), celular1: p.prv_celular1 ?? p.PRV_CELULAR1 ?? p.celular1 ?? '', celular2: p.prv_celular2 ?? p.PRV_CELULAR2 ?? p.celular2 ?? '', direccion: p.prv_direccion ?? p.PRV_DIRECCION ?? p.direccion ?? '', observacion: p.prv_observacion ?? p.PRV_OBSERVACION ?? p.observacion ?? '', vigente: (p.prv_vigente ?? p.PRV_VIGENTE ?? p.vigente ?? true) ? true : false }))
         }
       } catch (err) {
         error.value = 'Error al cargar datos: ' + err.message
@@ -1686,38 +1088,10 @@ export default {
     const recargar = cargarDatos
 
     // Formularios
-    const formZona = reactive({
-      id: null,
-      descripcion: '',
-      unilateral: false,
-      vigente: true
-    })
 
-    const formDistrito = reactive({
-      id: null,
-      descripcion: '',
-      zona_id: null,
-      vigente: true
-    })
 
-    const formGrupo = reactive({
-      id: null,
-      descripcion: '',
-      distrito_id: null,
-      vigente: true
-    })
-
-    const formRama = reactive({
-      id: null,
-      descripcion: '',
-      vigente: true
-    })
 
     // Formularios adicionales para otros mantenedores
-    const formTipoCurso = reactive({ id: null, descripcion: '', tipo: 1, cant_participante: null, vigente: true })
-    const formCargo = reactive({ id: null, descripcion: '', vigente: true })
-    const formAlimentacion = reactive({ id: null, descripcion: '', tipo: 1, vigente: true })
-    const formComuna = reactive({ id: null, descripcion: '', provincia_id: null, vigente: true })
     const formProvincia = reactive({ id: null, descripcion: '', region_id: null, vigente: true })
     const formRegion = reactive({ id: null, descripcion: '', vigente: true })
     const formNivel = reactive({ id: null, descripcion: '', orden: 1, vigente: true })
@@ -1725,83 +1099,16 @@ export default {
     const formRol = reactive({ id: null, descripcion: '', tipo: 1, vigente: true })
     const formConceptoContable = reactive({ id: null, descripcion: '', tipo: '', vigente: true })
     const formTipoArchivo = reactive({ id: null, descripcion: '', extension: '', vigente: true })
-    const formProveedor = reactive({ id: null, descripcion: '', celular1: '', celular2: '', direccion: '', observacion: '', vigente: true })
 
     // Computed properties para filtros
-    const filteredZonas = computed(() => {
-      if (!searchZonas.value) return zonas.value
-      return zonas.value.filter(zona => 
-        zona.descripcion.toLowerCase().includes(searchZonas.value.toLowerCase())
-      )
-    })
 
-    const filteredDistritos = computed(() => {
-      let filtered = distritos.value
-      
-      if (searchDistritos.value) {
-        filtered = filtered.filter(distrito => 
-          distrito.descripcion.toLowerCase().includes(searchDistritos.value.toLowerCase())
-        )
-      }
-      
-      if (filtroZona.value) {
-        const zona = zonas.value.find(z => z.descripcion === filtroZona.value)
-        if (zona) {
-          filtered = filtered.filter(distrito => distrito.zona_id === zona.id)
-        }
-      }
-      
-      return filtered
-    })
-
-    const filteredGrupos = computed(() => {
-      let filtered = grupos.value
-      
-      if (searchGrupos.value) {
-        filtered = filtered.filter(grupo => 
-          grupo.descripcion.toLowerCase().includes(searchGrupos.value.toLowerCase())
-        )
-      }
-      
-      if (filtroDistrito.value) {
-        const distrito = distritos.value.find(d => d.descripcion === filtroDistrito.value)
-        if (distrito) {
-          filtered = filtered.filter(grupo => grupo.distrito_id === distrito.id)
-        }
-      }
-      
-      return filtered
-    })
 
     // Métodos de búsqueda activados por los botones "Buscar"
-    const buscarZonas = () => {
-      searchZonas.value = (searchZonas.value || '').trim()
-    }
 
-    const buscarDistritos = () => {
-      searchDistritos.value = (searchDistritos.value || '').trim()
-    }
 
-    const buscarGrupos = () => {
-      searchGrupos.value = (searchGrupos.value || '').trim()
-    }
 
-    const buscarComunas = () => {
-      searchComunas.value = (searchComunas.value || '').trim()
-    }
-
-    const buscarProveedores = () => { searchProveedores.value = (searchProveedores.value || '').trim() }
 
     // Métodos auxiliares
-    const getZonaNombre = (zonaId) => {
-      const zona = zonas.value.find(z => z.id === zonaId)
-      return zona ? zona.descripcion : 'NO ENCONTRADA'
-    }
-
-    const getDistritoNombre = (distritoId) => {
-      const distrito = distritos.value.find(d => d.id === distritoId)
-      return distrito ? distrito.descripcion : 'NO ENCONTRADO'
-    }
 
     const getProvinciaNombre = (provinciaId) => {
       const provincia = provincias.value.find(p => p.id === provinciaId)
@@ -1818,11 +1125,6 @@ export default {
         'zona': 'ZONA',
         'distrito': 'DISTRITO',
         'grupo': 'GRUPO',
-        'rama': 'RAMA',
-        'tipoCurso': 'TIPO DE CURSO',
-        'cargo': 'CARGO',
-        'alimentacion': 'ALIMENTACIÓN',
-        'comuna': 'COMUNA',
         'provincia': 'PROVINCIA',
         'region': 'REGIÓN',
         'nivel': 'NIVEL',
@@ -1838,7 +1140,6 @@ export default {
       const relaciones = {
         'distrito': 'ZONA',
         'grupo': 'DISTRITO',
-        'comuna': 'PROVINCIA',
         'provincia': 'REGIÓN'
       }
       return relaciones[tipo] || ''
@@ -1846,10 +1147,6 @@ export default {
 
     const getRelacionValor = (tipo) => {
       switch (tipo) {
-        case 'distrito':
-          return getZonaNombre(elementoSeleccionado.value.zona_id)
-        case 'grupo':
-          return getDistritoNombre(elementoSeleccionado.value.distrito_id)
         case 'comuna':
           return getProvinciaNombre(elementoSeleccionado.value.provincia_id)
         case 'provincia':
@@ -1926,37 +1223,24 @@ export default {
       confirmModal.elemento = null
     }
     const confirmarConfirmacion = async () => {
-      if (!confirmModal.elemento || !confirmModal.tipo || confirmLoading.value) return
       confirmLoading.value = true
-      const accion = confirmModal.accion
-      const tipo = confirmModal.tipo
-      const elemento = confirmModal.elemento
       try {
-        if (accion === 'anular') await anularElemento(tipo, elemento)
-        else await habilitarElemento(tipo, elemento)
-
-        // Actualización optimista: reflejar cambio en la UI inmediatamente
-        try {
-          // primero actualizar la referencia directa (si aplica)
-          elemento.vigente = accion !== 'anular'
-          // y asegurar que la colección reactiva también se actualiza al instante
-                    const nuevoValor = accion === 'anular' ? false : true
-          applyOptimisticCambio(tipo, elemento, nuevoValor)
-        } catch {
-          // ignore
+        if (pendingConfirmAction.value) {
+            await pendingConfirmAction.value()
+            pendingConfirmAction.value = null
+        } else if (confirmModal.accion === 'activar') {
+          await habilitarElemento()
+        } else {
+          await anularElemento()
         }
-
-        // Cerrar el modal inmediatamente para mejorar UX
-        cancelarConfirmacion()
-
-        // Recargar en segundo plano sólo la entidad afectada (mejor rendimiento)
-        recargarTipo(tipo).catch(err => { console.error('Error recargando después de confirmación', err) })
+        confirmModal.visible = false
       } catch (err) {
-        error.value = 'ERROR AL CONFIRMAR ACCIÓN: ' + (err.message || 'error desconocido')
+        console.error('Error confirmación:', err)
       } finally {
         confirmLoading.value = false
       }
     }
+
 
     // Nuevos métodos para anular y habilitar
     const anularElemento = async (tipo, elemento) => {
@@ -1998,9 +1282,6 @@ export default {
             break
           case 'grupo':
             await mantenedoresService.grupo.partialUpdate(id, datosAPI)
-            break
-          case 'rama':
-            await mantenedoresService.rama.partialUpdate(id, datosAPI)
             break
           case 'tipoCurso':
             await mantenedoresService.tipoCursos.partialUpdate(id, datosAPI)
@@ -2083,9 +1364,6 @@ export default {
           case 'grupo':
             await mantenedoresService.grupo.partialUpdate(id, datosAPI)
             break
-          case 'rama':
-            await mantenedoresService.rama.partialUpdate(id, datosAPI)
-            break
           case 'tipoCurso':
             await mantenedoresService.tipoCursos.partialUpdate(id, datosAPI)
             break
@@ -2151,21 +1429,6 @@ export default {
             if (idx !== -1) grupos.value[idx].vigente = !!vigente
             break
           }
-          case 'rama': {
-            const idx = ramas.value.findIndex(r => r.id === id)
-            if (idx !== -1) ramas.value[idx].vigente = !!vigente
-            break
-          }
-          case 'tipoCurso': {
-            const idx = tiposCurso.value.findIndex(t => t.id === id)
-            if (idx !== -1) tiposCurso.value[idx].vigente = !!vigente
-            break
-          }
-          case 'cargo': {
-            const idx = cargos.value.findIndex(c => c.id === id)
-            if (idx !== -1) cargos.value[idx].vigente = !!vigente
-            break
-          }
           case 'alimentacion': {
             const idx = alimentacion.value.findIndex(a => a.id === id)
             if (idx !== -1) alimentacion.value[idx].vigente = !!vigente
@@ -2211,11 +1474,6 @@ export default {
             if (idx !== -1) tiposArchivo.value[idx].vigente = !!vigente
             break
           }
-          case 'proveedor': {
-            const idx = proveedores.value.findIndex(p => p.id === id)
-            if (idx !== -1) proveedores.value[idx].vigente = !!vigente
-            break
-          }
         }
       } catch (err) {
         console.error('applyOptimisticCambio error', err)
@@ -2247,36 +1505,6 @@ export default {
             const resp = await mantenedoresService.grupo.list()
             const raw = getData(resp)
             grupos.value = (raw || []).map(g => ({ id: g.gru_id ?? g.GRU_ID ?? g.id, descripcion: (g.gru_descripcion ?? g.GRU_DESCRIPCION ?? g.descripcion ?? '').toString(), distrito_id: g.dis_id ?? g.DIS_ID ?? null, vigente: !!(g.gru_vigente ?? g.GRU_VIGENTE ?? g.vigente) }))
-            break
-          }
-          case 'rama': {
-            const resp = await mantenedoresService.rama.list()
-            const raw = getData(resp)
-            ramas.value = (raw || []).map(r => ({ id: r.ram_id ?? r.RAM_ID ?? r.id, descripcion: (r.ram_descripcion ?? r.RAM_DESCRIPCION ?? r.descripcion ?? '').toString(), vigente: !!(r.ram_vigente ?? r.RAM_VIGENTE ?? r.vigente) }))
-            break
-          }
-          case 'tipoCurso': {
-            const resp = await mantenedoresService.tipoCursos.list()
-            const raw = getData(resp)
-            tiposCurso.value = (raw || []).map(t => ({ id: t.tcu_id ?? t.TCU_ID ?? t.id, descripcion: (t.tcu_descripcion ?? t.TCU_DESCRIPCION ?? t.descripcion ?? '').toString(), tipo: t.tcu_tipo ?? t.TCU_TIPO ?? t.tipo ?? '', cant_participante: t.tcu_cant_participante ?? t.TCU_CANT_PARTICIPANTE ?? t.cant_participante ?? 0, vigente: !!(t.tcu_vigente ?? t.TCU_VIGENTE ?? t.vigente) }))
-            break
-          }
-          case 'cargo': {
-            const resp = await mantenedoresService.cargo.list()
-            const raw = getData(resp)
-            cargos.value = (raw || []).map(c => ({ id: c.car_id ?? c.CAR_ID ?? c.id, descripcion: (c.car_descripcion ?? c.CAR_DESCRIPCION ?? c.descripcion ?? '').toString(), vigente: !!(c.car_vigente ?? c.CAR_VIGENTE ?? c.vigente) }))
-            break
-          }
-          case 'alimentacion': {
-            const resp = await mantenedoresService.alimentacion.list()
-            const raw = getData(resp)
-            alimentacion.value = (raw || []).map(a => ({ id: a.ali_id ?? a.ALI_ID ?? a.id, descripcion: (a.ali_descripcion ?? a.ALI_DESCRIPCION ?? a.descripcion ?? '').toString(), tipo: a.ali_tipo ?? a.ALI_TIPO ?? a.tipo ?? '', vigente: !!(a.ali_vigente ?? a.ALI_VIGENTE ?? a.vigente) }))
-            break
-          }
-          case 'comuna': {
-            const resp = await mantenedoresService.comuna.list()
-            const raw = getData(resp)
-            comunas.value = (raw || []).map(c => ({ id: c.com_id ?? c.COM_ID ?? c.id, descripcion: (c.com_descripcion ?? c.COM_DESCRIPCION ?? c.descripcion ?? '').toString(), provincia_id: c.pro_id ?? c.PRO_ID ?? null, vigente: !!(c.com_vigente ?? c.COM_VIGENTE ?? c.vigente) }))
             break
           }
           case 'provincia': {
@@ -2341,21 +1569,6 @@ export default {
         case 'grupo':
           Object.assign(formGrupo, elemento)
           break
-        case 'rama':
-          Object.assign(formRama, elemento)
-          break
-        case 'tipoCurso':
-          Object.assign(formTipoCurso, { id: elemento.id, descripcion: elemento.descripcion, tipo: elemento.tipo, cant_participante: elemento.cant_participante, vigente: elemento.vigente })
-          break
-        case 'cargo':
-          Object.assign(formCargo, elemento)
-          break
-        case 'alimentacion':
-          Object.assign(formAlimentacion, { id: elemento.id, descripcion: elemento.descripcion, tipo: elemento.tipo, vigente: elemento.vigente })
-          break
-        case 'comuna':
-          Object.assign(formComuna, elemento)
-          break
         case 'provincia':
           Object.assign(formProvincia, elemento)
           break
@@ -2373,9 +1586,6 @@ export default {
           break
         case 'conceptoContable':
           Object.assign(formConceptoContable, elemento)
-          break
-        case 'proveedor':
-          Object.assign(formProveedor, elemento)
           break
         case 'tipoArchivo':
           Object.assign(formTipoArchivo, elemento)
@@ -2402,15 +1612,6 @@ export default {
         distrito_id: null,
         vigente: true
       })
-      Object.assign(formRama, {
-        id: null,
-        descripcion: '',
-        vigente: true
-      })
-      Object.assign(formTipoCurso, { id: null, descripcion: '', tipo: 1, cant_participante: null, vigente: true })
-      Object.assign(formCargo, { id: null, descripcion: '', vigente: true })
-      Object.assign(formAlimentacion, { id: null, descripcion: '', tipo: 1, vigente: true })
-      Object.assign(formComuna, { id: null, descripcion: '', provincia_id: null, vigente: true })
       Object.assign(formProvincia, { id: null, descripcion: '', region_id: null, vigente: true })
       Object.assign(formRegion, { id: null, descripcion: '', vigente: true })
       Object.assign(formNivel, { id: null, descripcion: '', orden: 1, vigente: true })
@@ -2418,7 +1619,6 @@ export default {
       Object.assign(formRol, { id: null, descripcion: '', tipo: 1, vigente: true })
       Object.assign(formConceptoContable, { id: null, descripcion: '', tipo: '', vigente: true })
       Object.assign(formTipoArchivo, { id: null, descripcion: '', extension: '', vigente: true })
-      Object.assign(formProveedor, { id: null, descripcion: '', celular1: '', celular2: '', direccion: '', observacion: '', vigente: true })
     }
 
     const cerrarModal = () => {
@@ -2432,113 +1632,8 @@ export default {
     // Métodos de guardado
 
     // Métodos CRUD para zonas, distritos, grupos, ramas
-    const guardarZona = async () => {
-      saving.value = true
-      try {
-        const payload = {
-          zon_descripcion: formZona.descripcion,
-          zon_unilateral: !!formZona.unilateral,
-          zon_vigente: !!formZona.vigente
-        }
-        if (editando.value) {
-          const id = formZona.id ?? elementoSeleccionado.value?.id
-          if (!id) throw new Error('ID de zona no disponible para edición')
-          await mantenedoresService.zona.partialUpdate(id, payload)
-          // Optimistic update
-          const idx = zonas.value.findIndex(z => z.id === id)
-          if (idx !== -1) Object.assign(zonas.value[idx], { descripcion: formZona.descripcion, unilateral: !!formZona.unilateral, vigente: !!formZona.vigente })
-        } else {
-          await mantenedoresService.zona.create(payload)
-        }
-        cerrarModal()
-        recargarTipo('zona').catch(e => console.error('Error recargando zonas', e))
-      } catch (err) {
-        console.error('Error guardarZona:', err)
-        error.value = 'No se pudo guardar la zona: ' + (err.message || 'error desconocido')
-      } finally {
-        saving.value = false
-      }
-    }
 
-    const guardarDistrito = async () => {
-      saving.value = true
-      try {
-        const payload = {
-          dis_descripcion: formDistrito.descripcion,
-          zon_id: formDistrito.zona_id,
-          dis_vigente: !!formDistrito.vigente
-        }
-        if (editando.value) {
-          const id = formDistrito.id ?? elementoSeleccionado.value?.id
-          if (!id) throw new Error('ID de distrito no disponible para edición')
-          await mantenedoresService.distrito.partialUpdate(id, payload)
-          const idx = distritos.value.findIndex(d => d.id === id)
-          if (idx !== -1) Object.assign(distritos.value[idx], { descripcion: formDistrito.descripcion, zona_id: formDistrito.zona_id, vigente: !!formDistrito.vigente })
-        } else {
-          await mantenedoresService.distrito.create(payload)
-        }
-        cerrarModal()
-        recargarTipo('distrito').catch(e => console.error('Error recargando distritos', e))
-      } catch (err) {
-        console.error('Error guardarDistrito:', err)
-        error.value = 'No se pudo guardar el distrito: ' + (err.message || 'error desconocido')
-      } finally {
-        saving.value = false
-      }
-    }
 
-    const guardarGrupo = async () => {
-      saving.value = true
-      try {
-        const payload = {
-          gru_descripcion: formGrupo.descripcion,
-          dis_id: formGrupo.distrito_id,
-          gru_vigente: !!formGrupo.vigente
-        }
-        if (editando.value) {
-          const id = formGrupo.id ?? elementoSeleccionado.value?.id
-          if (!id) throw new Error('ID de grupo no disponible para edición')
-          await mantenedoresService.grupo.partialUpdate(id, payload)
-          const idx = grupos.value.findIndex(g => g.id === id)
-          if (idx !== -1) Object.assign(grupos.value[idx], { descripcion: formGrupo.descripcion, distrito_id: formGrupo.distrito_id, vigente: !!formGrupo.vigente })
-        } else {
-          await mantenedoresService.grupo.create(payload)
-        }
-        cerrarModal()
-        recargarTipo('grupo').catch(e => console.error('Error recargando grupos', e))
-      } catch (err) {
-        console.error('Error guardarGrupo:', err)
-        error.value = 'No se pudo guardar el grupo: ' + (err.message || 'error desconocido')
-      } finally {
-        saving.value = false
-      }
-    }
-
-    const guardarRama = async () => {
-      saving.value = true
-      try {
-        const payload = {
-          ram_descripcion: formRama.descripcion,
-          ram_vigente: !!formRama.vigente
-        }
-        if (editando.value) {
-          const id = formRama.id ?? elementoSeleccionado.value?.id
-          if (!id) throw new Error('ID de rama no disponible para edición')
-          await mantenedoresService.rama.partialUpdate(id, payload)
-          const idx = ramas.value.findIndex(r => r.id === id)
-          if (idx !== -1) Object.assign(ramas.value[idx], { descripcion: formRama.descripcion, vigente: !!formRama.vigente })
-        } else {
-          await mantenedoresService.rama.create(payload)
-        }
-        cerrarModal()
-        recargarTipo('rama').catch(e => console.error('Error recargando ramas', e))
-      } catch (err) {
-        console.error('Error guardarRama:', err)
-        error.value = 'No se pudo guardar la rama: ' + (err.message || 'error desconocido')
-      } finally {
-        saving.value = false
-      }
-    }
 
     // Guardar otros mantenedores
     const guardarTipoCurso = async () => {
@@ -2559,84 +1654,9 @@ export default {
       } catch (err) { console.error('Error guardarTipoCurso', err); error.value = 'No se pudo guardar el tipo de curso: ' + (err.message || 'error desconocido') } finally { saving.value = false }
     }
 
-    const guardarCargo = async () => {
-      saving.value = true
-      try {
-        const payload = { car_descripcion: formCargo.descripcion, car_vigente: !!formCargo.vigente }
-        if (editando.value) {
-          const id = formCargo.id ?? elementoSeleccionado.value?.id
-          if (!id) throw new Error('ID de cargo no disponible para edición')
-          await mantenedoresService.cargo.partialUpdate(id, payload)
-          const idx = cargos.value.findIndex(c => c.id === id)
-          if (idx !== -1) Object.assign(cargos.value[idx], { descripcion: formCargo.descripcion, vigente: !!formCargo.vigente })
-        } else {
-          await mantenedoresService.cargo.create(payload)
-        }
-        cerrarModal()
-        recargarTipo('cargo').catch(e => console.error('Error recargando cargos', e))
-      } catch (err) { console.error('Error guardarCargo', err); error.value = 'No se pudo guardar el cargo: ' + (err.message || 'error desconocido') } finally { saving.value = false }
-    }
 
-    const guardarProveedor = async () => {
-      saving.value = true
-      try {
-        const payload = {
-          prv_descripcion: formProveedor.descripcion,
-          prv_celular1: formProveedor.celular1 || '',
-          prv_celular2: formProveedor.celular2 || null,
-          prv_direccion: formProveedor.direccion || '',
-          prv_observacion: formProveedor.observacion || null,
-          prv_vigente: !!formProveedor.vigente
-        }
-        if (editando.value) {
-          const id = formProveedor.id ?? elementoSeleccionado.value?.id
-          if (!id) throw new Error('ID de proveedor no disponible para edición')
-          await mantenedoresService.proveedorPago.partialUpdate(id, payload)
-          const idx = proveedores.value.findIndex(p => p.id === id)
-          if (idx !== -1) Object.assign(proveedores.value[idx], { descripcion: formProveedor.descripcion, celular1: formProveedor.celular1, celular2: formProveedor.celular2, direccion: formProveedor.direccion, observacion: formProveedor.observacion, vigente: !!formProveedor.vigente })
-        } else {
-          await mantenedoresService.proveedorPago.create(payload)
-        }
-        cerrarModal()
-        recargarTipo('proveedor').catch(e => console.error('Error recargando proveedores', e))
-      } catch (err) { console.error('Error guardarProveedor', err); error.value = 'No se pudo guardar el proveedor: ' + (err.message || 'error desconocido') } finally { saving.value = false }
-    }
 
-    const guardarAlimentacion = async () => {
-      saving.value = true
-      try {
-        const payload = { ali_descripcion: formAlimentacion.descripcion, ali_tipo: formAlimentacion.tipo, ali_vigente: !!formAlimentacion.vigente }
-        if (editando.value) {
-          const id = formAlimentacion.id ?? elementoSeleccionado.value?.id
-          if (!id) throw new Error('ID de alimentación no disponible para edición')
-          await mantenedoresService.alimentacion.partialUpdate(id, payload)
-          const idx = alimentacion.value.findIndex(a => a.id === id)
-          if (idx !== -1) Object.assign(alimentacion.value[idx], { descripcion: formAlimentacion.descripcion, tipo: formAlimentacion.tipo, vigente: !!formAlimentacion.vigente })
-        } else {
-          await mantenedoresService.alimentacion.create(payload)
-        }
-        cerrarModal()
-        recargarTipo('alimentacion').catch(e => console.error('Error recargando alimentacion', e))
-      } catch (err) { console.error('Error guardarAlimentacion', err); error.value = 'No se pudo guardar alimentación: ' + (err.message || 'error desconocido') } finally { saving.value = false }
-    }
 
-    const guardarComuna = async () => {
-      saving.value = true
-      try {
-        const payload = { com_descripcion: formComuna.descripcion, pro_id: formComuna.provincia_id, com_vigente: !!formComuna.vigente }
-        if (editando.value) {
-          const id = formComuna.id ?? elementoSeleccionado.value?.id
-          if (!id) throw new Error('ID de comuna no disponible para edición')
-          await mantenedoresService.comuna.partialUpdate(id, payload)
-          const idx = comunas.value.findIndex(c => c.id === id)
-          if (idx !== -1) Object.assign(comunas.value[idx], { descripcion: formComuna.descripcion, provincia_id: formComuna.provincia_id, vigente: !!formComuna.vigente })
-        } else {
-          await mantenedoresService.comuna.create(payload)
-        }
-        cerrarModal()
-        recargarTipo('comuna').catch(e => console.error('Error recargando comunas', e))
-      } catch (err) { console.error('Error guardarComuna', err); error.value = 'No se pudo guardar la comuna: ' + (err.message || 'error desconocido') } finally { saving.value = false }
-    }
 
     const guardarProvincia = async () => {
       saving.value = true
@@ -2743,6 +1763,8 @@ export default {
       } catch (err) { console.error('Error guardarTipoArchivo', err); error.value = 'No se pudo guardar el tipo de archivo: ' + (err.message || 'error desconocido') } finally { saving.value = false }
     }
 
+
+
     return {
       activeTab,
       modalActivo,
@@ -2754,23 +1776,7 @@ export default {
       cargando,
       error,
       confirmModal,
-      searchZonas,
-      searchDistritos,
-      searchGrupos,
-      searchComunas,
-      searchProveedores,
-      filtroZona,
-      filtroDistrito,
       tabs,
-      zonas,
-      distritos,
-      grupos,
-      ramas,
-      tiposCurso,
-      cargos,
-      proveedores,
-      alimentacion,
-      comunas,
       provincias,
       regiones,
       niveles,
@@ -2778,15 +1784,6 @@ export default {
       roles,
       conceptosContables,
       tiposArchivo,
-      formZona,
-      formDistrito,
-      formGrupo,
-      formRama,
-      formTipoCurso,
-      formCargo,
-      formProveedor,
-      formAlimentacion,
-      formComuna,
       formProvincia,
       formRegion,
       formNivel,
@@ -2794,11 +1791,6 @@ export default {
       formRol,
       formConceptoContable,
       formTipoArchivo,
-      filteredZonas,
-      filteredDistritos,
-      filteredGrupos,
-      getZonaNombre,
-      getDistritoNombre,
       getProvinciaNombre,
       getRegionNombre,
       getTipoNombre,
@@ -2817,29 +1809,30 @@ export default {
       saving,
       anularElemento,
       habilitarElemento,
-      buscarZonas,
-      buscarDistritos,
-      buscarGrupos,
-      buscarComunas,
-      buscarProveedores,
       cerrarModal,
-      guardarZona,
-      guardarDistrito,
-      guardarGrupo,
-      guardarRama,
-      guardarTipoCurso,
-      guardarCargo,
-      guardarAlimentacion,
-      guardarComuna,
       guardarProvincia,
       guardarRegion,
       guardarNivel,
       guardarEstadoCivil,
       guardarRol,
       guardarConceptoContable,
-      guardarProveedor,
       guardarTipoArchivo,
-      recargar
+      recargar,
+      handleMessage: (msg) => {
+        if (msg.type === 'error') error.value = msg.text
+        // Si hay sistema de notificaciones globales, usarlo aquí para success
+      },
+      handleConfirmAction: (conf) => {
+        confirmModal.titulo = conf.titulo
+        confirmModal.mensaje = conf.mensaje
+        confirmModal.visible = true
+        // Sobreescribimos la acción de confirmar para ejecutar la callback del componente hijo
+        // Esto es un hack rápido, idealmente el componente hijo maneja su propio modal o pasamos la función de otra forma.
+        // Pero dado que confirmModal es global en este archivo...
+        // Mejor opción: que el hijo maneje su confirmación o emitir evento de confirmación aceptada.
+        // Vamos a usar una variable temporal para guardar la acción del hijo.
+        pendingConfirmAction.value = conf.accion
+      }
     }
   }
 } 

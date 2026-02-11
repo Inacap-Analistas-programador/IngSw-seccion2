@@ -112,7 +112,7 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "https://sistema.guiasyscoutsbiobio.cl",
+    "https://guiasyscoutsbiobio.cl",
 ]
 
 CORS_ALLOW_METHODS = [
