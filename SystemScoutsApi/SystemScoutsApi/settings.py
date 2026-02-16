@@ -24,33 +24,37 @@ for name in env_names:
         env_path = candidate
         break
 
+class ChainedRepository:
+    """
+    Repository that looks in os.environ first, then the provided repository (file).
+    This ensures that hosting variables override .env files, and both are available.
+    """
+    def __init__(self, file_repo=None):
+        self.file_repo = file_repo
+        self.system_env = os.environ
+
+    def __contains__(self, key):
+        return key in self.system_env or (self.file_repo and key in self.file_repo)
+
+    def __getitem__(self, key):
+        if key in self.system_env:
+            return self.system_env[key]
+        if self.file_repo and key in self.file_repo:
+            return self.file_repo[key]
+        raise KeyError(key)
+
+file_repository = None
 if env_path and env_path.exists():
     try:
-        config = Config(RepositoryEnv(env_path, encoding='utf-8'))
+        file_repository = RepositoryEnv(env_path, encoding='utf-8')
     except UnicodeDecodeError:
         # fallback al encoding
-        config = Config(RepositoryEnv(env_path, encoding='latin-1'))
+        file_repository = RepositoryEnv(env_path, encoding='latin-1')
 else:
-    print(f"⚠️  Warning: .env file not found. Using environment variables.")
-    print(f"💡 For local development, copy .env.example to .env and configure it:")
-    print(f"   cp {BASE_DIR}/.env.example {BASE_DIR}/.env")
-    # usar os.environ directamente
-    # Crear un repositorio personalizado que lee de os.environ
-    class EnvRepository:
-        """Repository that reads from os.environ, compatible with python-decouple"""
-        def __init__(self): 
-            self.data = os.environ
-        
-        def __contains__(self, key): 
-            return key in os.environ
-        
-        def __getitem__(self, key):
-            """Get value from environment or raise KeyError for Config to handle defaults"""
-            if key in os.environ:
-                return os.environ[key]
-            raise KeyError(key)
-    
-    config = Config(EnvRepository())
+    print(f"⚠️  Warning: .env file not found. Relying on environment variables.")
+
+# Create config that defaults to os.environ, falling back to .env file
+config = Config(ChainedRepository(file_repository))
 
 # CONFIGURACION BASICA
 # Default to development mode if no configuration is found
