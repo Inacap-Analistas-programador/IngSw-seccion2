@@ -13,7 +13,6 @@ venv/
 env/
 
 # Django 
-**/migrations/
 **/__pycache__/
 packages
 
