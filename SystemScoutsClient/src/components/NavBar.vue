@@ -151,7 +151,7 @@ function onLogoutImgError() {
         <img :src="logoSrc" alt="Logo Scouts" class="logo" />
         <span class="title">S.S.B</span>
       </div>
-      <router-link class="dash-link" to="/dashboard-2">Panel de Control</router-link>
+      <router-link class="dash-link" to="/dashboard">Panel de Control</router-link>
     </div>
 
     <!-- Usuario autenticado -->

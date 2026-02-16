@@ -106,7 +106,7 @@
 
     <!-- Modal Ver Detalle -->
     <div v-if="viewModalVisible" class="modal-overlay" @click="cerrarViewModal">
-      <div class="modal-content" @click.stop>
+      <div class="modal-content modal-sm" @click.stop>
         <div class="modal-header">
           <h3>👁 DETALLE ZONA</h3>
           <button class="modal-close" @click="cerrarViewModal">×</button>
@@ -314,6 +314,7 @@ onMounted(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
+  background: transparent;
 }
 
 .mantenedor-header {
@@ -350,7 +351,6 @@ onMounted(() => {
 .table-container {
   flex: 1;
   overflow: hidden;
-  border: 1px solid #eee;
   border-radius: 8px;
 }
 
@@ -361,7 +361,7 @@ onMounted(() => {
 
 .data-table th, .data-table td {
   padding: 12px 15px;
-  text-align: left;
+  text-align: center;
   border-bottom: 1px solid #f0f0f0;
 }
 
@@ -440,6 +440,10 @@ onMounted(() => {
   flex-direction: column;
 }
 
+.modal-sm {
+  max-width: 360px;
+}
+
 .modal-header {
   padding: 15px 20px;
   border-bottom: 1px solid #eee;
@@ -498,9 +502,13 @@ onMounted(() => {
   margin-top: 20px;
 }
 
+.view-container {
+  text-align: center;
+}
+
 .view-group {
   margin-bottom: 15px;
-  border-bottom: 1px solid #f9f9f9;
+  border-bottom: 1px solid #f0f0f0;
   padding-bottom: 10px;
 }
 
@@ -508,13 +516,16 @@ onMounted(() => {
   font-weight: 600;
   color: #555;
   display: block;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .view-value {
-  color: #333;
+  color: #111827;
   font-size: 1rem;
+  font-weight: 500;
 }
 
 .loading-overlay {

@@ -1,383 +1,1318 @@
 <template>
-  <div class="dashboard-container">
-    <ModernMainScrollbar>
-      <div v-if="loading" class="alert info">Cargando datos...</div>
-      <div v-if="loadError" class="alert error">Error cargando datos: {{ loadError }}</div>
-      
-
-      <!-- === Gráfico Principal === -->
-      <div class="grafico-container">
-          <canvas ref="graficoCanvas" width="800" height="400"></canvas>
-          <div v-if="tooltip.visible" class="chart-tooltip" :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }">{{ tooltip.text }}</div>
-      </div>
-
-      <!-- === Tabla de Cursos === -->
-      <div class="tabla-container">
-        <table class="tabla-cursos">
-          <thead>
-            <tr>
-              <th>Curso</th>
-              <th>Monto Estimado</th>
-              <th>Monto Recaudado</th>
-              <th>Responsable</th>
-              <th>Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="curso in cursos"
-              :key="curso.id"
-              :class="{
-                'curso-ok': curso.porcentaje >= 49 && curso.responsable,
-                'curso-error': curso.porcentaje < 49 || !curso.responsable,
-              }"
-              @click="mostrarDetalles(curso)"
-            >
-              <td>{{ curso.nombre }}</td>
-              <td>{{ formatearMonto(curso.montoEstimado) }}</td>
-              <td>{{ formatearMonto(curso.montoRecaudado) }}</td>
-              <td>{{ curso.responsable || 'No asignado' }}</td>
-              <td>
-                <span>{{ curso.porcentaje.toFixed(1) }}%</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </ModernMainScrollbar>
-
-    <!-- === Popup Detalle Curso === -->
-    <div v-if="cursoSeleccionado" class="modal-overlay" @click.self="cerrarPopup">
-      <div class="modal-content">
-        <h2>{{ cursoSeleccionado.nombre }}</h2>
-        <p><strong>Lugar:</strong> {{ cursoSeleccionado.lugar || 'No especificado' }}</p>
-        <p><strong>Responsable:</strong> {{ cursoSeleccionado.responsable || 'No asignado' }}</p>
-        <p><strong>Monto Estimado:</strong> {{ formatearMonto(cursoSeleccionado.montoEstimado) }}</p>
-        <p><strong>Monto Recaudado:</strong> {{ formatearMonto(cursoSeleccionado.montoRecaudado) }}</p>
-        <p><strong>Porcentaje:</strong> {{ cursoSeleccionado.porcentaje.toFixed(1) }}%</p>
-        <button class="boton-cerrar" @click="cerrarPopup">Cerrar</button>
-      </div>
+  <div class="dashboard-scout">
+    <!-- Toasts de notificación -->
+    <div class="toast-container">
+      <NotificationToast
+        v-for="(alerta, index) in alertas"
+        :key="alerta.id"
+        :message="alerta.title ? `${alerta.title}: ${alerta.message}` : alerta.message"
+        :icon="alerta.type === 'success' ? 'check' : 'alert-circle'"
+        @close="removerAlerta(alerta.id)"
+        :style="{ marginBottom: `${index * 60}px` }"
+      />
     </div>
+    <!-- Contenido Principal -->
+    <main class="main-content">
+      <!-- Selector de Curso con Semáforo -->
+      <section class="course-selector-section">
+        <div class="selector-container">
+          <div class="native-select-wrapper">
+            <label for="curso-select" class="native-select-label">
+              Seleccionar Curso
+            </label>
+            <select 
+              id="curso-select"
+              v-model="cursoSeleccionado" 
+              class="native-select"
+            >
+              <option value="" disabled>Seleccione un curso</option>
+              <option value="" disabled selected>Seleccione un curso para ver estadísticas</option>
+              <option v-for="curso in cursos" :key="curso.CUR_ID" :value="curso.CUR_ID">
+                {{ curso.CUR_CODIGO }} - {{ curso.CUR_DESCRIPCION }}
+              </option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tarjetas de Estadísticas -->
+      <!-- Tarjetas de Estadísticas (Solo visibles si hay curso seleccionado) -->
+      <div v-if="!cursoSeleccionado" class="no-selection-placeholder">
+        <div class="placeholder-content">
+          <h3>👈 Por favor, seleccione un curso</h3>
+          <p>Para visualizar el dashboard, debe seleccionar un curso del listado.</p>
+        </div>
+      </div>
+      
+      <div v-else class="stats-grid">
+        <DataCard
+          title="Personas Inscritas"
+          :value="personasInscritas"
+          description="Total inscritos en el curso"
+        />
+        
+        <DataCard
+          title="Pendientes de Pago"
+          :value="pagosPendientesCurso"
+          description="Pagos pendientes del curso"
+        />
+        
+        <DataCard
+          title="Acreditados"
+          :value="acreditadosCurso"
+          description="Personas acreditadas"
+        />
+        
+        <DataCard
+          title="Inscripciones Recientes"
+          :value="inscripcionesRecientes"
+          description="Últimos 7 días"
+        />
+      </div>
+
+      <!-- Gráficos -->
+      <section v-if="cursoSeleccionado" class="charts-section">
+        <h3>Estadísticas del Curso</h3>
+        <div class="charts-grid">
+          <div class="chart-card">
+            <h4>Inscripciones vs Acreditados</h4>
+            <div class="chart-placeholder">
+              <div class="chart-bars">
+                <div class="bar-container">
+                  <div class="bar inscritos" :style="{ height: porcentajeInscritos + '%' }"></div>
+                  <span>Inscritos: {{ personasInscritas }}</span>
+                </div>
+                <div class="bar-container">
+                  <div class="bar acreditados" :style="{ height: porcentajeAcreditados + '%' }"></div>
+                  <span>Acreditados: {{ acreditadosCurso }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="chart-card">
+            <h4>Estado de Pagos</h4>
+            <div class="chart-placeholder">
+              <div class="payment-status">
+                <div class="status-item">
+                  <span class="dot paid"></span>
+                  <span>Pagados: {{ pagosPagadosCurso }}</span>
+                </div>
+                <div class="status-item">
+                  <span class="dot pending"></span>
+                  <span>Pendientes: {{ pagosPendientesCurso }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tabla de Cursos -->
+      <section class="courses-section">
+        <div class="section-header">
+          <h3>Cursos Vigentes</h3>
+          <BaseButton 
+            @click="actualizarDatos" 
+            variant="primary"
+            :disabled="loading"
+          >
+            <AppIcons name="refresh-cw" :size="16" class="mr-2" v-if="loading" />
+            <span v-else>🔄</span> {{ loading ? 'Cargando...' : 'Actualizar' }}
+          </BaseButton>
+        </div>
+        <div class="table-container-expanded">
+          <table class="data-table-expanded">
+            <thead>
+              <tr>
+                <th v-for="col in columnasCursos" :key="col.key">{{ col.label }}</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="cursosFiltrados.length === 0">
+                <td :colspan="columnasCursos.length + 1" style="text-align: center; padding: 20px; color: #999;">
+                  No hay cursos disponibles
+                </td>
+              </tr>
+              <tr v-for="curso in cursosFiltrados" :key="curso.CUR_ID">
+                <td>{{ curso.CUR_CODIGO }}</td>
+                <td>{{ curso.CUR_DESCRIPCION }}</td>
+                <td>{{ curso.CUR_FECHA_HORA }}</td>
+                <td>{{ curso.CUR_LUGAR }}</td>
+                <td>
+                  <span class="badge" :class="getBadgeClass(curso.CUR_ESTADO_NUM)">
+                    {{ getEstadoLabel(curso.CUR_ESTADO_NUM) }}
+                  </span>
+                </td>
+                <td>{{ curso.inscripciones }}</td>
+                <td>{{ curso.acreditaciones }}</td>
+                <td>{{ curso.pendientesPago }}</td>
+                <td class="actions">
+                  <BaseButton class="mr-2" variant="primary" size="sm" @click="verCurso(curso)">
+                    <AppIcons name="eye" :size="14" /> Ver
+                  </BaseButton>
+                  <BaseButton class="mr-2" variant="primary" size="sm" @click="editarCurso(curso)">
+                    <AppIcons name="edit" :size="14" /> Editar
+                  </BaseButton>
+                  <BaseButton variant="primary" size="sm" @click="abrirDashboard(curso)">
+                    <AppIcons name="chart-bar" :size="14" /> Dashboard
+                  </BaseButton>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Tabla de Cursos (Solo si seleccionado, aunque selector ya filtra) -->
+      <!-- Se oculta si no hay selección para limpiar la vista -->
+      
+      <!-- Tabla de Responsables -->
+      <section v-if="cursoSeleccionado" class="responsibles-section">
+        <h3>Responsables de Cursos</h3>
+        <div class="tabs-container">
+          <div class="tabs-header">
+            <button 
+              v-for="tab in tabs" 
+              :key="tab.id"
+              :class="['tab-button', { active: activeTab === tab.id }]"
+              @click="activeTab = tab.id"
+            >
+              {{ tab.label }}
+            </button>
+          </div>
+          
+          <div class="tab-content">
+            <!-- Coordinadores -->
+            <div v-if="activeTab === 'coordinadores'" class="table-container-expanded">
+              <table class="data-table-expanded">
+                <thead>
+                  <tr>
+                    <th>Coordinador</th>
+                    <th>Curso</th>
+                    <th>Cargo</th>
+                    <th>Contacto</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-if="coordinadores.length === 0">
+                    <td colspan="5" style="text-align: center; padding: 20px; color: #999;">
+                      No hay coordinadores disponibles
+                    </td>
+                  </tr>
+                  <tr v-for="coord in coordinadores" :key="coord.CUC_ID">
+                    <td>{{ coord.nombre }}</td>
+                    <td>{{ coord.curso }}</td>
+                    <td>{{ coord.cargo }}</td>
+                    <td>{{ coord.contacto }}</td>
+                    <td>{{ coord.estadoDisplay }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- Formadores -->
+            <div v-if="activeTab === 'formadores'" class="table-container-expanded">
+              <table class="data-table-expanded">
+                <thead>
+                  <tr>
+                    <th>Formador</th>
+                    <th>Curso</th>
+                    <th>Tipo</th>
+                    <th>Contacto</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-if="formadores.length === 0">
+                    <td colspan="5" style="text-align: center; padding: 20px; color: #999;">
+                      No hay formadores disponibles
+                    </td>
+                  </tr>
+                  <tr v-for="form in formadores" :key="form.CUO_ID">
+                    <td>{{ form.nombre }}</td>
+                    <td>{{ form.curso }}</td>
+                    <td>{{ form.tipo }}</td>
+                    <td>{{ form.contacto }}</td>
+                    <td>{{ form.estadoDisplay }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted, nextTick } from 'vue'
-import ModernMainScrollbar from '../components/ModernMainScrollbar.vue'
+<script>
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+
+// Componentes del sistema
+import NotificationToast from '@/components/NotificationToast.vue'
+import DataCard from '@/components/DataCard.vue'
+import BaseButton from '@/components/BaseButton.vue'
+
+// CORREGIDO: Importación correcta de servicios
+import dashboardService_2 from '@/services/dashboardService_2'
+
+// Otros componentes
+import BaseModal from '@/components/BaseModal.vue'
+import BaseSelect from '@/components/BaseSelect.vue'
 import cursosService from '@/services/cursosService.js'
-import personasService from '@/services/personasService.js'
+import AppIcons from '@/components/icons/AppIcons.vue'
 
-const cursos = ref([])
-const cursoSeleccionado = ref(null)
-const graficoCanvas = ref(null)
-const loading = ref(false)
-const loadError = ref(null)
-const barras = ref([])
-const tooltip = ref({ visible: false, text: '', x: 0, y: 0 })
+export default {
+  name: 'DashboardScout',
+  
+  components: {
+    NotificationToast,
+    DataCard,
+    BaseButton,
+    BaseModal,
+    BaseSelect,
+    AppIcons
+  },
+  
+  setup() {
+    const router = useRouter()
+    
+    // Estado reactivo
+    const cursoSeleccionado = ref('') // Inicializar vacío para obligar selección
+    const alertas = ref([])
+    const loading = ref(false)
+    const activeTab = ref('coordinadores')
 
-function formatearMonto(monto) {
-  return `$${monto.toLocaleString('es-CL')}`
-}
+    // Datos reactivos que se cargarán desde la API
+    const personas = ref([])
+    const cursos = ref([])
+    const personasCurso = ref([])
+    const pagosPersona = ref([])
+    const cursoCoordinadores = ref([])
+    const cursoFormadores = ref([])
 
-async function cargarDatos() {
-  try {
-    loading.value = true
-    loadError.value = null
-    // 1. Cargar todos los catálogos en paralelo
-    const [cursosResponse, cuotasResponse, coordinadoresResponse, personasResponse] = await Promise.all([
-      cursosService.cursos.list({ page_size: 20 }),
-      cursosService.cuotas.list(),
-      cursosService.coordinadores.list(),
-      personasService.personasCompletas.list()
-    ]);
-
-    // Debug: mostrar respuestas crudas en consola para verificar forma y status
-    console.log('API responses:', { cursosResponse, cuotasResponse, coordinadoresResponse, personasResponse })
-
-    const listaCursos = Array.isArray(cursosResponse) ? cursosResponse : cursosResponse.results || [];
-    const todasLasCuotas = Array.isArray(cuotasResponse) ? cuotasResponse : cuotasResponse.results || [];
-    const todosLosCoordinadores = Array.isArray(coordinadoresResponse) ? coordinadoresResponse : coordinadoresResponse.results || [];
-    const todasLasPersonas = Array.isArray(personasResponse) ? personasResponse : personasResponse.results || [];
-
-    // Normalizar campos que la API puede devolver con nombres distintos (CUR_ID, CUR_DESCRIPCION, CUU_VALOR, etc.)
-    const cursosNorm = listaCursos.map(c => ({
-      raw: c,
-      id: c.id ?? c.CUR_ID ?? null,
-      nombre: c.nombre ?? c.CUR_DESCRIPCION ?? c.CUR_CODIGO ?? 'Curso sin nombre',
-      lugar: c.lugar ?? c.CUR_LUGAR ?? '',
-      estado: Number(c.CUR_ESTADO ?? c.estado ?? c.CUR_ESTADO ?? -1),
-    }))
-
-    // Filtrar sólo cursos "vigente" (CUR_ESTADO === 1)
-    const cursosVigentes = cursosNorm.filter(c => c.estado === 1)
-    if (cursosVigentes.length !== cursosNorm.length) {
-      console.log(`Filtrando cursos: ${cursosNorm.length} total, ${cursosVigentes.length} vigentes`)
-    }
-
-    const cuotasNorm = todasLasCuotas.map(q => ({
-      raw: q,
-      curso: q.curso ?? q.CUR_ID ?? (q.CUR_ID && (typeof q.CUR_ID === 'object' ? q.CUR_ID.CUR_ID : q.CUR_ID)) ?? null,
-      monto_total: Number(q.monto_total ?? q.CUU_VALOR ?? q.CUU_VALOR ?? 0),
-      monto_pagado: Number(q.monto_pagado ?? q.monto_pagado ?? 0),
-    }))
-
-    // 2. Procesar los datos en memoria usando campos normalizados
-    const datosCompletos = cursosVigentes.map(curso => {
-      const courseId = curso.id
-      const cuotasDelCurso = cuotasNorm.filter(c => String(c.curso) === String(courseId))
-      const montoEstimado = cuotasDelCurso.reduce((s, c) => s + (Number(c.monto_total) || 0), 0)
-      const montoRecaudado = cuotasDelCurso.reduce((s, c) => s + (Number(c.monto_pagado) || 0), 0)
-      const porcentaje = montoEstimado > 0 ? (montoRecaudado / montoEstimado) * 100 : 0
-
-      const coordinador = todosLosCoordinadores.find(coord => {
-        const coordCurso = coord.curso ?? coord.CUR_ID ?? null
-        return String(coordCurso) === String(courseId)
-      })
-      let responsable = null
-      if (coordinador) {
-        const personaId = coordinador.persona ?? coordinador.PER_ID ?? null
-        if (personaId) {
-          const persona = todasLasPersonas.find(p => p.PER_ID == personaId || p.id == personaId)
-          if (persona) {
-            responsable = `${persona.PER_NOMBRES || persona.nombre || ''} ${persona.PER_APELPTA || ''}`.trim()
-          }
-        }
-      }
-
-      return { id: curso.id, nombre: curso.nombre || 'Curso sin nombre', lugar: curso.lugar || '', montoEstimado, montoRecaudado, porcentaje, responsable }
+    // Computed: información del curso seleccionado
+    const cursoSeleccionadoInfo = computed(() => {
+      if (cursoSeleccionado.value === 'todos' || !cursoSeleccionado.value) return null
+      return cursos.value.find(c => c.CUR_ID == cursoSeleccionado.value)
     })
 
-    cursos.value = datosCompletos
-    await nextTick()
-    dibujarGrafico()
-    loading.value = false
-  } catch (error) {
-    console.error('Error al cargar datos:', error)
-    loadError.value = error.message || String(error)
-    loading.value = false
-  }
-}
+    // Computed: personas inscritas en el curso seleccionado
+    const personasInscritas = computed(() => {
+      if (cursoSeleccionado.value === 'todos' || !cursoSeleccionado.value) {
+        return personasCurso.value.length
+      }
+      return personasCurso.value.filter(pc => pc.CUR_ID == cursoSeleccionado.value).length
+    })
 
-function dibujarGrafico() {
-  const ctx = graficoCanvas.value.getContext('2d')
-  ctx.clearRect(0, 0, graficoCanvas.value.width, graficoCanvas.value.height)
-
-  const padding = 70
-  const ancho = graficoCanvas.value.width - padding * 2
-  const alto = graficoCanvas.value.height - padding * 2
-  const n = cursos.value.length
-  const maxValor = Math.max(...cursos.value.map((c) => c.montoEstimado), 1000)
-  const anchoBarra = ancho / (n * 2)
-
-  // Ejes
-  ctx.beginPath()
-  ctx.moveTo(padding, padding)
-  ctx.lineTo(padding, alto + padding)
-  ctx.lineTo(ancho + padding, alto + padding)
-  ctx.strokeStyle = '#333'
-  ctx.stroke()
-
-  // Eje Y (valores)
-  ctx.font = '12px Arial'
-  ctx.fillStyle = '#000'
-  const pasos = 5
-  for (let i = 0; i <= pasos; i++) {
-    const y = alto + padding - (i * alto) / pasos
-    const valor = Math.round((maxValor / pasos) * i)
-    ctx.fillText(`$${valor.toLocaleString('es-CL')}`, 10, y + 4)
-    ctx.beginPath()
-    ctx.moveTo(padding - 5, y)
-    ctx.lineTo(padding, y)
-    ctx.stroke()
-  }
-
-  // Barras
-  const localBarras = []
-  cursos.value.forEach((curso, i) => {
-    const x = padding + i * anchoBarra * 2 + anchoBarra / 2
-    const alturaEstimado = (curso.montoEstimado / maxValor) * alto
-    const alturaRecaudado = (curso.montoRecaudado / maxValor) * alto
-
-    // Azul (estimado)
-    ctx.fillStyle = 'rgba(0, 102, 255, 0.5)'
-    ctx.fillRect(x, alto + padding - alturaEstimado, anchoBarra, alturaEstimado)
-
-    // Verde (recaudado)
-    ctx.fillStyle = 'rgba(0, 204, 102, 0.8)'
-    ctx.fillRect(x, alto + padding - alturaRecaudado, anchoBarra, alturaRecaudado)
-
-    // Nombres cursos (simplificados para evitar solapamiento)
-    ctx.fillStyle = '#000'
-    ctx.font = '11px Arial'
-    ctx.textAlign = 'center'
-    // Decide whether to draw this label based on density
-    localBarras.push({ x: x, width: anchoBarra, curso })
-  })
-
-  // Store bar positions for tooltip/hit-testing
-  barras.value = localBarras
-
-  // No dibujamos etiquetas en el eje X: usamos tooltip para mostrar nombres completos al pasar el ratón.
-}
-
-function mostrarDetalles(curso) {
-  cursoSeleccionado.value = curso
-}
-
-function cerrarPopup() {
-  cursoSeleccionado.value = null
-}
-
-onMounted(() => {
-  cargarDatos()
-  // Attach canvas mouse handlers for tooltip
-  // Use an interval to wait for the ref to be set if needed
-  const attachHandlers = () => {
-    const el = graficoCanvas.value
-    if (!el) return
-    function toCanvasPos(evt) {
-      const rect = el.getBoundingClientRect()
-      return { x: evt.clientX - rect.left, y: evt.clientY - rect.top }
-    }
-    function handleMouseMove(evt) {
-      const pos = toCanvasPos(evt)
-      const found = barras.value.find(b => {
-        const left = b.x
-        const right = b.x + b.width
-        // bars are drawn at x with width anchoBarra; allow some tolerance
-        return pos.x >= left - 2 && pos.x <= right + 2 && pos.y <= graficoCanvas.value.height
+    // Computed: pagos pendientes
+    const pagosPendientesCurso = computed(() => {
+      const filtered = pagosPersona.value.filter(p => {
+        if (cursoSeleccionado.value === 'todos' || !cursoSeleccionado.value) return true
+        return p.CUR_ID == cursoSeleccionado.value
       })
-      if (found) {
-        tooltip.value.visible = true
-        tooltip.value.text = found.curso.nombre || found.curso.CUR_DESCRIPCION || ''
-        tooltip.value.x = evt.clientX
-        tooltip.value.y = evt.clientY - 10
-      } else {
-        tooltip.value.visible = false
+      // Buscar estado = 2 o estado = "pendiente"
+      return filtered.filter(p => p.PAP_ESTADO === 2 || String(p.PAP_ESTADO).toLowerCase() === 'pendiente').length
+    })
+
+    // Computed: acreditados
+    const acreditadosCurso = computed(() => {
+      if (cursoSeleccionado.value === 'todos' || !cursoSeleccionado.value) {
+        return personasCurso.value.filter(pc => pc.PEC_ACREDITADO).length
+      }
+      return personasCurso.value.filter(pc => 
+        pc.CUR_ID == cursoSeleccionado.value && pc.PEC_ACREDITADO
+      ).length
+    })
+
+    // Computed: inscripciones recientes
+    const inscripcionesRecientes = computed(() => {
+      return personasCurso.value.filter(pc => {
+        const curso = cursos.value.find(c => c.CUR_ID === pc.CUR_ID)
+        return curso && curso.CUR_ESTADO === 1
+      }).length
+    })
+
+    // Computed: porcentajes
+    const porcentajeInscritos = computed(() => {
+      return personasInscritas.value > 0 ? 100 : 0
+    })
+
+    const porcentajeAcreditados = computed(() => {
+      const total = personasInscritas.value
+      const acreditados = acreditadosCurso.value
+      return total > 0 ? (acreditados / total) * 100 : 0
+    })
+
+    const pagosPagadosCurso = computed(() => {
+      const filtered = pagosPersona.value.filter(p => {
+        if (cursoSeleccionado.value === 'todos' || !cursoSeleccionado.value) return true
+        return p.CUR_ID == cursoSeleccionado.value
+      })
+      return filtered.filter(p => p.PAP_ESTADO === 1 || String(p.PAP_ESTADO).toLowerCase() === 'pagado').length
+    })
+
+    // Computed: cursos filtrados
+    const cursosFiltrados = computed(() => {
+      let cursosData = cursos.value.map(curso => {
+        const inscripciones = personasCurso.value.filter(pc => pc.CUR_ID === curso.CUR_ID).length
+        const acreditados = personasCurso.value.filter(pc => 
+          pc.CUR_ID === curso.CUR_ID && pc.PEC_ACREDITADO
+        ).length
+        const pagosCurso = pagosPersona.value.filter(p => p.CUR_ID === curso.CUR_ID)
+        const pendientesPago = pagosCurso.filter(p => p.PAP_ESTADO === 2 || String(p.PAP_ESTADO).toLowerCase() === 'pendiente').length
+
+        return {
+          CUR_ID: curso.CUR_ID,
+          CUR_CODIGO: curso.CUR_CODIGO || 'N/A',
+          CUR_DESCRIPCION: curso.CUR_DESCRIPCION || 'N/A',
+          CUR_FECHA_HORA: curso.CUR_FECHA_HORA ? String(curso.CUR_FECHA_HORA).split(' ')[0] : 'N/A',
+          CUR_LUGAR: curso.CUR_LUGAR || 'N/A',
+          CUR_ESTADO: getEstadoDisplay(curso.CUR_ESTADO),
+          CUR_ESTADO_NUM: curso.CUR_ESTADO,
+          inscripciones: inscripciones,
+          acreditaciones: acreditados,
+          pendientesPago: pendientesPago
+        }
+      })
+
+      if (cursoSeleccionado.value !== 'todos' && cursoSeleccionado.value) {
+        cursosData = cursosData.filter(curso => curso.CUR_ID == cursoSeleccionado.value)
+      }
+
+      return cursosData
+    })
+
+    // Computed: coordinadores
+    const coordinadores = computed(() => {
+      return cursoCoordinadores.value.map(coord => {
+        const persona = personas.value.find(p => p.PER_ID === coord.PER_ID)
+        const curso = cursos.value.find(c => c.CUR_ID === coord.CUR_ID)
+        return {
+          CUC_ID: coord.CUC_ID,
+          nombre: persona ? `${persona.PER_NOMBRES || ''} ${persona.PER_APELPAT || ''}`.trim() : 'N/A',
+          curso: curso ? `${curso.CUR_CODIGO} - ${curso.CUR_DESCRIPCION}` : 'N/A',
+          contacto: persona ? persona.PER_EMAIL || 'N/A' : 'N/A',
+          cargo: coord.CUC_CARGO || 'N/A',
+          estadoDisplay: '● Activo'
+        }
+      })
+    })
+
+    // Computed: formadores
+    const formadores = computed(() => {
+      return cursoFormadores.value.map(form => {
+        const persona = personas.value.find(p => p.PER_ID === form.PER_ID)
+        const curso = cursos.value.find(c => c.CUR_ID === form.CUR_ID)
+        return {
+          CUO_ID: form.CUO_ID,
+          nombre: persona ? `${persona.PER_NOMBRES || ''} ${persona.PER_APELPAT || ''}`.trim() : 'N/A',
+          curso: curso ? `${curso.CUR_CODIGO} - ${curso.CUR_DESCRIPCION}` : 'N/A',
+          contacto: persona ? persona.PER_EMAIL || 'N/A' : 'N/A',
+          tipo: form.CUO_DIRECTOR ? 'Director' : 'Formador',
+          estadoDisplay: '● Activo'
+        }
+      })
+    })
+
+    // Configuración de columnas
+    const columnasCursos = [
+      { key: 'CUR_CODIGO', label: 'Código', sortable: true },
+      { key: 'CUR_DESCRIPCION', label: 'Descripción', sortable: true },
+      { key: 'CUR_FECHA_HORA', label: 'Fecha', sortable: true },
+      { key: 'CUR_LUGAR', label: 'Lugar', sortable: true },
+      { key: 'CUR_ESTADO', label: 'Estado', sortable: true },
+      { key: 'inscripciones', label: 'Inscripciones', sortable: true },
+      { key: 'acreditaciones', label: 'Acreditados', sortable: true },
+      { key: 'pendientesPago', label: 'Pendientes Pago', sortable: true }
+    ]
+
+    // Tabs
+    const tabs = ref([
+      { id: 'coordinadores', label: 'Coordinadores' },
+      { id: 'formadores', label: 'Formadores' }
+    ])
+
+    // Métodos auxiliares
+    const getEstadoDisplay = (estado) => {
+      const estados = {
+        1: '● Activo',
+        2: '● Finalizado',
+        3: '● Cancelado'
+      }
+      return estados[estado] || '' // Retornar vacío si no se conoce
+    }
+
+    const getBadgeClass = (estadoNum) => {
+      switch (estadoNum) {
+        case 1: return 'badge-success' // Activo
+        case 2: return 'badge-warning' // Finalizado
+        case 3: return 'badge-danger'  // Cancelado
+        default: return 'badge-secondary'
       }
     }
-    function handleLeave() {
-      tooltip.value.visible = false
+
+    const getEstadoLabel = (estado) => {
+      const estados = {
+        1: 'Activo',
+        2: 'Finalizado',
+        3: 'Cancelado'
+      }
+      return estados[estado] || 'Desconocido'
     }
-    el.addEventListener('mousemove', handleMouseMove)
-    el.addEventListener('mouseleave', handleLeave)
-    // store references so they aren't garbage-collected (not strictly necessary here)
-    ;(el)._rs_handlers = { handleMouseMove, handleLeave }
+
+    const getSemaphoreClass = (cursoId) => {
+      if (cursoId === 'todos' || !cursoId) return 'semaphore-gray'
+      
+      const curso = cursos.value.find(c => c.CUR_ID == cursoId)
+      if (!curso) return 'semaphore-gray'
+      
+      switch(curso.CUR_ESTADO) {
+        case 1: return 'semaphore-green'
+        case 2: return 'semaphore-yellow'
+        case 3: return 'semaphore-red'
+        default: return 'semaphore-gray'
+      }
+    }
+
+    // Métodos de navegación
+    const verCurso = (curso) => {
+      router.push(`/cursos/detalle/${curso.CUR_ID}`)
+    }
+
+    const editarCurso = (curso) => {
+      router.push({
+        name: 'cursoscapacitaciones',
+        query: { search: curso.CUR_DESCRIPCION }
+      })
+    }
+
+    // CORREGIDO: Mejor manejo de errores en la carga de datos
+    const cargarDatosDesdeAPI = async () => {
+      try {
+        console.log('Cargando datos desde API...')
+        
+        // Cargar cursos con manejo de error específico
+        try {
+          let cursosData = await dashboardService_2.cursos.list()
+          if (cursosData.results) cursosData = cursosData.results
+          if (cursosData && Array.isArray(cursosData)) {
+            cursos.value = cursosData
+            console.log(`✓ Cursos cargados: ${cursosData.length}`)
+          } else {
+            console.warn('Respuesta de cursos no es un array:', cursosData)
+            cursos.value = []
+          }
+        } catch (e) {
+          console.error('Error cargando cursos:', e.message)
+          // No lanzar error aquí, continuar con otros datos
+        }
+        
+        // Cargar personas
+        try {
+          let personasData = await dashboardService_2.personas.list()
+          if (personasData.results) personasData = personasData.results
+          if (personasData && Array.isArray(personasData)) {
+            personas.value = personasData
+            console.log(`✓ Personas cargadas: ${personasData.length}`)
+          }
+        } catch (e) {
+          console.warn('Error cargando personas:', e.message)
+        }
+        
+        // Cargar inscripciones
+        try {
+          let personasCursoData = await dashboardService_2.personaCursos.list()
+          if (personasCursoData.results) personasCursoData = personasCursoData.results
+          if (personasCursoData && Array.isArray(personasCursoData)) {
+            personasCurso.value = personasCursoData
+            console.log(`✓ Inscripciones cargadas: ${personasCursoData.length}`)
+          }
+        } catch (e) {
+          console.warn('Error cargando inscripciones:', e.message)
+        }
+        
+        // Cargar pagos con manejo de error 404
+        try {
+          let pagosData = await dashboardService_2.pagoPersona.list()
+          if (pagosData.results) pagosData = pagosData.results
+          if (pagosData && Array.isArray(pagosData)) {
+            pagosPersona.value = pagosData
+            console.log(`✓ Pagos cargados: ${pagosData.length}`)
+          }
+        } catch (e) {
+          console.warn('Error cargando pagos (puede ser ruta no implementada):', e.message)
+          // Inicializar array vacío para evitar errores
+          pagosPersona.value = []
+        }
+        
+        // Cargar coordinadores
+        try {
+          let coordinadoresData = await dashboardService_2.coordinadores.list()
+          if (coordinadoresData.results) coordinadoresData = coordinadoresData.results
+          if (coordinadoresData && Array.isArray(coordinadoresData)) {
+            cursoCoordinadores.value = coordinadoresData
+            console.log(`✓ Coordinadores cargados: ${coordinadoresData.length}`)
+          }
+        } catch (e) {
+          console.warn('Error cargando coordinadores:', e.message)
+        }
+        
+        // Cargar formadores
+        try {
+          let formadoresData = await dashboardService_2.formadores.list()
+          if (formadoresData.results) formadoresData = formadoresData.results
+          if (formadoresData && Array.isArray(formadoresData)) {
+            cursoFormadores.value = formadoresData
+            console.log(`✓ Formadores cargados: ${formadoresData.length}`)
+          }
+        } catch (e) {
+          console.warn('Error cargando formadores:', e.message)
+        }
+        
+        console.log('✓ Carga de datos completada')
+      } catch (error) {
+        console.error('Error general cargando datos:', error)
+        throw error
+      }
+    }
+
+    // Actualizar datos
+    const actualizarDatos = async () => {
+      loading.value = true
+      try {
+        await cargarDatosDesdeAPI()
+        alertas.value.push({
+          id: Date.now(),
+          type: 'success',
+          title: 'Datos Actualizados',
+          message: 'La información se actualizó correctamente.'
+        })
+      } catch (error) {
+        console.error('Error actualizando datos:', error.message)
+        alertas.value.push({
+          id: Date.now(),
+          type: 'error',
+          title: 'Error al Actualizar',
+          message: `No se pudieron actualizar los datos: ${error.message}`
+        })
+      } finally {
+        loading.value = false
+      }
+    }
+
+    const removerAlerta = (id) => {
+      alertas.value = alertas.value.filter(alerta => alerta.id !== id)
+    }
+
+    // Ciclo de vida
+    onMounted(async () => {
+      loading.value = true
+      try {
+        await cargarDatosDesdeAPI()
+        console.log('✓ Dashboard cargado correctamente')
+      } catch (error) {
+        console.error('Error cargando dashboard:', error)
+        alertas.value.push({
+          id: Date.now(),
+          type: 'warning',
+          title: 'Datos No Disponibles',
+          message: 'No se pudieron cargar los datos. Verifique la conexión.'
+        })
+      } finally {
+        loading.value = false
+      }
+    })
+
+    // Estado para modal de cambio de estado
+    const mostrarModalCambioEstado = ref(false)
+    const cursoParaCambioEstado = ref(null)
+    const nuevoEstado = ref(null)
+    const loadingEstado = ref(false)
+    
+    const opcionesEstado = [
+      { value: 0, text: 'Pendiente' },
+      { value: 1, text: 'Vigente' },
+      { value: 2, text: 'Anulado' },
+      { value: 3, text: 'Finalizado' },
+    ]
+
+    const abrirModalCambioEstado = (curso) => {
+      cursoParaCambioEstado.value = curso
+      nuevoEstado.value = curso.CUR_ESTADO_NUM || curso.CUR_ESTADO // Fallback if num not set
+      mostrarModalCambioEstado.value = true
+    }
+
+    const cerrarModalCambioEstado = () => {
+      mostrarModalCambioEstado.value = false
+      cursoParaCambioEstado.value = null
+      nuevoEstado.value = null
+    }
+
+    const guardarCambioEstado = async () => {
+      if (nuevoEstado.value === null) return
+      
+      loadingEstado.value = true
+      try {
+        await cursosService.cursos.partialUpdate(cursoParaCambioEstado.value.CUR_ID, { cur_estado: nuevoEstado.value })
+        
+        alertas.value.push({
+          id: Date.now(),
+          type: 'success',
+          title: 'Estado Actualizado',
+          message: 'El estado del curso ha sido modificado correctamente.'
+        })
+        
+        // Recargar datos para reflejar cambios
+        await cargarDatosDesdeAPI()
+        cerrarModalCambioEstado()
+        
+      } catch (error) {
+        console.error('Error cambiando estado:', error)
+        alertas.value.push({
+          id: Date.now(),
+          type: 'error',
+          title: 'Error',
+          message: 'No se pudo cambiar el estado del curso.'
+        })
+      } finally {
+        loadingEstado.value = false
+      }
+    }
+
+    const abrirDashboard = (curso) => {
+      // Navegar a la vista de detalle del curso (Dashboard específico del curso)
+      router.push({
+        name: 'curso-detalle',
+        params: { id: curso.CUR_ID }
+      })
+    }
+
+    return {
+      cursoSeleccionado,
+      alertas,
+      loading,
+      activeTab,
+      tabs,
+      cursoSeleccionadoInfo,
+      personasInscritas,
+      pagosPendientesCurso,
+      acreditadosCurso,
+      inscripcionesRecientes,
+      porcentajeInscritos,
+      porcentajeAcreditados,
+      pagosPagadosCurso,
+      cursosFiltrados,
+      coordinadores,
+      formadores,
+      columnasCursos,
+      verCurso,
+      editarCurso,
+      actualizarDatos,
+      removerAlerta,
+      getEstadoDisplay,
+      getSemaphoreClass,
+      getBadgeClass,
+      getEstadoLabel,
+      cursos,
+      personas,
+      // Change Status
+      mostrarModalCambioEstado,
+      cursoParaCambioEstado,
+      nuevoEstado,
+      loadingEstado,
+      opcionesEstado,
+      abrirModalCambioEstado,
+      cerrarModalCambioEstado,
+      guardarCambioEstado,
+      // Dashboard Overlay
+      abrirDashboard,
+    }
   }
-  // Try attach now and again in case canvas not yet rendered
-  const tries = [0, 100, 300]
-  for (const t of tries) setTimeout(attachHandlers, t)
-})
+}
 </script>
 
 <style scoped>
-.dashboard-container {
-  padding: 20px;
-  background-color: #f4f6f8;
-  font-family: 'Segoe UI', sans-serif;
+/* (Mantener los mismos estilos del archivo original) */
+.dashboard-scout {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-.titulo {
-  text-align: center;
-  margin-bottom: 20px;
-  color: #333;
+.main-content {
+  margin-left: 0;
+  padding: 20px;
+  min-height: 100vh;
+  width: 100%;
 }
 
-.grafico-container {
-  background-color: #fff;
-  border-radius: 10px;
-  padding: 20px;
-  margin-bottom: 30px;
-  box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+/* Selector de Curso */
+.course-selector-section {
+  background: var(--color-surface);
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  margin-bottom: 24px;
+  border: 1px solid #e9ecef;
+}
+
+.selector-container {
   display: flex;
-  justify-content: center;
-  position: relative; /* allow absolute tooltip inside */
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
 }
 
-.tabla-container {
-  background-color: #fff;
-  border-radius: 10px;
-  padding: 15px;
-  box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+.native-select-wrapper {
+  flex: 1;
+  min-width: 320px;
+  max-width: 500px;
 }
 
-.tabla-cursos {
+.native-select-label {
+  display: block;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.native-select {
   width: 100%;
-  border-collapse: collapse;
-}
-
-.tabla-cursos th,
-.tabla-cursos td {
-  border: 1px solid #ddd;
-  padding: 10px;
-  text-align: center;
-}
-
-.tabla-cursos th {
-  background-color: #f0f0f0;
-}
-
-.curso-ok {
-  background-color: #d5f5e3;
-}
-
-.curso-error {
-  background-color: #f8d7da;
-}
-
-.curso-ok:hover,
-.curso-error:hover {
-  background-color: #eafaf1;
+  padding: 12px 16px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  background-color: var(--color-surface);
+  color: #495057;
+  font-size: 16px;
+  font-family: inherit;
   cursor: pointer;
+  transition: all 0.3s ease;
+  outline: none;
 }
 
-/* Popup modal */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.4);
+.native-select:focus {
+  border-color: #2c5aa0;
+  box-shadow: 0 0 0 3px rgba(44, 90, 160, 0.2);
+}
+
+.native-select option {
+  color: #495057;
+  background-color: var(--color-surface);
+  padding: 12px;
+  font-size: 15px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.native-select option:hover {
+  background-color: #2c5aa0 !important;
+  color: #ffffff !important;
+}
+
+.native-select option:checked {
+  background-color: #2c5aa0 !important;
+  color: #ffffff !important;
+}
+
+/* Asegurar visibilidad en todos los navegadores */
+.native-select::-ms-expand {
+  display: block;
+}
+
+.native-select:-moz-focusring {
+  color: transparent;
+  text-shadow: 0 0 0 #000;
+}
+
+.semaphore-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.semaphore {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #ddd;
+  transition: all 0.3s ease;
+}
+
+.semaphore-green {
+  background-color: #28a745;
+  border-color: #28a745;
+  box-shadow: 0 0 12px rgba(40, 167, 69, 0.4);
+}
+
+.semaphore-yellow {
+  background-color: #ffc107;
+  border-color: #ffc107;
+  box-shadow: 0 0 12px rgba(255, 193, 7, 0.4);
+}
+
+.semaphore-red {
+  background-color: #dc3545;
+  border-color: #dc3545;
+  box-shadow: 0 0 12px rgba(220, 53, 69, 0.4);
+}
+
+.semaphore-gray {
+  background-color: #6c757d;
+  border-color: #6c757d;
+}
+
+.semaphore-label {
+  font-weight: 600;
+  color: #495057;
+  font-size: 14px;
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  margin-bottom: 30px;
+}
+
+/* Charts Section */
+.charts-section {
+  background: var(--color-surface);
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  margin-bottom: 24px;
+  border: 1px solid #e9ecef;
+}
+
+.charts-section h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #2c5aa0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  border-bottom: 3px solid #2c5aa0;
+  padding-bottom: 8px;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+.chart-card {
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 20px;
+  background: #f8f9fa;
+  transition: all 0.3s ease;
+}
+
+.chart-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.chart-card h4 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #2c5aa0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.chart-placeholder {
+  height: 200px;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 999;
+  background-color: var(--color-surface);
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
 }
 
-.modal-content {
-  background: #fff;
-  padding: 25px;
-  border-radius: 12px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-  width: 400px;
+.chart-bars {
+  display: flex;
+  align-items: end;
+  gap: 40px;
+  height: 150px;
+}
+
+.bar-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.bar {
+  width: 50px;
+  border-radius: 6px 6px 0 0;
+  transition: height 0.5s ease;
+  min-height: 20px;
+}
+
+.bar.inscritos {
+  background: linear-gradient(135deg, #2c5aa0 0%, #1e3a8a 100%);
+}
+
+.bar.acreditados {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+}
+
+.bar-container span {
+  font-size: 14px;
+  font-weight: 500;
+  color: #495057;
   text-align: center;
 }
 
-.boton-cerrar {
-  background-color: #007bff;
+.payment-status {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+}
+
+.dot.paid {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+}
+
+.dot.pending {
+  background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+}
+
+/* Courses Section */
+.courses-section {
+  background: var(--color-surface);
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  margin-bottom: 24px;
+  border: 1px solid #e9ecef;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.section-header h3 {
+  margin: 0;
+  color: #2c5aa0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  border-bottom: 3px solid #2c5aa0;
+  padding-bottom: 8px;
+}
+
+.refresh-btn {
+  background: #2c5aa0;
   color: white;
   border: none;
-  padding: 8px 15px;
-  margin-top: 15px;
-  border-radius: 6px;
+  padding: 12px 24px;
+  border-radius: 8px;
   cursor: pointer;
-}
-
-.boton-cerrar:hover {
-  background-color: #0056b3;
-}
-
-.chart-tooltip {
-  position: fixed;
-  pointer-events: none;
-  background: rgba(0,0,0,0.8);
-  color: #fff;
-  padding: 6px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  z-index: 2000;
-  transform: translate(-50%, -100%);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
   white-space: nowrap;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  background: #1e3d73;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(44, 90, 160, 0.3);
+}
+
+.refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Tablas */
+.table-container-expanded {
+  background: var(--color-surface);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  overflow: hidden;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.data-table-expanded {
+  width: 100%;
+  border-collapse: collapse;
+  box-sizing: border-box;
+}
+
+.data-table-expanded thead {
+  background: #f8f9fa;
+}
+
+.data-table-expanded th {
+  padding: 16px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #2c5aa0;
+  border-bottom: 2px solid #e1e5e9;
+}
+
+.data-table-expanded td {
+  padding: 14px 12px;
+  border-bottom: 1px solid #e1e5e9;
+}
+
+.data-table-expanded tr:hover {
+  background: #f8f9fa;
+}
+
+/* Botones de Acción */
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+
+/* Responsables Section */
+.responsibles-section {
+  background: var(--color-surface);
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  margin-bottom: 24px;
+  border: 1px solid #e9ecef;
+}
+
+.responsibles-section h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #2c5aa0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  border-bottom: 3px solid #2c5aa0;
+  padding-bottom: 8px;
+}
+
+.tabs-container {
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.tabs-header {
+  display: flex;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 1px solid #e9ecef;
+}
+
+.tab-button {
+  padding: 16px 24px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  color: #6c757d;
+  transition: all 0.3s ease;
+  border-bottom: 3px solid transparent;
+  flex: 1;
+  text-align: center;
+  font-size: 14px;
+}
+
+.tab-button:hover {
+  background-color: rgba(44, 90, 160, 0.1);
+  color: #2c5aa0;
+}
+
+.tab-button.active {
+  background-color: var(--color-surface);
+  color: #2c5aa0;
+  border-bottom-color: #ffcc00;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.tab-content {
+  padding: 20px;
+  background: var(--color-surface);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .main-content {
+    padding: 16px;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .selector-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  
+  .section-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+  
+  .refresh-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .course-selector-section,
+  .charts-section,
+  .courses-section,
+  .responsibles-section {
+    padding: 16px;
+  }
+  
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .chart-bars {
+    flex-direction: column;
+    align-items: center;
+    height: auto;
+    gap: 20px;
+  }
+  
+  .bar-container {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .bar {
+    width: 60px;
+    height: 40px !important;
+    border-radius: 6px;
+  }
+  
+  .payment-status {
+    gap: 16px;
+  }
+  
+  .status-item {
+    justify-content: center;
+  }
+}
+
+/* Estilos para estados de deshabilitado */
+.native-select:disabled {
+  background-color: #e9ecef;
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Transiciones suaves para todos los elementos */
+.course-selector-section,
+.charts-section,
+.courses-section,
+.responsibles-section,
+.chart-card,
+.tab-button,
+.refresh-btn,
+.btn-action {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Efectos de hover para todas las tarjetas */
+.course-selector-section:hover,
+.charts-section:hover,
+.courses-section:hover,
+.responsibles-section:hover {
+  box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+/* Colores del sistema estandarizados */
+:root {
+  --color-primary: #2c5aa0;
+  --color-primary-dark: #1e3a8a;
+  --color-accent: #ffcc00;
+  --color-success: #28a745;
+  --color-warning: #ffc107;
+  --color-danger: #dc3545;
+  /* Use global --color-surface from base.css for consistent surface color */
+  --color-border: #e9ecef;
+  --color-text: #495057;
+}
+
+.no-selection-placeholder {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  background-color: var(--color-surface);
+  border-radius: 12px;
+  border: 2px dashed #e9ecef;
+  margin-top: 20px;
+  text-align: center;
+  color: #6c757d;
+}
+
+.placeholder-content h3 {
+  margin-top: 0;
+  color: #2c5aa0;
+  margin-bottom: 8px;
+}
+.badge {
+  display: inline-block;
+  padding: 4px 14px;
+  border-radius: 12px;
+  font-size: 0.9em;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  border: 1px solid transparent;
+}
+.badge-success {
+  background: #28a745;
+  color: #fff;
+}
+.badge-warning {
+  background: #ffc107;
+  color: #212529;
+}
+.badge-danger {
+  background: #dc3545;
+  color: #fff;
+}
+.badge-secondary {
+  background: #6c757d;
+  color: #fff;
 }
 </style>

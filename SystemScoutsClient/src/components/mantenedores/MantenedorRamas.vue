@@ -1,72 +1,68 @@
 <template>
-  <div class="mantenedor-section-expanded">
+  <div class="mantenedor-section">
     <div class="mantenedor-header">
-      <h2>🏕️ Gestión de Ramas</h2>
-      <BaseButton variant="primary" @click="abrirModalCrear">
-        <AppIcons name="plus" :size="16" /> Nueva Rama
-      </BaseButton>
+      <h2><AppIcons name="git-branch" :size="24" /> Gestión de Ramas</h2>
+      <button class="btn-primary" @click="abrirModalCrear">
+        <AppIcons name="plus" :size="18" /> Nueva Rama
+      </button>
     </div>
 
-    <!-- Buscador (Opcional, aunque no tiene filtro específico en el original, siempre es útil) -->
-    <div class="search-bar search-bar--compact">
+    <div class="search-bar">
       <input 
         type="text" 
         class="search-input" 
-        placeholder="BUSCAR RAMA..."
-        v-model="searchQuery"
-        @input="handleSearch"
+        v-model="search" 
+        placeholder="Buscar Rama..."
       >
-      <BaseButton class="search-button" variant="primary">
-        <AppIcons name="search" :size="16" /> Buscar
-      </BaseButton>
     </div>
 
-    <ModernMainScrollbar>
-      <div class="table-container-expanded">
-        <table class="data-table-expanded">
+    <div class="table-container">
+      <ModernMainScrollbar>
+        <table class="data-table">
           <thead>
             <tr>
               <th>DESCRIPCIÓN</th>
               <th>ESTADO</th>
-              <th>ACCIONES</th>
+              <th class="text-center">ACCIONES</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-if="loading">
-              <td colspan="3" class="text-center">Cargando...</td>
-            </tr>
-            <tr v-else-if="filteredItems.length === 0">
-              <td colspan="3" class="text-center">No se encontraron registros</td>
-            </tr>
-            <tr v-else v-for="rama in filteredItems" :key="rama.id">
+            <tr v-for="rama in filteredItems" :key="rama.id">
               <td>{{ rama.descripcion }}</td>
               <td>
                 <span class="status-badge" :class="rama.vigente ? 'status-active' : 'status-inactive'">
-                  {{ rama.vigente ? 'VIGENTE' : 'NO VIGENTE' }}
+                  {{ rama.vigente ? 'ACTIVO' : 'INACTIVO' }}
                 </span>
               </td>
-              <td class="actions">
-                <BaseButton variant="secondary" class="btn-action" @click="verElemento(rama)">
-                  <AppIcons name="eye" :size="16" /> Ver
-                </BaseButton>
-                <BaseButton variant="secondary" class="btn-action" @click="editarElemento(rama)">
-                  <AppIcons name="edit" :size="16" /> Editar
-                </BaseButton>
-                <BaseButton v-if="rama.vigente" variant="secondary" class="btn-action" @click="confirmarAccion(rama, 'anular')">
-                  <AppIcons name="block" :size="16" /> Anular
-                </BaseButton>
-                <BaseButton v-else variant="primary" class="btn-action" @click="confirmarAccion(rama, 'activar')">
-                  <AppIcons name="check" :size="16" /> Activar
-                </BaseButton>
+              <td class="actions-cell">
+                <div class="action-buttons">
+                  <button class="action-btn btn-view" @click="verElemento(rama)" title="Ver detalle">
+                    <AppIcons name="eye" :size="16" />
+                  </button>
+                  <button class="action-btn btn-edit" @click="editarElemento(rama)" title="Editar">
+                    <AppIcons name="edit" :size="16" />
+                  </button>
+                  <button 
+                    class="action-btn" 
+                    :class="rama.vigente ? 'btn-delete' : 'btn-activate'"
+                    @click="rama.vigente ? confirmarAnular(rama) : confirmarActivar(rama)"
+                    :title="rama.vigente ? 'Anular' : 'Activar'"
+                  >
+                    <AppIcons :name="rama.vigente ? 'trash' : 'check'" :size="16" />
+                  </button>
+                </div>
               </td>
+            </tr>
+            <tr v-if="filteredItems.length === 0">
+              <td colspan="3" class="no-data">No se encontraron ramas</td>
             </tr>
           </tbody>
         </table>
-      </div>
-    </ModernMainScrollbar>
+      </ModernMainScrollbar>
+    </div>
 
-    <!-- Modal Crear/Editar -->
-    <div v-if="modalActivo === 'crear' || modalActivo === 'editar'" class="modal-overlay" @click="cerrarModal">
+    <!-- Modal Formulario -->
+    <div v-if="modalVisible" class="modal-overlay" @click="cerrarModal">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
           <h3>{{ editando ? 'EDITAR' : 'NUEVA' }} RAMA</h3>
@@ -85,7 +81,6 @@
                 required
               >
             </div>
-            
             <div class="form-actions">
               <BaseButton variant="secondary" @click="cerrarModal">
                 <AppIcons name="close" :size="16" /> Cancelar
@@ -101,12 +96,12 @@
       </div>
     </div>
 
-    <!-- Modal Ver -->
-    <div v-if="modalActivo === 'ver'" class="modal-overlay" @click="cerrarModal">
-      <div class="modal-content" @click.stop>
+    <!-- Modal Ver Detalle -->
+    <div v-if="viewModalVisible" class="modal-overlay" @click="cerrarViewModal">
+      <div class="modal-content modal-sm" @click.stop>
         <div class="modal-header">
-          <h3>👁 VISUALIZAR RAMA</h3>
-          <button class="modal-close" @click="cerrarModal">×</button>
+          <h3>👁 DETALLE RAMA</h3>
+          <button class="modal-close" @click="cerrarViewModal">×</button>
         </div>
         <div class="modal-body">
           <div class="view-container">
@@ -124,7 +119,7 @@
             </div>
           </div>
           <div class="form-actions">
-            <BaseButton variant="secondary" @click="cerrarModal">
+            <BaseButton variant="secondary" @click="cerrarViewModal">
               <AppIcons name="close" :size="16" /> Cerrar
             </BaseButton>
           </div>
@@ -132,188 +127,184 @@
       </div>
     </div>
 
+    <!-- Loading Indicator -->
+    <div v-if="cargando" class="loading-overlay">
+      <div class="loading-content">
+        <div class="spinner"></div>
+        <p>Cargando ramas...</p>
+      </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <NotificationToast 
+      v-if="toast.visible" 
+      :message="toast.message" 
+      :icon="toast.icon" 
+      @close="toast.visible = false" 
+    />
   </div>
 </template>
 
-<script>
+<script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import * as mantenedoresService from '@/services/mantenedoresService'
 import BaseButton from '@/components/BaseButton.vue'
 import AppIcons from '@/components/icons/AppIcons.vue'
 import ModernMainScrollbar from '@/components/ModernMainScrollbar.vue'
+import NotificationToast from '@/components/NotificationToast.vue'
 
-export default {
-  name: 'MantenedorRamas',
-  components: { BaseButton, AppIcons, ModernMainScrollbar },
-  emits: ['show-message', 'confirm-action'], // Eventos para comunicar al padre (si es necesario) o manejar todo aquí.
-  // Nota: Para mantener consistencia con MantenedorZonas, usaremos eventos para confirmación si el padre maneja el modal global,
-  // pero intentaremos ser autónomos donde sea posible o delegar estandarizadamente.
-  // En este refactor, el padre (mantenedores.vue) tiene un modal de confirmación global.
-  
-  setup(props, { emit }) {
-    const items = ref([])
-    const loading = ref(false)
-    const saving = ref(false)
-    const searchQuery = ref('')
-    const modalActivo = ref('') // '', 'crear', 'editar', 'ver'
-    const editando = ref(false)
-    const elementoSeleccionado = ref(null)
+const emit = defineEmits(['confirm-action'])
 
-    const form = reactive({
-      id: null,
-      descripcion: '',
-      vigente: true
-    })
+const items = ref([])
+const search = ref('')
+const cargando = ref(false)
+const saving = ref(false)
 
-    const normalize = (arr, mapFn) => (arr || []).map(mapFn)
-    const getData = (resp) => {
-      if (!resp) return []
-      if (Array.isArray(resp)) return resp
-      return resp.results || (resp.data?.results) || resp.data || resp.items || []
-    }
+// Toast state
+const toast = reactive({ visible: false, message: '', icon: '' })
+const showToast = (message, icon = 'check') => {
+  toast.message = message
+  toast.icon = icon
+  toast.visible = true
+  setTimeout(() => { toast.visible = false }, 3000)
+}
 
-    const cargarDatos = async () => {
-      loading.value = true
-      try {
-        const resp = await mantenedoresService.rama.list()
-        items.value = normalize(getData(resp), r => ({
-          id: r.ram_id ?? r.RAM_ID ?? r.id,
-          descripcion: (r.ram_descripcion ?? r.RAM_DESCRIPCION ?? r.DESCRIPCION ?? r.descripcion ?? '').toString(),
-          vigente: !!(r.ram_vigente ?? r.RAM_VIGENTE ?? r.vigente)
-        }))
-      } catch (err) {
-        console.error('Error cargando ramas:', err)
-        emit('show-message', { type: 'error', text: 'Error al cargar ramas' })
-      } finally {
-        loading.value = false
-      }
-    }
+// Estado Modal Formulario
+const modalVisible = ref(false)
+const editando = ref(false)
+const form = reactive({
+  id: null,
+  descripcion: '',
+  vigente: true
+})
 
-    const filteredItems = computed(() => {
-      if (!searchQuery.value) return items.value
-      const q = searchQuery.value.toLowerCase()
-      return items.value.filter(item => 
-        item.descripcion.toLowerCase().includes(q)
-      )
-    })
+// Estado Modal Ver
+const viewModalVisible = ref(false)
+const elementoSeleccionado = ref(null)
 
-    const handleSearch = () => {
-      // Reactividad automática
-    }
-
-    const limpiarFormulario = () => {
-      form.id = null
-      form.descripcion = ''
-      form.vigente = true
-    }
-
-    const abrirModalCrear = () => {
-      limpiarFormulario()
-      editando.value = false
-      modalActivo.value = 'crear'
-    }
-
-    const editarElemento = (item) => {
-      limpiarFormulario()
-      form.id = item.id
-      form.descripcion = item.descripcion
-      form.vigente = item.vigente
-      editando.value = true
-      modalActivo.value = 'editar'
-    }
-
-    const verElemento = (item) => {
-      elementoSeleccionado.value = item
-      modalActivo.value = 'ver'
-    }
-
-    const cerrarModal = () => {
-      modalActivo.value = ''
-      elementoSeleccionado.value = null
-    }
-
-    const guardar = async () => {
-      saving.value = true
-      try {
-        const payload = {
-          ram_descripcion: form.descripcion,
-          ram_vigente: !!form.vigente
-        }
-
-        if (editando.value) {
-          if (!form.id) throw new Error('ID no definido')
-          await mantenedoresService.rama.partialUpdate(form.id, payload)
-        } else {
-          await mantenedoresService.rama.create(payload)
-        }
-        
-        cerrarModal()
-        await cargarDatos()
-        emit('show-message', { type: 'success', text: editando.value ? 'Rama actualizada' : 'Rama creada' })
-      } catch (err) {
-        console.error('Error guardando rama:', err)
-        emit('show-message', { type: 'error', text: 'Error al guardar rama: ' + err.message })
-      } finally {
-        saving.value = false
-      }
-    }
-
-    // Manejo de anular/activar delegando al padre o haciéndolo local.
-    // Para simplificar y limpiar el padre, lo haremos localmente si el padre lo permite, 
-    // pero el padre tiene un 'confirmModal' global. Vamos a usar el evento 'confirm-action' 
-    // para usar el modal del padre, pasándole la función a ejecutar.
-    
-    const confirmarAccion = (item, accion) => {
-      emit('confirm-action', {
-        titulo: accion === 'anular' ? 'Confirmar Anulación' : 'Confirmar Activación',
-        mensaje: accion === 'anular' ? '¿Está seguro que desea anular esta rama?' : '¿Desea activar nuevamente esta rama?',
-        accion: async () => {
-          try {
-            const payload = { ram_vigente: accion === 'activar' }
-            await mantenedoresService.rama.partialUpdate(item.id, payload)
-            await cargarDatos()
-            emit('show-message', { type: 'success', text: `Rama ${accion === 'activar' ? 'activada' : 'anulada'} correctamente` })
-          } catch (err) {
-             emit('show-message', { type: 'error', text: 'Error al cambiar estado: ' + err.message })
-          }
-        }
-      })
-    }
-
-    onMounted(() => {
-      cargarDatos()
-    })
-
-    return {
-      items,
-      loading,
-      saving,
-      searchQuery,
-      modalActivo,
-      editando,
-      elementoSeleccionado,
-      filteredItems,
-      form,
-      abrirModalCrear,
-      editarElemento,
-      verElemento,
-      cerrarModal,
-      guardar,
-      confirmarAccion,
-      handleSearch
-    }
+const cargarDatos = async () => {
+  cargando.value = true
+  try {
+    const resp = await mantenedoresService.rama.list()
+    const rawData = Array.isArray(resp) ? resp : (resp.results || resp.data || [])
+    items.value = rawData.map(r => ({
+      id: r.ram_id ?? r.RAM_ID ?? r.id,
+      descripcion: (r.ram_descripcion ?? r.RAM_DESCRIPCION ?? r.DESCRIPCION ?? r.descripcion ?? '').toString(),
+      vigente: !!(r.ram_vigente ?? r.RAM_VIGENTE ?? r.vigente ?? true)
+    }))
+  } catch (error) {
+    console.error('Error cargando ramas:', error)
+    showToast('Error al cargar ramas', 'alert-triangle')
+  } finally {
+    cargando.value = false
   }
 }
+
+const filteredItems = computed(() => {
+  if (!search.value) return items.value
+  const term = search.value.toLowerCase()
+  return items.value.filter(r => r.descripcion.toLowerCase().includes(term))
+})
+
+const abrirModalCrear = () => {
+  editando.value = false
+  Object.assign(form, { id: null, descripcion: '', vigente: true })
+  modalVisible.value = true
+}
+
+const editarElemento = (item) => {
+  editando.value = true
+  Object.assign(form, { id: item.id, descripcion: item.descripcion, vigente: item.vigente })
+  modalVisible.value = true
+}
+
+const verElemento = (item) => {
+  elementoSeleccionado.value = item
+  viewModalVisible.value = true
+}
+
+const cerrarModal = () => {
+  modalVisible.value = false
+  form.id = null
+  editando.value = false
+}
+
+const cerrarViewModal = () => {
+  viewModalVisible.value = false
+  elementoSeleccionado.value = null
+}
+
+const guardar = async () => {
+  saving.value = true
+  try {
+    const payload = {
+      ram_descripcion: form.descripcion,
+      ram_vigente: form.vigente
+    }
+    if (editando.value) {
+      if (!form.id) throw new Error('ID no válido')
+      await mantenedoresService.rama.partialUpdate(form.id, payload)
+      showToast('Rama actualizada correctamente', 'check')
+    } else {
+      await mantenedoresService.rama.create(payload)
+      showToast('Rama creada correctamente', 'check')
+    }
+    cerrarModal()
+    await cargarDatos()
+  } catch (error) {
+    console.error('Error guardando rama:', error)
+    showToast('Error al guardar rama', 'alert-triangle')
+  } finally {
+    saving.value = false
+  }
+}
+
+const confirmarAnular = (item) => {
+  emit('confirm-action', {
+    titulo: 'Anular Rama',
+    mensaje: `¿Estás seguro de anular la rama "${item.descripcion}"?`,
+    accion: async () => {
+      try {
+        await mantenedoresService.rama.partialUpdate(item.id, { ram_vigente: false })
+        await cargarDatos()
+        showToast('Rama anulada correctamente', 'check')
+      } catch (e) {
+        showToast('Error al anular rama', 'alert-triangle')
+      }
+    }
+  })
+}
+
+const confirmarActivar = (item) => {
+  emit('confirm-action', {
+    titulo: 'Activar Rama',
+    mensaje: `¿Estás seguro de activar la rama "${item.descripcion}"?`,
+    accion: async () => {
+      try {
+        await mantenedoresService.rama.partialUpdate(item.id, { ram_vigente: true })
+        await cargarDatos()
+        showToast('Rama activada correctamente', 'check')
+      } catch (e) {
+        showToast('Error al activar rama', 'alert-triangle')
+      }
+    }
+  })
+}
+
+onMounted(() => {
+  cargarDatos()
+})
 </script>
 
 <style scoped>
-/* Estilos extraídos y adaptados de mantenedores.vue */
-.mantenedor-section-expanded {
-  padding: 30px 20px;
-  animation: fadeIn 0.5s ease;
+/* Estilos estandarizados basados en MantenedorZonas */
+.mantenedor-section {
+  padding: 0;
   width: 100%;
-  margin: 0;
-  box-sizing: border-box;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
 }
 
 .mantenedor-header {
@@ -321,95 +312,105 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #3949ab;
 }
 
 .mantenedor-header h2 {
-  font-size: 1.5rem;
   color: #1a237e;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin: 0;
 }
 
 .search-bar {
-  display: flex;
-  gap: 10px;
-  background: #f5f5f5;
-  padding: 10px;
-  border-radius: 8px;
   margin-bottom: 20px;
 }
 
 .search-input {
-  flex: 1;
-  padding: 10px;
+  width: 100%;
+  max-width: 400px;
+  padding: 10px 15px;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 1rem;
 }
 
-.table-container-expanded {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+.table-container {
+  flex: 1;
   overflow: hidden;
+  border: 1px solid #eee;
+  border-radius: 8px;
 }
 
-.data-table-expanded {
+.data-table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.data-table-expanded th,
-.data-table-expanded td {
-  padding: 14px 20px;
-  text-align: left;
-  border-bottom: 1px solid #eee;
+.data-table th, .data-table td {
+  padding: 12px 15px;
+  text-align: center;
+  border-bottom: 1px solid #f0f0f0;
 }
 
-.data-table-expanded th {
-  background: #f9fafb;
-  color: #374151;
-  font-weight: 600;
-  font-size: 0.9rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.data-table-expanded tr:hover {
+.data-table th {
   background-color: #f8f9fa;
+  color: #333;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .status-badge {
-  display: inline-flex;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
 }
 
 .status-active {
-  background: #e8f5e9;
+  background-color: #e8f5e9;
   color: #2e7d32;
 }
 
 .status-inactive {
-  background: #ffebee;
+  background-color: #ffebee;
   color: #c62828;
 }
 
-.actions {
+.actions-cell {
+  text-align: center;
+}
+
+.action-buttons {
   display: flex;
+  justify-content: center;
   gap: 8px;
 }
 
-.btn-action {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 6px 12px;
-  font-size: 0.85rem;
+.action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  transition: background 0.2s;
+  color: #555;
 }
 
-/* Modal styles copied for consistency */
+.action-btn:hover {
+  background-color: #f0f0f0;
+}
+
+.btn-view:hover { color: #1976d2; background-color: #e3f2fd; }
+.btn-edit:hover { color: #f57c00; background-color: #fff3e0; }
+.btn-delete:hover { color: #d32f2f; background-color: #ffebee; }
+.btn-activate:hover { color: #388e3c; background-color: #e8f5e9; }
+
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -418,116 +419,149 @@ export default {
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  backdrop-filter: blur(2px);
 }
 
 .modal-content {
   background: white;
-  width: 100%;
+  border-radius: 8px;
+  width: 90%;
   max-width: 500px;
-  border-radius: 12px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.2);
-  animation: slideIn 0.3s ease;
-  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-header {
-  background: #3949ab;
-  color: white;
-  padding: 16px 24px;
+  padding: 15px 20px;
+  border-bottom: 1px solid #eee;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.modal-header h3 {
-  margin: 0;
-  font-size: 1.2rem;
-}
+.modal-header h3 { margin: 0; color: #1a237e; font-size: 1.2rem; }
 
 .modal-close {
   background: none;
   border: none;
-  color: white;
   font-size: 1.5rem;
   cursor: pointer;
+  color: #666;
 }
 
 .modal-body {
-  padding: 24px;
+  padding: 20px;
+  overflow-y: auto;
+  max-height: 70vh;
 }
 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 15px;
 }
 
 .form-label {
   display: block;
-  font-weight: 600;
-  margin-bottom: 8px;
-  color: #374151;
-  font-size: 0.9rem;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: #333;
 }
 
 .form-control {
   width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
   font-size: 1rem;
-  transition: border-color 0.2s;
- box-sizing: border-box;
-}
-
-.form-control:focus {
-  border-color: #3949ab;
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(57, 73, 171, 0.1);
+  box-sizing: border-box;
 }
 
 .form-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  margin-top: 24px;
+  gap: 10px;
+  margin-top: 20px;
 }
 
-/* View styles */
 .view-container {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  text-align: center;
 }
 
 .view-group {
+  margin-bottom: 15px;
   border-bottom: 1px solid #f0f0f0;
-  padding-bottom: 12px;
-}
-
-.view-group:last-child {
-  border-bottom: none;
+  padding-bottom: 10px;
 }
 
 .view-label {
-  font-size: 0.85rem;
-  color: #6b7280;
-  margin-bottom: 4px;
-  display: block;
   font-weight: 600;
+  color: #555;
+  display: block;
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .view-value {
-  font-size: 1.1rem;
   color: #111827;
+  font-size: 1rem;
+  font-weight: 500;
 }
 
-@keyframes slideIn {
-  from { opacity: 0; transform: translateY(-20px); }
-  to { opacity: 1; transform: translateY(0); }
+.modal-sm {
+  max-width: 360px;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #3949ab;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.btn-primary {
+  background: #1a237e;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: background 0.2s;
+}
+
+.btn-primary:hover {
+  background: #283593;
+}
+
+.no-data {
+  text-align: center;
+  padding: 40px;
+  color: #999;
+}
+
+.text-center {
+  text-align: center;
 }
 </style>

@@ -3,8 +3,6 @@ import authService from '@/services/authService'
 
 // Lazy-load views to keep bundle small
 const Dashboard = () => import('@/views/Dashboard.vue')
-// Variantes alternativas (pantallas 2)
-const Dashboard2 = () => import('@/views/Dashboard2.vue')
 const Mantenedores = () => import('@/views/mantenedores.vue')
 const Gestionpersonas = () => import('@/views/Gestionpersonas.vue')
 const PagosView = () => import('@/views/PagosView.vue')
@@ -16,8 +14,7 @@ const Roles = () => import('@/views/Roles.vue')
 const CursosCapacitaciones = () => import('@/views/CRUDcursos.vue')
 const Login = () => import('@/views/Login.vue')
 const FormularioPreInscripcion = () => import('@/views/Formulario.vue')
-const FormularioPreInscripcion2 = () => import('@/views/Formulario2.vue')
-const Mantenedores2 = () => import('@/views/mantenedores2.vue')
+
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -29,12 +26,7 @@ const router = createRouter({
       component: Dashboard,
       meta: { requiresAuth: true }
     },
-    {
-      path: '/dashboard-2',
-      name: 'dashboard2',
-      component: Dashboard2,
-      meta: { requiresAuth: true }
-    },
+
     {
       path: '/usuarios',
       name: 'usuarios',
@@ -55,12 +47,7 @@ const router = createRouter({
       props: true,
       meta: { requiresAuth: true, module: 'Mantenedores' }
     },
-    {
-      path: '/mantenedores-2',
-      name: 'mantenedores2',
-      component: Mantenedores2,
-      meta: { requiresAuth: true }
-    },
+
     {
       path: '/gestionpersonas',
       name: 'gestionpersonas',
@@ -98,10 +85,9 @@ const router = createRouter({
       meta: { requiresAuth: true, module: 'Cursos' }
     },
     { path: '/inscripciones', name: 'formularioPreInscripcion', component: FormularioPreInscripcion },
-    // CORRECCIÓN: Esta ruta debe coincidir exactamente con el enlace en SideBar.vue
-    { path: '/inscripciones-2', name: 'formularioPreInscripcion2', component: FormularioPreInscripcion2, meta: { requiresAuth: true } },
 
-    // Rutas para Dashboard 2
+
+    // Rutas de cursos
     {
       path: '/cursos/detalle/:id',
       name: 'curso-detalle',
@@ -117,7 +103,7 @@ const router = createRouter({
     },
 
     // fallback
-    { path: '/:catchAll(.*)', redirect: '/dashboard-2' },
+    { path: '/:catchAll(.*)', redirect: '/dashboard' },
   ],
 })
 
@@ -145,7 +131,7 @@ router.beforeEach(async (to, from, next) => {
     const hasAccess = await authService.hasPermission(to.meta.module, 'consultar')
     if (!hasAccess) {
       console.warn(`Acceso denegado a ${to.path}. Módulo requerido: ${to.meta.module}`)
-      next({ name: 'dashboard2' })
+      next({ name: 'dashboard' })
       return
     }
   }
@@ -159,7 +145,7 @@ router.beforeEach(async (to, from, next) => {
       if (!to.meta.roles.includes(userRole)) {
         // Redirigir a dashboard o página de acceso denegado
         console.warn(`Acceso denegado a ${to.path}. Rol requerido: ${to.meta.roles.join(', ')}. Rol actual: ${userRole}`)
-        next({ name: 'dashboard2' })
+        next({ name: 'dashboard' })
         return
       }
     } else {
@@ -177,7 +163,7 @@ router.beforeEach(async (to, from, next) => {
 
       if (userRole !== 'Administradora Regional') {
         // Si no es administrador, redirigir al dashboard
-        next({ name: 'dashboard2' })
+        next({ name: 'dashboard' })
         return
       }
     } else {
@@ -189,7 +175,7 @@ router.beforeEach(async (to, from, next) => {
 
   // Evitar loop si ya está logueado y va a login
   if (to.name === 'login' && token) {
-    next({ name: 'dashboard2' })
+    next({ name: 'dashboard' })
     return
   }
 

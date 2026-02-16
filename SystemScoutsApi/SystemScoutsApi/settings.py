@@ -74,7 +74,7 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     SECURE_BROWSER_XSS_FILTER = True
     X_FRAME_OPTIONS = 'DENY'
-ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', default='sistema.guiasyscoutsbiobio.cl,www.sistema.guiasyscoutsbiobio.cl,localhost,127.0.0.1,testserver', cast=Csv())
+ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', default='api.guiasyscoutsbiobio.cl,www.api.guiasyscoutsbiobio.cl,guiasyscoutsbiobio.cl,www.guiasyscoutsbiobio.cl,localhost,127.0.0.1,testserver', cast=Csv())
 
 
 # APLICACIONES INSTALADAS
@@ -322,10 +322,12 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
     "http://localhost:5174",
     "http://127.0.0.1:5174",
+    "https://api.guiasyscoutsbiobio.cl",
     "https://sistema.guiasyscoutsbiobio.cl",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
+    "https://api.guiasyscoutsbiobio.cl",
     "https://sistema.guiasyscoutsbiobio.cl",
 ]
 
@@ -339,7 +341,7 @@ EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 
 # Site URL for QR codes and external links
-SITE_URL = config('SITE_URL', default='https://sistema.guiasyscoutsbiobio.cl')
+SITE_URL = config('SITE_URL', default='https://api.guiasyscoutsbiobio.cl')
 
 
 REST_FRAMEWORK = {

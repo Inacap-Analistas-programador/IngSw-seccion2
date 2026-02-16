@@ -383,13 +383,14 @@ export default {
 </script>
 
 <style scoped>
-/* Estilos extraídos y adaptados de mantenedores.vue */
+/* Estilos estandarizados basados en MantenedorZonas */
 .mantenedor-section-expanded {
-  padding: 30px 20px;
-  animation: fadeIn 0.5s ease;
+  padding: 0;
   width: 100%;
-  margin: 0;
-  box-sizing: border-box;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
 }
 
 .mantenedor-header {
@@ -397,36 +398,40 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #3949ab;
 }
 
 .mantenedor-header h2 {
-  font-size: 1.5rem;
   color: #1a237e;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin: 0;
 }
 
 .search-bar {
-  display: flex;
-  gap: 10px;
-  background: #f5f5f5;
-  padding: 10px;
-  border-radius: 8px;
   margin-bottom: 20px;
+  display: flex;
+  gap: 15px;
+  align-items: center;
 }
 
 .search-input {
   flex: 1;
-  padding: 10px;
+  max-width: 400px;
+  padding: 10px 15px;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 1rem;
 }
 
 .table-container-expanded {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  flex: 1;
   overflow: hidden;
+  border: 1px solid #eee;
+  border-radius: 8px;
 }
 
 .data-table-expanded {
@@ -434,47 +439,40 @@ export default {
   border-collapse: collapse;
 }
 
-.data-table-expanded th,
-.data-table-expanded td {
-  padding: 14px 20px;
-  text-align: left;
-  border-bottom: 1px solid #eee;
+.data-table-expanded th, .data-table-expanded td {
+  padding: 12px 15px;
+  text-align: center;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .data-table-expanded th {
-  background: #f9fafb;
-  color: #374151;
-  font-weight: 600;
-  font-size: 0.9rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.data-table-expanded tr:hover {
   background-color: #f8f9fa;
+  color: #333;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .status-badge {
-  display: inline-flex;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
 }
 
 .status-active {
-  background: #e8f5e9;
+  background-color: #e8f5e9;
   color: #2e7d32;
 }
 
 .status-inactive {
-  background: #ffebee;
+  background-color: #ffebee;
   color: #c62828;
 }
 
 .actions {
-  display: flex;
-  gap: 8px;
+  text-align: center;
 }
 
 .btn-action {
@@ -485,7 +483,10 @@ export default {
   font-size: 0.85rem;
 }
 
-/* Modal styles copied for consistency */
+.text-center {
+  text-align: center;
+}
+
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -494,134 +495,117 @@ export default {
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  backdrop-filter: blur(2px);
 }
 
 .modal-content {
   background: white;
-  width: 100%;
-  max-width: 600px;
-  border-radius: 12px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.2);
-  animation: slideIn 0.3s ease;
-  overflow: hidden;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-header {
-  background: #3949ab;
-  color: white;
-  padding: 16px 24px;
+  padding: 15px 20px;
+  border-bottom: 1px solid #eee;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.modal-header h3 {
-  margin: 0;
-  font-size: 1.2rem;
-}
+.modal-header h3 { margin: 0; color: #1a237e; font-size: 1.2rem; }
 
 .modal-close {
   background: none;
   border: none;
-  color: white;
   font-size: 1.5rem;
   cursor: pointer;
+  color: #666;
 }
 
 .modal-body {
-  padding: 24px;
+  padding: 20px;
+  overflow-y: auto;
+  max-height: 70vh;
 }
 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 15px;
 }
 
 .form-row {
   display: flex;
   gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
 }
+
 .form-group.half {
-    flex: 1;
-    margin-bottom: 0;
+  flex: 1;
+  margin-bottom: 0;
 }
 
 .form-label {
   display: block;
-  font-weight: 600;
-  margin-bottom: 8px;
-  color: #374151;
-  font-size: 0.9rem;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: #333;
 }
 
 .form-control {
   width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
   font-size: 1rem;
-  transition: border-color 0.2s;
   box-sizing: border-box;
-}
-
-.form-control:focus {
-  border-color: #3949ab;
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(57, 73, 171, 0.1);
 }
 
 .form-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  margin-top: 24px;
+  gap: 10px;
+  margin-top: 20px;
 }
 
-/* View styles */
 .view-container {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .view-row {
-    display: flex;
-    gap: 16px;
+  display: flex;
+  gap: 16px;
 }
+
 .view-group.half {
-    flex: 1;
+  flex: 1;
 }
 
 .view-group {
-  border-bottom: 1px solid #f0f0f0;
-  padding-bottom: 12px;
-}
-
-.view-group:last-child {
-  border-bottom: none;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #f9f9f9;
+  padding-bottom: 10px;
 }
 
 .view-label {
-  font-size: 0.85rem;
-  color: #6b7280;
-  margin-bottom: 4px;
-  display: block;
   font-weight: 600;
+  color: #555;
+  display: block;
+  font-size: 0.9rem;
+  margin-bottom: 4px;
 }
 
 .view-value {
-  font-size: 1.1rem;
-  color: #111827;
+  color: #333;
+  font-size: 1rem;
 }
 
-@keyframes slideIn {
-  from { opacity: 0; transform: translateY(-20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+.no-data {
+  text-align: center;
+  padding: 40px;
+  color: #999;
 }
 </style>

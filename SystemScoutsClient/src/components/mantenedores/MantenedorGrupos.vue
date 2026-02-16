@@ -347,6 +347,7 @@ onMounted(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
+  background: transparent;
 }
 
 .mantenedor-header {
@@ -405,7 +406,7 @@ onMounted(() => {
 
 .data-table th, .data-table td {
   padding: 12px 15px;
-  text-align: left;
+  text-align: center;
   border-bottom: 1px solid #f0f0f0;
 }
 
