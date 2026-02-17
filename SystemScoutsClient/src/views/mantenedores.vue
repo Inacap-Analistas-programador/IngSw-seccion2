@@ -14,56 +14,65 @@
 
     <!-- Filtros / Selector de Mantenedor (estilo CRUDcursos .filtros) -->
     <div class="filtros">
-      <div class="filtros-left">
-        <div class="selector-dropdown" ref="dropdownContainer">
-          <button 
-            class="mantenedor-dropdown-toggle"
-            :class="{ 'active': isDropdownOpen }"
-            @click="toggleDropdown"
+      <div class="selector-dropdown" ref="dropdownContainer">
+        <button 
+          class="mantenedor-dropdown-toggle"
+          :class="{ 'active': isDropdownOpen }"
+          @click="toggleDropdown"
+        >
+          <span class="selected-option">
+            {{ getSelectedTabInfo().icon }} {{ getSelectedTabInfo().label }}
+          </span>
+          <div class="dropdown-icon" :class="{ 'rotate': isDropdownOpen }">▼</div>
+        </button>
+        
+        <div v-if="isDropdownOpen" class="dropdown-menu">
+          <div 
+            v-for="tab in tabs" 
+            :key="tab.id"
+            class="dropdown-item"
+            :class="{ 'active': activeTab === tab.id }"
+            @click="selectTab(tab.id)"
           >
-            <span class="selected-option">
-              {{ getSelectedTabInfo().icon }} {{ getSelectedTabInfo().label }}
-            </span>
-            <div class="dropdown-icon" :class="{ 'rotate': isDropdownOpen }">▼</div>
-          </button>
-          
-          <div v-if="isDropdownOpen" class="dropdown-menu">
-            <div 
-              v-for="tab in tabs" 
-              :key="tab.id"
-              class="dropdown-item"
-              :class="{ 'active': activeTab === tab.id }"
-              @click="selectTab(tab.id)"
-            >
-              <span class="dropdown-item-icon">{{ tab.icon }}</span>
-              <span class="dropdown-item-text">{{ tab.label }}</span>
-            </div>
+            <span class="dropdown-item-icon">{{ tab.icon }}</span>
+            <span class="dropdown-item-text">{{ tab.label }}</span>
           </div>
         </div>
       </div>
+
+      <!-- Contenedor Destino para el Buscador (Teleport) -->
+      <div id="search-container" class="search-target-container"></div>
+      
+      <!-- Botón Nuevo Item (Global) -->
+      <button class="btn-primary-global" type="button" @click="handleCreate">
+          <AppIcons name="plus" :size="18" />
+          <span class="btn-label-desktop">Nuevo</span>
+      </button>
     </div>
 
     <!-- Main Content -->
     <div class="main-content">
       <!-- Componentes ya existentes -->
-      <MantenedorZonas           v-if="activeTab === 'zonas'"              @show-message="handleMessage" @confirm-action="handleConfirmAction" />
-      <MantenedorDistritos       v-if="activeTab === 'distritos'"          @show-message="handleMessage" @confirm-action="handleConfirmAction" />
-      <MantenedorGrupos          v-if="activeTab === 'grupos'"             @show-message="handleMessage" @confirm-action="handleConfirmAction" />
-      <MantenedorRamas           v-if="activeTab === 'ramas'"              @show-message="handleMessage" @confirm-action="handleConfirmAction" />
-      <MantenedorTiposCurso      v-if="activeTab === 'tipos-curso'"        @show-message="handleMessage" @confirm-action="handleConfirmAction" />
-      <MantenedorCargos          v-if="activeTab === 'cargos'"             @show-message="handleMessage" @confirm-action="handleConfirmAction" />
-      <MantenedorProveedores     v-if="activeTab === 'proveedores'"        @show-message="handleMessage" @confirm-action="handleConfirmAction" />
-      <MantenedorAlimentacion    v-if="activeTab === 'alimentacion'"       @show-message="handleMessage" @confirm-action="handleConfirmAction" />
-      <MantenedorComunas         v-if="activeTab === 'comunas'"            @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+      <template v-if="isParentMounted">
+        <MantenedorZonas           v-if="activeTab === 'zonas'"              :ref="el => setComponentRef(el, 'zonas')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+        <MantenedorDistritos       v-if="activeTab === 'distritos'"          :ref="el => setComponentRef(el, 'distritos')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+        <MantenedorGrupos          v-if="activeTab === 'grupos'"             :ref="el => setComponentRef(el, 'grupos')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+        <MantenedorRamas           v-if="activeTab === 'ramas'"              :ref="el => setComponentRef(el, 'ramas')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+        <MantenedorTiposCurso      v-if="activeTab === 'tipos-curso'"        :ref="el => setComponentRef(el, 'tipos-curso')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+        <MantenedorCargos          v-if="activeTab === 'cargos'"             :ref="el => setComponentRef(el, 'cargos')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+        <MantenedorProveedores     v-if="activeTab === 'proveedores'"        :ref="el => setComponentRef(el, 'proveedores')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+        <MantenedorAlimentacion    v-if="activeTab === 'alimentacion'"       :ref="el => setComponentRef(el, 'alimentacion')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+        <MantenedorComunas         v-if="activeTab === 'comunas'"            :ref="el => setComponentRef(el, 'comunas')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
 
-      <!-- Componentes nuevos (antes inline) -->
-      <MantenedorProvincias      v-if="activeTab === 'provincias'"         @show-message="handleMessage" @confirm-action="handleConfirmAction" />
-      <MantenedorRegiones        v-if="activeTab === 'regiones'"           @show-message="handleMessage" @confirm-action="handleConfirmAction" />
-      <MantenedorNiveles         v-if="activeTab === 'niveles'"            @show-message="handleMessage" @confirm-action="handleConfirmAction" />
-      <MantenedorEstadoCivil     v-if="activeTab === 'estados-civiles'"    @show-message="handleMessage" @confirm-action="handleConfirmAction" />
-      <MantenedorRoles           v-if="activeTab === 'roles'"              @show-message="handleMessage" @confirm-action="handleConfirmAction" />
-      <MantenedorConceptosContables v-if="activeTab === 'conceptos-contables'" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
-      <MantenedorTiposArchivo    v-if="activeTab === 'tipos-archivo'"      @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+        <!-- Componentes nuevos (antes inline) -->
+        <MantenedorProvincias      v-if="activeTab === 'provincias'"         :ref="el => setComponentRef(el, 'provincias')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+        <MantenedorRegiones        v-if="activeTab === 'regiones'"           :ref="el => setComponentRef(el, 'regiones')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+        <MantenedorNiveles         v-if="activeTab === 'niveles'"            :ref="el => setComponentRef(el, 'niveles')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+        <MantenedorEstadoCivil     v-if="activeTab === 'estados-civiles'"    :ref="el => setComponentRef(el, 'estados-civiles')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+        <MantenedorRoles           v-if="activeTab === 'roles'"              :ref="el => setComponentRef(el, 'roles')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+        <MantenedorConceptosContables v-if="activeTab === 'conceptos-contables'" :ref="el => setComponentRef(el, 'conceptos-contables')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+        <MantenedorTiposArchivo    v-if="activeTab === 'tipos-archivo'"      :ref="el => setComponentRef(el, 'tipos-archivo')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+      </template>
 
       <!-- Modal de Confirmación compartido -->
       <div v-if="confirmModal && confirmModal.visible" class="modal-overlay" role="dialog" aria-modal="true">
@@ -88,6 +97,15 @@
         </div>
       </div>
     </div>
+    <div>
+    <NotificationToast 
+      v-if="toast.visible" 
+      :message="toast.message" 
+      :icon="toast.icon" 
+      :type="toast.type"
+      @close="toast.visible = false" 
+    />
+  </div>
   </div>
 </template>
 
@@ -95,6 +113,8 @@
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import BaseButton from '@/components/BaseButton.vue'
 import AppIcons from '@/components/icons/AppIcons.vue'
+
+import NotificationToast from '@/components/NotificationToast.vue'
 
 // Componentes ya existentes
 import MantenedorZonas from '@/components/mantenedores/MantenedorZonas.vue'
@@ -119,7 +139,7 @@ import MantenedorTiposArchivo from '@/components/mantenedores/MantenedorTiposArc
 export default {
   name: 'MantenedoresScouts',
   components: {
-    BaseButton, AppIcons,
+    BaseButton, AppIcons, NotificationToast,
     MantenedorZonas, MantenedorDistritos, MantenedorGrupos, MantenedorRamas, MantenedorTiposCurso,
     MantenedorCargos, MantenedorProveedores, MantenedorAlimentacion, MantenedorComunas,
     MantenedorProvincias, MantenedorRegiones, MantenedorNiveles, MantenedorEstadoCivil,
@@ -133,6 +153,8 @@ export default {
     const confirmModal = reactive({ visible: false, titulo: '', mensaje: '' })
     const confirmLoading = ref(false)
     const pendingConfirmAction = ref(null)
+    const isParentMounted = ref(false)
+
 
     const tabs = [
       { id: 'zonas', label: 'Zonas', icon: '🗺️' },
@@ -143,9 +165,9 @@ export default {
       { id: 'cargos', label: 'Cargos', icon: '👔' },
       { id: 'proveedores', label: 'Proveedores', icon: '🏷️' },
       { id: 'alimentacion', label: 'Alimentación', icon: '🍽️' },
-      { id: 'comunas', label: 'Comunas', icon: '🏘️' },
-      { id: 'provincias', label: 'Provincias', icon: '🏞️' },
       { id: 'regiones', label: 'Regiones', icon: '🗾' },
+      { id: 'provincias', label: 'Provincias', icon: '🏞️' },
+      { id: 'comunas', label: 'Comunas', icon: '🏘️' },
       { id: 'niveles', label: 'Niveles', icon: '📊' },
       { id: 'estados-civiles', label: 'Estado Civil', icon: '💑' },
       { id: 'roles', label: 'Roles', icon: '👤' },
@@ -163,12 +185,21 @@ export default {
       }
     }
 
+    // Toast State
+    const toast = reactive({ visible: false, message: '', icon: '', type: 'info' })
+    const showToast = (message, icon = 'check', type = 'info') => {
+      toast.message = message
+      toast.icon = icon
+      toast.type = type
+      toast.visible = true
+      setTimeout(() => { toast.visible = false }, 3000)
+    }
+
     // Mensajes y confirmaciones de los hijos
     const handleMessage = (msg) => {
-      if (msg.type === 'error') error.value = msg.text
-      else if (msg.type === 'success') {
-        error.value = null
-      }
+      if (msg.type === 'error') showToast(msg.text, 'alert-triangle', 'error')
+      else if (msg.type === 'success') showToast(msg.text, 'check', 'success')
+      else showToast(msg.text, 'info', 'info')
     }
 
     const handleConfirmAction = (conf) => {
@@ -199,7 +230,38 @@ export default {
       }
     }
 
-    onMounted(() => { document.addEventListener('click', handleClickOutside) })
+    // Referencia al componente activo para llamar a sus métodos
+    const activeComponentRef = ref(null)
+
+    // Función para asignar la ref dinámicamente desde el template
+    const setComponentRef = (el, tabId) => {
+      if (el) {
+        if (activeTab.value === tabId) {
+          activeComponentRef.value = el
+        }
+      } else {
+        // Al desmontar, solo limpiar si sigue siendo la pestaña activa
+        if (activeTab.value === tabId) {
+          activeComponentRef.value = null
+        }
+      }
+    }
+
+    const handleCreate = () => {
+        console.log('handleCreate click', activeComponentRef.value)
+        if (activeComponentRef.value && typeof activeComponentRef.value.abrirModalCrear === 'function') {
+            activeComponentRef.value.abrirModalCrear()
+        } else {
+            console.warn('El componente activo no tiene expuesto el método abrirModalCrear', activeComponentRef.value)
+             // Fallback o mensaje para componentes aún no migrados (opcional)
+             showToast('Funcionalidad no disponible para este mantenedor aún', 'alert-circle', 'error')
+        }
+    }
+
+    onMounted(() => { 
+      document.addEventListener('click', handleClickOutside) 
+      isParentMounted.value = true
+    })
     onUnmounted(() => { document.removeEventListener('click', handleClickOutside) })
 
     return {
@@ -207,7 +269,9 @@ export default {
       confirmModal, confirmLoading, tabs,
       getSelectedTabInfo, toggleDropdown, selectTab,
       handleMessage, handleConfirmAction,
-      cancelarConfirmacion, confirmarConfirmacion
+      cancelarConfirmacion, confirmarConfirmacion,
+      toast, activeComponentRef, handleCreate, setComponentRef,
+      isParentMounted
     }
   }
 }
@@ -217,12 +281,13 @@ export default {
 /* Container principal - idéntico a CRUDcursos */
 .crud-cursos-container {
   padding: 24px;
-  background-color: #f9fafb;
+  box-sizing: border-box;
   font-family: 'Inter', Arial, sans-serif;
   display: flex;
   flex-direction: column;
   width: 100%;
-  min-height: calc(100vh - var(--navbar-height, 64px));
+  height: 100%;
+  overflow: hidden;
 }
 
 /* Page Header - idéntico a CRUDcursos */
@@ -246,76 +311,60 @@ export default {
 /* Filtros - mismo layout que CRUDcursos */
 .filtros {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
   gap: 16px;
-  flex-wrap: wrap;
 }
 
-.filtros-left {
-  display: flex;
-  gap: 12px;
+.search-target-container {
   flex: 1;
-  flex-wrap: wrap;
-  align-items: center;
+  max-width: 600px;
+  order: 2;
 }
 
-/* Error Alert */
-.error-alert {
-  background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24;
-  padding: 15px 20px; margin-bottom: 16px; border-radius: 8px;
-  display: flex; justify-content: space-between; align-items: center;
+.selector-dropdown {
+  order: 1;
 }
-.error-alert p { margin: 0; }
-.error-alert button { background: none; border: none; color: #721c24; font-size: 1.5rem; cursor: pointer; padding: 0; }
 
-/* Dropdown Selector */
+.btn-primary-global {
+  order: 3;
+}
+
+/* Dropdown Selector Styles (Restaurados) */
 .selector-dropdown {
   position: relative;
-  max-width: 400px;
-  width: 100%;
+  min-width: 250px;
 }
 
 .mantenedor-dropdown-toggle {
   width: 100%;
-  padding: 10px 40px 10px 16px;
-  border: 1.5px solid #4b5563;
-  border-radius: 6px;
+  padding: 8px 16px;
   background: white;
-  color: #333;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  color: #374151;
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  font-weight: 500;
-  height: 40px;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  height: 40px; /* Igualar altura con el botón nuevo */
 }
 
 .mantenedor-dropdown-toggle:hover {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 2px rgba(37,99,235,0.15);
+  border-color: #9ca3af;
 }
 
 .mantenedor-dropdown-toggle.active {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 2px rgba(37,99,235,0.15);
-}
-
-.selected-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #333;
-  font-weight: 500;
+  border-color: #1a237e;
+  box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
 }
 
 .dropdown-icon {
+  font-size: 0.8rem;
   color: #6b7280;
-  transition: transform 0.3s ease;
-  font-size: 0.75rem;
+  transition: transform 0.2s;
 }
 
 .dropdown-icon.rotate {
@@ -328,13 +377,13 @@ export default {
   left: 0;
   right: 0;
   background: white;
-  border: 1.5px solid #4b5563;
-  border-top: none;
-  border-radius: 0 0 6px 6px;
-  max-height: 400px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  margin-top: 4px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  z-index: 50;
+  max-height: 300px;
   overflow-y: auto;
-  z-index: 1001;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 .dropdown-item {
@@ -342,31 +391,112 @@ export default {
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 12px;
-  transition: background-color 0.15s ease;
-  border-bottom: 1px solid #f3f4f6;
-  font-size: 14px;
+  gap: 10px;
+  transition: background 0.15s;
 }
 
-.dropdown-item:last-child { border-bottom: none; }
-.dropdown-item:hover { background: #f1f5f9; }
-.dropdown-item.active { background: #eff6ff; color: #2563eb; font-weight: 600; }
+.dropdown-item:hover {
+  background-color: #f3f4f6;
+}
 
-.dropdown-item-icon { font-size: 1rem; width: 24px; text-align: center; }
-.dropdown-item-text { color: #374151; font-weight: 500; flex: 1; }
-.dropdown-item.active .dropdown-item-text { color: #2563eb; font-weight: 600; }
-.dropdown-item:hover .dropdown-item-text { color: #111827; }
+.dropdown-item.active {
+  background-color: #e8eaf6;
+  color: #1a237e;
+  font-weight: 500;
+}
 
-/* Main Content */
+.dropdown-item-icon {
+  font-size: 1.1rem;
+}
+
+/* Responsive: Ajustes específicos para móviles */
+@media (max-width: 768px) {
+  .filtros { 
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  
+  .selector-dropdown { 
+    flex: 1; 
+    max-width: none; 
+    min-width: 0;
+    order: 1;
+  }
+  
+  .btn-primary-global {
+    order: 2;
+    flex-shrink: 0; /* No encoger el botón */
+    width: 42px; /* Ancho fijo cuadrado en móvil */
+    padding: 0 !important; /* Sin padding lateral */
+    justify-content: center !important;
+    gap: 0 !important;
+  }
+
+  .search-target-container {
+    order: 3;
+    width: 100%;
+    max-width: none;
+    margin-top: 4px;
+  }
+  
+  .mantenedor-dropdown-toggle { width: 100%; }
+  
+  .btn-label-desktop {
+    display: none;
+  }
+  
+  /* Fix icon centering: Override default AppIcons margin */
+  .btn-primary-global :deep(svg) {
+    margin-right: 0 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .crud-cursos-container { 
+    padding: 16px;
+    height: auto;
+    overflow-y: auto;
+  }
+}
+
 .main-content {
   flex: 1;
-  padding: 0;
   overflow: hidden;
-  width: 100%;
-  margin: 0;
+  height: 100%;
+  position: relative; /* Ensure child absolute positioning works if needed */
 }
 
-/* Modal de Confirmación */
+@media (max-width: 768px) {
+  .main-content {
+    overflow: auto; /* Permitir scroll en móvil */
+    height: auto;   /* Permitir que crezca con el contenido */
+    display: block; /* Asegurar comportamiento de bloque normal si es necesario */
+  }
+}
+
+.btn-primary-global {
+  background: #1a237e;
+  color: white;
+  border: none;
+  padding: 0 16px;
+  height: 40px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: background 0.2s;
+  min-width: 40px; 
+}
+
+.btn-primary-global:hover {
+  background: #283593;
+}
+
+/* Shared Confirmation Modal Styles */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -374,54 +504,46 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2000;
-  padding: 20px;
+  z-index: 1000;
 }
 
 .modal-content {
   background: white;
   border-radius: 8px;
+  width: 90%;
+  max-width: 400px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-  max-width: 500px;
-  width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .modal-header {
-  padding: 16px 24px;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 16px;
+  border-bottom: 1px solid #eee;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  background-color: #f8f9fa;
 }
 
 .modal-header h3 {
-  color: #111827;
-  font-size: 1.25rem;
-  font-weight: 600;
   margin: 0;
+  font-size: 1.1rem;
+  color: #1a237e;
 }
 
 .modal-close {
   background: none;
   border: none;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   cursor: pointer;
-  color: #6b7280;
-  transition: color 0.2s ease;
+  color: #666;
+  padding: 4px;
 }
 
-.modal-close:hover { color: #111827; }
-
-/* Responsive */
-@media (max-width: 768px) {
-  .filtros { flex-direction: column; }
-  .selector-dropdown { max-width: 100%; }
-  .dropdown-menu { max-height: 300px; }
-}
-
-@media (max-width: 480px) {
-  .crud-cursos-container { padding: 16px; }
+.modal-footer {
+  background-color: #f8f9fa;
+  border-top: 1px solid #eee;
 }
 </style>

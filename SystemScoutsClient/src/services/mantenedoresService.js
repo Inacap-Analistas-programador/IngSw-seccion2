@@ -26,7 +26,7 @@ export const grupo = makeCrud('mantenedores/grupo')
 export const region = makeCrud('mantenedores/region')
 export const provincia = makeCrud('mantenedores/provincia')
 export const comuna = makeCrud('mantenedores/comuna')
-export const proveedorPago = makeCrud('pago/proveedor')
+export const proveedorPago = makeCrud('pagos/proveedor')
 
 // Exportaciones SIN prefijo (para otros componentes que lo necesiten)
 export const conceptoContableSinPrefijo = makeCrud('concepto-contable')

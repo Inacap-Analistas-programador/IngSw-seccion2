@@ -2,8 +2,8 @@ import sys
 import os
 
 # Configuración de rutas
-BASE_DIR = '/home/volbiobio/api'
-VENV_SITE = '/home/volbiobio/virtualenv/api/3.13/lib/python3.13/site-packages'
+BASE_DIR = '/home/volbiobio/services'
+VENV_SITE = '/home/volbiobio/virtualenv/services/3.12/lib/python3.12/site-packages'
 
 # Agregar paths
 sys.path.insert(0, BASE_DIR)

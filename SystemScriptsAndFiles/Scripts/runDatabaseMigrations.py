@@ -1,4 +1,4 @@
-#!/home/volbiobio/virtualenv/api/3.13/bin/python3.13_bin
+#!/home/volbiobio/virtualenv/api/3.12/bin/python3.12_bin
 # -*- coding: utf-8 -*-
 
 import sys
@@ -6,8 +6,8 @@ import os
 
 def run_migrations():
     # Configurar paths
-    BASE_DIR = '/home/volbiobio/api'
-    VENV_SITE = '/home/volbiobio/virtualenv/api/3.13/lib/python3.13/site-packages'
+    BASE_DIR = '/home/volbiobio/services'
+    VENV_SITE = '/home/volbiobio/virtualenv/services/3.12/lib/python3.12/site-packages'
 
     sys.path.insert(0, BASE_DIR)
     sys.path.insert(0, VENV_SITE)

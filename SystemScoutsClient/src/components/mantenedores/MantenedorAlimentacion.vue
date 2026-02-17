@@ -2,14 +2,25 @@
   <div class="mantenedor-section">
     <div class="mantenedor-header">
       <h2><AppIcons name="coffee" :size="24" /> Gestión de Alimentación</h2>
-      <button class="btn-primary" @click="abrirModalCrear">
+      <!-- <button class="btn-primary" @click="abrirModalCrear">
         <AppIcons name="plus" :size="18" /> Nueva Alimentación
-      </button>
+      </button> -->
     </div>
 
-    <div class="search-bar">
-      <input type="text" class="search-input" v-model="search" placeholder="Buscar Alimentación...">
-    </div>
+    <Teleport to="#search-container">
+      <div class="search-box">
+        <input 
+          type="text" 
+          class="search-input-new" 
+          v-model="tempSearch" 
+          placeholder="Buscar Alimentación..."
+          @keyup.enter="ejecutarBusqueda"
+        >
+        <button class="search-btn-new" @click="ejecutarBusqueda" title="Buscar">
+          <AppIcons name="search" :size="16" />
+        </button>
+      </div>
+    </Teleport>
 
     <div class="table-container">
       <ModernMainScrollbar>
@@ -24,18 +35,18 @@
           </thead>
           <tbody>
             <tr v-for="item in filteredItems" :key="item.id">
-              <td>{{ item.descripcion }}</td>
-              <td>
+              <td data-label="Descripción">{{ item.descripcion }}</td>
+              <td data-label="Tipo">
                 <span :class="item.tipo === 1 ? 'badge-primary' : 'badge-secondary'">
                   {{ item.tipo === 1 ? 'CON ALMUERZO' : 'SIN ALMUERZO' }}
                 </span>
               </td>
-              <td>
+              <td data-label="Estado">
                 <span class="status-badge" :class="item.vigente ? 'status-active' : 'status-inactive'">
                   {{ item.vigente ? 'ACTIVO' : 'INACTIVO' }}
                 </span>
               </td>
-              <td class="actions-cell">
+              <td class="actions-cell" data-label="Acciones">
                 <div class="action-buttons">
                   <button class="action-btn btn-view" @click="verElemento(item)" title="Ver detalle">
                     <AppIcons name="eye" :size="16" />
@@ -64,7 +75,7 @@
 
     <!-- Modal Formulario -->
     <div v-if="modalVisible" class="modal-overlay" @click="cerrarModal">
-      <div class="modal-content" @click.stop>
+      <div class="modal-content modal-sm" @click.stop>
         <div class="modal-header">
           <h3>{{ editando ? 'EDITAR' : 'NUEVA' }} ALIMENTACIÓN</h3>
           <button class="modal-close" @click="cerrarModal">×</button>
@@ -145,8 +156,6 @@
         <p>Cargando alimentación...</p>
       </div>
     </div>
-
-    <NotificationToast v-if="toast.visible" :message="toast.message" :icon="toast.icon" @close="toast.visible = false" />
   </div>
 </template>
 
@@ -156,19 +165,23 @@ import * as mantenedoresService from '@/services/mantenedoresService'
 import BaseButton from '@/components/BaseButton.vue'
 import AppIcons from '@/components/icons/AppIcons.vue'
 import ModernMainScrollbar from '@/components/ModernMainScrollbar.vue'
-import NotificationToast from '@/components/NotificationToast.vue'
 
-const emit = defineEmits(['confirm-action'])
+const emit = defineEmits(['confirm-action', 'show-message'])
+function abrirModalCrear() {
+  editando.value = false
+  Object.assign(form, { id: null, descripcion: '', tipo: 1, vigente: true })
+  modalVisible.value = true
+}
+defineExpose({ abrirModalCrear })
 
 const items = ref([])
 const search = ref('')
+const tempSearch = ref('')
 const cargando = ref(false)
 const saving = ref(false)
 
-const toast = reactive({ visible: false, message: '', icon: '' })
-const showToast = (message, icon = 'check') => {
-  toast.message = message; toast.icon = icon; toast.visible = true
-  setTimeout(() => { toast.visible = false }, 3000)
+const ejecutarBusqueda = () => {
+  search.value = tempSearch.value
 }
 
 const modalVisible = ref(false)
@@ -190,7 +203,7 @@ const cargarDatos = async () => {
     }))
   } catch (error) {
     console.error('Error cargando alimentacion:', error)
-    showToast('Error al cargar alimentación', 'alert-triangle')
+    emit('show-message', { type: 'error', text: 'Error al cargar alimentación' })
   } finally { cargando.value = false }
 }
 
@@ -200,11 +213,6 @@ const filteredItems = computed(() => {
   return items.value.filter(i => i.descripcion.toLowerCase().includes(term))
 })
 
-const abrirModalCrear = () => {
-  editando.value = false
-  Object.assign(form, { id: null, descripcion: '', tipo: 1, vigente: true })
-  modalVisible.value = true
-}
 
 const editarElemento = (item) => {
   editando.value = true
@@ -234,15 +242,15 @@ const guardar = async () => {
     if (editando.value) {
       if (!form.id) throw new Error('ID no válido')
       await mantenedoresService.alimentacion.partialUpdate(form.id, payload)
-      showToast('Alimentación actualizada correctamente', 'check')
+      emit('show-message', { type: 'success', text: 'Alimentación actualizada correctamente' })
     } else {
       await mantenedoresService.alimentacion.create(payload)
-      showToast('Alimentación creada correctamente', 'check')
+      emit('show-message', { type: 'success', text: 'Alimentación creada correctamente' })
     }
     cerrarModal(); await cargarDatos()
   } catch (error) {
     console.error('Error guardando alimentacion:', error)
-    showToast('Error al guardar alimentación', 'alert-triangle')
+    emit('show-message', { type: 'error', text: 'Error al guardar alimentación' })
   } finally { saving.value = false }
 }
 
@@ -250,8 +258,8 @@ const confirmarAnular = (item) => {
   emit('confirm-action', {
     titulo: 'Anular Alimentación', mensaje: `¿Estás seguro de anular "${item.descripcion}"?`,
     accion: async () => {
-      try { await mantenedoresService.alimentacion.partialUpdate(item.id, { ali_vigente: false }); await cargarDatos(); showToast('Alimentación anulada correctamente', 'check') }
-      catch (e) { showToast('Error al anular', 'alert-triangle') }
+      try { await mantenedoresService.alimentacion.partialUpdate(item.id, { ali_vigente: false }); await cargarDatos(); emit('show-message', { type: 'success', text: 'Alimentación anulada correctamente' }) }
+      catch (e) { emit('show-message', { type: 'error', text: 'Error al anular' }) }
     }
   })
 }
@@ -260,8 +268,8 @@ const confirmarActivar = (item) => {
   emit('confirm-action', {
     titulo: 'Activar Alimentación', mensaje: `¿Estás seguro de activar "${item.descripcion}"?`,
     accion: async () => {
-      try { await mantenedoresService.alimentacion.partialUpdate(item.id, { ali_vigente: true }); await cargarDatos(); showToast('Alimentación activada correctamente', 'check') }
-      catch (e) { showToast('Error al activar', 'alert-triangle') }
+      try { await mantenedoresService.alimentacion.partialUpdate(item.id, { ali_vigente: true }); await cargarDatos(); emit('show-message', { type: 'success', text: 'Alimentación activada correctamente' }) }
+      catch (e) { emit('show-message', { type: 'error', text: 'Error al activar' }) }
     }
   })
 }
@@ -270,11 +278,102 @@ onMounted(() => { cargarDatos() })
 </script>
 
 <style scoped>
-.mantenedor-section { padding: 0; width: 100%; height: 100%; display: flex; flex-direction: column; background: transparent; }
+.mantenedor-section {
+  position: relative;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+}
 .mantenedor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #3949ab; }
 .mantenedor-header h2 { color: #1a237e; font-size: 1.5rem; display: flex; align-items: center; gap: 10px; margin: 0; }
-.search-bar { margin-bottom: 20px; }
-.search-input { width: 100%; max-width: 400px; padding: 10px 15px; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; }
+.search-bar {
+  margin-bottom: 0;
+  width: 100%;
+}
+
+/* Nueva Caja de Búsqueda Integrada */
+.search-box {
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0 4px 0 12px;
+  height: 40px;
+  width: 100%;
+  transition: all 0.2s;
+}
+
+.search-box:focus-within {
+  border-color: #1a237e;
+  box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
+}
+
+.search-input-new {
+  flex: 1;
+  border: none !important;
+  outline: none !important;
+  padding: 8px 0 !important;
+  font-size: 0.95rem !important;
+  color: #111827 !important;
+  background: transparent !important;
+}
+
+.search-btn-new {
+  background: transparent !important;
+  border: none !important;
+  color: #6b7280;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.2s;
+  height: 32px;
+  width: 32px;
+  margin-right: 4px;
+}
+
+.search-btn-new:hover {
+  color: #1a237e;
+}
+
+.search-btn-new :deep(svg) {
+  margin-right: 0 !important;
+}
+
+.search-button {
+  background-color: #1a237e !important;
+  height: 40px !important;
+}
+
+.search-button {
+  background-color: #1a237e !important;
+  height: 40px !important;
+}
+
+.search-button :deep(svg) {
+  margin-right: 0 !important;
+}
+
+.search-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  height: 40px;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #1a237e;
+  box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
+}
 .table-container { flex: 1; overflow: hidden; border: 1px solid #eee; border-radius: 8px; }
 .data-table { width: 100%; border-collapse: collapse; }
 .data-table th, .data-table td { padding: 12px 15px; text-align: center; border-bottom: 1px solid #f0f0f0; }
@@ -282,8 +381,8 @@ onMounted(() => { cargarDatos() })
 .status-badge { padding: 4px 8px; border-radius: 12px; font-size: 0.85rem; font-weight: 500; }
 .status-active { background-color: #e8f5e9; color: #2e7d32; }
 .status-inactive { background-color: #ffebee; color: #c62828; }
-.badge-primary { background-color: #e3f2fd; color: #1565c0; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
-.badge-secondary { background-color: #f3e5f5; color: #7b1fa2; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+.badge-primary { background-color: #e3f2fd; color: #1565c0; padding: 4px 8px; border-radius: 12px; font-size: 0.85rem; font-weight: 500; }
+.badge-secondary { background-color: #f3e5f5; color: #7b1fa2; padding: 4px 8px; border-radius: 12px; font-size: 0.85rem; font-weight: 500; }
 .actions-cell { text-align: center; }
 .action-buttons { display: flex; justify-content: center; gap: 8px; }
 .action-btn { background: none; border: none; cursor: pointer; padding: 6px; border-radius: 4px; transition: background 0.2s; color: #555; }
@@ -309,6 +408,22 @@ onMounted(() => { cargarDatos() })
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 .btn-primary { background: #1a237e; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 0.95rem; transition: background 0.2s; }
 .btn-primary:hover { background: #283593; }
-.no-data { text-align: center; padding: 40px; color: #999; }
 .text-center { text-align: center; }
+
+@media (max-width: 768px) {
+  .mantenedor-header h2 { font-size: 1.25rem; }
+  .search-bar { flex-direction: column; align-items: stretch; }
+  .search-input { max-width: 100%; }
+
+  .data-table thead { display: none; }
+  .data-table, .data-table tbody, .data-table tr, .data-table td { display: block; width: 100%; }
+  .data-table tr { margin-bottom: 16px; background: white; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+  .data-table td { display: flex; justify-content: space-between; align-items: center; text-align: right; padding: 12px 16px; border-bottom: 1px solid #f3f4f6; }
+  .data-table td:last-child { border-bottom: none; justify-content: center; padding-top: 16px; }
+  .data-table td::before { content: attr(data-label); font-weight: 600; color: #6b7280; font-size: 0.85rem; text-transform: uppercase; margin-right: 16px; text-align: left; }
+  
+  .actions-cell { background-color: #f9fafb; border-top: 1px solid #e5e7eb; border-radius: 0 0 8px 8px; }
+  .mantenedor-section { height: auto; overflow: visible; }
+  .table-container { height: auto; overflow: visible; }
+}
 </style>

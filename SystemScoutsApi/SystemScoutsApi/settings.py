@@ -59,6 +59,7 @@ config = Config(ChainedRepository(file_repository))
 # CONFIGURACION BASICA
 # Default to development mode if no configuration is found
 DEBUG = config('DJANGO_DEBUG', default=True, cast=bool)
+DEPLOY_SECRET = config('DEPLOY_SECRET', default='temp-secret-change-me')
 
 # SECRET_KEY configuration with secure defaults
 # In production (DEBUG=False), SECRET_KEY MUST be provided via environment variable
@@ -111,12 +112,6 @@ MIDDLEWARE = [
     # 'scout_project.security_middleware.SecurityHeadersMiddleware',
     # 'scout_project.security_middleware.XSSProtectionMiddleware',
     # 'scout_project.security_middleware.SecurityLoggingMiddleware',
-]
-
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "https://guiasyscoutsbiobio.cl",
 ]
 
 CORS_ALLOW_METHODS = [
@@ -178,8 +173,8 @@ if DB_NAME and DB_HOST:
         'default': {
             'ENGINE': 'django.db.backends.mysql',
             'NAME': DB_NAME,
-            'USER': config("USER", default=config("DB_USER", default=None)),
-            'PASSWORD': config("PASSWORD_DB", default=config("DB_PASSWORD", default=None)),
+            'USER': config("DB_USER", default="MISSING_DB_USER"),
+            'PASSWORD': config("DB_PASSWORD", default="MISSING_DB_PASSWORD"),
             'HOST': DB_HOST,
             'PORT': config("PORT", default="3306"),
             'OPTIONS': {
@@ -328,11 +323,15 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5174",
     "https://api.guiasyscoutsbiobio.cl",
     "https://sistema.guiasyscoutsbiobio.cl",
+    "https://guiasyscoutsbiobio.cl",
+    "https://www.guiasyscoutsbiobio.cl",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     "https://api.guiasyscoutsbiobio.cl",
     "https://sistema.guiasyscoutsbiobio.cl",
+    "https://guiasyscoutsbiobio.cl",
+    "https://www.guiasyscoutsbiobio.cl",
 ]
 
 # Email configuration

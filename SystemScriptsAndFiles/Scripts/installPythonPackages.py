@@ -1,4 +1,4 @@
-#!/home/volbiobio/virtualenv/api/3.13/bin/python3.13_bin
+#!/home/volbiobio/virtualenv/api/3.12/bin/python3.12_bin
 # -*- coding: utf-8 -*-
 
 import subprocess
@@ -7,10 +7,12 @@ import os
 import glob
 
 def install_packages():
-    os.chdir('/home/volbiobio/api')
+    # Asumimos que la raíz es 2 niveles arriba de este script, o usamos una fija si es seguro
+    # Mejor aún: el script hace chdir a /home/volbiobio/services
+    os.chdir('/home/volbiobio/services')
 
-    python_path = '/home/volbiobio/virtualenv/api/3.13/bin/python3.13_bin'
-    pip_path = '/home/volbiobio/virtualenv/api/3.13/bin/pip'
+    python_path = sys.executable
+    pip_path = os.path.join(os.path.dirname(python_path), 'pip')
 
     print("=" * 60)
     print("REINSTALACIÓN FORZADA DE PAQUETES")

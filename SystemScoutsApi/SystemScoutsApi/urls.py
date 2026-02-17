@@ -19,6 +19,8 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from ApiCoreScouts.Views.Usuario_view import MyTokenObtainPairView
 
 from ApiCoreScouts.Views.Verificador_view import verificar_acreditacion_qr
+from ApiCoreScouts.Views.deploy_view import deploy_view
+
 
 FRONTEND_DIST_EXISTS = False  # Desactivar para desarrollo
 urlpatterns = [
@@ -41,6 +43,7 @@ urlpatterns = [
     # Authentication
     path('login/', MyTokenObtainPairView.as_view(), name='auth_login'),
     path('refresh/', TokenRefreshView.as_view(), name='auth_perfil'),
+    path('api/deploy/', deploy_view, name='deploy_endpoint'),
 ]
 
 # Add catch-all route for SPA if frontend build exists

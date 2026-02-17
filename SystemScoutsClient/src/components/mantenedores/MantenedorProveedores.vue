@@ -2,24 +2,25 @@
   <div class="mantenedor-section-expanded">
     <div class="mantenedor-header">
       <h2>🏷️ Gestión de Proveedores</h2>
-      <BaseButton variant="primary" @click="abrirModalCrear">
+      <!-- <BaseButton variant="primary" @click="abrirModalCrear">
         <AppIcons name="plus" :size="16" /> Nuevo Proveedor
-      </BaseButton>
+      </BaseButton> -->
     </div>
 
-    <!-- Buscador -->
-    <div class="search-bar search-bar--compact">
-      <input 
-        type="text" 
-        class="search-input" 
-        placeholder="BUSCAR PROVEEDOR..."
-        v-model="searchQuery"
-        @input="handleSearch"
-      >
-      <BaseButton class="search-button" variant="primary">
-        <AppIcons name="search" :size="16" /> Buscar
-      </BaseButton>
-    </div>
+    <Teleport to="#search-container">
+      <div class="search-box">
+        <input 
+          type="text" 
+          class="search-input-new" 
+          v-model="tempSearch" 
+          placeholder="Buscar Proveedor..."
+          @keyup.enter="ejecutarBusqueda"
+        >
+        <button class="search-btn-new" @click="ejecutarBusqueda" title="Buscar">
+          <AppIcons name="search" :size="16" />
+        </button>
+      </div>
+    </Teleport>
 
     <ModernMainScrollbar>
       <div class="table-container-expanded">
@@ -41,15 +42,15 @@
               <td colspan="5" class="text-center">No se encontraron registros</td>
             </tr>
             <tr v-else v-for="item in filteredItems" :key="item.id">
-              <td>{{ item.descripcion }}</td>
-              <td>{{ item.celular1 }}<span v-if="item.celular2"> / {{ item.celular2 }}</span></td>
-              <td>{{ item.direccion }}</td>
-              <td>
+              <td data-label="Descripción">{{ item.descripcion }}</td>
+              <td data-label="Contacto">{{ item.celular1 }}<span v-if="item.celular2"> / {{ item.celular2 }}</span></td>
+              <td data-label="Dirección">{{ item.direccion }}</td>
+              <td data-label="Estado">
                 <span class="status-badge" :class="item.vigente ? 'status-active' : 'status-inactive'">
                   {{ item.vigente ? 'VIGENTE' : 'NO VIGENTE' }}
                 </span>
               </td>
-              <td class="actions">
+              <td class="actions-cell" data-label="Acciones">
                 <BaseButton variant="secondary" class="btn-action" @click="verElemento(item)">
                   <AppIcons name="eye" :size="16" /> Ver
                 </BaseButton>
@@ -210,12 +211,18 @@ export default {
   name: 'MantenedorProveedores',
   components: { BaseButton, AppIcons, ModernMainScrollbar },
   emits: ['show-message', 'confirm-action'],
+  expose: ['abrirModalCrear'], // Options API expose
   
   setup(props, { emit }) {
     const items = ref([])
+    const searchQuery = ref('')
+    const tempSearch = ref('')
     const loading = ref(false)
     const saving = ref(false)
-    const searchQuery = ref('')
+
+    const ejecutarBusqueda = () => {
+      searchQuery.value = tempSearch.value
+    }
     const modalActivo = ref('')
     const editando = ref(false)
     const elementoSeleccionado = ref(null)
@@ -376,7 +383,8 @@ export default {
       cerrarModal,
       guardar,
       confirmarAccion,
-      handleSearch
+      ejecutarBusqueda,
+      tempSearch
     }
   }
 }
@@ -385,6 +393,7 @@ export default {
 <style scoped>
 /* Estilos estandarizados basados en MantenedorZonas */
 .mantenedor-section-expanded {
+  position: relative;
   padding: 0;
   width: 100%;
   height: 100%;
@@ -411,20 +420,82 @@ export default {
   margin: 0;
 }
 
-.search-bar {
-  margin-bottom: 20px;
+/* Nueva Caja de Búsqueda Integrada */
+.search-box {
   display: flex;
-  gap: 15px;
   align-items: center;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0 4px 0 12px;
+  height: 40px;
+  width: 100%;
+  transition: all 0.2s;
+  margin-bottom: 0px;
+}
+
+.search-box:focus-within {
+  border-color: #1a237e;
+  box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
+}
+
+.search-input-new {
+  flex: 1;
+  border: none !important;
+  outline: none !important;
+  padding: 8px 0 !important;
+  font-size: 0.95rem !important;
+  color: #111827 !important;
+  background: transparent !important;
+}
+
+.search-button {
+  background-color: #1a237e !important;
+  height: 40px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.search-btn-new {
+  background: transparent !important;
+  border: none !important;
+  color: #6b7280;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.2s;
+  height: 32px;
+  width: 32px;
+  margin-right: 4px;
+}
+
+.search-btn-new:hover {
+  color: #1a237e;
+}
+
+.search-btn-new :deep(svg) {
+  margin-right: 0 !important;
+}
+
+.search-button :deep(svg) {
+  margin-right: 0 !important;
 }
 
 .search-input {
   flex: 1;
-  max-width: 400px;
-  padding: 10px 15px;
-  border: 1px solid #ddd;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
   border-radius: 6px;
-  font-size: 1rem;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  height: 40px;
 }
 
 .table-container-expanded {
@@ -483,8 +554,56 @@ export default {
   font-size: 0.85rem;
 }
 
-.text-center {
-  text-align: center;
+.text-center { text-align: center; }
+
+@media (max-width: 768px) {
+  .mantenedor-header h2 { font-size: 1.25rem; }
+  .search-bar { flex-direction: column; align-items: stretch; }
+  .search-input { max-width: 100%; }
+  
+  .mantenedor-section-expanded { height: auto; overflow: visible; }
+  .table-container-expanded { height: auto; overflow: visible; }
+  .data-table-expanded thead { display: none; }
+  .data-table-expanded, .data-table-expanded tbody, .data-table-expanded tr, .data-table-expanded td { display: block; width: 100%; }
+  .data-table-expanded tr { margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); background: white; }
+  .data-table-expanded td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: right;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  .data-table-expanded td:last-child {
+    border-bottom: none;
+    justify-content: center;
+    padding-top: 16px;
+  }
+  
+  /* Etiquetas pseudo-elementos para las columnas */
+  .data-table-expanded td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #6b7280;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    margin-right: 16px;
+    text-align: left;
+  }
+
+  /* Ajustes específicos para acciones */
+  .actions-cell {
+    background-color: #f9fafb;
+    border-top: 1px solid #e5e7eb;
+    border-radius: 0 0 8px 8px;
+    display: flex; 
+    justify-content: center; 
+    gap: 8px; 
+    flex-wrap: wrap; 
+    padding: 12px !important;
+  }
+  .btn-action { margin: 2px; }
 }
 
 .modal-overlay {
@@ -570,9 +689,9 @@ export default {
 }
 
 .view-container {
+  text-align: center;
   display: flex;
   flex-direction: column;
-  gap: 12px;
 }
 
 .view-row {
@@ -586,7 +705,7 @@ export default {
 
 .view-group {
   margin-bottom: 15px;
-  border-bottom: 1px solid #f9f9f9;
+  border-bottom: 1px solid #f0f0f0;
   padding-bottom: 10px;
 }
 
@@ -594,13 +713,16 @@ export default {
   font-weight: 600;
   color: #555;
   display: block;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .view-value {
-  color: #333;
+  color: #111827;
   font-size: 1rem;
+  font-weight: 500;
 }
 
 .no-data {

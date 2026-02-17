@@ -2,26 +2,33 @@
   <div class="mantenedor-section">
     <div class="mantenedor-header">
       <h2><AppIcons name="users" :size="24" /> Gestión de Grupos</h2>
-      <button class="btn-primary" @click="abrirModalCrear">
+      <!-- <button class="btn-primary" @click="abrirModalCrear">
         <AppIcons name="plus" :size="18" /> Nuevo Grupo
-      </button>
+      </button> -->
     </div>
 
-    <div class="search-bar">
-      <input 
-        type="text" 
-        class="search-input" 
-        v-model="search" 
-        placeholder="Buscar Grupo..."
-      >
-      <select class="select-filter" v-model="filtroDistrito">
-        <option value="">TODOS LOS DISTRITOS</option>
-        <option v-for="distrito in distritos" :key="distrito.id" :value="distrito.id">
-          {{ distrito.descripcion }}
-        </option>
-      </select>
-    </div>
-
+    <Teleport to="#search-container">
+      <div class="search-group">
+        <div class="search-box">
+          <input 
+            type="text" 
+            class="search-input-new" 
+            v-model="tempSearch" 
+            placeholder="Buscar Grupo..."
+            @keyup.enter="ejecutarBusqueda"
+          >
+          <button class="search-btn-new" @click="ejecutarBusqueda" title="Buscar">
+            <AppIcons name="search" :size="16" />
+          </button>
+        </div>
+        <select class="select-filter" v-model="filtroDistrito">
+          <option value="">Todos los Distritos</option>
+          <option v-for="distrito in distritos" :key="distrito.id" :value="distrito.id">
+            {{ distrito.descripcion }}
+          </option>
+        </select>
+      </div>
+    </Teleport>
     <div class="table-container">
       <ModernMainScrollbar>
         <table class="data-table">
@@ -35,14 +42,14 @@
           </thead>
           <tbody>
             <tr v-for="grupo in filteredGrupos" :key="grupo.id">
-              <td>{{ grupo.descripcion }}</td>
-              <td>{{ getDistritoNombre(grupo.distrito_id) }}</td>
-              <td>
+              <td data-label="Descripción">{{ grupo.descripcion }}</td>
+              <td data-label="Distrito">{{ getDistritoNombre(grupo.distrito_id) }}</td>
+              <td data-label="Estado">
                 <span class="status-badge" :class="grupo.vigente ? 'status-active' : 'status-inactive'">
                   {{ grupo.vigente ? 'ACTIVO' : 'INACTIVO' }}
                 </span>
               </td>
-              <td class="actions-cell">
+              <td class="actions-cell" data-label="Acciones">
                 <div class="action-buttons">
                   <button class="action-btn btn-view" @click="verGrupo(grupo)" title="Ver detalle">
                     <AppIcons name="eye" :size="16" />
@@ -93,7 +100,7 @@
               <label class="form-label">DISTRITO:</label>
               <select class="form-control" v-model="form.distrito_id" required>
                 <option :value="null" disabled>SELECCIONE DISTRITO</option>
-                <option v-for="distrito in distritos" :key="distrito.id" :value="distrito.id">
+                <option v-for="distrito in distritosActivos" :key="distrito.id" :value="distrito.id">
                   {{ distrito.descripcion }}
                 </option>
               </select>
@@ -166,13 +173,20 @@ import AppIcons from '@/components/icons/AppIcons.vue'
 import ModernMainScrollbar from '@/components/ModernMainScrollbar.vue'
 
 const emit = defineEmits(['show-message', 'confirm-action'])
+defineExpose({ abrirModalCrear })
+
 
 const grupos = ref([])
 const distritos = ref([])
 const search = ref('')
+const tempSearch = ref('')
 const filtroDistrito = ref('')
 const cargando = ref(false)
 const saving = ref(false)
+
+const ejecutarBusqueda = () => {
+  search.value = tempSearch.value
+}
 
 // Estado Modal Formulario
 const modalVisible = ref(false)
@@ -197,15 +211,15 @@ const cargarDatos = async () => {
     ])
     
     // Normalizar Distritos (para dropdown y nombres)
-    const rawDistritos = Array.isArray(respDistritos) ? respDistritos : (respDistritos.results || respDistritos.data || [])
+    const rawDistritos = (respDistritos && Array.isArray(respDistritos)) ? respDistritos : (respDistritos?.results || respDistritos?.data || [])
     distritos.value = rawDistritos.map(d => ({
       id: d.dis_id ?? d.DIS_ID ?? d.id,
       descripcion: (d.dis_descripcion ?? d.DIS_DESCRIPCION ?? d.DESCRIPCION ?? d.descripcion ?? '').toString(),
-       // Guardamos info extra si es necesaria, pero para el dropdown basta id y desc
+      vigente: !!(d.dis_vigente ?? d.DIS_VIGENTE ?? d.vigente ?? true)
     }))
 
     // Normalizar Grupos
-    const rawGrupos = Array.isArray(respGrupos) ? respGrupos : (respGrupos.results || respGrupos.data || [])
+    const rawGrupos = (respGrupos && Array.isArray(respGrupos)) ? respGrupos : (respGrupos?.results || respGrupos?.data || [])
     grupos.value = rawGrupos.map(g => ({
       id: g.gru_id ?? g.GRU_ID ?? g.id,
       descripcion: (g.gru_descripcion ?? g.GRU_DESCRIPCION ?? g.DESCRIPCION ?? g.descripcion ?? '').toString(),
@@ -220,6 +234,8 @@ const cargarDatos = async () => {
     cargando.value = false
   }
 }
+
+const distritosActivos = computed(() => distritos.value.filter(d => d.vigente))
 
 const filteredGrupos = computed(() => {
   let filtered = grupos.value
@@ -242,9 +258,9 @@ const getDistritoNombre = (distritoId) => {
   return distrito ? distrito.descripcion : 'NO ENCONTRADO'
 }
 
-const abrirModalCrear = () => {
+function abrirModalCrear() {
   editando.value = false
-  Object.assign(form, { id: null, descripcion: '', distrito_id: null, vigente: true })
+  Object.assign(form, { id: null, descripcion: '', distrito_id: '', vigente: true })
   modalVisible.value = true
 }
 
@@ -342,6 +358,7 @@ onMounted(() => {
 <style scoped>
 /* Reutilizando estilos base */
 .mantenedor-section {
+  position: relative;
   padding: 0;
   width: 100%;
   height: 100%;
@@ -368,28 +385,98 @@ onMounted(() => {
   margin: 0;
 }
 
-.search-bar {
-  margin-bottom: 20px;
+/* Nueva Caja de Búsqueda Integrada */
+.search-group {
   display: flex;
-  gap: 15px;
+  gap: 12px;
   align-items: center;
+  width: 100%;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0 4px 0 12px;
+  height: 40px;
+  flex: 1;
+  transition: all 0.2s;
+}
+
+.search-box:focus-within {
+  border-color: #1a237e;
+  box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
+}
+
+.search-input-new {
+  flex: 1;
+  border: none !important;
+  outline: none !important;
+  padding: 8px 0 !important;
+  font-size: 0.95rem !important;
+  color: #111827 !important;
+  background: transparent !important;
+}
+
+.search-btn-new {
+  background: transparent !important;
+  border: none !important;
+  color: #6b7280;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.2s;
+  height: 32px;
+  width: 32px;
+  margin-right: 4px;
+}
+
+.search-btn-new:hover {
+  color: #1a237e;
+}
+
+.search-btn-new :deep(svg) {
+  margin-right: 0 !important;
+}
+
+.search-button {
+  background-color: #1a237e !important;
+  height: 40px !important;
+}
+
+.search-button :deep(svg) {
+  margin-right: 0 !important;
 }
 
 .search-input {
   flex: 1;
-  max-width: 400px;
-  padding: 10px 15px;
-  border: 1px solid #ddd;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
   border-radius: 6px;
-  font-size: 1rem;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  height: 40px;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #1a237e;
+  box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
 }
 
 .select-filter {
-  padding: 10px 15px;
-  border: 1px solid #ddd;
+  padding: 0 12px;
+  border: 1px solid #d1d5db;
   border-radius: 6px;
-  font-size: 1rem;
+  background-color: white;
+  height: 40px;
   min-width: 200px;
+  outline: none;
+  font-size: 0.9rem;
 }
 
 .table-container {
@@ -536,6 +623,8 @@ onMounted(() => {
   margin-top: 20px;
 }
 
+.view-container { text-align: center; }
+
 .view-group {
   margin-bottom: 15px;
   border-bottom: 1px solid #f9f9f9;
@@ -579,6 +668,25 @@ onMounted(() => {
   100% { transform: rotate(360deg); }
 }
 
+.action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  transition: background 0.2s;
+  color: #555;
+}
+
+.action-btn:hover {
+  background-color: #f0f0f0;
+}
+
+.btn-view:hover { color: #1976d2; background-color: #e3f2fd; }
+.btn-edit:hover { color: #f57c00; background-color: #fff3e0; }
+.btn-delete:hover { color: #d32f2f; background-color: #ffebee; }
+.btn-activate:hover { color: #388e3c; background-color: #e8f5e9; }
+
 .btn-primary {
   background: #1a237e;
   color: white;
@@ -596,5 +704,143 @@ onMounted(() => {
 
 .btn-primary:hover {
   background: #283593;
+}
+
+.search-group {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0 4px 0 12px;
+  height: 40px;
+  flex: 1;
+  transition: all 0.2s;
+}
+
+.search-box:focus-within {
+  border-color: #1a237e;
+  box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
+}
+
+.select-filter {
+  height: 40px;
+  padding: 0 40px 0 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background-color: white;
+  font-size: 0.95rem;
+  color: #374151;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 220px;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+}
+
+.select-filter:hover {
+  border-color: #9ca3af;
+}
+
+.select-filter:focus {
+  border-color: #1a237e;
+  box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
+}
+
+.search-input-new {
+  flex: 1;
+  border: none !important;
+  outline: none !important;
+  padding: 8px 0 !important;
+  font-size: 0.95rem !important;
+  color: #111827 !important;
+  background: transparent !important;
+}
+
+.search-btn-new {
+  background: transparent !important;
+  border: none !important;
+  color: #6b7280;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.2s;
+  height: 32px;
+  width: 32px;
+  margin-right: 4px;
+}
+
+.search-btn-new:hover {
+  color: #1a237e;
+}
+
+.search-btn-new :deep(svg) {
+  margin-right: 0 !important;
+}
+
+@media (max-width: 768px) {
+  .search-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .search-box { width: 100%; flex: none; }
+  .select-filter { 
+    max-width: 100%; 
+    width: 100%; 
+    margin-left: 0 !important;
+  }
+
+  .mantenedor-section { height: auto; overflow: visible; }
+  .table-container { height: auto; overflow: visible; }
+  .data-table thead { display: none; }
+  .data-table, .data-table tbody, .data-table tr, .data-table td { display: block; width: 100%; }
+  .data-table tr { margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); background: white; }
+  .data-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: right;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  .data-table td:last-child {
+    border-bottom: none;
+    justify-content: center;
+    padding-top: 16px;
+  }
+
+  /* Etiquetas pseudo-elementos para las columnas */
+  .data-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #6b7280;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    margin-right: 16px;
+    text-align: left;
+  }
+  
+  /* Ajustes específicos para acciones */
+  .actions-cell {
+    background-color: #f9fafb;
+    border-top: 1px solid #e5e7eb;
+    border-radius: 0 0 8px 8px;
+  }
+  .action-buttons { justify-content: space-evenly; width: 100%; }
 }
 </style>

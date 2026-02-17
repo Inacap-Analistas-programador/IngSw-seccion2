@@ -2,19 +2,26 @@
   <div class="mantenedor-section">
     <div class="mantenedor-header">
       <h2><AppIcons name="map" :size="24" /> Gestión de Zonas</h2>
-      <button class="btn-primary" @click="abrirModalCrear">
+      <!-- El botón de crear ahora se gestiona desde el componente padre -->
+      <!-- <button class="btn-primary" @click="abrirModalCrear">
         <AppIcons name="plus" :size="18" /> Nueva Zona
-      </button>
+      </button> -->
     </div>
 
-    <div class="search-bar">
-      <input 
-        type="text" 
-        class="search-input" 
-        v-model="search" 
-        placeholder="Buscar Zona..."
-      >
-    </div>
+    <Teleport to="#search-container">
+      <div class="search-box">
+        <input 
+          type="text" 
+          class="search-input-new" 
+          v-model="tempSearch" 
+          placeholder="Buscar Zona..."
+          @keyup.enter="ejecutarBusqueda"
+        >
+        <button class="search-btn-new" @click="ejecutarBusqueda" title="Buscar">
+          <AppIcons name="search" :size="16" />
+        </button>
+      </div>
+    </Teleport>
 
     <div class="table-container">
       <ModernMainScrollbar>
@@ -29,14 +36,14 @@
           </thead>
           <tbody>
             <tr v-for="zona in filteredZonas" :key="zona.id">
-              <td>{{ zona.descripcion }}</td>
-              <td>{{ zona.unilateral ? 'SÍ' : 'NO' }}</td>
-              <td>
+              <td data-label="Descripción">{{ zona.descripcion }}</td>
+              <td data-label="Unilateral">{{ zona.unilateral ? 'SÍ' : 'NO' }}</td>
+              <td data-label="Estado">
                 <span class="status-badge" :class="zona.vigente ? 'status-active' : 'status-inactive'">
                   {{ zona.vigente ? 'ACTIVO' : 'INACTIVO' }}
                 </span>
               </td>
-              <td class="actions-cell">
+              <td class="actions-cell" data-label="Acciones">
                 <div class="action-buttons">
                   <button class="action-btn btn-view" @click="verZona(zona)" title="Ver detalle">
                     <AppIcons name="eye" :size="16" />
@@ -158,11 +165,17 @@ import ModernMainScrollbar from '@/components/ModernMainScrollbar.vue'
 
 // Props para comunicar eventos al padre si es necesario (ej: mostrar toast)
 const emit = defineEmits(['show-message', 'confirm-action'])
+defineExpose({ abrirModalCrear })
 
 const zonas = ref([])
 const search = ref('')
+const tempSearch = ref('')
 const cargando = ref(false)
 const saving = ref(false)
+
+const ejecutarBusqueda = () => {
+  search.value = tempSearch.value
+}
 
 // Estado Modal Formulario
 const modalVisible = ref(false)
@@ -182,14 +195,17 @@ const cargarDatos = async () => {
   cargando.value = true
   try {
     const resp = await mantenedoresService.zona.list()
+    console.log('MantenedorZonas: resp raw:', resp)
     // Normalización de datos (adaptado de mantenedores.vue original)
-    const rawData = Array.isArray(resp) ? resp : (resp.results || resp.data || [])
+    const rawData = (resp && Array.isArray(resp)) ? resp : (resp?.results || resp?.data || [])
+    console.log('MantenedorZonas: rawData:', rawData)
     zonas.value = rawData.map(z => ({
       id: z.zon_id ?? z.ZON_ID ?? z.id,
       descripcion: (z.zon_descripcion ?? z.ZON_DESCRIPCION ?? z.DESCRIPCION ?? z.descripcion ?? '').toString(),
       unilateral: !!(z.zon_unilateral ?? z.ZON_UNILATERAL ?? z.unilateral),
       vigente: !!(z.zon_vigente ?? z.ZON_VIGENTE ?? z.vigente ?? true)
     }))
+    console.log('MantenedorZonas: zonas.value mapped:', zonas.value)
   } catch (error) {
     console.error('Error cargando zonas:', error)
     emit('show-message', { type: 'error', text: 'Error al cargar zonas' })
@@ -206,7 +222,7 @@ const filteredZonas = computed(() => {
   )
 })
 
-const abrirModalCrear = () => {
+function abrirModalCrear() {
   editando.value = false
   Object.assign(form, { id: null, descripcion: '', unilateral: false, vigente: true })
   modalVisible.value = true
@@ -253,7 +269,25 @@ const guardar = async () => {
       await mantenedoresService.zona.partialUpdate(form.id, payload)
       emit('show-message', { type: 'success', text: 'Zona actualizada correctamente' })
     } else {
-      await mantenedoresService.zona.create(payload)
+      const resp = await mantenedoresService.zona.create(payload)
+      const newZona = resp.data || resp 
+      
+      // Si es unilateral, crear distrito automáticamente
+      if (form.unilateral && newZona) {
+          const zonaId = newZona.zon_id ?? newZona.ZON_ID ?? newZona.id
+          try {
+              await mantenedoresService.distrito.create({
+                  dis_descripcion: form.descripcion, // Mismo nombre que la zona
+                  zon_id: zonaId,
+                  dis_vigente: true
+              })
+          } catch(e) {
+              console.error('Error creando distrito automático:', e)
+              emit('show-message', { type: 'error', text: 'Zona creada pero error al crear distrito automático' })
+              return // Salir para no mostrar mensaje de éxito doble o confuso
+          }
+      }
+
       emit('show-message', { type: 'success', text: 'Zona creada correctamente' })
     }
     cerrarModal()
@@ -301,6 +335,7 @@ const confirmarActivar = (zona) => {
   })
 }
 
+
 onMounted(() => {
   cargarDatos()
 })
@@ -309,6 +344,7 @@ onMounted(() => {
 <style scoped>
 /* Estilos extraídos de mantenedores.vue y adaptados */
 .mantenedor-section {
+  position: relative;
   padding: 0;
   width: 100%;
   height: 100%;
@@ -335,17 +371,80 @@ onMounted(() => {
   margin: 0;
 }
 
-.search-bar {
-  margin-bottom: 20px;
+/* Nueva Caja de Búsqueda Integrada */
+.search-box {
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0 4px 0 12px;
+  height: 40px;
+  width: 100%;
+  transition: all 0.2s;
+}
+
+.search-box:focus-within {
+  border-color: #1a237e;
+  box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
+}
+
+.search-input-new {
+  flex: 1;
+  border: none !important;
+  outline: none !important;
+  padding: 8px 0 !important;
+  font-size: 0.95rem !important;
+  color: #111827 !important;
+  background: transparent !important;
+}
+
+.search-btn-new {
+  background: transparent !important;
+  border: none !important;
+  color: #6b7280;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.2s;
+  height: 32px;
+  width: 32px;
+  margin-right: 4px;
+}
+
+.search-btn-new:hover {
+  color: #1a237e;
+}
+
+.search-btn-new :deep(svg) {
+  margin-right: 0 !important;
+}
+
+.search-button {
+  background-color: #1a237e !important;
+  height: 40px !important;
+}
+
+.search-button :deep(svg) {
+  margin-right: 0 !important;
 }
 
 .search-input {
-  width: 100%;
-  max-width: 400px;
-  padding: 10px 15px;
-  border: 1px solid #ddd;
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
   border-radius: 6px;
-  font-size: 1rem;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  height: 40px; /* Igualar altura con dropdown y botón */
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #1a237e;
+  box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
 }
 
 .table-container {
@@ -567,7 +666,86 @@ onMounted(() => {
   transition: background 0.2s;
 }
 
+
 .btn-primary:hover {
   background: #283593;
+}
+
+/* RESPONSIVE: CARDS VIEW */
+@media (max-width: 768px) {
+  .mantenedor-header h2 {
+    font-size: 1.25rem;
+  }
+  
+  .search-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .search-input {
+    max-width: 100%;
+  }
+
+  /* Ocultar encabezados de tabla */
+  .data-table thead {
+    display: none;
+  }
+
+  .data-table, .data-table tbody, .data-table tr, .data-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .data-table tr {
+    margin-bottom: 16px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+
+  .data-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: right;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  .data-table td:last-child {
+    border-bottom: none;
+    justify-content: center;
+    padding-top: 16px;
+  }
+
+  /* Etiquetas pseudo-elementos para las columnas */
+  .data-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #6b7280;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    margin-right: 16px;
+    text-align: left;
+  }
+  
+  /* Ajustes específicos para acciones */
+  .actions-cell {
+    background-color: #f9fafb;
+    border-top: 1px solid #e5e7eb;
+    border-radius: 0 0 8px 8px;
+  }
+
+  /* Reset de altura y scroll para vista móvil */
+  .mantenedor-section {
+    height: auto;
+    overflow: visible;
+  }
+
+  .table-container {
+    height: auto;
+    overflow: visible;
+  }
 }
 </style>

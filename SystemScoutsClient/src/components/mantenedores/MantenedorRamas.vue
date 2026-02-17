@@ -2,19 +2,25 @@
   <div class="mantenedor-section">
     <div class="mantenedor-header">
       <h2><AppIcons name="git-branch" :size="24" /> Gestión de Ramas</h2>
-      <button class="btn-primary" @click="abrirModalCrear">
+      <!-- <button class="btn-primary" @click="abrirModalCrear">
         <AppIcons name="plus" :size="18" /> Nueva Rama
-      </button>
+      </button> -->
     </div>
 
-    <div class="search-bar">
-      <input 
-        type="text" 
-        class="search-input" 
-        v-model="search" 
-        placeholder="Buscar Rama..."
-      >
-    </div>
+    <Teleport to="#search-container">
+      <div class="search-box">
+        <input 
+          type="text" 
+          class="search-input-new" 
+          v-model="tempSearch" 
+          placeholder="Buscar Rama..."
+          @keyup.enter="ejecutarBusqueda"
+        >
+        <button class="search-btn-new" @click="ejecutarBusqueda" title="Buscar">
+          <AppIcons name="search" :size="16" />
+        </button>
+      </div>
+    </Teleport>
 
     <div class="table-container">
       <ModernMainScrollbar>
@@ -28,13 +34,13 @@
           </thead>
           <tbody>
             <tr v-for="rama in filteredItems" :key="rama.id">
-              <td>{{ rama.descripcion }}</td>
-              <td>
+              <td data-label="Descripción">{{ rama.descripcion }}</td>
+              <td data-label="Estado">
                 <span class="status-badge" :class="rama.vigente ? 'status-active' : 'status-inactive'">
                   {{ rama.vigente ? 'ACTIVO' : 'INACTIVO' }}
                 </span>
               </td>
-              <td class="actions-cell">
+              <td class="actions-cell" data-label="Acciones">
                 <div class="action-buttons">
                   <button class="action-btn btn-view" @click="verElemento(rama)" title="Ver detalle">
                     <AppIcons name="eye" :size="16" />
@@ -154,11 +160,18 @@ import ModernMainScrollbar from '@/components/ModernMainScrollbar.vue'
 import NotificationToast from '@/components/NotificationToast.vue'
 
 const emit = defineEmits(['confirm-action'])
+defineExpose({ abrirModalCrear })
+
 
 const items = ref([])
 const search = ref('')
+const tempSearch = ref('')
 const cargando = ref(false)
 const saving = ref(false)
+
+const ejecutarBusqueda = () => {
+  search.value = tempSearch.value
+}
 
 // Toast state
 const toast = reactive({ visible: false, message: '', icon: '' })
@@ -186,7 +199,7 @@ const cargarDatos = async () => {
   cargando.value = true
   try {
     const resp = await mantenedoresService.rama.list()
-    const rawData = Array.isArray(resp) ? resp : (resp.results || resp.data || [])
+    const rawData = (resp && Array.isArray(resp)) ? resp : (resp?.results || resp?.data || [])
     items.value = rawData.map(r => ({
       id: r.ram_id ?? r.RAM_ID ?? r.id,
       descripcion: (r.ram_descripcion ?? r.RAM_DESCRIPCION ?? r.DESCRIPCION ?? r.descripcion ?? '').toString(),
@@ -206,7 +219,7 @@ const filteredItems = computed(() => {
   return items.value.filter(r => r.descripcion.toLowerCase().includes(term))
 })
 
-const abrirModalCrear = () => {
+function abrirModalCrear() {
   editando.value = false
   Object.assign(form, { id: null, descripcion: '', vigente: true })
   modalVisible.value = true
@@ -299,6 +312,7 @@ onMounted(() => {
 <style scoped>
 /* Estilos estandarizados basados en MantenedorZonas */
 .mantenedor-section {
+  position: relative;
   padding: 0;
   width: 100%;
   height: 100%;
@@ -326,16 +340,84 @@ onMounted(() => {
 }
 
 .search-bar {
-  margin-bottom: 20px;
+  margin-bottom: 0;
+  width: 100%;
+}
+
+/* Nueva Caja de Búsqueda Integrada */
+.search-box {
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0 4px 0 12px;
+  height: 40px;
+  width: 100%;
+  transition: all 0.2s;
+}
+
+.search-box:focus-within {
+  border-color: #1a237e;
+  box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
+}
+
+.search-input-new {
+  flex: 1;
+  border: none !important;
+  outline: none !important;
+  padding: 8px 0 !important;
+  font-size: 0.95rem !important;
+  color: #111827 !important;
+  background: transparent !important;
+}
+
+.search-btn-new {
+  background: transparent !important;
+  border: none !important;
+  color: #6b7280;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.2s;
+  height: 32px;
+  width: 32px;
+  margin-right: 4px;
+}
+
+.search-btn-new:hover {
+  color: #1a237e;
+}
+
+.search-btn-new :deep(svg) {
+  margin-right: 0 !important;
+}
+
+.search-button {
+  background-color: #1a237e !important;
+  height: 40px !important;
+}
+
+.search-button :deep(svg) {
+  margin-right: 0 !important;
 }
 
 .search-input {
-  width: 100%;
-  max-width: 400px;
-  padding: 10px 15px;
-  border: 1px solid #ddd;
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
   border-radius: 6px;
-  font-size: 1rem;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  height: 40px;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #1a237e;
+  box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
 }
 
 .table-container {
@@ -536,6 +618,25 @@ onMounted(() => {
   100% { transform: rotate(360deg); }
 }
 
+.action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  transition: background 0.2s;
+  color: #555;
+}
+
+.action-btn:hover {
+  background-color: #f0f0f0;
+}
+
+.btn-view:hover { color: #1976d2; background-color: #e3f2fd; }
+.btn-edit:hover { color: #f57c00; background-color: #fff3e0; }
+.btn-delete:hover { color: #d32f2f; background-color: #ffebee; }
+.btn-activate:hover { color: #388e3c; background-color: #e8f5e9; }
+
 .btn-primary {
   background: #1a237e;
   color: white;
@@ -563,5 +664,50 @@ onMounted(() => {
 
 .text-center {
   text-align: center;
+}
+
+@media (max-width: 768px) {
+  .mantenedor-header h2 { font-size: 1.25rem; }
+  .search-bar { flex-direction: column; align-items: stretch; }
+  .search-input { max-width: 100%; }
+  
+  .mantenedor-section { height: auto; overflow: visible; }
+  .table-container { height: auto; overflow: visible; }
+  .data-table thead { display: none; }
+  .data-table, .data-table tbody, .data-table tr, .data-table td { display: block; width: 100%; }
+  .data-table tr { margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); background: white; }
+  .data-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: right;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  .data-table td:last-child {
+    border-bottom: none;
+    justify-content: center;
+    padding-top: 16px;
+  }
+
+  /* Etiquetas pseudo-elementos para las columnas */
+  .data-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #6b7280;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    margin-right: 16px;
+    text-align: left;
+  }
+  
+  /* Ajustes específicos para acciones */
+  .actions-cell {
+    background-color: #f9fafb;
+    border-top: 1px solid #e5e7eb;
+    border-radius: 0 0 8px 8px;
+  }
+  .action-buttons { justify-content: space-evenly; width: 100%; }
 }
 </style>

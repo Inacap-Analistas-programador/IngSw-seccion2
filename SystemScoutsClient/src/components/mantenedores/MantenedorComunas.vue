@@ -2,14 +2,33 @@
   <div class="mantenedor-section">
     <div class="mantenedor-header">
       <h2><AppIcons name="map-pin" :size="24" /> Gestión de Comunas</h2>
-      <button class="btn-primary" @click="abrirModalCrear">
+      <!-- <button class="btn-primary" @click="abrirModalCrear">
         <AppIcons name="plus" :size="18" /> Nueva Comuna
-      </button>
+      </button> -->
     </div>
 
-    <div class="search-bar">
-      <input type="text" class="search-input" v-model="search" placeholder="Buscar Comuna...">
-    </div>
+    <Teleport to="#search-container">
+      <div class="search-group">
+        <div class="search-box">
+          <input 
+            type="text" 
+            class="search-input-new" 
+            v-model="tempSearch" 
+            placeholder="Buscar Comuna..."
+            @keyup.enter="ejecutarBusqueda"
+          >
+          <button class="search-btn-new" @click="ejecutarBusqueda" title="Buscar">
+            <AppIcons name="search" :size="16" />
+          </button>
+        </div>
+        <select class="select-filter" v-model="filtroProvincia">
+          <option value="">Todas las Provincias</option>
+          <option v-for="prov in provinciasActivas" :key="prov.id" :value="prov.id">
+            {{ prov.descripcion }}
+          </option>
+        </select>
+      </div>
+    </Teleport>
 
     <div class="table-container">
       <ModernMainScrollbar>
@@ -24,14 +43,14 @@
           </thead>
           <tbody>
             <tr v-for="item in filteredItems" :key="item.id">
-              <td>{{ item.descripcion }}</td>
-              <td>{{ getProvinciaNombre(item.provincia_id) }}</td>
-              <td>
+              <td data-label="Descripción">{{ item.descripcion }}</td>
+              <td data-label="Provincia">{{ getProvinciaNombre(item.provincia_id) }}</td>
+              <td data-label="Estado">
                 <span class="status-badge" :class="item.vigente ? 'status-active' : 'status-inactive'">
                   {{ item.vigente ? 'ACTIVO' : 'INACTIVO' }}
                 </span>
               </td>
-              <td class="actions-cell">
+              <td class="actions-cell" data-label="Acciones">
                 <div class="action-buttons">
                   <button class="action-btn btn-view" @click="verElemento(item)" title="Ver detalle">
                     <AppIcons name="eye" :size="16" />
@@ -71,7 +90,7 @@
               <label class="form-label">PROVINCIA:</label>
               <select class="form-control" v-model="form.provincia_id" required>
                 <option :value="null" disabled>SELECCIONE PROVINCIA</option>
-                <option v-for="prov in provincias" :key="prov.id" :value="prov.id">
+                <option v-for="prov in provinciasActivas" :key="prov.id" :value="prov.id">
                   {{ prov.descripcion }}
                 </option>
               </select>
@@ -153,12 +172,20 @@ import ModernMainScrollbar from '@/components/ModernMainScrollbar.vue'
 import NotificationToast from '@/components/NotificationToast.vue'
 
 const emit = defineEmits(['confirm-action'])
+defineExpose({ abrirModalCrear })
 
 const comunas = ref([])
 const provincias = ref([])
+const items = ref([])
 const search = ref('')
+const tempSearch = ref('')
+const filtroProvincia = ref('')
 const cargando = ref(false)
 const saving = ref(false)
+
+const ejecutarBusqueda = () => {
+  search.value = tempSearch.value
+}
 
 const toast = reactive({ visible: false, message: '', icon: '' })
 const showToast = (message, icon = 'check') => {
@@ -186,12 +213,24 @@ const cargarDatos = async () => {
       return resp.results || (resp.data?.results) || resp.data || resp.items || []
     }
 
-    comunas.value = getData(respComunas).map(c => ({
-      id: c.com_id ?? c.COM_ID ?? c.id,
-      descripcion: (c.com_descripcion ?? c.COM_DESCRIPCION ?? c.DESCRIPCION ?? c.descripcion ?? '').toString(),
-      provincia_id: (c.pro_id?.pro_id ?? c.PRO_ID?.PRO_ID ?? c.pro_id ?? c.PRO_ID ?? c.provincia_id ?? null),
-      vigente: !!(c.com_vigente ?? c.COM_VIGENTE ?? c.vigente ?? true)
-    }))
+    comunas.value = getData(respComunas).map(c => {
+      // Intento de obtener el ID de provincia de forma robusta
+      let provId = null
+      if (c.pro_id) {
+        provId = typeof c.pro_id === 'object' ? (c.pro_id.pro_id || c.pro_id.id) : c.pro_id
+      } else if (c.PRO_ID) {
+        provId = typeof c.PRO_ID === 'object' ? (c.PRO_ID.PRO_ID || c.PRO_ID.ID) : c.PRO_ID
+      } else if (c.provincia_id) {
+        provId = c.provincia_id
+      }
+
+      return {
+        id: c.com_id ?? c.COM_ID ?? c.id,
+        descripcion: (c.com_descripcion ?? c.COM_DESCRIPCION ?? c.DESCRIPCION ?? c.descripcion ?? '').toString(),
+        provincia_id: provId,
+        vigente: !!(c.com_vigente ?? c.COM_VIGENTE ?? c.vigente ?? true)
+      }
+    })
 
     provincias.value = getData(respProvincias).map(p => ({
       id: p.pro_id ?? p.PRO_ID ?? p.id,
@@ -209,18 +248,31 @@ const getProvinciaNombre = (id) => {
   return p ? p.descripcion : 'NO ENCONTRADA'
 }
 
+const provinciasActivas = computed(() => provincias.value.filter(p => p.vigente))
+
 const filteredItems = computed(() => {
-  if (!search.value) return comunas.value
-  const q = search.value.toUpperCase()
-  return comunas.value.filter(item =>
-    item.descripcion.toUpperCase().includes(q) ||
-    getProvinciaNombre(item.provincia_id).toUpperCase().includes(q)
-  )
+  let result = comunas.value
+
+  // Filtrar por texto
+  if (search.value) {
+    const q = search.value.toUpperCase()
+    result = result.filter(item =>
+      item.descripcion.toUpperCase().includes(q) ||
+      getProvinciaNombre(item.provincia_id).toUpperCase().includes(q)
+    )
+  }
+
+  // Filtrar por provincia
+  if (filtroProvincia.value) {
+    result = result.filter(item => item.provincia_id === filtroProvincia.value)
+  }
+
+  return result
 })
 
-const abrirModalCrear = () => {
+function abrirModalCrear() {
   editando.value = false
-  Object.assign(form, { id: null, descripcion: '', provincia_id: null, vigente: true })
+  Object.assign(form, { id: null, descripcion: '', provincia_id: '', vigente: true })
   modalVisible.value = true
 }
 
@@ -277,11 +329,187 @@ onMounted(() => { cargarDatos() })
 </script>
 
 <style scoped>
-.mantenedor-section { padding: 0; width: 100%; height: 100%; display: flex; flex-direction: column; background: transparent; }
+.mantenedor-section { position: relative;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+}
 .mantenedor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #3949ab; }
 .mantenedor-header h2 { color: #1a237e; font-size: 1.5rem; display: flex; align-items: center; gap: 10px; margin: 0; }
-.search-bar { margin-bottom: 20px; }
-.search-input { width: 100%; max-width: 400px; padding: 10px 15px; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; }
+.search-group {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0 4px 0 12px;
+  height: 40px;
+  flex: 1;
+  transition: all 0.2s;
+}
+
+.search-box:focus-within {
+  border-color: #1a237e;
+  box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
+}
+
+.select-filter {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background-color: white;
+  font-size: 0.95rem;
+  color: #374151;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 180px;
+}
+
+.select-filter:focus {
+  border-color: #1a237e;
+  box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
+}
+
+.search-input-new {
+  flex: 1;
+  border: none !important;
+  outline: none !important;
+  padding: 8px 0 !important;
+  font-size: 0.95rem !important;
+  color: #111827 !important;
+  background: transparent !important;
+}
+
+.search-btn-new {
+  background: transparent !important;
+  border: none !important;
+  color: #6b7280;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.2s;
+  height: 32px;
+  width: 32px;
+  margin-right: 4px;
+}
+
+.search-btn-new:hover {
+  color: #1a237e;
+}
+
+.search-btn-new :deep(svg) {
+  margin-right: 0 !important;
+}
+
+.search-button {
+  background-color: #1a237e !important;
+  height: 40px !important;
+}
+
+/* Nueva Caja de Búsqueda Integrada */
+.search-group {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0 4px 0 12px;
+  height: 40px;
+  flex: 1;
+  transition: all 0.2s;
+}
+
+.search-box:focus-within {
+  border-color: #1a237e;
+  box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
+}
+
+.select-filter {
+  height: 40px;
+  padding: 0 40px 0 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background-color: white;
+  font-size: 0.95rem;
+  color: #374151;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 220px;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+}
+
+.select-filter:hover {
+  border-color: #9ca3af;
+}
+
+.select-filter:focus {
+  border-color: #1a237e;
+  box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
+}
+
+.search-input-new {
+  flex: 1;
+  border: none !important;
+  outline: none !important;
+  padding: 8px 0 !important;
+  font-size: 0.95rem !important;
+  color: #111827 !important;
+  background: transparent !important;
+}
+
+.search-btn-new {
+  background: transparent !important;
+  border: none !important;
+  color: #6b7280;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.2s;
+  height: 32px;
+  width: 32px;
+  margin-right: 4px;
+}
+
+.search-btn-new:hover {
+  color: #1a237e;
+}
+
+.search-btn-new :deep(svg) {
+  margin-right: 0 !important;
+}
+
+.search-button {
+  background-color: #1a237e !important;
+  height: 40px !important;
+}
 .table-container { flex: 1; overflow: hidden; border: 1px solid #eee; border-radius: 8px; }
 .data-table { width: 100%; border-collapse: collapse; }
 .data-table th, .data-table td { padding: 12px 15px; text-align: center; border-bottom: 1px solid #f0f0f0; }
@@ -317,6 +545,32 @@ onMounted(() => { cargarDatos() })
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 .btn-primary { background: #1a237e; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 0.95rem; transition: background 0.2s; }
 .btn-primary:hover { background: #283593; }
-.no-data { text-align: center; padding: 40px; color: #999; }
 .text-center { text-align: center; }
+
+@media (max-width: 768px) {
+  .mantenedor-header h2 { font-size: 1.25rem; }
+  .search-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .search-box { width: 100%; flex: none; }
+  .select-filter { 
+    max-width: 100%; 
+    width: 100%;
+    margin-left: 0 !important;
+  }
+  .search-input { max-width: 100%; }
+
+  .data-table thead { display: none; }
+  .data-table, .data-table tbody, .data-table tr, .data-table td { display: block; width: 100%; }
+  .data-table tr { margin-bottom: 16px; background: white; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+  .data-table td { display: flex; justify-content: space-between; align-items: center; text-align: right; padding: 12px 16px; border-bottom: 1px solid #f3f4f6; }
+  .data-table td:last-child { border-bottom: none; justify-content: center; padding-top: 16px; }
+  .data-table td::before { content: attr(data-label); font-weight: 600; color: #6b7280; font-size: 0.85rem; text-transform: uppercase; margin-right: 16px; text-align: left; }
+  
+  .actions-cell { background-color: #f9fafb; border-top: 1px solid #e5e7eb; border-radius: 0 0 8px 8px; }
+  .mantenedor-section { height: auto; overflow: visible; }
+  .table-container { height: auto; overflow: visible; }
+}
 </style>

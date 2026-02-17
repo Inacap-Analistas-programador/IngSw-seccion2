@@ -1,4 +1,4 @@
-#!/home/volbiobio/virtualenv/api/3.13/bin/python3.13_bin
+#!/home/volbiobio/virtualenv/api/3.12/bin/python3.12_bin
 # -*- coding: utf-8 -*-
 
 import sys
@@ -6,12 +6,12 @@ import os
 
 def perform_check():
     # Agregar el site-packages del virtualenv al path
-    venv_path = '/home/volbiobio/virtualenv/api/3.13/lib/python3.13/site-packages'
+    venv_path = '/home/volbiobio/virtualenv/api/3.12/lib/python3.12/site-packages'
     if venv_path not in sys.path:
         sys.path.insert(0, venv_path)
 
-    os.chdir('/home/volbiobio/api')
-    sys.path.insert(0, '/home/volbiobio/api')
+    os.chdir('/home/volbiobio/services')
+    sys.path.insert(0, '/home/volbiobio/services')
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'SystemScoutsApi.settings')
 
     print("=" * 60)
