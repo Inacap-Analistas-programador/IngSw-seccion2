@@ -9,24 +9,18 @@
 
     <Teleport to="#search-container">
       <div class="search-group">
-        <div class="search-box">
-          <input 
-            type="text" 
-            class="search-input-new" 
-            v-model="tempSearch" 
-            placeholder="Buscar Provincia..."
-            @keyup.enter="ejecutarBusqueda"
-          >
-          <button class="search-btn-new" @click="ejecutarBusqueda" title="Buscar">
-            <AppIcons name="search" :size="16" />
-          </button>
-        </div>
-        <select class="select-filter" v-model="filtroRegion">
-          <option value="">Todas las Regiones</option>
-          <option v-for="reg in regiones" :key="reg.id" :value="reg.id">
-            {{ reg.descripcion }}
-          </option>
-        </select>
+        <!-- Barra de Busqueda -->
+        <SearchBar 
+          v-model="tempSearch" 
+          placeholder="Buscar Provincia..." 
+          @search="ejecutarBusqueda" 
+        />
+        <!-- Filtro Region -->
+        <FilterSelect 
+          v-model="filtroRegion" 
+          :options="regiones" 
+          defaultLabel="Todas las Regiones" 
+        />
       </div>
     </Teleport>
 
@@ -131,15 +125,15 @@ import * as mantenedoresService from '@/services/mantenedoresService'
 import BaseButton from '@/components/BaseButton.vue'
 import AppIcons from '@/components/icons/AppIcons.vue'
 import ModernMainScrollbar from '@/components/ModernMainScrollbar.vue'
-
-const emit = defineEmits(['show-message', 'confirm-action'])
-defineExpose({ abrirModalCrear })
-
-const items = ref([])
+import FilterSelect from '@/components/common/FilterSelect.vue'
+import SearchBar from '@/components/common/SearchBar.vue'
 const regiones = ref([])
+const items = ref([])
 const search = ref('')
 const tempSearch = ref('')
 const filtroRegion = ref('')
+const isFilterOpen = ref(false)
+const filterContainer = ref(null)
 const cargando = ref(false)
 const saving = ref(false)
 
@@ -252,12 +246,7 @@ onMounted(() => { cargarDatos() })
 }
 .mantenedor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #3949ab; }
 .mantenedor-header h2 { color: #1a237e; font-size: 1.5rem; display: flex; align-items: center; gap: 10px; margin: 0; }
-.search-bar {
-  margin-bottom: 0;
-  width: 100%;
-}
-
-/* Nueva Caja de Búsqueda Integrada */
+/* Styles cleaned up - using reusable components */
 .search-group {
   display: flex;
   gap: 12px;
@@ -265,108 +254,7 @@ onMounted(() => { cargarDatos() })
   width: 100%;
 }
 
-.search-box {
-  display: flex;
-  align-items: center;
-  background: white;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  padding: 0 4px 0 12px;
-  height: 40px;
-  flex: 1;
-  transition: all 0.2s;
-}
 
-.search-box:focus-within {
-  border-color: #1a237e;
-  box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
-}
-
-.select-filter {
-  height: 40px;
-  padding: 0 40px 0 16px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  background-color: white;
-  font-size: 0.95rem;
-  color: #374151;
-  outline: none;
-  cursor: pointer;
-  transition: all 0.2s;
-  min-width: 220px;
-  appearance: none;
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  background-size: 16px;
-}
-
-.select-filter:hover {
-  border-color: #9ca3af;
-}
-
-.select-filter:focus {
-  border-color: #1a237e;
-  box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
-}
-
-.search-input-new {
-  flex: 1;
-  border: none !important;
-  outline: none !important;
-  padding: 8px 0 !important;
-  font-size: 0.95rem !important;
-  color: #111827 !important;
-  background: transparent !important;
-}
-
-.search-btn-new {
-  background: transparent !important;
-  border: none !important;
-  color: #6b7280;
-  padding: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: color 0.2s;
-  height: 32px;
-  width: 32px;
-  margin-right: 4px;
-}
-
-.search-btn-new:hover {
-  color: #1a237e;
-}
-
-.search-btn-new :deep(svg) {
-  margin-right: 0 !important;
-}
-
-.search-button {
-  background-color: #1a237e !important;
-  height: 40px !important;
-}
-
-.search-button :deep(svg) {
-  margin-right: 0 !important;
-}
-
-.search-input {
-  flex: 1;
-  padding: 8px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 0.95rem;
-  transition: all 0.2s;
-  height: 40px;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: #1a237e;
-  box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
-}
 .table-container { flex: 1; overflow: hidden; border: 1px solid #eee; border-radius: 8px; }
 .data-table { width: 100%; border-collapse: collapse; }
 .data-table th, .data-table td { padding: 12px 15px; text-align: center; border-bottom: 1px solid #f0f0f0; }
@@ -376,7 +264,18 @@ onMounted(() => { cargarDatos() })
 .status-inactive { background-color: #ffebee; color: #c62828; }
 .actions-cell { text-align: center; }
 .action-buttons { display: flex; justify-content: center; gap: 8px; }
-.action-btn { background: none; border: none; cursor: pointer; padding: 6px; border-radius: 4px; transition: background 0.2s; color: #555; }
+.action-btn { 
+  background: none; 
+  border: none; 
+  cursor: pointer; 
+  padding: 6px; 
+  border-radius: 4px; 
+  transition: background 0.2s; 
+  color: #555; 
+  display: flex; 
+  justify-content: center; 
+  align-items: center; 
+}
 .action-btn:hover { background-color: #f0f0f0; }
 .btn-view:hover { color: #1976d2; background-color: #e3f2fd; }
 .btn-edit:hover { color: #f57c00; background-color: #fff3e0; }
@@ -408,12 +307,6 @@ onMounted(() => { cargarDatos() })
     flex-direction: column;
     align-items: stretch;
     gap: 8px;
-  }
-  .search-box { width: 100%; flex: none; }
-  .select-filter { 
-    max-width: 100%; 
-    width: 100%;
-    margin-left: 0 !important;
   }
 
   .data-table thead { display: none; }

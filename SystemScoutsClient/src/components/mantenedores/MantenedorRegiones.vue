@@ -8,17 +8,12 @@
     </div>
 
     <Teleport to="#search-container">
-      <div class="search-box">
-        <input 
-          type="text" 
-          class="search-input-new" 
+      <div class="search-group">
+        <SearchBar 
           v-model="tempSearch" 
-          placeholder="Buscar Región..."
-          @keyup.enter="ejecutarBusqueda"
-        >
-        <button class="search-btn-new" @click="ejecutarBusqueda" title="Buscar">
-          <AppIcons name="search" :size="16" />
-        </button>
+          placeholder="Buscar Región..." 
+          @search="ejecutarBusqueda" 
+        />
       </div>
     </Teleport>
 
@@ -137,6 +132,8 @@ import * as mantenedoresService from '@/services/mantenedoresService'
 import BaseButton from '@/components/BaseButton.vue'
 import AppIcons from '@/components/icons/AppIcons.vue'
 import ModernMainScrollbar from '@/components/ModernMainScrollbar.vue'
+import SearchBar from '@/components/common/SearchBar.vue'
+
 
 const emit = defineEmits(['show-message', 'confirm-action'])
 defineExpose({ abrirModalCrear })
@@ -248,80 +245,11 @@ onMounted(() => { cargarDatos() })
 }
 .mantenedor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #3949ab; }
 .mantenedor-header h2 { color: #1a237e; font-size: 1.5rem; display: flex; align-items: center; gap: 10px; margin: 0; }
-/* Nueva Caja de Búsqueda Integrada */
-.search-box {
+.search-group {
   display: flex;
+  gap: 12px;
   align-items: center;
-  background: white;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  padding: 0 4px 0 12px;
-  height: 40px;
   width: 100%;
-  transition: all 0.2s;
-}
-
-.search-box:focus-within {
-  border-color: #1a237e;
-  box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
-}
-
-.search-input-new {
-  flex: 1;
-  border: none !important;
-  outline: none !important;
-  padding: 8px 0 !important;
-  font-size: 0.95rem !important;
-  color: #111827 !important;
-  background: transparent !important;
-}
-
-.search-btn-new {
-  background: transparent !important;
-  border: none !important;
-  color: #6b7280;
-  padding: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: color 0.2s;
-  height: 32px;
-  width: 32px;
-  margin-right: 4px;
-}
-
-.search-btn-new:hover {
-  color: #1a237e;
-}
-
-.search-btn-new :deep(svg) {
-  margin-right: 0 !important;
-}
-
-.search-button {
-  background-color: #1a237e !important;
-  height: 40px !important;
-}
-
-.search-button :deep(svg) {
-  margin-right: 0 !important;
-}
-
-.search-input {
-  flex: 1;
-  padding: 8px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 0.95rem;
-  transition: all 0.2s;
-  height: 40px;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: #1a237e;
-  box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
 }
 .table-container { flex: 1; overflow: hidden; border: 1px solid #eee; border-radius: 8px; }
 .data-table { width: 100%; border-collapse: collapse; }
@@ -332,7 +260,18 @@ onMounted(() => { cargarDatos() })
 .status-inactive { background-color: #ffebee; color: #c62828; }
 .actions-cell { text-align: center; }
 .action-buttons { display: flex; justify-content: center; gap: 8px; }
-.action-btn { background: none; border: none; cursor: pointer; padding: 6px; border-radius: 4px; transition: background 0.2s; color: #555; }
+.action-btn { 
+  background: none; 
+  border: none; 
+  cursor: pointer; 
+  padding: 6px; 
+  border-radius: 4px; 
+  transition: background 0.2s; 
+  color: #555; 
+  display: flex; 
+  justify-content: center; 
+  align-items: center; 
+}
 .action-btn:hover { background-color: #f0f0f0; }
 .btn-view:hover { color: #1976d2; background-color: #e3f2fd; }
 .btn-edit:hover { color: #f57c00; background-color: #fff3e0; }
@@ -360,8 +299,11 @@ onMounted(() => { cargarDatos() })
 
 @media (max-width: 768px) {
   .mantenedor-header h2 { font-size: 1.25rem; }
-  .search-bar { flex-direction: column; align-items: stretch; }
-  .search-input { max-width: 100%; }
+  .search-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
 
   .data-table thead { display: none; }
   .data-table, .data-table tbody, .data-table tr, .data-table td { display: block; width: 100%; }

@@ -25,6 +25,7 @@ a,
 }
 
 @media (min-width: 1024px) {
+
   /* On wide screens allow internal components to use grid, but keep #app full-bleed */
   #app {
     display: block;
@@ -34,7 +35,10 @@ a,
 /* no sidebar layout in this simplified app */
 
 /* Force a light background to avoid dark margins from system dark mode */
-html, body, #app, .app-root {
+html,
+body,
+#app,
+.app-root {
   background: #ffffff !important;
   /* Ensure text remains dark when we force a light background (prevents OS dark-mode vars from making text light) */
   color: #111111 !important;
@@ -46,18 +50,23 @@ html, body, #app, .app-root {
 
 /* Internet Explorer and legacy Edge */
 * {
-  -ms-overflow-style: none; /* hide scrollbar */
+  -ms-overflow-style: none;
+  /* hide scrollbar */
 }
 
 /* Firefox */
 * {
-  scrollbar-width: none; /* hide scrollbar */
+  scrollbar-width: none;
+  /* hide scrollbar */
 }
 
+/* WebKit (Chrome, Edge, Safari) */
 /* WebKit (Chrome, Edge, Safari) */
 ::-webkit-scrollbar {
   width: 0px;
   height: 0px;
+  display: none;
+  /* Safari and Chrome */
 }
 
 /* Keep corner transparent */
@@ -69,9 +78,9 @@ html, body, #app, .app-root {
 .show-thin-scrollbar *::-webkit-scrollbar {
   width: 6px;
   height: 6px;
+  display: block;
 }
+
 .show-thin-scrollbar * {
   scrollbar-width: thin;
 }
-
-

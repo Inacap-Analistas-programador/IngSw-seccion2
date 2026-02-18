@@ -273,7 +273,6 @@ const customIconSvg = computed(() => customIconsMap[props.name] || '')
 svg {
   display: inline-block;
   vertical-align: middle;
-  margin-right: 6px;
 }
 
 .svg-wrapper :deep(svg) {
