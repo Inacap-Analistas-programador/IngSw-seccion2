@@ -486,3 +486,67 @@ class PersonaVehiculoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Persona_Vehiculo
         fields = '__all__'
+
+class PersonaCorreoSerializer(serializers.ModelSerializer):
+    """
+    Serializer optimizado para la vista de Correos. 
+    Retorna solo los campos esenciales y aplana la relación con Persona_Curso.
+    """
+    # Campos base de Persona
+    id = serializers.IntegerField(source='per_id')
+    nombre = serializers.CharField(source='per_nombres')
+    apellidoPaterno = serializers.CharField(source='per_apelpta')
+    apellidoMaterno = serializers.CharField(source='per_apelmat', required=False)
+    email = serializers.EmailField(source='per_mail')
+    vigente = serializers.BooleanField(source='per_vigente')
+    
+    # Campos aplanados de Persona_Curso (inyectados vía prefetched query)
+    pec_id = serializers.SerializerMethodField()
+    pec_envio_correo_qr = serializers.SerializerMethodField()
+    curso = serializers.SerializerMethodField()
+    rol = serializers.SerializerMethodField()
+    pap_estado = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Persona
+        fields = (
+            'id', 'nombre', 'apellidoPaterno', 'apellidoMaterno', 'email', 'vigente',
+            'pec_id', 'pec_envio_correo_qr', 'curso', 'rol', 'pap_estado'
+        )
+
+    def get_pec_id(self, obj):
+        pc = getattr(obj, '_pec_cache', None)
+        if not pc:
+            # Priorizar registro donde ya se envió el correo, luego por ID descendente
+            pc = obj.persona_curso_set.order_by('-pec_envio_correo_qr', '-pec_id').first()
+            obj._pec_cache = pc
+        return pc.pec_id if pc else None
+
+    def get_pec_envio_correo_qr(self, obj):
+        pc = getattr(obj, '_pec_cache', None)
+        if not pc:
+            pc = obj.persona_curso_set.order_by('-pec_envio_correo_qr', '-pec_id').first()
+            obj._pec_cache = pc
+        return pc.pec_envio_correo_qr if pc else False
+
+    def get_curso(self, obj):
+        pc = getattr(obj, '_pec_cache', None)
+        if not pc:
+            pc = obj.persona_curso_set.order_by('-pec_envio_correo_qr', '-pec_id').first()
+            obj._pec_cache = pc
+        if pc and pc.cus_id and pc.cus_id.cur_id:
+            return pc.cus_id.cur_id.cur_descripcion
+        return "Sin curso"
+
+    def get_rol(self, obj):
+        pc = getattr(obj, '_pec_cache', None)
+        if not pc:
+            pc = obj.persona_curso_set.order_by('-pec_envio_correo_qr', '-pec_id').first()
+            obj._pec_cache = pc
+        return pc.rol_id.rol_descripcion if pc and pc.rol_id else "Participante"
+
+    def get_pap_estado(self, obj):
+        # Pago_Persona.pap_estado (1=Pagado, etc)
+        # Esto es pesado si no se anota. Por simplicidad en esta fase, 
+        # intentaremos buscarlo o retornaremos null para que el front use su default.
+        return getattr(obj, '_pap_estado_cache', None)

@@ -358,7 +358,8 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-  padding-bottom: 15px;
+  /* Updated padding as requested */
+  padding: 16px 0px;
   border-bottom: 2px solid #3949ab;
 }
 

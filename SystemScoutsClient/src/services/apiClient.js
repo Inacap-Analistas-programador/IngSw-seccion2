@@ -19,12 +19,12 @@ function getCookie(name) {
 function getAuthHeaders() {
   // 1. Intentar obtener de cookies (preferido para producción)
   let token = getCookie('access_token') || getCookie('token') || getCookie('accessToken')
-  
+
   // 2. Fallback a localStorage solo para desarrollo local
   if (!token && typeof localStorage !== 'undefined') {
     token = localStorage.getItem('token') || localStorage.getItem('accessToken')
   }
-  
+
   if (!token) return {}
   // Adjust prefix if your backend expects a different scheme
   return { Authorization: `Bearer ${token}` }
@@ -34,7 +34,7 @@ function getAuthHeaders() {
 let refreshingPromise = null
 async function refreshAccessToken() {
   if (refreshingPromise) return refreshingPromise
-  
+
   // Intentar obtener refresh token de cookie primero, luego localStorage
   let refresh = getCookie('refresh_token') || getCookie('refreshToken')
   if (!refresh && typeof localStorage !== 'undefined') {
@@ -54,12 +54,12 @@ async function refreshAccessToken() {
       let data
       try { data = JSON.parse(text) } catch { data = null }
       if (!res.ok || !data?.access) throw new Error('refresh_failed')
-      
+
       // El backend debería setear cookies httpOnly, pero guardamos en localStorage como fallback
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem('accessToken', data.access)
         localStorage.setItem('token', data.access)
-          }
+      }
       return true
     } catch {
       // Limpiar localStorage si existe (las cookies httpOnly se limpian desde el backend)
@@ -79,8 +79,23 @@ async function refreshAccessToken() {
 
 export async function request(path, options = {}) {
   const normPath = String(path || '').replace(/^\//, '')
-  const needsSlash = !/\?(.*)$/.test(normPath) && !normPath.endsWith('/')
-  const url = `${API_BASE}/${normPath}${needsSlash ? '/' : ''}`
+  // If normPath already contains a slash before '?', preserve it.
+  // The previous logic `!/\?(.*)$/.test(normPath)` returned false if params existed, 
+  // preventing the slash addition even if we wanted it.
+  // New logic: If it ends with '/' OR contains '/?', don't add another.
+  // But simpler: just trust the input if it has params. 
+  // Actually, we want to force slash if it's missing before '?' for DRF.
+
+  // DRF requires: /resource/?params not /resource?params
+  // Let's check if we have params and NO slash before them.
+  let finalPath = normPath
+  if (finalPath.includes('?') && !finalPath.includes('/?')) {
+    finalPath = finalPath.replace('?', '/?')
+  } else if (!finalPath.includes('?') && !finalPath.endsWith('/')) {
+    finalPath = `${finalPath}/`
+  }
+
+  const url = `${API_BASE}/${finalPath}`
 
   const isGet = !options.method || options.method.toUpperCase() === 'GET'
   const headers = { ...getAuthHeaders(), ...(options.headers || {}) }
@@ -90,8 +105,8 @@ export async function request(path, options = {}) {
 
   // Usar same-origin para desarrollo con localStorage (funciona sin configurar cookies en backend)
   // Cambiar a 'include' cuando el backend esté configurado para setear cookies
-  const fetchOptions = { 
-    ...options, 
+  const fetchOptions = {
+    ...options,
     headers,
     credentials: 'same-origin'
   }
@@ -99,7 +114,7 @@ export async function request(path, options = {}) {
   let res = await fetch(url, fetchOptions)
   if (!res.ok && res.status === 401) {
     // intentar refresh si el token expiró
-        // Usar un clon para leer el cuerpo sin consumir el original
+    // Usar un clon para leer el cuerpo sin consumir el original
     let bodyText = ''
     try { bodyText = await res.clone().text() } catch { /* ignore */ }
     if (/token_not_valid|Token is expired|expired/i.test(bodyText)) {

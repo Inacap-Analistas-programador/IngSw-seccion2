@@ -65,6 +65,40 @@ class PersonaViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({'error': str(e)}, status=500)
     
+    @action(detail=False, methods=['get'])
+    def para_correos(self, request):
+        """
+        Endpoint optimizado que retorna solo lo mínimo para la vista de Correos.
+        Requiere filtrar por curso para evitar ambigüedad en Persona_Curso.
+        """
+        curso_desc = request.query_params.get('curso_descripcion')
+        curso_id = request.query_params.get('curso_id')
+        
+        # Base queryset para Persona_Curso
+        pc_qs = Persona_Curso.objects.select_related('cus_id__cur_id', 'rol_id').only(
+            'pec_id', 'per_id', 'cus_id', 'rol_id', 'pec_envio_correo_qr'
+        ).order_by('-pec_envio_correo_qr', '-pec_id')
+        
+        # Prefetch de Persona_Curso optimizado
+        # Note: related_name is 'persona_curso_set' (default), but related_query_name is 'persona_curso' (model name)
+        queryset = Persona.objects.prefetch_related(
+            Prefetch('persona_curso_set', queryset=pc_qs)
+        )
+
+        # Standard filtering (uses PersonaFilter which uses 'persona_curso')
+        queryset = self.filter_queryset(queryset).distinct().order_by('per_id')
+        
+        # Si se pide todo o un page_size grande, desactivar paginación localmente
+        page_size = request.query_params.get('page_size')
+        if page_size and int(page_size) >= 1000:
+            pagination = self.paginate_queryset(queryset)
+            if pagination is not None:
+                serializer = MU_S.PersonaCorreoSerializer(pagination, many=True)
+                return self.get_paginated_response(serializer.data)
+        
+        serializer = MU_S.PersonaCorreoSerializer(queryset, many=True)
+        return Response(serializer.data)
+    
     def get_queryset(self):
         """
         Optimizar queries con select_related y prefetch_related

@@ -137,7 +137,7 @@ CORS_ALLOW_HEADERS = [
 # PERMITIR EL USO DE CREDENCIALES Y COOKIES 
 CORS_ALLOW_CREDENTIALS = True
 
-#CACHE DE PREFLIGHT
+# CACHE DE PREFLIGHT (24 horas)
 CORS_PREFLIGHT_MAX_AGE = 86400
 
 # Enable automatic slash append to fix 404s when client omits trailing slash

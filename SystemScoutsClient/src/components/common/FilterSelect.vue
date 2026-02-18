@@ -88,6 +88,7 @@ onUnmounted(() => {
   position: relative;
   min-width: 220px;
   height: 40px;
+  font-family: 'Inter', Arial, sans-serif;
 }
 
 .custom-select-trigger {

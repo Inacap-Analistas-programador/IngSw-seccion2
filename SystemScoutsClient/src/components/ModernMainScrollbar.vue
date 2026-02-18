@@ -7,12 +7,21 @@
 <script setup>
 import { onMounted, onBeforeUnmount, ref } from 'vue'
 
+const props = defineProps({
+  isGlobal: {
+    type: Boolean,
+    default: false
+  }
+})
+
 const wrapper = ref(null)
 const added = ref([])
 
 function addClass() {
-  const el = document.querySelector('.main-content')
-  if (el) el.classList.add('modern-scrollbar')
+  if (props.isGlobal) {
+    const el = document.querySelector('.main-content')
+    if (el) el.classList.add('modern-scrollbar')
+  }
   // añadir la clase al wrapper local para estilos en contenedores internos
   if (wrapper.value) wrapper.value.classList.add('modern-scrollbar')
 
@@ -24,8 +33,10 @@ function addClass() {
   }
 }
 function removeClass() {
-  const el = document.querySelector('.main-content')
-  if (el) el.classList.remove('modern-scrollbar')
+  if (props.isGlobal) {
+    const el = document.querySelector('.main-content')
+    if (el) el.classList.remove('modern-scrollbar')
+  }
   if (wrapper.value) wrapper.value.classList.remove('modern-scrollbar')
   // remover clases añadidas a elementos internos
   if (added.value && added.value.length) {
@@ -116,6 +127,7 @@ onBeforeUnmount(removeClass)
 .modern-scrollbar-wrapper.modern-scrollbar,
 .modal-body-content.modern-scrollbar,
 .modal-body-scroll.modern-scrollbar {
-  overflow-y: auto;
+  overflow: auto; 
+  touch-action: pan-x pan-y; /* Improve touch gesture handling */
 }
 </style>

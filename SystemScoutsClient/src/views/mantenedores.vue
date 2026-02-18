@@ -451,26 +451,29 @@ export default {
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 450px) {
   .crud-cursos-container { 
     padding: 16px;
-    height: auto;
-    overflow-y: auto;
+    height: auto !important;
+    overflow: visible !important;
   }
 }
 
 .main-content {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   overflow: hidden;
   height: 100%;
-  position: relative; /* Ensure child absolute positioning works if needed */
+  position: relative;
+  padding: 16px 0px; /* Requested padding */
 }
 
 @media (max-width: 768px) {
   .main-content {
-    overflow: auto; /* Permitir scroll en móvil */
-    height: auto;   /* Permitir que crezca con el contenido */
-    display: block; /* Asegurar comportamiento de bloque normal si es necesario */
+    overflow: visible !important; /* Permitir scroll natural en el body/contenedor padre en móvil */
+    height: auto !important;   /* Permitir que crezca con el contenido (tarjetas) */
+    display: block; 
   }
 }
 

@@ -7,6 +7,7 @@ const makeCrud = base => ({
   update: (id, data) => request(`${base}/${id}/`, { method: 'PUT', body: JSON.stringify(data) }),
   partialUpdate: (id, data) => request(`${base}/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
   remove: (id) => request(`${base}/${id}/`, { method: 'DELETE' }),
+  paraCorreos: (params) => request(`${base}/para_correos/${params ? `?${new URLSearchParams(params)}` : ''}`),
 })
 
 // Exportaciones CON prefijo 'personas/' (para componentes actuales como Gestionpersonas.vue)
