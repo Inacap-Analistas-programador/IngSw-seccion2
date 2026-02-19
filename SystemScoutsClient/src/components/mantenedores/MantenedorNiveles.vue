@@ -1,7 +1,7 @@
 <template>
   <div class="mantenedor-section">
     <div class="mantenedor-header">
-      <h2><AppIcons name="bar-chart" :size="24" /> Gestión de Niveles</h2>
+      <h2>Gestión de Niveles</h2>
       <!-- <button class="btn-primary" @click="abrirModalCrear"><AppIcons name="plus" :size="18" /> Nuevo Nivel</button> -->
     </div>
     <Teleport to="#search-container">

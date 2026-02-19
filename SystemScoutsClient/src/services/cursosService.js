@@ -14,9 +14,10 @@ const makeCrud = base => ({
   remove: (id) => request(`${base}/${id}/`, { method: 'DELETE' }),
 })
 
-// NOTE: Backend mounts course routes under /api/cursos/
-// Base paths should NOT have trailing slash; makeCrud adds '/' between base and ID
-export const cursos = makeCrud('cursos/cursos')
+export const cursos = {
+  ...makeCrud('cursos/cursos'),
+  get_acreditacion: () => request('cursos/cursos/get_cursos_acreditacion/')
+}
 export const cuotas = makeCrud('cursos/cuotas')
 export const fechas = makeCrud('cursos/fechas')
 export const alimentaciones = makeCrud('cursos/alimentaciones')

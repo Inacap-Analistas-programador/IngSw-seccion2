@@ -1,7 +1,7 @@
 <template>
   <div class="mantenedor-section">
     <div class="mantenedor-header">
-      <h2><AppIcons name="book" :size="24" /> Gestión de Tipos de Curso</h2>
+      <h2>Gestión de Tipos de Curso</h2>
       <!-- <button class="btn-primary" @click="abrirModalCrear">
         <AppIcons name="plus" :size="18" /> Nuevo Tipo Curso
       </button> -->

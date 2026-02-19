@@ -1,40 +1,55 @@
 <template>
   <div class="manual-acreditation">
-    <!-- Título -->
-    <div class="acreditation-header">
-  <h1>Acreditación Manual</h1>
-    </div>
+    <!-- Título con PageHeader -->
+    <PageHeader 
+      title="Acreditación Manual" 
+      subtitle="Busca participantes por nombre o RUT para gestionar su acreditación y pagos."
+    />
 
-    <!-- Barra de búsqueda -->
+    <!-- Filtros y Búsqueda -->
     <div class="search-section">
-      <div class="search-box">
-        <input 
-          v-model="searchTerm"
-          type="text" 
-          placeholder="Buscar por RUT o nombre completo..."
-          class="search-input"
-          @keyup.enter="handleSearch"
-          aria-label="Buscar por RUT o nombre completo"
+      
+      <div class="filters-container">
+        <!-- Filtro Curso -->
+        <FilterSelect
+          v-model="filters.curso"
+          :options="cursosOpts"
+          label="Curso"
+          placeholder="Todos los cursos"
+          class="filter-item"
         />
-        <BaseButton 
-          @click="handleSearch"
-          variant="primary"
-          size="md"
-        >
-          <template #default>
-            <AppIcons name="search" :size="16" style="margin-right: 8px;" />
-            Buscar
-          </template>
-        </BaseButton>
-        <div v-if="searchNotFound" class="search-error">{{ searchErrorMessage }}</div>
-        <BaseButton
-          v-if="selectedParticipant"
-          @click="acreditarParticipante"
-          variant="primary"
-          size="md"
-        >
-          <AppIcons name="check" :size="16" style="margin-right: 8px;" /> Acreditar
-        </BaseButton>
+
+        <!-- Barra de Búsqueda Componente -->
+        <SearchBar 
+          v-model="searchTerm" 
+          placeholder="Buscar por RUT o nombre completo..." 
+          @search="handleSearch"
+          class="search-bar-item"
+        />
+
+        <!-- Botones de Acción (En línea) -->
+        <div class="header-actions">
+           <BaseButton
+            :disabled="!canAcredit"
+            @click="acreditarParticipante"
+            variant="primary"
+            class="header-icon-btn"
+            title="Acreditar"
+          >
+            <AppIcons name="check" :size="20" />
+          </BaseButton>
+
+          <BaseButton
+            :disabled="!canPay"
+            @click="handlePagar"
+            variant="secondary"
+            class="header-icon-btn"
+            title="Pagar"
+          >
+            <AppIcons name="credit-card" :size="20" />
+          </BaseButton>
+        </div>
+
       </div>
     </div>
 
@@ -46,13 +61,18 @@
       </div>
     </div>
 
-    <!-- Alertas -->
-    <NotificationToast v-if="acreditationSuccess" :message="acreditationSuccessMessage" @close="acreditationSuccess = false" />
-    <NotificationToast v-if="paymentSuccess" :message="paymentSuccessMessage" @close="paymentSuccess = false" />
+    <!-- Alertas (Unificadas) -->
+    <NotificationToast 
+      v-if="showToast" 
+      :message="toastMessage" 
+      :type="toastType" 
+      :icon="toastIcon" 
+      @close="showToast = false" 
+    />
 
     <!-- Información del participante -->
-    <div v-if="selectedParticipant" class="participant-info">
-      <div class="status-header">
+    <div class="participant-info">
+      <div class="mantenedor-header">
         <h2>Información del Participante</h2>
       </div>
       
@@ -60,29 +80,29 @@
           <div class="info-section">
           <h3>Datos Personales</h3>
           <div class="info-item">
-            <strong>Nombre:</strong> {{ selectedParticipant.name }}
+            <strong>Nombre:</strong> {{ selectedParticipant?.name || '---' }}
           </div>
           <div class="info-item">
-            <strong>Apodo:</strong> {{ selectedParticipant.nickname || 'No especificado' }}
+            <strong>Apodo:</strong> {{ selectedParticipant?.nickname || '---' }}
           </div>
           <div class="info-item">
-            <strong>RUT:</strong> {{ selectedParticipant.rut }}
+            <strong>RUT:</strong> {{ selectedParticipant?.rut || '---' }}
           </div>
           <div class="info-item">
-            <strong>Curso:</strong> {{ selectedParticipant.currentCourse }}
+            <strong>Curso:</strong> {{ selectedParticipant?.currentCourse || '---' }}
           </div>
         </div>
 
         <div class="info-section">
           <h3>Información Scout</h3>
           <div class="info-item">
-            <strong>Rama:</strong> {{ selectedParticipant.branchName || 'No especificada' }}
+            <strong>Rama:</strong> {{ selectedParticipant?.branchName || '---' }}
           </div>
           <div class="info-item">
-            <strong>Vehículo:</strong> {{ selectedParticipant.vehicle ? 'Sí' : 'No' }}
+            <strong>Vehículo:</strong> {{ selectedParticipant?.vehicle ? 'Sí' : 'No' }}
           </div>
           <div class="info-item">
-            <strong>Alimentación:</strong> {{ selectedParticipant.dietType || 'No especificado' }}
+            <strong>Alimentación:</strong> {{ selectedParticipant?.dietType || '---' }}
           </div>
         </div>
 
@@ -91,7 +111,7 @@
           <div class="info-item">
             <strong>Estado:</strong> 
             <span :class="getStatusClass">
-              {{ selectedParticipant.paymentConfirmed ? 'Registrado' : 'Pago Pendiente' }}
+              {{ selectedParticipant ? (selectedParticipant.paymentConfirmed ? 'Registrado' : 'Pago Pendiente') : '---' }}
             </span>
           </div>
           
@@ -103,45 +123,8 @@
       </div>
 
       <!-- Acciones -->
-      <div class="action-buttons">
-        <!-- Botón principal de acreditar -->
-        <BaseButton
-          v-if="canAcredit"
-          @click="acreditarParticipante"
-          variant="primary"
-          size="lg"
-          class="btn-acreditar"
-        >
-          <AppIcons name="check" :size="18" /> Acreditar Participante
-        </BaseButton>
-
-        <!-- Botón de pagar si no ha pagado -->
-        <BaseButton
-          v-else-if="!selectedParticipant.paymentConfirmed"
-          @click="handlePagar"
-          variant="secondary"
-          size="lg"
-          class="btn-pagar"
-        >
-          <AppIcons name="credit-card" :size="18" /> Pagar
-        </BaseButton>
-
-        <!-- Mensaje si ya está acreditado -->
-        <div v-else-if="selectedParticipant.acreditationStatus === 'Acreditado'" class="already-acredited">
-          <AppIcons name="check" :size="18" /> <span>Usuario ya acreditado</span>
-        </div>
-
-        <!-- QR solo en móvil -->
-        <BaseButton
-          v-if="isMobile && selectedParticipant.acreditationStatus === 'Acreditado'"
-          @click="showQR"
-          variant="secondary"
-          size="md"
-          class="btn-qr"
-        >
-          <AppIcons name="qrcode" :size="16" /> Ver QR
-        </BaseButton>
-      </div>
+      <!-- Acciones (Removidas) -->
+       <div class="action-buttons" style="display: none;"></div>
     </div>
 
   </div>
@@ -151,71 +134,45 @@
 import BaseButton from '@/components/BaseButton.vue'
 import NotificationToast from '@/components/NotificationToast.vue'
 import AppIcons from '@/components/icons/AppIcons.vue'
+
+import PageHeader from '@/components/common/PageHeader.vue'
+import FilterSelect from '@/components/common/FilterSelect.vue'
+import SearchBar from '@/components/common/SearchBar.vue'
 import authViewsService from '@/services/auth_viewsService'
-// Usamos `auth_viewsService` para conectar con los endpoints de acreditación
+import { cursos as cursosService } from '@/services/cursosService'
 
 export default {
   name: 'ManualAcreditation',
   components: {
     BaseButton,
     NotificationToast,
-    AppIcons
+    AppIcons,
+    PageHeader,
+    FilterSelect,
+    SearchBar
   },
   data() {
     return {
       searchTerm: '',
       selectedParticipant: null,
-      // Datos de ejemplo locales para mostrar la pantalla sin consumir la API
-      participants: [
-        { 
-          per_id: 1, 
-          name: 'Juan Pérez González', 
-          nickname: 'Juanito',
-          rut: '12.345.678-9', 
-          currentCourse: 'Formación Inicial', 
-          branchName: 'Lobatos',
-          vehicle: true,
-          dietType: 'Vegetariano',
-          paymentStatus: 'Confirmado', 
-          paymentConfirmed: true, 
-          accreditationStatus: 'Pendiente' 
-        },
-        { 
-          per_id: 2, 
-          name: 'María García Silva', 
-          nickname: 'Mary',
-          rut: '11.222.333-4', 
-          currentCourse: 'Primeros Auxilios', 
-          branchName: 'Pioneros',
-          vehicle: false,
-          dietType: 'Sin restricciones',
-          paymentStatus: 'Pendiente', 
-          paymentConfirmed: false, 
-          accreditationStatus: 'Pendiente' 
-        },
-        { 
-          per_id: 3, 
-          name: 'Carlos Rodríguez', 
-          nickname: 'Carlitos',
-          rut: '10.111.222-3', 
-          currentCourse: 'Liderazgo', 
-          branchName: 'Rovers',
-          vehicle: true,
-          dietType: 'Sin gluten',
-          paymentStatus: 'Confirmado', 
-          paymentConfirmed: true, 
-          accreditationStatus: 'Acreditado' 
-        }
-      ],
-      // UI flags for search behavior
+      // Datos de ejemplo locales
+      participants: [ /* ... mantenemos datos si se usan para demos ... */ ],
+      
+      // Flags UI
       searchNotFound: false,
       searchErrorMessage: '',
       cargando: false,
-      acreditationSuccess: false,
       isMobile: window.innerWidth <= 768,
-      paymentSuccess: false,
-      paymentSuccessMessage: ''
-      ,acreditationSuccessMessage: ''
+
+      // Sistema de Notificaciones Unificado
+      showToast: false,
+      toastMessage: '',
+      toastType: 'info', // info, success, error
+      toastIcon: '',
+
+      // Filtros
+      filters: { curso: null },
+      cursosOpts: []
     }
   },
   computed: {
@@ -223,6 +180,12 @@ export default {
       return this.selectedParticipant && 
              this.selectedParticipant.paymentStatus === 'Confirmado' &&
              this.selectedParticipant.acreditationStatus === 'Pendiente';
+    },
+
+    canPay() {
+      // Habilitado si hay participante seleccionado y NO ha confirmado pago
+      // Ojo: si ya pagó, se deshabilita.
+      return this.selectedParticipant && !this.selectedParticipant.paymentConfirmed;
     },
     
     statusMessage() {
@@ -250,24 +213,67 @@ export default {
     },
 
     getStatusClass() {
+      if (!this.selectedParticipant) return ''
       return this.selectedParticipant?.paymentConfirmed 
         ? 'status-confirmado' 
         : 'status-pendiente';
     }
   },
   mounted() {
-    // Detectar si es móvil para el QR
     window.addEventListener('resize', this.checkMobile);
+    this.loadOptions();
   },
   beforeUnmount() {
     window.removeEventListener('resize', this.checkMobile);
   },
   methods: {
+    async loadOptions() {
+      try {
+        // Usar endpoint especializado que filtra por estado y fecha en el backend
+        const res = await cursosService.get_acreditacion()
+        
+        // La respuesta ya es un array de objetos limpios o se debe normalizar si viene paginado?
+        // El endpoint devuelve Response(data) que es list, no paginado por defecto en @action salvo que se aplique.
+        // StandardResultsSetPagination se aplica a ModelViewSet. @action por defecto usa la paginación del ViewSet si retorna queryset, pero aquí retorno Response(list).
+        // Cuando retorno Response(data), DRF no pagina automáticamente la data raw.
+        
+        let data = res
+        if (res && res.results) data = res.results // Fallback por si acaso
+        if (!Array.isArray(data)) data = []
+
+        this.cursosOpts = data.map(c => ({ 
+          id: c.cur_id, 
+          descripcion: c.cur_descripcion 
+        }))
+
+      } catch (e) {
+        console.warn('Error cargando opciones de acreditación:', e)
+        this.notify('Error al cargar cursos disponibles', 'error', 'alert-circle')
+      }
+    },
+
     checkMobile() {
       this.isMobile = window.innerWidth <= 768;
     },
 
+    notify(msg, type = 'info', icon = '') {
+      this.toastMessage = msg
+      this.toastType = type
+      this.toastIcon = icon
+      this.showToast = true
+      setTimeout(() => { this.showToast = false }, 4000)
+    },
+
     async handleSearch() {
+      // 1. Validar selección de curso
+      const cursoId = this.filters.curso
+      if (!cursoId) {
+        this.notify('Debe seleccionar un curso antes de buscar.', 'error', 'alert-circle')
+        this.searchErrorMessage = 'Seleccione un curso.'
+        this.searchNotFound = true
+        return
+      }
+
       const term = this.searchTerm.trim()
       // Búsqueda manual: no ejecutamos automáticamente, solo al presionar el botón o Enter
       if (!term) { this.selectedParticipant = null; this.searchNotFound = false; this.searchErrorMessage = ''; return }
@@ -276,44 +282,39 @@ export default {
       this.searchNotFound = false
       this.searchErrorMessage = ''
 
-      // Primero intentar por API remota (si el backend responde). Usamos el endpoint `personas/personas`.
+      // Primero intentar por API remota optimizada
       this.cargando = true
       try {
-        const res = await authViewsService.acreditacion_manual_search(term)
+        // Enviar término y el ID del curso seleccionado
+        const res = await authViewsService.acreditacion_manual_search(term, cursoId)
 
-        // Normalizar varias formas de respuesta posibles
+        // Normalizar respuesta: endpoint devuelve una lista filtrada
         let person = null
-        if (!res) {
-          person = null
-        } else if (Array.isArray(res) && res.length) {
-          person = res[0]
-        } else if (res.results && Array.isArray(res.results) && res.results.length) {
-          person = res.results[0]
-        } else if (res.persona) {
-          person = res.persona
-        } else if (res.data && Array.isArray(res.data) && res.data.length) {
-          person = res.data[0]
-        } else if (typeof res === 'object') {
-          person = res
+        if (Array.isArray(res) && res.length) {
+          person = res[0] // Tomar el primero si hay coincidencias (el backend limita a 20)
+        } else if (res && res.per_id) {
+           person = res
         }
 
         if (person) {
-          // Mapear campos de la API al formato local del componente
-          const p = {
-            per_id: person.per_id || person.PER_ID || person.id || null,
-            name: person.per_nombres || person.PER_NOMBRES || person.nombre || person.name || person.full_name || person.NOMBRE || '',
-            nickname: person.per_apodo || person.PER_APODO || person.apodo || person.nickname || '',
-            rut: person.per_run || person.PER_RUN || person.rut || person.run || '',
-            dv: person.per_dv || person.PER_DV || person.dv || '',
-            currentCourse: person.per_curso || person.curso || person.currentCourse || '',
-            branchName: person.per_rama || person.rama || person.branchName || '',
-            vehicle: person.per_tiene_vehiculo || (person.per_vehiculo === 1) || (person.PER_VEHICULO === 1) || person.vehicle || false,
-            dietType: person.per_alimentacion || person.PER_ALIMENTACION || person.dietType || person.alimentacion || '',
-            paymentConfirmed: person.per_pago_confirmado || person.paymentConfirmed || person.PAGO_CONFIRMADO || person.payment_confirmed || false,
-            paymentStatus: person.payment_status || ((person.per_pago_confirmado || person.paymentConfirmed) ? 'Confirmado' : 'Pendiente'),
-            accreditationStatus: (person.per_acreditado === true) ? 'Acreditado' : (person.acreditado || person.accredited || person.accreditationStatus || 'Pendiente')
+          // El endpoint ya devuelve la estructura que necesitamos, mapeo directo
+          // pero aseguramos compatibilidad con el resto del componente
+          this.selectedParticipant = {
+            per_id: person.per_id,
+            name: person.name,
+            nickname: person.nickname,
+            rut: person.rut,
+            dv: person.rut.split('-')[1] || '',
+            currentCourse: person.currentCourse,
+            branchName: person.branchName,
+            vehicle: person.vehicle,
+            dietType: person.dietType,
+            paymentConfirmed: person.paymentConfirmed,
+            paymentStatus: person.paymentStatus,
+            acreditationStatus: person.acreditationStatus,
+            // Extra info que pueda servir
+            per_curso_id: person.per_curso_id
           }
-          this.selectedParticipant = Object.assign({}, p)
           this.searchNotFound = false
           this.searchErrorMessage = ''
           return
@@ -321,13 +322,15 @@ export default {
           // No encontrado
           this.selectedParticipant = null
           this.searchNotFound = true
-          this.searchErrorMessage = 'No se encontró la persona solicitada.'
+          this.notify('No se encontró la persona solicitada.', 'error', 'alert-circle')
           return
         }
       } catch (err) {
-        // Si falla la llamada, informar al usuario y no usar datos locales automáticamente
+        // Si falla la llamada, informar al usuario
         console.warn('API de acreditación no disponible:', err)
-        this.searchErrorMessage = 'Error al consultar el servidor. Intente nuevamente.'
+        const errorMessage = err.response?.data?.error || 'Error al consultar el servidor. Intente nuevamente.'
+        this.notify(errorMessage, 'error', 'alert-circle')
+        this.searchErrorMessage = errorMessage
         this.searchNotFound = true
         this.selectedParticipant = null
         return
@@ -363,18 +366,11 @@ export default {
         }
 
         const msg = `${this.selectedParticipant.name} acreditado correctamente`
-        this.acreditationSuccessMessage = msg
-        this.acreditationSuccess = true
-        setTimeout(() => {
-          this.acreditationSuccess = false
-          this.acreditationSuccessMessage = ''
-        }, 3500)
+        this.notify(msg, 'success', 'check')
+
       } catch (err) {
         console.error('Error acreditando participante:', err)
-        // Mostrar notificación de error reutilizando paymentSuccessMessage (simple)
-        this.paymentSuccessMessage = 'Error al acreditar. Intente nuevamente.'
-        this.paymentSuccess = true
-        setTimeout(() => { this.paymentSuccess = false; this.paymentSuccessMessage = '' }, 3500)
+        this.notify('Error al acreditar. Intente nuevamente.', 'error', 'alert-circle')
       }
     },
 
@@ -405,33 +401,62 @@ export default {
 }
 
 .manual-acreditation {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 24px;
+  font-family: 'Inter', Arial, sans-serif;
+  height: 100%;
+  overflow-y: auto; /* Enable scrolling */
+  box-sizing: border-box;
 }
 
-.acreditation-header {
-  text-align: center;
-  margin-bottom: 30px;
+@media (max-width: 768px) {
+  .manual-acreditation {
+    padding: 16px; /* Reduce padding on mobile */
+  }
 }
 
-.acreditation-header h1 {
-  color: var(--color-primary);
-  margin-bottom: 8px;
-}
+/* removed acreditation-header */
+
 
 .search-section {
-  margin-bottom: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.search-box {
+.filters-container {
   display: flex;
-  gap: 10px;
-  max-width: 800px;
-  margin: 0 auto;
   flex-wrap: wrap;
-  justify-content: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  align-items: flex-end;
+}
+
+.filter-item {
+  min-width: 200px;
+  max-width: 300px;
+}
+
+.search-bar-item {
+  flex: 1;
+  min-width: 300px;
+}
+
+.header-actions {
+  display: flex;
   align-items: center;
+  gap: 10px;
+  margin-bottom: 2px; /* Slight alignment adjustment if needed */
+}
+
+.search-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: center;
+  min-height: 20px;
 }
 
 .search-input {
@@ -451,22 +476,33 @@ export default {
 }
 
 .participant-info {
-  background: var(--color-background-soft);
-  padding: 24px;
+  padding: 32px 0px;
   border-radius: 12px;
   margin-bottom: 30px;
 }
 
-.status-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
+/* .status-header replaced by mantenedor-header */
+.mantenedor-header { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  margin-bottom: 20px; 
+  padding-bottom: 16px; 
+  border-bottom: 2px solid #3949ab; 
+}
+
+.mantenedor-header h2 { 
+  color: #1a237e; 
+  font-size: 1.5rem; 
+  display: flex; 
+  align-items: center; 
+  gap: 10px; 
+  margin: 0; 
 }
 
 .info-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 30px;
   margin-bottom: 24px;
 }
@@ -525,21 +561,14 @@ export default {
   align-items: center;
 }
 
-.btn-acreditar {
-  font-size: 18px;
-  font-weight: bold;
-  padding: 16px 32px;
-}
-
-.btn-pagar {
-  font-size: 16px;
-  font-weight: bold;
-  padding: 14px 28px;
-}
-
-.btn-qr {
-  font-size: 14px;
-  padding: 10px 20px;
+.header-icon-btn { 
+  height: 40px !important; 
+  width: 40px !important; 
+  padding: 0 !important; 
+  display: flex !important; 
+  align-items: center !important; 
+  justify-content: center !important; 
+  border-radius: 6px; 
 }
 
 .already-acredited {
@@ -600,13 +629,40 @@ export default {
 
 /* Responsive */
 @media (max-width: 768px) {
+  .manual-acreditation {
+    padding: 16px; 
+  }
+
   .info-grid {
     grid-template-columns: 1fr;
     gap: 20px;
   }
   
-  .search-box {
+  .filters-container {
     flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
   }
+
+  .filter-item, .search-bar-item {
+    min-width: 100%;
+    max-width: 100%;
+  }
+
+  .header-actions {
+    justify-content: center; /* Centered buttons on mobile */
+    width: 100%;
+    margin-top: 8px;
+  }
+}
+
+.header-icon-btn, .search-button {
+  height: 40px !important;
+  width: 40px !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 6px;
 }
 </style>

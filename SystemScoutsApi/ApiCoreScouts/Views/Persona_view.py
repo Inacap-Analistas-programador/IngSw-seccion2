@@ -10,8 +10,10 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.renderers import JSONRenderer
 from ..Filters.persona_filter import *
 from ..Models.persona_model import *
+from ..Models.pago_model import Pago_Persona
 from ..Permissions import PerfilPermission
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q, Value, CharField
+from django.db.models.functions import Concat
 
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 100
@@ -192,6 +194,115 @@ class PersonaViewSet(viewsets.ModelViewSet):
 
         except Exception as e:
             return Response({'error': str(e)}, status=500)
+
+    @action(detail=False, methods=['get'])
+    def search_acreditacion(self, request):
+        """
+        Endpoint optimizado para búsqueda en Acreditación Manual.
+        Retorna solo los datos necesarios para la UI de acreditación.
+        """
+        term = request.query_params.get('search', '').strip()
+        curso_id = request.query_params.get('curso_id')
+
+        if not term and not curso_id:
+            return Response([])
+
+        queryset = Persona.objects.all()
+
+        # 1. Filtro por término (Nombre o RUT)
+        if term:
+            # Anotamos el RUT completo para buscar por "12345678-9"
+            queryset = queryset.annotate(
+                full_rut=Concat('per_run', Value('-'), 'per_dv', output_field=CharField())
+            )
+            
+            # Separar términos para permitir búsqueda flexible (ej: "Juan Perez" o "Juan Gonzalez")
+            terms = term.split()
+            for t in terms:
+                queryset = queryset.filter(
+                    Q(per_nombres__icontains=t) |
+                    Q(per_apelpta__icontains=t) |
+                    Q(per_apelmat__icontains=t) |
+                    Q(per_run__icontains=t) |
+                    Q(full_rut__icontains=t) |  # Búsqueda por RUT completo (con guión)
+                    Q(per_apodo__icontains=t)
+                )
+
+        # 2. Filtro por curso específico (opcional)
+        if curso_id:
+            queryset = queryset.filter(
+                persona_curso__cus_id__cur_id=curso_id
+            )
+
+        # 3. Optimización de consultas (Prefetch)
+        # Nota: Persona_Vehiculo se relaciona con Persona_Curso (pec_id), no con Persona directamente.
+        queryset = queryset.select_related('esc_id', 'com_id').prefetch_related(
+            Prefetch(
+                'persona_curso_set',
+                queryset=Persona_Curso.objects.select_related('cus_id__cur_id', 'ali_id', 'rol_id')
+                                             .prefetch_related('persona_vehiculo_set') # Vehículos de esa inscripción
+                                             .order_by('-pec_id')
+            ),
+             # Optimizar pagos: traer solo los confirmados (1)
+            Prefetch(
+                'pago_persona_set',
+                queryset=Pago_Persona.objects.filter(pap_estado=1)
+            )
+        ).distinct().order_by('per_nombres', 'per_apelpta')[:20] # Limitar a 20 resultados para rapidez
+
+        data = []
+        for p in queryset:
+            # Lógica para determinar curso y estado
+            # Prioridad: Curso seleccionado (si hay filtro), o último curso inscrito
+            pc_list = list(p.persona_curso_set.all())
+            current_pc = None
+            
+            if curso_id:
+                # Buscar el específico
+                current_pc = next((pc for pc in pc_list if str(pc.cus_id.cur_id.cur_id) == str(curso_id)), None)
+            
+            if not current_pc and pc_list:
+                # Si no se filtrar por curso o no se encontró, usar el más reciente
+                current_pc = pc_list[0]
+
+            # Datos derivados
+            curso_nombre = current_pc.cus_id.cur_id.cur_descripcion if (current_pc and current_pc.cus_id and current_pc.cus_id.cur_id) else "Sin Curso"
+            rama_nombre = "" # Se podría sacar de Nivel si es crítico, por ahora vacío o simple
+            
+            # Pago confirmado
+            pago_list = list(p.pago_persona_set.all())
+            pago_confirmado = len(pago_list) > 0
+
+            # Acreditado (en el curso actual)
+            acreditado = current_pc.pec_acreditacion if current_pc else False
+            
+            # Vehículo: Revisar si tiene vehículo en la inscripción actual
+            # Ojo: la relación es Persona_Curso -> Persona_Vehiculo
+            tiene_vehiculo = False
+            if current_pc:
+                # persona_vehiculo_set es el related_name por defecto de fk en Persona_Vehiculo hacia Persona_Curso
+                tiene_vehiculo = current_pc.persona_vehiculo_set.exists()
+
+            # Alimentación
+            diet = current_pc.ali_id.ali_descripcion if (current_pc and current_pc.ali_id) else "Normal"
+            
+            # Construir objeto ligero
+            data.append({
+                'per_id': p.per_id,
+                'name': f"{p.per_nombres} {p.per_apelpta}",
+                'nickname': p.per_apodo or "",
+                'rut': f"{p.per_run}-{p.per_dv}" if p.per_run else "",
+                'currentCourse': curso_nombre,
+                'branchName': rama_nombre,
+                'vehicle': tiene_vehiculo,
+                'dietType': diet,
+                'paymentConfirmed': pago_confirmado,
+                'paymentStatus': 'Confirmado' if pago_confirmado else 'Pendiente',
+                'acreditationStatus': 'Acreditado' if acreditado else 'Pendiente',
+                'per_curso_id': current_pc.cus_id.cur_id.cur_id if (current_pc and current_pc.cus_id and current_pc.cus_id.cur_id) else None
+            })
+
+        return Response(data)
 
 class PersonaCursoViewSet(viewsets.ModelViewSet):
     serializer_class = MU_S.PersonaCursoSerializer

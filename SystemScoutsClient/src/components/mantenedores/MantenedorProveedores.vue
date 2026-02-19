@@ -1,7 +1,7 @@
 <template>
   <div class="mantenedor-section-expanded">
     <div class="mantenedor-header">
-      <h2>🏷️ Gestión de Proveedores</h2>
+      <h2>Gestión de Proveedores</h2>
       <!-- <BaseButton variant="primary" @click="abrirModalCrear">
         <AppIcons name="plus" :size="16" /> Nuevo Proveedor
       </BaseButton> -->

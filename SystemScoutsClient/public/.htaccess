@@ -1,0 +1,24 @@
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN
+PassengerAppRoot "/home/volbiobio/api"
+PassengerBaseURI "/"
+PassengerPython "/home/volbiobio/virtualenv/api/3.12/bin/python"
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  
+  # 1. Allow direct access to the entry point and static files
+  RewriteRule ^index\.html$ - [L]
+  
+  # 2. If it is a real file or directory (manifests, images, assets), serve it
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+  
+  # 3. Routes for the Main App SPA (ignore if it's API or Admin)
+  # This section handles internal Vue routes (e.g., /dashboard)
+  RewriteCond %{REQUEST_URI} !^/api/
+  RewriteCond %{REQUEST_URI} !^/admin/
+  RewriteRule . /index.html [L]
+</IfModule>

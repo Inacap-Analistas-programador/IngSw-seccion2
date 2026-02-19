@@ -7,7 +7,11 @@ from ..Serializers import Curso_serializer as MC_S
 from ..Filters import curso_filter as CF
 from ..Permissions import PerfilPermission
 from rest_framework.permissions import AllowAny
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from django.utils import timezone
+from datetime import timedelta
 
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 100
@@ -58,6 +62,29 @@ class CursoViewSet(viewsets.ModelViewSet):
             'curso_cuota_set',
             'curso_alimentacion_set',
         ).order_by('cur_estado', 'cur_descripcion')
+
+    @action(detail=False, methods=['get'])
+    def get_cursos_acreditacion(self, request):
+        """
+        Retorna cursos vigentes que inician hoy o mañana.
+        """
+        # Calcular fechas en la zona horaria del servidor (o configurada)
+        today = timezone.now().date()
+        tomorrow = today + timedelta(days=1)
+        
+        cursos = Curso.objects.filter(
+            cur_estado=1,
+            curso_fecha__cuf_fecha_inicio__date__in=[today, tomorrow]
+        ).distinct().order_by('cur_descripcion')
+        
+        data = []
+        for c in cursos:
+            data.append({
+                'cur_id': c.cur_id,
+                'cur_descripcion': c.cur_descripcion
+            })
+            
+        return Response(data)
 
 class CursoCuotaViewSet(viewsets.ModelViewSet):
     serializer_class = MC_S.CursoCuotaSerializer

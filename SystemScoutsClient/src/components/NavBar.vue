@@ -1,16 +1,12 @@
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch, getCurrentInstance } from 'vue'
 // import AppIcons from './icons/AppIcons.vue'
 const emit = defineEmits(['toggle-sidebar'])
-// const props = defineProps({ collapsed: { type: Boolean, default: false }})
 function toggleSidebar() {
-  // On small screens, open the sidebar as a mobile overlay instead of toggling collapse
-  try {
-    if (typeof window !== 'undefined' && window.innerWidth <= 900) {
-      window.dispatchEvent(new Event('open-sidebar-mobile'))
-      return
-    }
-  } catch {}
+  if (typeof window !== 'undefined' && window.innerWidth <= 900) {
+    window.dispatchEvent(new Event('toggle-sidebar-mobile'))
+    return
+  }
   emit('toggle-sidebar')
 }
 import { useRouter, useRoute } from 'vue-router'
@@ -30,7 +26,7 @@ function updateNavbarHeight() {
   try {
     const el = navRef.value
     if (!el) return
-    const h = Math.round(el.getBoundingClientRect().height) || 64
+    const h = el.getBoundingClientRect().height || 64
     const clamped = Math.max(56, Math.min(120, h))
     document.documentElement.style.setProperty('--navbar-height', `${clamped}px`)
   } catch { /* ignore */ }
@@ -115,6 +111,7 @@ function logout() {
   try { window.dispatchEvent(new Event('auth-changed')) } catch {}
   router.push('/')
 }
+
 
 // Ir a login (limpia token si existiera)
 function goToLogin() {

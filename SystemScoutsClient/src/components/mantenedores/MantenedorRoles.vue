@@ -1,7 +1,7 @@
 <template>
   <div class="mantenedor-section">
     <div class="mantenedor-header">
-      <h2><AppIcons name="shield" :size="24" /> Gestión de Roles</h2>
+      <h2>Gestión de Roles</h2>
       <!-- <button class="btn-primary" @click="abrirModalCrear"><AppIcons name="plus" :size="18" /> Nuevo Rol</button> -->
     </div>
     <Teleport to="#search-container">

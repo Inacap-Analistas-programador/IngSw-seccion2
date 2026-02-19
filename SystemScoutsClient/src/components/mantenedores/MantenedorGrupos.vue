@@ -1,7 +1,7 @@
 <template>
   <div class="mantenedor-section">
     <div class="mantenedor-header">
-      <h2><AppIcons name="users" :size="24" /> Gestión de Grupos</h2>
+      <h2>Gestión de Grupos</h2>
       <!-- <button class="btn-primary" @click="abrirModalCrear">
         <AppIcons name="plus" :size="18" /> Nuevo Grupo
       </button> -->

@@ -2,7 +2,6 @@
   <div class="sidebar-wrapper">
     <div v-if="openMobile" class="sidebar-backdrop" @click="closeMobile"></div>
     <aside id="app-sidebar" :class="['sidebar', { collapsed, 'mobile-open': openMobile }]" @click.self="closeMobile">
-      <button v-if="openMobile" class="mobile-close-btn" @click="closeMobile" aria-label="Cerrar menú">×</button>
       <nav class="sidebar-nav">
       
       <!-- Sin sesión iniciada: solo mostrar Formulario -->
@@ -56,16 +55,14 @@
           <span class="nav-icon"><AppIcons name="user-check" :size="20" /></span>
           <span class="nav-text">Acreditación Manual</span>
         </router-link>
+
         <router-link v-if="access.verificadorQR" to="/verificador-qr" class="nav-item">
           <span class="nav-icon"><AppIcons name="qrcode" :size="20" /></span>
           <span class="nav-text">Verificador QR</span>
         </router-link>
-
-
+        
       </div>
     </nav>
-    
-    <!-- Footer eliminado para evitar duplicidad con el botón de la navbar -->
   </aside>
   </div>
 </template>
@@ -101,6 +98,9 @@ const access = ref({
 
 // Cargar usuario al montar
 onMounted(async () => {
+  isLoggedIn.value = hasToken()
+  loadCollapsedState()
+  
   if (isLoggedIn.value) {
     currentUser.value = await authService.getCurrentUser()
     updatePermissions()
@@ -252,15 +252,17 @@ onMounted(() => {
     watch(() => route && route.path, async (p) => {
       if (p) {
         showUsuarios.value = p.startsWith('/usuarios') || p.startsWith('/roles')
+        // Auto-cerrar en móvil al navegar
+        closeMobile()
       }
-      // No actualizamos estado de autenticación ni consultamos authService en modo UI-only
     })
     
     // Registrar listener de storage para detectar login/logout en otras pestañas
     window.addEventListener('storage', onStorage)
     // También escuchar un evento custom para cambios de auth en la MISMA pestaña
     window.addEventListener('auth-changed', handleAuthChanged)
-    // Registrar listener para abrir sidebar en móviles
+    // Registrar listener para abrier/cerrar sidebar en móviles
+    window.addEventListener('toggle-sidebar-mobile', toggleMobileHandler)
     window.addEventListener('open-sidebar-mobile', openMobileHandler)
     // Cerrar sidebar con tecla Escape
     window.addEventListener('keydown', escHandler)
@@ -270,6 +272,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('storage', onStorage)
   window.removeEventListener('auth-changed', handleAuthChanged)
+  window.removeEventListener('toggle-sidebar-mobile', toggleMobileHandler)
   window.removeEventListener('open-sidebar-mobile', openMobileHandler)
   window.removeEventListener('keydown', escHandler)
 })
@@ -289,8 +292,9 @@ watch(openMobile, (v) => {
   } catch { /* ignore */ }
 })
 
-// Handler para abrir la sidebar en móvil (referencia para add/remove)
+// Handlers para móvil
 function openMobileHandler() { openMobile.value = true }
+function toggleMobileHandler() { openMobile.value = !openMobile.value }
 
 // Cerrar sidebar con tecla ESC
 function escHandler(e) {
@@ -303,6 +307,9 @@ function escHandler(e) {
 </script>
 
 <style scoped>
+.sidebar-wrapper {
+  height: 100%;
+}
 .sidebar {
   display: flex;
   flex-direction: column;
@@ -312,7 +319,7 @@ function escHandler(e) {
   color: #fff;
   box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
   z-index: 999;
-  overflow-y: auto;
+  overflow: hidden; /* Aside no hace scroll, lo hace el nav interno */
   font-weight: 400; /* Regular */
   box-sizing: border-box;
   transition: width 0.3s ease;
@@ -324,7 +331,7 @@ function escHandler(e) {
 }
 
 .sidebar-footer {
-  padding: 16px 12px;
+  padding: 12px 0; /* Padding vertical, sin horizontal para que el link ocupe todo el ancho */
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   background: var(--color-primary);
   flex-shrink: 0;
@@ -409,8 +416,8 @@ function escHandler(e) {
 /* Nota: ancho aumentado para ocupar el espacio a la derecha y eliminar la franja blanca */
 /* 2. Navegación */
 .sidebar-nav {
-  flex-grow: 1;
-  padding-top: 32px;
+  flex: 1;
+  overflow-y: auto;
   padding-bottom: 8px;
 }
 .nav-section-title {
@@ -443,8 +450,7 @@ function escHandler(e) {
   gap: 12px;
   white-space: nowrap;
   cursor: pointer;
-  border-radius: 8px;
-  margin: 2px 8px;
+  margin: 1px 0;
 }
 
 .sidebar.collapsed .nav-item,
@@ -521,7 +527,6 @@ function escHandler(e) {
 
 .nav-item:hover {
   background: var(--color-primary-hover);
-  transform: translateX(4px);
 }
 
 .router-link-exact-active {
@@ -543,13 +548,11 @@ function escHandler(e) {
   cursor: pointer;
   padding: 12px 18px;
   transition: all 0.3s ease;
-  border-radius: 8px;
-  margin: 2px 8px;
+  margin: 1px 0px;
 }
 
 .nav-collapsible:hover {
   background: var(--color-primary-hover);
-  transform: translateX(4px);
 }
 
 .sidebar.collapsed .nav-collapsible:hover {
@@ -615,10 +618,6 @@ function escHandler(e) {
   font-weight: 500;
 }
 .submenu-item:hover, .submenu-item.router-link-exact-active {
-  background: rgba(255,255,255,0.04);
-  color: #fff;
-}
-.submenu-item:hover, .submenu-item.router-link-exact-active {
   background: var(--color-primary-hover);
   color: #fff;
 }
@@ -633,63 +632,48 @@ function escHandler(e) {
   .sidebar-wrapper { position: relative; }
   .sidebar-backdrop {
     position: fixed;
-    inset: var(--navbar-height, 64px) 0 0 0;
+    inset: calc(var(--navbar-height, 64px) - 1px) 0 0 0;
     background: rgba(0,0,0,0.45);
-    z-index: 1100;
+    z-index: 1040; /* Por debajo de la navbar (1100) */
     transition: opacity 180ms ease;
   }
   .sidebar {
     position: fixed;
     top: var(--navbar-height, 64px);
-    left: 0;
-    height: calc(100vh - var(--navbar-height, 64px));
+    bottom: 0px; /* Anclar al fondo real del viewport */
+    margin-top: -1px; /* Solución para la línea blanca */
+    height: auto; /* Dejar que top y bottom dicten la altura */
     width: 88%;
     max-width: 360px;
     transform: translateX(-110%);
     transition: transform 220ms ease, opacity 180ms ease;
-    z-index: 1200;
+    z-index: 1050; /* Por debajo de la navbar (1100) para que la sombra caiga encima */
     box-shadow: 0 8px 30px rgba(2,6,23,0.4);
     background: var(--color-primary);
   }
   .sidebar.mobile-open { transform: translateX(0%); }
 
-  .mobile-close-btn {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    background: rgba(255,255,255,0.08);
-    color: #fff;
-    border: none;
-    font-size: 20px;
-    line-height: 1;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1210;
-    cursor: pointer;
-  }
-  .mobile-close-btn:hover { background: rgba(255,255,255,0.14); }
-
-  /* Evitar que el menú colapse bajo la X: dar espacio en la parte superior y
-     reservar zona a la derecha para el botón de cierre solo en móviles */
-  .sidebar {
-    padding-top: 56px; /* desplaza el contenido hacia abajo para separar de la X */
-  }
   /* Botón para abrir menú en móvil */
   .mobile-open-btn {
     display: none;
   }
 
-  /* Ocultar footer dentro de móviles para ahorrar espacio */
-  .sidebar-footer { display: none; }
+  /* Restaurar footer en móvil pero con estilo compacto y ancho completo */
+  .sidebar-footer { 
+    display: block; 
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--color-primary);
+    padding: 6px 0;
+    flex-shrink: 0;
+  }
+  .footer-link {
+    margin: 1px 0;
+  }
+
   /* Reservar espacio a la derecha en el primer item colapsable para que no
      quede pegado a la X (solo en móvil) */
   .nav-collapsible:first-of-type {
     padding-right: 64px;
-    margin-top: 6px;
   }
 }
 </style>

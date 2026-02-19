@@ -66,7 +66,7 @@
 							<BaseButton class="header-icon-btn" variant="primary" @click="marcarEnviado" :title="marcarButtonLabel">
 								<AppIcons :name="marcarButtonIcon" :size="20" />
 							</BaseButton>
-							<BaseButton class="header-icon-btn" variant="primary" @click="enviarPorCorreo" title="Enviar por correo">
+							<BaseButton class="header-icon-btn" variant="primary" @click="openEmailModal" title="Enviar por correo">
 								<AppIcons name="send" :size="20" />
 							</BaseButton>
 						</div>
@@ -110,10 +110,10 @@
 								<tbody>
 									<tr v-if="!hasSearched">
 										<td colspan="6" class="no-data-search">
-											<div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
-												<AppIcons name="info" :size="32" style="color: var(--primary); opacity: 0.8;" />
-												<span style="font-weight: 500; color: var(--text-base);">Seleccione un CURSO para ver los participantes</span>
-												<span style="font-size: 0.85em; opacity: 0.7;">Esto asegura que el estado de correo sea el correcto para el curso seleccionado.</span>
+											<div class="empty-state-content">
+												<AppIcons name="info" :size="32" class="empty-state-icon" />
+												<span class="empty-state-text">Seleccione un CURSO para ver los participantes</span>
+												<span class="empty-state-subtext">Esto asegura que el estado de correo sea el correcto para el curso seleccionado.</span>
 											</div>
 										</td>
 									</tr>
@@ -155,7 +155,6 @@
 					<!-- Paginación (estilo Usuarios.vue) -->
 				</section>
 
-				<!-- Modal QR simple -->
 				<div v-if="mostrarQR" class="qr-modal">
 					<div class="qr-modal-content">
 						<h3>Código QR generado</h3>
@@ -167,8 +166,38 @@
 					</div>
 				</div>
 
+				<!-- Email Composition Modal -->
+				<div v-if="showEmailModal" class="modal-overlay">
+					<div class="modal-content">
+						<div class="modal-header">
+							<h3>📧 Redactar Correo</h3>
+							<button class="modal-close" @click="closeEmailModal">×</button>
+						</div>
+						<div class="modal-body">
+							<div class="form-group">
+								<label class="form-label">Asunto</label>
+								<input type="text" class="form-control" v-model="emailForm.subject" placeholder="Asunto del correo">
+							</div>
+							<div class="form-group">
+								<label class="form-label">Mensaje</label>
+								<div class="info-text">
+									Puedes usar los siguientes marcadores: [nombre curso], [nombre del curso], [ubicacion del curso], [nombre responsable del curos], [zona a la que el usuario logeado esta acargo], [fecha a la que postulo la persona], [qr generado para esa persona].
+								</div>
+								<textarea class="form-control" v-model="emailForm.message" rows="12" placeholder="Cuerpo del correo..."></textarea>
+							</div>
+							<div class="form-actions">
+								<BaseButton variant="secondary" @click="closeEmailModal">Cancelar</BaseButton>
+								<BaseButton variant="primary" @click="enviarCorreoConfirmado" :disabled="emailForm.sending">
+									<AppIcons name="send" :size="16" />
+									{{ emailForm.sending ? 'Enviando...' : 'Enviar Correos' }}
+								</BaseButton>
+							</div>
+						</div>
+					</div>
+				</div>
+
 				<!-- Toast -->
-				<NotificationToast v-if="showToast" :message="toastMessage" :icon="toastIcon" @close="showToast = false" />
+				<NotificationToast v-if="showToast" :message="toastMessage" :type="toastType" :icon="toastIcon" @close="showToast = false" />
 			</div>
 		</div>
 </template>
@@ -185,10 +214,10 @@ import { personas as personasService, personaCursos as personaCursosService } fr
 import { cursos as cursosService } from '@/services/cursosService'
 import { rol } from '@/services/mantenedoresService'
 
-// Flag temporal: cuando es true, 'Estado correo' se determina desde persona-cursos (PEC_ENVIO_CORREO_QR)
+// Flag temporal
 const USE_BACKEND_ESTADO_CORREO = true
 
-// Datos desde la API
+// Estado de datos
 const rows = ref([])
 const loading = ref(false)
 const error = ref(null)
@@ -197,95 +226,123 @@ const hasSearched = ref(false)
 // Paginación
 const page = ref(1)
 const pageSize = ref(50)
-const pageSizes = [10, 25, 50, 100]
 const total = ref(0)
 const totalPages = computed(() => Math.max(1, Math.ceil((total.value || 0) / pageSize.value)))
-
-// Guardar últimos parámetros de consulta para paginar sin perder filtros
 const lastQueryParams = ref({})
 
-// Filtros editables (UI)
-const filters = reactive({ curso: null, rol: 'Todos', estadoPersona: 'Todos', estadoCorreo: 'Todos' })
-// Filtros aplicados (se actualizan al presionar Buscar)
-const appliedFilters = reactive({ curso: null, rol: 'Todos', estadoPersona: 'Todos', estadoCorreo: 'Todos' })
+// Filtros
+const filters = reactive({ curso: null, rol: '', estadoPersona: '', estadoCorreo: '' })
+const appliedFilters = reactive({ curso: null, rol: '', estadoPersona: '', estadoCorreo: '' })
 
-// Toast de notificaciones
+// Toast
 const showToast = ref(false)
 const toastMessage = ref('')
 const toastIcon = ref('')
-function notify(msg, icon = '') {
+const toastType = ref('info')
+
+function notify(msg, type = 'info', icon = '') {
 	toastMessage.value = msg
+	toastType.value = type
 	toastIcon.value = icon
 	showToast.value = true
-	// autocerrar suave en 4s
 	setTimeout(() => { showToast.value = false }, 4000)
 }
 
-// Aplica los filtros al presionar el botón Buscar
-function applyFilters() {
-	if (!filters.curso || filters.curso === 'Todos') {
-		notify('Debe seleccionar un curso obligatoriamente para buscar', 'alert-circle')
+// Modal Email
+const showEmailModal = ref(false)
+const emailForm = reactive({
+	subject: 'Inscripción Curso',
+	message: '',
+	sending: false
+})
+
+const defaultEmailTemplate = `Hola!
+Bienvenido al curso [nombre curso] al cual te haz inscrito. La organización ha enviado este correo para que lo presentes y puedas acreditarte.
+
+Curso: [nombre del curso]
+Fechas: [fecha a la que postulo la persona]
+Ubicación: [ubicacion del curso]
+
+[qr generado para esa persona]
+
+Presenta este código QR al momento de acreditarte.
+
+Que tengas éxito en este nuevo desafío.
+
+Saludos.
+
+Equipo Organizador curso [nombre responsable del curos]
+Guias y Scouts de Chile Zona [zona a la que el usuario logeado esta acargo]`
+
+function openEmailModal() {
+	const selIds = seleccionIds.value
+	if (!selIds.length) {
+		notify('Selecciona al menos un registro', 'error', 'alert-circle')
 		return
 	}
-	// update appliedFilters for UI state
+	emailForm.subject = 'Inscripción Curso'
+	emailForm.message = defaultEmailTemplate
+	showEmailModal.value = true
+}
+
+function closeEmailModal() {
+	showEmailModal.value = false
+	emailForm.sending = false
+}
+
+// Acciones principales
+function applyFilters() {
+	if (!filters.curso || filters.curso === 'Todos') {
+		notify('Debe seleccionar un curso obligatoriamente para buscar', 'error', 'alert-circle')
+		return
+	}
 	appliedFilters.curso = filters.curso
 	appliedFilters.rol = filters.rol
 	appliedFilters.estadoPersona = filters.estadoPersona
 	appliedFilters.estadoCorreo = filters.estadoCorreo
 
-	// Build query params to send to backend (only non-'Todos')
 	const params = {}
 	if (filters.curso && filters.curso !== 'Todos') params.curso = filters.curso
 	if (filters.rol && filters.rol !== 'Todos') params.rol = filters.rol
-	// Estado persona: si el usuario selecciona 'Vigente' o 'No vigente', enviar per_vigente=1/0
 	if (filters.estadoPersona && filters.estadoPersona !== 'Todos') {
-		// backend persona filter expects parameter `vigente`
 		if (filters.estadoPersona === 'Vigente') params.vigente = true
 		else if (filters.estadoPersona === 'No vigente') params.vigente = false
 	}
-	// Estado correo: si el usuario selecciona Enviado/Pendiente/No enviado, enviar pec_envio_correo_qr=1/0
 	if (filters.estadoCorreo && filters.estadoCorreo !== 'Todos') {
 		if (filters.estadoCorreo === 'Enviado') params.pec_envio_correo_qr = 1
-		else if (filters.estadoCorreo === 'Pendiente' || filters.estadoCorreo === 'No enviado') params.pec_envio_correo_qr = 0
+		else if (filters.estadoCorreo === 'Pendiente') params.pec_envio_correo_qr = 0
 	}
 
-	// Reset to first page when applying new filters
 	page.value = 1
-	// Save last query params (used when navigating pages)
 	lastQueryParams.value = { ...params }
-	// Fetch filtered rows from API
 	fetchRows(params)
 }
 
 const seleccionIds = computed(() => rows.value.filter(r => r.selected).map(r => r.id))
 
 function isRowDisabled(row) {
-	if (row.selected) return false // deseleccionar siempre es posible
+	if (row.selected) return false 
 	const selRows = rows.value.filter(r => r.selected)
 	if (selRows.length === 0) return false
-	// Deshabilitar si el estado de correo es distinto al ya seleccionado
 	return selRows[0].pecEnvioCorreoQR !== row.pecEnvioCorreoQR
 }
 
 const mostrarQR = ref(false)
 const qrCanvas = ref(null)
 
-// Opciones para los selects
+// Opciones Selects
 const cursosOpts = ref([])
 const rolesOpts = ref([])
 const estadoPersonaOpts = ref([
-	{ id: 'Todos', descripcion: 'Todos' },
 	{ id: 'Vigente', descripcion: 'Vigente' },
 	{ id: 'No vigente', descripcion: 'No vigente' }
 ])
 const estadoCorreoOpts = ref([
-	{ id: 'Todos', descripcion: 'Todos' },
 	{ id: 'Enviado', descripcion: 'Enviado' },
-	{ id: 'Pendiente', descripcion: 'Pendiente' },
-	{ id: 'No enviado', descripcion: 'No enviado' }
+	{ id: 'Pendiente', descripcion: 'Pendiente' }
 ])
 
-// Cargar personas desde la API
+// Fetch Data
 async function fetchRows(params = {}) {
 	hasSearched.value = true
 	loading.value = true
@@ -308,27 +365,15 @@ async function fetchRows(params = {}) {
 			list = personas
 			total.value = personas.length
 		} else if (personas && typeof personas === 'object') {
-			if (Array.isArray(personas.results)) {
-				list = personas.results
-				total.value = personas.count ?? personas.total ?? list.length
-			} else if (Array.isArray(personas.data)) {
-				list = personas.data
-				total.value = personas.count ?? personas.total ?? list.length
-			} else {
-				list = []
-				total.value = 0
-			}
+			list = personas.results || personas.data || []
+			total.value = personas.count ?? personas.total ?? list.length
 		}
 
 		rows.value = list.map(p => {
-			// Helper para extraer campos con fallback de nombres (soporta snake_case, camelCase, UPPER_CASE)
 			const get = (keys, fallback = '') => {
-				for (const k of keys) {
-					if (p[k] !== undefined && p[k] !== null) return p[k]
-				}
+				for (const k of keys) if (p[k] !== undefined && p[k] !== null) return p[k]
 				return fallback
 			}
-
 			const nombre = get(['nombre', 'per_nombres', 'PER_NOMBRES'])
 			const apeP = get(['apellidoPaterno', 'per_apelpta', 'PER_APELPTA'])
 			const apeM = get(['apellidoMaterno', 'per_apelmat', 'PER_APELMAT'])
@@ -358,12 +403,6 @@ async function fetchRows(params = {}) {
 				fullName: `${apeP} ${apeM} ${nombre}`.trim()
 			}
 		})
-		
-		if (rows.value.length > 0) {
-			console.log('Fila mapeada:', rows.value[0])
-			console.log('Origen (RAW):', list[0])
-		}
-
 		total.value = rows.value.length
 	} catch (e) {
 		console.error('Error cargando personas:', e)
@@ -386,30 +425,37 @@ async function loadOptions() {
 			if (Array.isArray(val)) return val
 			if (val && Array.isArray(val.data)) return val.data
 			if (val && Array.isArray(val.results)) return val.results
-			const keys = Object.keys(val || {})
-			for (const k of keys) {
-				if (Array.isArray(val[k])) return val[k]
-			}
 			return []
 		}
 
 		const cursosListRaw = normalize(cRes.status === 'fulfilled' ? cRes.value : null)
 		if (cursosListRaw.length) {
-			const cursosList = cursosListRaw.map(c => (
-				(c && (c.CUR_DESCRIPCION || c.cur_descripcion || c.CUR_DESC)) || c.descripcion || c.nombre || c.titulo || c.title || c.name || c.curso || c.curso_nombre || c
-			))
-			const uniqueCursos = Array.from(new Set(cursosList)).filter(Boolean)
-			cursosOpts.value = uniqueCursos.map(c => ({ id: c, descripcion: c }))
+			// Map unique descriptions but keep reference to at least one ID for that description
+			// We assume description is unique enough or we just take the first one found.
+			const map = new Map()
+			cursosListRaw.forEach(c => {
+				const desc = (c && (c.CUR_DESCRIPCION || c.cur_descripcion || c.CUR_DESC || c.descripcion || c.nombre || c.titulo))
+				const id = (c && (c.CUR_ID || c.cur_id || c.id))
+				if (desc && !map.has(desc)) {
+					map.set(desc, id)
+				}
+			})
+			
+			cursosOpts.value = Array.from(map.entries()).map(([desc, id]) => ({ 
+				id: desc, 
+				descripcion: desc,
+				realId: id 
+			}))
 		}
 
 		const rolesListRaw = normalize(rRes.status === 'fulfilled' ? rRes.value : null)
 		if (rolesListRaw.length) {
-			const rolesList = rolesListRaw.map(r => (r && (r.ROL_DESCRIPCION || r.rol_descripcion || r.ROL_DESC || r.descripcion)) || r.label || r.value || r).filter(Boolean)
+			const rolesList = rolesListRaw.map(r => (r && (r.ROL_DESCRIPCION || r.rol_descripcion || r.descripcion)) || r.label).filter(Boolean)
 			rolesOpts.value = Array.from(new Set(rolesList)).map(r => ({ id: r, descripcion: r }))
 		}
 
 	} catch (e) {
-		console.warn('Error cargando opciones de filtros:', e)
+		console.warn('Error cargando opciones:', e)
 	}
 }
 
@@ -446,7 +492,6 @@ const allSelected = computed({
 	set: (val) => {
 		const visible = rowsFiltered.value
 		if (val) {
-			// Si ya hay algo seleccionado, buscamos su estado
 			const selRows = rows.value.filter(r => r.selected)
 			if (selRows.length > 0) {
 				const targetStatus = selRows[0].pecEnvioCorreoQR
@@ -454,13 +499,7 @@ const allSelected = computed({
 					if (r.pecEnvioCorreoQR === targetStatus) r.selected = true
 				})
 			} else {
-				// Este caso no debería ocurrir si el checkbox está disabled
-				// pero por seguridad, si no hay nada y los estados son consistentes, seleccionamos todo
-				const firstRow = visible[0]
-				const sameStatus = visible.every(r => r.pecEnvioCorreoQR === firstRow.pecEnvioCorreoQR)
-				if (sameStatus) {
-					visible.forEach(r => { r.selected = true })
-				}
+				visible.forEach(r => { r.selected = true })
 			}
 		} else {
 			visible.forEach(r => { r.selected = false })
@@ -482,58 +521,8 @@ const marcarButtonIcon = computed(() => {
 	return allSent ? 'circle-x' : 'check'
 })
 
-const startIndex = computed(() => {
-	if (!total.value) return 0
-	return (page.value - 1) * pageSize.value + 1
-})
-const endIndex = computed(() => {
-	if (!total.value) return 0
-	return Math.min(page.value * pageSize.value, total.value)
-})
-const showingRange = computed(() => {
-	const t = total.value || 0
-	if (t === 0) return '0-0 de 0'
-	return `${startIndex.value}-${endIndex.value} de ${t}`
-})
-
-const pagesToShow = computed(() => {
-	const tp = totalPages.value
-	const current = page.value
-	const out = []
-	if (tp <= 9) {
-		for (let i = 1; i <= tp; i++) out.push(i)
-		return out
-	}
-	out.push(1)
-	if (current > 4) out.push('...')
-	const start = Math.max(2, current - 2)
-	const end = Math.min(tp - 1, current + 2)
-	for (let i = start; i <= end; i++) out.push(i)
-	if (current < tp - 3) out.push('...')
-	out.push(tp)
-	return out
-})
-
-function goToPage(n) {
-	if (!n || n < 1) return
-	const np = Math.min(Math.max(1, n), totalPages.value)
-	if (np !== page.value) {
-		page.value = np
-		fetchRows(lastQueryParams.value || {})
-	}
-}
-
-function onPageSizeChange() {
-	page.value = 1
-	fetchRows(lastQueryParams.value || {})
-}
-
-function vigenteClass(row) {
-	return row.vigente ? 'status-active' : 'status-inactive'
-}
-function estadoPagoClass(row) {
-	return row.estadoPago === 'Pagado' ? 'status-active' : 'badge-warning'
-}
+function vigenteClass(row) { return row.vigente ? 'status-active' : 'status-inactive' }
+function estadoPagoClass(row) { return row.estadoPago === 'Pagado' ? 'status-active' : 'badge-warning' }
 function estadoCorreoClass(row) {
 	switch (row.estadoCorreo) {
 		case 'Enviado': return 'status-active'
@@ -546,20 +535,14 @@ function estadoCorreoClass(row) {
 function exportarCorreos() {
 	const items = rows.value.filter(r => r.selected)
 	const correos = items.map(i => i.email).filter(e => e).join(', ')
-	if (!correos) {
-		notify('Selecciona al menos un destinatario con correo', 'alert-circle')
-		return
-	}
+	if (!correos) { notify('Selecciona al menos un destinatario', 'error', 'alert-circle'); return }
 	navigator.clipboard?.writeText(correos)
-	notify('Correos copiados al portapapeles', 'clipboard')
+	notify('Correos copiados al portapapeles', 'success', 'clipboard')
 }
 
 async function marcarEnviado() {
 	const toPersist = rows.value.filter(r => r.selected)
-	if (!toPersist.length) {
-		notify('Debe seleccionar al menos una persona', 'alert-circle')
-		return
-	}
+	if (!toPersist.length) { notify('Debe seleccionar al menos una persona', 'error', 'alert-circle'); return }
 
 	loading.value = true
 	try {
@@ -570,58 +553,52 @@ async function marcarEnviado() {
 				await personaCursosService.partialUpdate(t.pecId, { pec_envio_correo_qr: newVal })
 				t.pecEnvioCorreoQR = newVal
 				t.estadoCorreo = newVal ? 'Enviado' : 'Pendiente'
-			} catch (err) {
-				console.error(`Error actualizando persona ${t.id}:`, err)
-			}
+			} catch (err) { console.error(err) }
 		}))
-		notify('Estados actualizados correctamente', 'check')
+		notify('Estados actualizados', 'success', 'check')
 		rows.value.forEach(r => { r.selected = false })
-	} catch (err) {
-		console.error('Error masivo marcarEnviado:', err)
-		notify('Error al actualizar estados', 'alert-circle')
-	} finally {
-		loading.value = false
-	}
+	} catch (err) { notify('Error al actualizar', 'error', 'alert-circle') } 
+	finally { loading.value = false }
 }
 
-function cerrarQR() {
-	mostrarQR.value = false
-}
+function cerrarQR() { mostrarQR.value = false }
 
-async function enviarPorCorreo() {
+// Enviar Correo Final
+async function enviarCorreoConfirmado() {
 	const selIds = seleccionIds.value
-	if (!selIds.length) {
-		notify('Selecciona al menos un registro', 'alert-circle')
-		return
-	}
+	if (!selIds.length) return
 
-	const subject = prompt('Asunto del correo:', 'Información del Curso')
-	if (!subject) return
-
-	const message = prompt('Mensaje del correo:', 'Estimado/a participante,\n\nTe enviamos la información del curso.')
-	if (!message) return
-
+	emailForm.sending = true
 	try {
 		const correosService = (await import('@/services/correosService.js')).default
-		const payload = { recipient_ids: selIds.map(id => Number(id)), subject, message }
+		
+		const payload = { 
+			recipient_ids: selIds.map(id => Number(id)), 
+			subject: emailForm.subject, 
+			message: emailForm.message
+		}
+		
+		const cursoNombre = appliedFilters.curso
+		if (cursoNombre) {
+			const found = cursosOpts.value.find(c => c.descripcion === cursoNombre)
+			if (found && found.realId) payload.curso_id = found.realId
+		} else {
+			console.warn('No hay curso seleccionado en el filtro, no se enviará curso_id')
+		}
+
+		console.log('Sending payload:', payload)
+
 		const result = await correosService.sendEmail(payload)
 
 		for (const r of rows.value) {
 			if (selIds.includes(r.id) && r.vigente && r.email) r.estadoCorreo = 'Enviado'
 		}
-		notify(`Envío completado. Enviados: ${result.sent}/${result.sent + result.failed}`, 'send')
+		notify(`Enviados: ${result.sent} / Fallidos: ${result.failed}`, 'success', 'send')
+		closeEmailModal()
 	} catch (e) {
-		console.error('Error enviando correos:', e)
-		notify('No se pudieron enviar los correos', 'x-circle')
-	}
-
-	if (USE_BACKEND_ESTADO_CORREO) {
-		try {
-			const targets = rows.value.filter(r => r.selected && r.pecId)
-			await Promise.all(targets.map(t => personaCursosService.partialUpdate(t.pecId, { PEC_ENVIO_CORREO_QR: true })))
-		} catch (e) {
-			console.error('No se pudo actualizar PEC_ENVIO_CORREO_QR:', e)
-		}
+		console.error('Error enviando:', e)
+		notify('Error al enviar correos', 'error', 'x-circle')
+		emailForm.sending = false
 	}
 }
 </script>
@@ -702,6 +679,18 @@ async function enviarPorCorreo() {
     flex: 0 0 130px; 
     margin-right: 8px;
   }
+
+  /* Fix for empty state on mobile */
+  .data-table td.no-data-search {
+    display: flex !important;
+    justify-content: center !important;
+    text-align: center !important;
+    height: auto;
+    width: 100%;
+  }
+  .data-table td.no-data-search::before {
+    display: none;
+  }
   
   .cell-name span, .cell-email span { 
     font-weight: 500;
@@ -730,9 +719,9 @@ async function enviarPorCorreo() {
 .mantenedor-header { margin-bottom: 20px; padding: 32px 0px 16px; border-bottom: 2px solid #3949ab; }
 .header-content { display: flex; justify-content: space-between; align-items: center; width: 100%; }
 .header-actions-group { display: flex; gap: 8px; }
-.mantenedor-header h2 { color: #1a237e; font-size: 1.5rem; display: flex; align-items: center; gap: 10px; margin: 0; }
+.mantenedor-header h2 { color: #1a237e; font-size: 1.5rem; display: flex; align-items: center; margin: 0; }
 
-.filtros { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; padding-bottom: 16px; margin-bottom: 16px; }
+.filtros { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
 .filter-group { flex: 0 1 auto; display: flex; flex-direction: column; gap: 6px; }
 .filtros label { font-weight: 600; color: var(--color-text); display: flex; align-items: center; gap: 8px; font-size: 0.9rem; margin-right: 0; }
 .filtros select { padding: 5px 8px; border-radius: 6px; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); min-width: 120px; font-size: 0.95rem; }
@@ -761,4 +750,106 @@ async function enviarPorCorreo() {
 .qr-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 1000; }
 .qr-modal-content { background: var(--color-surface); border-radius: 10px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); min-width: 280px; text-align: center; }
 .qr-actions { margin-top: 15px; display:flex; justify-content:center; }
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+}
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+.modal-header {
+  padding: 15px 20px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-header h3 { margin: 0; color: #1a237e; font-size: 1.2rem; }
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+}
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+}
+.form-group { margin-bottom: 15px; }
+.form-label { display: block; margin-bottom: 5px; font-weight: 500; color: #333; }
+.form-control {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+.form-control:focus { outline: none; border-color: #1a237e; }
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+.info-text {
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 8px;
+  background: #f5f5f5;
+  padding: 8px;
+  border-radius: 4px;
+  line-height: 1.4;
+}
+
+/* Empty State Styles */
+.no-data-search {
+  text-align: center;
+  padding: 60px 20px;
+  background-color: var(--color-surface);
+}
+
+.empty-state-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  height: 100%;
+  width: 100%;
+}
+
+.empty-state-icon {
+  color: var(--color-primary);
+  opacity: 0.8;
+}
+
+.empty-state-text {
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: 1.1rem;
+}
+
+.empty-state-subtext {
+  font-size: 0.9rem;
+  opacity: 0.7;
+  color: var(--color-text);
+  max-width: 400px;
+  text-align: center;
+}
 </style>

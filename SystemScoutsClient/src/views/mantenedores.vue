@@ -409,6 +409,15 @@ export default {
   font-size: 1.1rem;
 }
 
+/* Fix for long text in dropdown */
+.selected-option {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  max-width: 100%;
+}
+
 /* Responsive: Ajustes específicos para móviles */
 @media (max-width: 768px) {
   .filtros { 
@@ -418,7 +427,7 @@ export default {
   
   .selector-dropdown { 
     flex: 1; 
-    max-width: none; 
+    max-width: calc(100% - 54px); /* Ensure space for the button (42px + gap) */
     min-width: 0;
     order: 1;
   }
@@ -430,6 +439,7 @@ export default {
     padding: 0 !important; /* Sin padding lateral */
     justify-content: center !important;
     gap: 0 !important;
+    margin-left: auto; /* Push to right if wrapping happens, though flex should handle it */
   }
 
   .search-target-container {
@@ -437,6 +447,7 @@ export default {
     width: 100%;
     max-width: none;
     margin-top: 4px;
+    flex-basis: 100%; /* Force new line */
   }
   
   .mantenedor-dropdown-toggle { width: 100%; }

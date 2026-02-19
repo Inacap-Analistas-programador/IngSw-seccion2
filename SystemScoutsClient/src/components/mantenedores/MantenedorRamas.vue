@@ -1,7 +1,7 @@
 <template>
   <div class="mantenedor-section">
     <div class="mantenedor-header">
-      <h2><AppIcons name="git-branch" :size="24" /> Gestión de Ramas</h2>
+      <h2>Gestión de Ramas</h2>
       <!-- <button class="btn-primary" @click="abrirModalCrear">
         <AppIcons name="plus" :size="18" /> Nueva Rama
       </button> -->

@@ -17,6 +17,9 @@ export default defineConfig({
       overlay: false,
     },
   },
+  build: {
+    outDir: 'dist',
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))

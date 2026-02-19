@@ -11,12 +11,13 @@ export default {
     return request('personas/qr-email', { method: 'POST', body: JSON.stringify(payload) })
   },
 
-  // Extras: manual accreditation endpoints
-  // Use the generic personas list endpoint for search (GET /api/personas/personas?search=term)
-  async acreditacion_manual_search(term = '') {
-    const q = encodeURIComponent(String(term || '').trim())
-    // Ensure trailing slash for Django compatibility
-    return request(`personas/personas/${q ? `?search=${q}` : ''}`)
+  // Endpoint optimizado para búsqueda manual
+  async acreditacion_manual_search(term = '', curso_id = null) {
+    const params = new URLSearchParams()
+    if (term) params.append('search', term)
+    if (curso_id) params.append('curso_id', curso_id)
+
+    return request(`personas/personas/search_acreditacion/?${params.toString()}`)
   },
 
   // Keep acreditar endpoint as POST (existing backend view)

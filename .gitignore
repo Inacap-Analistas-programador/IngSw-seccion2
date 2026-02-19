@@ -11,6 +11,7 @@ __pycache__/
 *.py[cod]
 venv/
 env/
+contraseñas.txt
 
 # Django 
 **/__pycache__/

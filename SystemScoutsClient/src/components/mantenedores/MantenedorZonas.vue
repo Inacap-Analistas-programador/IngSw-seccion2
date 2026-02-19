@@ -1,7 +1,7 @@
 <template>
   <div class="mantenedor-section">
     <div class="mantenedor-header">
-      <h2><AppIcons name="map" :size="24" /> Gestión de Zonas</h2>
+      <h2>Gestión de Zonas</h2>
       <!-- El botón de crear ahora se gestiona desde el componente padre -->
       <!-- <button class="btn-primary" @click="abrirModalCrear">
         <AppIcons name="plus" :size="18" /> Nueva Zona
