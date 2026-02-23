@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.urls import path, include, re_path
 from django.shortcuts import redirect
 from django.views.generic import TemplateView
+from django.conf.urls.static import static
 from django.conf import settings
 from django.views.static import serve
 
@@ -36,6 +37,7 @@ urlpatterns = [
     path('api/personas/search', persona_search),
     # Minimal catalogs for fast UI
     path('api/personas/min', personas_min),
+    # ...
     path('api/mantenedores/tipo-curso/min', tipos_curso_min),
     path('api/mantenedores/roles/min', roles_min),
     path('api/mantenedores/cargos/min', cargos_min),
@@ -45,6 +47,9 @@ urlpatterns = [
     path('refresh/', TokenRefreshView.as_view(), name='auth_perfil'),
     path('api/deploy/', deploy_view, name='deploy_endpoint'),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 # Add catch-all route for SPA if frontend build exists
 if settings.FRONTEND_DIST_EXISTS:

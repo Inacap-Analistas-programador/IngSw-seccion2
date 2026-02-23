@@ -16,7 +16,8 @@ const makeCrud = base => ({
 
 export const cursos = {
   ...makeCrud('cursos/cursos'),
-  get_acreditacion: () => request('cursos/cursos/get_cursos_acreditacion/')
+  get_acreditacion: () => request('cursos/cursos/get_cursos_acreditacion/'),
+  get_alimentacion_curso: (id) => request(`cursos/cursos/${id}/get_alimentacion_curso/`)
 }
 export const cuotas = makeCrud('cursos/cuotas')
 export const fechas = makeCrud('cursos/fechas')

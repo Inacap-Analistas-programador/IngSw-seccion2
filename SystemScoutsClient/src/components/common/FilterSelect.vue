@@ -3,27 +3,27 @@
     <div 
       class="custom-select-trigger" 
       @click="toggleDropdown" 
-      :class="{ 'active': isOpen }"
+      :class="{ 'active': isOpen, 'disabled': disabled }"
     >
-      <span>{{ selectedLabel }}</span>
+      <span>{{ displayedLabel }}</span>
       <div class="custom-arrow" :class="{ 'open': isOpen }">▼</div>
     </div>
     <div v-if="isOpen" class="custom-options">
       <div 
         class="custom-option" 
-        :class="{ 'selected': modelValue === '' || modelValue === null }"
+        :class="{ 'selected': !hasValue }"
         @click="selectOption('')"
       >
         {{ defaultLabel }}
       </div>
       <div 
         v-for="option in options" 
-        :key="option.id" 
+        :key="option[valueKey]" 
         class="custom-option"
-        :class="{ 'selected': modelValue === option.id }"
-        @click="selectOption(option.id)"
+        :class="{ 'selected': modelValue == option[valueKey] }"
+        @click="selectOption(option[valueKey])"
       >
-        {{ option.descripcion }}
+        {{ option[labelKey] }}
       </div>
     </div>
   </div>
@@ -33,10 +33,6 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps({
-  modelValue: {
-    type: [String, Number, null],
-    default: ''
-  },
   options: {
     type: Array,
     required: true,
@@ -45,26 +41,43 @@ const props = defineProps({
   defaultLabel: {
     type: String,
     default: 'Seleccionar'
+  },
+  valueKey: {
+    type: String,
+    default: 'id'
+  },
+  labelKey: {
+    type: String,
+    default: 'descripcion'
+  },
+  disabled: {
+    type: Boolean,
+    default: false
   }
 })
 
-const emit = defineEmits(['update:modelValue'])
+const modelValue = defineModel()
 
 const isOpen = ref(false)
 const containerRef = ref(null)
 
-const selectedLabel = computed(() => {
-  if (!props.modelValue) return props.defaultLabel
-  const found = props.options.find(opt => opt.id === props.modelValue)
-  return found ? found.descripcion : props.defaultLabel
+const hasValue = computed(() => {
+  return modelValue.value !== '' && modelValue.value !== null && modelValue.value !== undefined
+})
+
+const displayedLabel = computed(() => {
+  if (!hasValue.value) return props.defaultLabel
+  const found = props.options.find(opt => opt[props.valueKey] == modelValue.value)
+  return found ? found[props.labelKey] : props.defaultLabel
 })
 
 const toggleDropdown = () => {
+  if (props.disabled) return
   isOpen.value = !isOpen.value
 }
 
 const selectOption = (id) => {
-  emit('update:modelValue', id)
+  modelValue.value = id
   isOpen.value = false
 }
 
@@ -86,7 +99,7 @@ onUnmounted(() => {
 <style scoped>
 .custom-select-container {
   position: relative;
-  min-width: 220px;
+  width: 100%;
   height: 40px;
   font-family: 'Inter', Arial, sans-serif;
 }
@@ -115,6 +128,13 @@ onUnmounted(() => {
 .custom-select-trigger.active {
   border-color: #1a237e;
   box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
+}
+
+.custom-select-trigger.disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+  border-color: #e5e7eb;
 }
 
 .custom-arrow {

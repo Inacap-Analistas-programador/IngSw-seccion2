@@ -28,3 +28,9 @@ staticfiles/
 *.log
 *.tsbuildinfo
 .eslintcache
+
+SystemScriptsAndFiles/nota.md
+SystemScriptsAndFiles/Archivos/
+
+SystemScoutsLogs/
+

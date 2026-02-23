@@ -1,4 +1,5 @@
 import { request } from './apiClient'
+import { archivos, archivoPersonas } from './archivosService'
 
 const makeCrud = base => ({
   list: (params) => request(`${base}${params ? `?${new URLSearchParams(params)}` : ''}`),
@@ -171,15 +172,43 @@ export default {
   obtenerRamas,
   obtenerGrupos,
   // Orquestador: crear Persona -> Persona_Curso -> Persona_Vehiculo
-  createPersonaWithCourseAndVehicle: async ({ personaData, cursoData = null, vehiculoData = null, formadorData = null, ramasData = null, grupoData = null }) => {
-    // 1) Crear persona
-    const personaCreada = await personas.create(personaData);
-
+  createPersonaWithCourseAndVehicle: async ({ personaData, cursoData = null, vehiculoData = null, formadorData = null, ramasData = null, grupoData = null, individualData = null, medicalFile = null, personalPhoto = null }) => {
     let personaCursoCreado = null;
     let vehiculoCreado = null;
     let formadorCreado = null;
     let grupoCreado = null;
+    let individualCreado = null;
     let ramasCreadas = [];
+    let medicalFileResult = null;
+    let personalPhotoResult = null;
+
+    // 0) Subir Foto Personal FIRST (si existe) para obtener la URL para PER_FOTO (tar_id: 1)
+    if (personalPhoto) {
+      try {
+        console.log("Subiendo foto personal ANTES de crear persona...");
+        const archivoResp = await archivos.uploadArchivo(personalPhoto, 1);
+
+        // El backend suele retornar el path en 'file' o 'arc_archivo' o 'url'
+        // Según Gestionpersonas.vue y el estándar de la API:
+        const fotoUrlServidor = archivoResp.url || archivoResp.file || archivoResp.arc_archivo;
+        const arcId = archivoResp.arc_id || archivoResp.ARC_ID;
+
+        if (fotoUrlServidor) {
+          personaData.per_foto = fotoUrlServidor;
+          console.log("URL de foto obtenida y asignada a PER_FOTO:", fotoUrlServidor);
+        }
+
+        if (arcId) {
+          // Guardamos el ID para vincularlo luego en Archivo_Persona (paso 9)
+          personalPhotoResult = { arc_id: arcId };
+        }
+      } catch (err) {
+        console.warn("Error al subir foto personal inicial:", err);
+      }
+    }
+
+    // 1) Crear persona (ahora ya puede incluir per_foto)
+    const personaCreada = await personas.create(personaData);
 
     // Validar ID de persona (puede venir como per_id o PER_ID según serializador)
     const perId = personaCreada.per_id || personaCreada.PER_ID;
@@ -280,6 +309,22 @@ export default {
       }
     }
 
+    // 6.5) Si se solicita crear Individual (Persona_Individual)
+    if (individualData && individualData.car_id && individualData.zon_id && individualData.dis_id) {
+      const indPayload = {
+        per_id: perId,
+        car_id: individualData.car_id,
+        zon_id: individualData.zon_id,
+        dis_id: individualData.dis_id,
+        pei_vigente: true
+      };
+      try {
+        individualCreado = await individuales.create(indPayload);
+      } catch (err) {
+        console.warn("Error creando Persona_Individual:", err);
+      }
+    }
+
     // 7) Crear estado inicial curso (Persona_Estado_Curso)
     // Estado 1 = Pre Inscrito (según modelo)
     if (personaCursoCreado && personaCursoCreado.pec_id) {
@@ -295,13 +340,52 @@ export default {
       }
     }
 
+    // 8) Subir y vincular Ficha Médica si existe (tar_id: 2)
+    if (medicalFile && perId) {
+      try {
+        console.log("Subiendo ficha médica para persona ID:", perId);
+        const archivoResp = await archivos.uploadArchivo(medicalFile, 2);
+        const arcId = archivoResp.arc_id || archivoResp.ARC_ID;
+
+        if (arcId) {
+          medicalFileResult = await archivoPersonas.create({
+            per_id: perId,
+            arc_id: arcId,
+            cus_id: (personaCursoCreado && (personaCursoCreado.cus_id || personaCursoCreado.CUS_ID)) || null
+          });
+          console.log("Ficha médica vinculada con éxito");
+        }
+      } catch (err) {
+        console.warn("Error subiendo/vinculando ficha médica:", err);
+      }
+    }
+
+    // 9) Vincular Foto Personal si se subió en el paso 0
+    if (personalPhotoResult && personalPhotoResult.arc_id && perId) {
+      try {
+        console.log("Vinculando foto personal (ya subida) a la persona ID:", perId);
+        const vinculacion = await archivoPersonas.create({
+          per_id: perId,
+          arc_id: personalPhotoResult.arc_id,
+          cus_id: (personaCursoCreado && (personaCursoCreado.cus_id || personaCursoCreado.CUS_ID)) || null
+        });
+        personalPhotoResult = vinculacion;
+        console.log("Foto personal vinculada con éxito en Archivo_Persona");
+      } catch (err) {
+        console.warn("Error vinculando foto personal en Archivo_Persona:", err);
+      }
+    }
+
     return {
       persona: personaCreada,
       personaCurso: personaCursoCreado,
       vehiculo: vehiculoCreado,
       formador: formadorCreado,
       ramas: ramasCreadas,
-      grupo: grupoCreado
+      grupo: grupoCreado,
+      individual: individualCreado,
+      medicalFile: medicalFileResult,
+      personalPhoto: personalPhotoResult
     };
   },
   // Método personalizado para obtener cursos de una persona

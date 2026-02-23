@@ -14,7 +14,7 @@ export default defineConfig({
   ].filter(Boolean),
   server: {
     hmr: {
-      overlay: false,
+      overlay: true,
     },
   },
   build: {
@@ -24,6 +24,9 @@ export default defineConfig({
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
+  },
+  esbuild: {
+    drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
   },
 })
 

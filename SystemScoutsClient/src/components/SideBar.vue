@@ -63,6 +63,17 @@
         
       </div>
     </nav>
+
+    <div class="sidebar-footer">
+      <router-link to="/sandbox" class="nav-item">
+        <span class="nav-icon"><AppIcons name="view" :size="20" /></span>
+        <span class="nav-text">Component Lab</span>
+      </router-link>
+      <router-link to="/icons" class="nav-item">
+        <span class="nav-icon"><AppIcons name="view" :size="20" /></span>
+        <span class="nav-text">Icon Explorer</span>
+      </router-link>
+    </div>
   </aside>
   </div>
 </template>

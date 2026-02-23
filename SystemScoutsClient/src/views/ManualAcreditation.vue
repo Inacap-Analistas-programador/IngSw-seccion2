@@ -14,8 +14,7 @@
         <FilterSelect
           v-model="filters.curso"
           :options="cursosOpts"
-          label="Curso"
-          placeholder="Todos los cursos"
+          defaultLabel="Cursos"
           class="filter-item"
         />
 

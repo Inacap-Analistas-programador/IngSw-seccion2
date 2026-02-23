@@ -85,6 +85,18 @@ const router = createRouter({
       meta: { requiresAuth: true, module: 'Cursos' }
     },
     { path: '/inscripciones', name: 'formularioPreInscripcion', component: FormularioPreInscripcion },
+    {
+      path: '/sandbox',
+      name: 'sandbox',
+      component: () => import('@/views/ComponentSandbox.vue'),
+      meta: { requiresAuth: false } // Accessible for testing
+    },
+    {
+      path: '/icons',
+      name: 'icon-explorer',
+      component: () => import('@/views/IconExplorer.vue'),
+      meta: { requiresAuth: false }
+    },
 
 
     // Rutas de cursos

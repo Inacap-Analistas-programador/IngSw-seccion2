@@ -722,7 +722,7 @@ async function enviarCorreoConfirmado() {
 .mantenedor-header h2 { color: #1a237e; font-size: 1.5rem; display: flex; align-items: center; margin: 0; }
 
 .filtros { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
-.filter-group { flex: 0 1 auto; display: flex; flex-direction: column; gap: 6px; }
+.filter-group { flex: 0 1 auto; display: flex; flex-direction: column; gap: 6px; min-width: 180px; }
 .filtros label { font-weight: 600; color: var(--color-text); display: flex; align-items: center; gap: 8px; font-size: 0.9rem; margin-right: 0; }
 .filtros select { padding: 5px 8px; border-radius: 6px; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); min-width: 120px; font-size: 0.95rem; }
 

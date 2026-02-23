@@ -86,6 +86,38 @@ class CursoViewSet(viewsets.ModelViewSet):
             
         return Response(data)
 
+    @action(detail=True, methods=['get'])
+    def get_alimentacion_curso(self, request, pk=None):
+        """
+        Retorna opciones de alimentación para un curso específico,
+        optimizadas para el formulario de registro.
+        """
+        curso = self.get_object()
+        alimentaciones = Curso_Alimentacion.objects.filter(
+            cur_id=curso,
+            cua_vigente=True
+        ).select_related('ali_id')
+
+        # Mapeo de cua_tiempo a nombres legibles
+        tiempos = {
+            1: 'Desayuno',
+            2: 'Almuerzo',
+            3: 'Once',
+            4: 'Cena',
+            5: 'Once/Cena',
+        }
+
+        data = []
+        for a in alimentaciones:
+            tiempo_str = tiempos.get(a.cua_tiempo, 'Otro')
+            data.append({
+                'cua_id': a.cua_id,
+                'ali_id': a.ali_id.ali_id,
+                'label': f"[{tiempo_str}] {a.cua_descripcion}"
+            })
+
+        return Response(data)
+
 class CursoCuotaViewSet(viewsets.ModelViewSet):
     serializer_class = MC_S.CursoCuotaSerializer
     filterset_class = CF.CursoCuotaFilter
