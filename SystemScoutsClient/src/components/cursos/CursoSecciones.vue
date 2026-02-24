@@ -4,30 +4,34 @@
     <div class="section-box">
       <h4>Secciones del Curso</h4>
       
-      <table class="fechas-table">
-        <thead>
-          <tr>
-            <th>Sección</th>
-            <th>Rama</th>
-            <th>Participantes</th>
-            <th v-if="!modoVer">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="localList.length === 0">
-            <td :colspan="modoVer ? 3 : 4" class="no-results-small">No hay secciones definidas.</td>
-          </tr>
-          <tr v-for="(item, index) in localList" :key="item.CUS_ID || ('tmp-' + (item.__tmpId || index))">
-            <td>{{ item.CUS_SECCION }}</td>
-            <td>{{ getRamaName(item.RAM_ID) }}</td>
-            <td>{{ item.CUS_CANT_PARTICIPANTE }}</td>
-            <td v-if="!modoVer">
-              <BaseButton @click="iniciarEdicion(index)" variant="secondary" size="sm">Modificar</BaseButton>
-              <BaseButton @click="eliminar(index)" variant="danger" size="sm">Eliminar</BaseButton>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="table-responsive">
+        <table class="fechas-table">
+          <thead>
+            <tr>
+              <th>Sección</th>
+              <th>Rama</th>
+              <th>Participantes</th>
+              <th v-if="!modoVer">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="localList.length === 0">
+              <td :colspan="modoVer ? 3 : 4" class="no-results-small">No hay secciones definidas.</td>
+            </tr>
+            <tr v-for="(item, index) in localList" :key="item.CUS_ID || ('tmp-' + (item.__tmpId || index))">
+              <td>{{ item.CUS_SECCION }}</td>
+              <td>{{ getRamaName(item.RAM_ID) }}</td>
+              <td>{{ item.CUS_CANT_PARTICIPANTE }}</td>
+              <td v-if="!modoVer">
+                <div class="acciones-buttons">
+                  <BaseButton @click="iniciarEdicion(index)" variant="secondary" size="sm">Modificar</BaseButton>
+                  <BaseButton @click="eliminar(index)" variant="danger" size="sm">Eliminar</BaseButton>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
       <!-- Formulario -->
       <div class="add-fecha-form" v-if="!modoVer">
@@ -37,7 +41,7 @@
         </div>
         <div class="form-group">
           <label>Rama</label>
-          <BaseSelect v-model="form.RAM_ID" :options="ramasOptions" optionLabel="text" />
+          <FilterSelect v-model="form.RAM_ID" :options="ramasOptions" labelKey="text" valueKey="value" />
         </div>
         <div class="form-group">
           <label>Participantes</label>
@@ -55,7 +59,7 @@
 import { ref, computed } from 'vue'
 import InputBase from '@/components/InputBase.vue'
 import BaseButton from '@/components/BaseButton.vue'
-import BaseSelect from '@/components/BaseSelect.vue'
+import FilterSelect from '@/components/common/FilterSelect.vue'
 
 const props = defineProps({
   modelValue: { type: Array, default: () => [] },

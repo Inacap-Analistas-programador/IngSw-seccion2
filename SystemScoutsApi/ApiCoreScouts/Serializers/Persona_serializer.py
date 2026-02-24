@@ -58,7 +58,6 @@ class PersonaCompletaSerializer(serializers.ModelSerializer):
     
     # Campos de Nivel
     niv_id = serializers.SerializerMethodField()
-    niv_id = serializers.SerializerMethodField()
     ram_id_nivel = serializers.SerializerMethodField()
 
 
@@ -550,3 +549,56 @@ class PersonaCorreoSerializer(serializers.ModelSerializer):
         # Esto es pesado si no se anota. Por simplicidad en esta fase, 
         # intentaremos buscarlo o retornaremos null para que el front use su default.
         return getattr(obj, '_pap_estado_cache', None)
+
+class PersonaMantenedorSerializer(serializers.ModelSerializer):
+    """
+    Serializer optimizado para el mantenedor de Gestión de Personas.
+    Retorna solo los campos esenciales requeridos para la tabla principal.
+    """
+    # Usar nombres de campos reales para mantener compatibilidad con toUpperKeys
+    per_id = serializers.IntegerField()
+    per_nombres = serializers.CharField()
+    per_apelpta = serializers.CharField()
+    per_apelmat = serializers.CharField(required=False)
+    per_run = serializers.CharField()
+    per_dv = serializers.CharField()
+    per_mail = serializers.EmailField()
+    per_fono = serializers.CharField()
+    per_foto = serializers.CharField(required=False, allow_null=True)
+    per_vigente = serializers.BooleanField()
+    
+    # Campos de catálogo para filtrado rápido y preciso
+    per_rol = serializers.SerializerMethodField()
+    rol_id = serializers.SerializerMethodField()
+    ram_id = serializers.SerializerMethodField()
+    gru_id = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Persona
+        fields = (
+            'per_id', 'per_nombres', 'per_apelpta', 'per_apelmat', 
+            'per_run', 'per_dv', 'per_mail', 'per_fono', 'per_foto', 
+            'per_rol', 'rol_id', 'ram_id', 'gru_id', 'per_vigente'
+        )
+
+    def get_per_rol(self, obj):
+        pc = getattr(obj, '_pec_cache', None)
+        if not pc:
+            pc = obj.persona_curso_set.order_by('-pec_id').first()
+            obj._pec_cache = pc
+        return pc.rol_id.rol_descripcion if pc and pc.rol_id else "Participante"
+
+    def get_rol_id(self, obj):
+        pc = getattr(obj, '_pec_cache', None)
+        if pc and pc.rol_id_id: return pc.rol_id_id
+        return None
+
+    def get_ram_id(self, obj):
+        # La rama está en Persona_Nivel, no en el Nivel directamente en este modelo
+        pn = Persona_Nivel.objects.filter(per_id=obj.per_id).first()
+        return pn.ram_id_id if pn and pn.ram_id_id else None
+
+    def get_gru_id(self, obj):
+        # Usar _id para evitar fetchear el objeto Grupo completo
+        pg = Persona_Grupo.objects.filter(per_id=obj.per_id).first()
+        return pg.gru_id_id if pg and pg.gru_id_id else None

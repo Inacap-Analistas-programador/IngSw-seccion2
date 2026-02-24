@@ -4,37 +4,41 @@
     <div class="section-box">
       <h4>Coordinadores del Curso</h4>
       
-      <table class="fechas-table">
-        <thead>
-          <tr>
-            <th>Persona</th>
-            <th>Cargo</th>
-            <th v-if="!modoVer">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="localList.length === 0">
-            <td :colspan="modoVer ? 2 : 3" class="no-results-small">Sin coordinadores</td>
-          </tr>
-          <tr v-for="(item, index) in localList" :key="item.CUC_ID || ('tmp-' + (item.__tmpId || index))">
-            <td>{{ getPersonaName(item.PER_ID) }}</td>
-            <td>{{ getCargoName(item.CAR_ID) }}</td>
-            <td v-if="!modoVer">
-              <BaseButton @click="eliminar(index)" variant="danger" size="sm">Eliminar</BaseButton>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="table-responsive">
+        <table class="fechas-table">
+          <thead>
+            <tr>
+              <th>Persona</th>
+              <th>Cargo</th>
+              <th v-if="!modoVer">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="localList.length === 0">
+              <td :colspan="modoVer ? 2 : 3" class="no-results-small">Sin coordinadores</td>
+            </tr>
+            <tr v-for="(item, index) in localList" :key="item.CUC_ID || ('tmp-' + (item.__tmpId || index))">
+              <td>{{ getPersonaName(item.PER_ID) }}</td>
+              <td>{{ getCargoName(item.CAR_ID) }}</td>
+              <td v-if="!modoVer">
+                <div class="acciones-buttons">
+                  <BaseButton @click="eliminar(index)" variant="danger" size="sm">Eliminar</BaseButton>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
       <!-- Formulario -->
       <div class="add-fecha-form add-coordinador-form" v-if="!modoVer">
         <div class="form-group">
           <label>Persona</label>
-          <BaseSelect v-model="form.PER_ID" :options="personasOptions" optionLabel="text" />
+          <FilterSelect v-model="form.PER_ID" :options="personasOptions" labelKey="text" valueKey="value" />
         </div>
         <div class="form-group">
           <label>Cargo</label>
-          <BaseSelect v-model="form.CAR_ID" :options="cargosOptions" optionLabel="text" />
+          <FilterSelect v-model="form.CAR_ID" :options="cargosOptions" labelKey="text" valueKey="value" />
         </div>
         <BaseButton @click="agregar" class="add-button">Añadir Coordinador</BaseButton>
       </div>
@@ -45,7 +49,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import BaseButton from '@/components/BaseButton.vue'
-import BaseSelect from '@/components/BaseSelect.vue'
+import FilterSelect from '@/components/common/FilterSelect.vue'
 
 const props = defineProps({
   modelValue: { type: Array, default: () => [] },

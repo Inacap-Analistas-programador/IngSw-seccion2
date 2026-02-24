@@ -9,6 +9,8 @@ const makeCrud = base => ({
   partialUpdate: (id, data) => request(`${base}/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
   remove: (id) => request(`${base}/${id}/`, { method: 'DELETE' }),
   paraCorreos: (params) => request(`${base}/para_correos/${params ? `?${new URLSearchParams(params)}` : ''}`),
+  paraMantenedor: (params) => request(`${base}/para_mantenedor/${params ? `?${new URLSearchParams(params)}` : ''}`),
+  checkRut: (rut) => request(`${base}/check_rut/?rut=${rut}`),
 })
 
 // Exportaciones CON prefijo 'personas/' (para componentes actuales como Gestionpersonas.vue)
@@ -44,36 +46,45 @@ export const personaIndividuales = makeCrud('personas/individuales') // Reutiliz
 
 // ✨ Funciones auxiliares para obtener datos de filtros
 export const obtenerRoles = async () => {
+  const cacheKey = 'gs_catalog_roles_v3'
+  const ttl = 10 * 60 * 1000 // 10 minutes
   try {
-    const rolesSet = new Set();
+    const cached = JSON.parse(localStorage.getItem(cacheKey))
+    if (cached && (Date.now() - cached.ts < ttl)) return cached.data
+  } catch { }
 
-    // Obtener de personas completas
+  try {
+    // 1. Intentar desde el endpoint minimalista del backend (Más rápido y eficiente)
     try {
-      const data = await personasCompletas.list();
-      data.forEach(persona => {
-        if (persona.PER_ROL && persona.PER_ROL.trim() !== '') {
-          rolesSet.add(persona.PER_ROL);
-        }
-      });
-    } catch (error) {
-      console.warn('No se pudieron cargar roles desde personas-completas:', error.message);
+      const resp = await request('mantenedores/rol/min')
+      if (resp && resp.results) {
+        const result = resp.results.map(r => ({ value: r.id || r.nombre, label: r.nombre }))
+        localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: result }))
+        return result
+      }
+    } catch (e) {
+      console.warn('Endpoint roles/min no disponible, usando fallback:', e.message)
     }
 
-    // Obtener de formadores (tabla de relación)
+    const rolesSet = new Set();
+    // Fallback: Obtener de personas
     try {
-      const formadoresData = await formadores.list();
-      formadoresData.forEach(formador => {
-        if (formador.rol || formador.FOR_ROL) {
-          rolesSet.add(formador.rol || formador.FOR_ROL);
+      const resp = await personas.paraMantenedor(); // Usar versión ligera
+      const data = Array.isArray(resp) ? resp : (resp.results || []);
+      data.forEach(persona => {
+        const rol = persona.PER_ROL || persona.per_rol
+        if (rol && String(rol).trim() !== '') {
+          rolesSet.add(rol);
         }
       });
     } catch (error) {
-      console.warn('No se pudieron cargar roles desde formadores:', error.message);
+      console.warn('No se pudieron cargar roles desde personas:', error.message);
     }
 
     const rolesUnicos = Array.from(rolesSet);
-    console.log('Roles encontrados:', rolesUnicos);
-    return rolesUnicos.map(rol => ({ value: rol, label: rol }));
+    const result = rolesUnicos.map(rol => ({ value: rol, label: rol }));
+    localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: result }))
+    return result;
   } catch (error) {
     console.warn('Error obteniendo roles:', error);
     return [];
@@ -81,36 +92,45 @@ export const obtenerRoles = async () => {
 };
 
 export const obtenerRamas = async () => {
+  const cacheKey = 'gs_catalog_ramas_v3'
+  const ttl = 10 * 60 * 1000 // 10 minutes
   try {
-    const ramasSet = new Set();
+    const cached = JSON.parse(localStorage.getItem(cacheKey))
+    if (cached && (Date.now() - cached.ts < ttl)) return cached.data
+  } catch { }
 
-    // Obtener de personas completas
+  try {
+    // 1. Intentar desde el endpoint minimalista del backend
     try {
-      const data = await personasCompletas.list();
-      data.forEach(persona => {
-        if (persona.PER_RAMA && persona.PER_RAMA.trim() !== '') {
-          ramasSet.add(persona.PER_RAMA);
-        }
-      });
-    } catch (error) {
-      console.warn('No se pudieron cargar ramas desde personas-completas:', error.message);
+      const resp = await request('mantenedores/rama/min')
+      if (resp && resp.results) {
+        const result = resp.results.map(r => ({ value: r.id || r.nombre, label: r.nombre }))
+        localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: result }))
+        return result
+      }
+    } catch (e) {
+      console.warn('Endpoint ramas/min no disponible, usando fallback:', e.message)
     }
 
-    // Obtener de individuales (tabla de relación)
+    const ramasSet = new Set();
+    // Fallback: Obtener de personas
     try {
-      const individualesData = await individuales.list();
-      individualesData.forEach(individual => {
-        if (individual.rama || individual.IND_RAMA) {
-          ramasSet.add(individual.rama || individual.IND_RAMA);
+      const resp = await personas.paraMantenedor();
+      const data = Array.isArray(resp) ? resp : (resp.results || []);
+      data.forEach(persona => {
+        const rama = persona.PER_RAMA || persona.per_rama
+        if (rama && String(rama).trim() !== '') {
+          ramasSet.add(rama);
         }
       });
     } catch (error) {
-      console.warn('No se pudieron cargar ramas desde individuales:', error.message);
+      console.warn('No se pudieron cargar ramas desde personas:', error.message);
     }
 
     const ramasUnicas = Array.from(ramasSet);
-    console.log('Ramas encontradas:', ramasUnicas);
-    return ramasUnicas.map(rama => ({ value: rama, label: rama }));
+    const result = ramasUnicas.map(rama => ({ value: rama, label: rama }));
+    localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: result }))
+    return result;
   } catch (error) {
     console.warn('Error obteniendo ramas:', error);
     return [];
@@ -118,36 +138,56 @@ export const obtenerRamas = async () => {
 };
 
 export const obtenerGrupos = async () => {
+  const cacheKey = 'gs_catalog_grupos_v2'
+  const ttl = 10 * 60 * 1000 // 10 minutes
   try {
-    const gruposSet = new Set();
+    const cached = JSON.parse(localStorage.getItem(cacheKey))
+    if (cached && (Date.now() - cached.ts < ttl)) return cached.data
+  } catch { }
 
-    // Obtener de personas completas
+  try {
+    // 1. Intentar desde el endpoint minimalista del backend
     try {
-      const data = await personasCompletas.list();
-      data.forEach(persona => {
-        if (persona.PER_GRUPO && persona.PER_GRUPO.trim() !== '') {
-          gruposSet.add(persona.PER_GRUPO);
-        }
-      });
-    } catch (error) {
-      console.warn('No se pudieron cargar grupos desde personas-completas:', error.message);
+      const resp = await request('mantenedores/grupo/min')
+      if (resp && resp.results) {
+        const result = resp.results.map(g => ({ value: g.id || g.nombre, label: g.nombre }))
+        localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: result }))
+        return result
+      }
+    } catch (e) {
+      console.warn('Endpoint grupos/min no disponible, intentando con mantenedor:', e.message)
     }
 
-    // Obtener de grupos (tabla de relación)
     try {
-      const gruposData = await grupos.list();
-      gruposData.forEach(grupo => {
-        if (grupo.nombre || grupo.GRU_NOMBRE) {
-          gruposSet.add(grupo.nombre || grupo.GRU_NOMBRE);
+      const resp = await grupos.list()
+      if (Array.isArray(resp)) {
+        const result = resp.map(g => ({ value: g.gru_descripcion || g.nombre, label: g.gru_descripcion || g.nombre }))
+        localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: result }))
+        return result
+      }
+    } catch (e) {
+      console.warn('Error cargando grupos desde mantenedor:', e.message)
+    }
+
+    const gruposSet = new Set();
+    // Fallback: personas
+    try {
+      const resp = await personas.paraMantenedor();
+      const data = Array.isArray(resp) ? resp : (resp.results || []);
+      data.forEach(persona => {
+        const grupo = persona.PER_GRUPO || persona.per_grupo
+        if (grupo && String(grupo).trim() !== '') {
+          gruposSet.add(grupo);
         }
       });
     } catch (error) {
-      console.warn('No se pudieron cargar grupos desde tabla grupos:', error.message);
+      console.warn('No se pudieron cargar grupos desde personas:', error.message);
     }
 
     const gruposUnicos = Array.from(gruposSet);
-    console.log('Grupos encontrados:', gruposUnicos);
-    return gruposUnicos.map(grupo => ({ value: grupo, label: grupo }));
+    const result = gruposUnicos.map(grupo => ({ value: grupo, label: grupo }));
+    localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: result }))
+    return result;
   } catch (error) {
     console.warn('Error obteniendo grupos:', error);
     return [];

@@ -4,35 +4,39 @@
     <div class="section-box">
       <h4>Cuotas del Curso</h4>
       
-      <table class="fechas-table">
-        <thead>
-          <tr>
-            <th>Tipo</th>
-            <th>Fecha</th>
-            <th>Monto</th>
-            <th v-if="!modoVer">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="localList.length === 0">
-            <td :colspan="modoVer ? 3 : 4" class="no-results-small">Sin cuotas</td>
-          </tr>
-          <tr v-for="(item, index) in localList" :key="item.CUU_ID || ('tmp-' + (item.__tmpId || index))">
-            <td>{{ item.CUU_TIPO === 1 ? 'Con Almuerzo' : 'Sin Almuerzo' }}</td>
-            <td>{{ formatDateSimple(item.CUU_FECHA) }}</td>
-            <td>${{ item.CUU_VALOR }}</td>
-            <td v-if="!modoVer">
-              <BaseButton @click="eliminar(index)" variant="danger" size="sm">Eliminar</BaseButton>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="table-responsive">
+        <table class="fechas-table">
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Fecha</th>
+              <th>Monto</th>
+              <th v-if="!modoVer">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="localList.length === 0">
+              <td :colspan="modoVer ? 3 : 4" class="no-results-small">Sin cuotas</td>
+            </tr>
+            <tr v-for="(item, index) in localList" :key="item.CUU_ID || ('tmp-' + (item.__tmpId || index))">
+              <td>{{ item.CUU_TIPO === 1 ? 'Con Almuerzo' : 'Sin Almuerzo' }}</td>
+              <td>{{ formatDateSimple(item.CUU_FECHA) }}</td>
+              <td>${{ item.CUU_VALOR }}</td>
+              <td v-if="!modoVer">
+                <div class="acciones-buttons">
+                  <BaseButton @click="eliminar(index)" variant="danger" size="sm">Eliminar</BaseButton>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
       <!-- Formulario -->
       <div class="add-fecha-form add-cuota-form" v-if="!modoVer">
         <div class="form-group">
           <label>Tipo</label>
-          <BaseSelect v-model="form.CUU_TIPO" :options="[{value:1,text:'Con Almuerzo'},{value:2,text:'Sin Almuerzo'}]" />
+          <FilterSelect v-model="form.CUU_TIPO" :options="[{value:1,text:'Con Almuerzo'},{value:2,text:'Sin Almuerzo'}]" labelKey="text" valueKey="value" />
         </div>
         <div class="form-group">
           <label>Fecha</label>
@@ -52,7 +56,7 @@
 import { ref, computed } from 'vue'
 import InputBase from '@/components/InputBase.vue'
 import BaseButton from '@/components/BaseButton.vue'
-import BaseSelect from '@/components/BaseSelect.vue'
+import FilterSelect from '@/components/common/FilterSelect.vue'
 
 const props = defineProps({
   modelValue: { type: Array, default: () => [] },

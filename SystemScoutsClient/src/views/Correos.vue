@@ -58,7 +58,7 @@
 				<!-- Header estilo Mantenedor (Ubicado sobre la tabla) -->
 				<div class="mantenedor-header">
 					<div class="header-content">
-						<h2><AppIcons name="map" :size="24" />Inscritos</h2>
+						<h2>Inscritos</h2>
 						<div class="header-actions-group">
 							<BaseButton class="header-icon-btn" variant="secondary" @click="exportarCorreos" title="Exportar Correos">
 								<AppIcons name="download" :size="20" />

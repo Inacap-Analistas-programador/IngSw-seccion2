@@ -5,30 +5,34 @@
       <h4>Períodos del Curso</h4>
       
       <!-- Tabla de Fechas Existentes -->
-      <table class="fechas-table">
-        <thead>
-          <tr>
-            <th>Inicio</th>
-            <th>Término</th>
-            <th>Tipo</th>
-            <th v-if="!modoVer">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="localFechas.length === 0">
-            <td :colspan="modoVer ? 3 : 4" class="no-results-small">No hay períodos definidos.</td>
-          </tr>
-          <tr v-for="(fecha, index) in localFechas" :key="fecha.CUF_ID || ('tmp-' + (fecha.__tmpId || index))">
-            <td>{{ formatDateSimple(fecha.CUF_FECHA_INICIO) }}</td>
-            <td>{{ formatDateSimple(fecha.CUF_FECHA_TERMINO) }}</td>
-            <td>{{ getTipoFechaText(fecha.CUF_TIPO) }}</td>
-            <td v-if="!modoVer">
-              <BaseButton @click="iniciarEdicion(index)" variant="secondary" size="sm">Modificar</BaseButton>
-              <BaseButton @click="eliminar(index)" variant="danger" size="sm">Eliminar</BaseButton>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="table-responsive">
+        <table class="fechas-table">
+          <thead>
+            <tr>
+              <th>Inicio</th>
+              <th>Término</th>
+              <th>Tipo</th>
+              <th v-if="!modoVer">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="localFechas.length === 0">
+              <td :colspan="modoVer ? 3 : 4" class="no-results-small">No hay períodos definidos.</td>
+            </tr>
+            <tr v-for="(fecha, index) in localFechas" :key="fecha.CUF_ID || ('tmp-' + (fecha.__tmpId || index))">
+              <td>{{ formatDateSimple(fecha.CUF_FECHA_INICIO) }}</td>
+              <td>{{ formatDateSimple(fecha.CUF_FECHA_TERMINO) }}</td>
+              <td>{{ getTipoFechaText(fecha.CUF_TIPO) }}</td>
+              <td v-if="!modoVer">
+                <div class="acciones-buttons">
+                  <BaseButton @click="iniciarEdicion(index)" variant="secondary" size="sm">Modificar</BaseButton>
+                  <BaseButton @click="eliminar(index)" variant="danger" size="sm">Eliminar</BaseButton>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
       <!-- Formulario para Añadir Nueva Fecha -->
       <div class="add-fecha-form" v-if="!modoVer">
@@ -42,7 +46,7 @@
         </div>
         <div class="form-group">
           <label>Tipo</label>
-          <BaseSelect v-model="form.CUF_TIPO" :options="opcionesTipoFecha" optionLabel="text" />
+          <FilterSelect v-model="form.CUF_TIPO" :options="opcionesTipoFecha" labelKey="text" valueKey="value" />
         </div>
         <BaseButton v-if="editIndex === null" @click="agregar" class="add-button">Añadir Período</BaseButton>
         <BaseButton v-if="editIndex !== null" @click="guardarEdicion" class="add-button" variant="primary">Guardar</BaseButton>
@@ -56,7 +60,7 @@
 import { ref, computed } from 'vue'
 import InputBase from '@/components/InputBase.vue'
 import BaseButton from '@/components/BaseButton.vue'
-import BaseSelect from '@/components/BaseSelect.vue'
+import FilterSelect from '@/components/common/FilterSelect.vue'
 
 const props = defineProps({
   modelValue: {

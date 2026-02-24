@@ -102,6 +102,7 @@ onUnmounted(() => {
   width: 100%;
   height: 40px;
   font-family: 'Inter', Arial, sans-serif;
+  box-sizing: border-box;
 }
 
 .custom-select-trigger {
@@ -119,6 +120,7 @@ onUnmounted(() => {
   cursor: pointer;
   transition: all 0.2s;
   user-select: none;
+  box-sizing: border-box;
 }
 
 .custom-select-trigger:hover {

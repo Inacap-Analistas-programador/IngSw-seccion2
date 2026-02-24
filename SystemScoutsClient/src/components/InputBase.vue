@@ -1,3 +1,9 @@
+<script>
+export default {
+  inheritAttrs: false
+}
+</script>
+
 <script setup>
 import { ref, computed, useSlots } from 'vue'
 
@@ -36,6 +42,10 @@ function validar(value) {
     if (props.rules === "number" && value && !/^[0-9]+$/.test(value)) return "Solo números"
     if (props.rules === "email" && value && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value)) return "Email inválido"
     if (props.rules === "rut" && value && !validarRut(value)) return "RUT inválido"
+    if (props.type === "date" && value) {
+        const year = new Date(value).getFullYear()
+        if (year > 9999) return "Año inválido (máx 9999)"
+    }
     return ""
 }
 
@@ -53,6 +63,7 @@ function onInput(e) {
 
         <div class="input-wrapper" :class="{ 'has-append': hasAppend }">
             <input
+                v-bind="$attrs"
                 :id="inputId"
                 :type="type"
                 :value="modelValue"
@@ -62,6 +73,7 @@ function onInput(e) {
                 :disabled="disabled"
                 :aria-invalid="(externalError || error) ? 'true' : 'false'"
                 :class="{ 'base-field--disabled': disabled }"
+                :max="type === 'date' ? '9999-12-31' : undefined"
             />
 
             <div v-if="hasAppend" class="input-append">

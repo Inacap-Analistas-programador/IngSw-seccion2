@@ -839,7 +839,6 @@ import authService from '@/services/authService.js'
 import NotificationToast from '@/components/NotificationToast.vue'
 import { format, parseISO } from 'date-fns'
 import jsPDF from 'jspdf'
-import * as XLSX from 'xlsx'
 import 'jspdf-autotable'
 
 

@@ -34,3 +34,6 @@ SystemScriptsAndFiles/Archivos/
 
 SystemScoutsLogs/
 
+SystemScoutsApi/media/archivos/*
+SystemScoutsApi/media/fotos_perfil/*
+

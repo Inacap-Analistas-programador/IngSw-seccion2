@@ -42,6 +42,7 @@ defineEmits(['update:modelValue', 'search'])
   height: 40px;
   flex: 1;
   transition: all 0.2s;
+  box-sizing: border-box;
 }
 
 .search-box:focus-within {

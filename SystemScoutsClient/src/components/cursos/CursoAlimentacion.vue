@@ -4,52 +4,40 @@
     <div class="section-box">
       <h4>Cuotas y Alimentación</h4>
       
-      <!-- Campos de Cuota Global -->
-      <div class="cuotas-grid">
-        <div class="form-group">
-          <label>Cuota con Almuerzo</label>
-          <InputBase type="number" :modelValue="cuotaCon" @update:modelValue="$emit('update:cuotaCon', $event)" />
-          <small class="field-hint">Monto en CLP, ej: 15000</small>
-        </div>
-        <div class="form-group">
-          <label>Cuota sin Almuerzo</label>
-          <InputBase type="number" :modelValue="cuotaSin" @update:modelValue="$emit('update:cuotaSin', $event)" />
-          <small class="field-hint">Monto en CLP, ej: 10000</small>
-        </div>
-        <div class="form-group" v-if="!modoVer">
-           <label></label>
-        </div>
-      </div>
       
       <!-- Tabla Alimentación -->
-      <table class="fechas-table">
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Tiempo</th>
-            <th>Tipo Alimentación</th>
-            <th>Descripción</th>
-            <th>Adic.</th>
-            <th v-if="!modoVer">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="localList.length === 0">
-            <td :colspan="modoVer ? 5 : 6" class="no-results-small">Sin alimentación</td>
-          </tr>
-          <tr v-for="(item, index) in localList" :key="item.CUA_ID || ('tmp-' + (item.__tmpId || index))">
-            <td>{{ formatDateSimple(item.CUA_FECHA) }}</td>
-            <td>{{ getTiempoText(item.CUA_TIEMPO) }}</td>
-            <td>{{ getAlimentacionText(item.ALI_ID) }}</td>
-            <td>{{ item.CUA_DESCRIPCION }}</td>
-            <td>{{ item.CUA_CANTIDAD_ADICIONAL }}</td>
-            <td v-if="!modoVer">
-              <BaseButton @click="iniciarEdicion(index)" variant="secondary" size="sm">Modificar</BaseButton>
-              <BaseButton @click="eliminar(index)" variant="danger" size="sm">Eliminar</BaseButton>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="table-responsive">
+        <table class="fechas-table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Tiempo</th>
+              <th>Tipo Alimentación</th>
+              <th>Descripción</th>
+              <th>Adic.</th>
+              <th v-if="!modoVer">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="localList.length === 0">
+              <td :colspan="modoVer ? 5 : 6" class="no-results-small">Sin alimentación</td>
+            </tr>
+            <tr v-for="(item, index) in localList" :key="item.CUA_ID || ('tmp-' + (item.__tmpId || index))">
+              <td>{{ formatDateSimple(item.CUA_FECHA) }}</td>
+              <td>{{ getTiempoText(item.CUA_TIEMPO) }}</td>
+              <td>{{ getAlimentacionText(item.ALI_ID) }}</td>
+              <td>{{ item.CUA_DESCRIPCION }}</td>
+              <td>{{ item.CUA_CANTIDAD_ADICIONAL }}</td>
+              <td v-if="!modoVer">
+                <div class="acciones-buttons">
+                  <BaseButton @click="iniciarEdicion(index)" variant="secondary" size="sm">Modificar</BaseButton>
+                  <BaseButton @click="eliminar(index)" variant="danger" size="sm">Eliminar</BaseButton>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
       <!-- Formulario -->
       <div class="add-fecha-form add-alimentacion-form" v-if="!modoVer">
@@ -59,11 +47,11 @@
         </div>
         <div class="form-group">
           <label>Tiempo</label>
-          <BaseSelect v-model="form.CUA_TIEMPO" :options="tiempoAlimentacionOptions" optionLabel="text" />
+          <FilterSelect v-model="form.CUA_TIEMPO" :options="tiempoAlimentacionOptions" labelKey="text" valueKey="value" />
         </div>
         <div class="form-group">
           <label>Tipo</label>
-          <BaseSelect v-model="form.ALI_ID" :options="alimentacionOptions" optionLabel="text" />
+          <FilterSelect v-model="form.ALI_ID" :options="alimentacionOptions" labelKey="text" valueKey="value" />
         </div>
         <div class="form-group">
           <label>Descripción</label>
@@ -85,17 +73,15 @@
 import { ref, computed } from 'vue'
 import InputBase from '@/components/InputBase.vue'
 import BaseButton from '@/components/BaseButton.vue'
-import BaseSelect from '@/components/BaseSelect.vue'
+import FilterSelect from '@/components/common/FilterSelect.vue'
 
 const props = defineProps({
   modelValue: { type: Array, default: () => [] }, // Lista de alimentaciones
   modoVer: { type: Boolean, default: false },
-  alimentacionOptions: { type: Array, default: () => [] },
-  cuotaCon: { type: [Number, String], default: null },
-  cuotaSin: { type: [Number, String], default: null },
+  alimentacionOptions: { type: Array, default: () => [] }
 })
 
-const emit = defineEmits(['update:modelValue', 'update:cuotaCon', 'update:cuotaSin', 'show-alert'])
+const emit = defineEmits(['update:modelValue', 'show-alert'])
 
 const localList = computed(() => props.modelValue)
 const editIndex = ref(null)

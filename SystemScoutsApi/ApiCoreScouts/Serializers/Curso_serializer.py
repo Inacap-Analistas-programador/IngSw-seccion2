@@ -99,3 +99,27 @@ class CursoSerializer(serializers.ModelSerializer):
         if 'cur_estado' in ret and ret['cur_estado'] is not None:
             ret['cur_estado'] = int(ret['cur_estado'])
         return ret
+
+
+class CursoMantenedorSerializer(serializers.ModelSerializer):
+    """
+    Serializer optimizado para la tabla principal de Cursos (Listado).
+    Solo incluye los datos básicos que se muestran en el Data-Table.
+    """
+    fechas = CursoFechaSerializer(many=True, read_only=True, source='curso_fecha_set')
+
+    class Meta:
+        model = Curso
+        fields = (
+            'cur_id', 'cur_descripcion', 'cur_codigo', 'tcu_id',
+            'per_id_responsable', 'car_id_responsable', 'cur_estado',
+            'fechas'
+        )
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        # Convertir IDs a enteros
+        for key in ['cur_id', 'tcu_id', 'per_id_responsable', 'car_id_responsable', 'cur_estado']:
+            if key in ret and ret[key] is not None:
+                ret[key] = int(ret[key])
+        return ret

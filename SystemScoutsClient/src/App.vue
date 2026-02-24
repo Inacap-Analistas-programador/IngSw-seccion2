@@ -27,9 +27,7 @@ onMounted(() => {
 			<main class="main-content">
 				<ModernMainScrollbar>
 					<router-view v-slot="{ Component, route }">
-						<Transition :name="route.meta.transition || 'fade'" mode="out-in">
-							<component :is="Component" :key="(route.name || route.path) + '|' + (route.fullPath || '')" />
-						</Transition>
+						<component :is="Component" :key="(route.name || route.path) + '|' + (route.fullPath || '')" />
 					</router-view>
 				</ModernMainScrollbar>
 			</main>

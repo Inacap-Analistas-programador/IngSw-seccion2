@@ -1,4 +1,6 @@
 from rest_framework import viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from ..Serializers import Mantenedor_serializer as MP_S
 from ..Models.mantenedor_model import *
 from ..Models.mantenedor_model import *
@@ -36,6 +38,13 @@ class RolViewSet(viewsets.ModelViewSet):
     filterset_class = MP_F.RolFilter
     APP_NAME = "Mantenedores"
 
+    @action(detail=False, methods=['get'])
+    def min(self, request):
+        queryset = self.filter_queryset(self.get_queryset())
+        data = queryset.values('ROL_ID', 'ROL_NOMBRE')
+        results = [{'id': item['ROL_ID'], 'nombre': item['ROL_NOMBRE']} for item in data]
+        return Response({'results': results})
+
 class CargoViewSet(viewsets.ModelViewSet):
     queryset = Cargo.objects.all()
     serializer_class = MP_S.CargoSerializer
@@ -54,6 +63,13 @@ class RamaViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_class = MP_F.RamaFilter
     APP_NAME = "Mantenedores"
+
+    @action(detail=False, methods=['get'])
+    def min(self, request):
+        queryset = self.filter_queryset(self.get_queryset())
+        data = queryset.values('RAM_ID', 'RAM_DESCRIPCION')
+        results = [{'id': item['RAM_ID'], 'nombre': item['RAM_DESCRIPCION']} for item in data]
+        return Response({'results': results})
 
 class EstadoCivilViewSet(viewsets.ModelViewSet):
     queryset = Estado_Civil.objects.all()
@@ -99,6 +115,13 @@ class GrupoViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_class = MP_F.GrupoFilter
     APP_NAME = "Mantenedores"
+
+    @action(detail=False, methods=['get'])
+    def min(self, request):
+        queryset = self.filter_queryset(self.get_queryset())
+        data = queryset.values('GRU_ID', 'GRU_DESCRIPCION')
+        results = [{'id': item['GRU_ID'], 'nombre': item['GRU_DESCRIPCION']} for item in data]
+        return Response({'results': results})
 
 class RegionViewSet(viewsets.ModelViewSet):
     queryset = Region.objects.all()

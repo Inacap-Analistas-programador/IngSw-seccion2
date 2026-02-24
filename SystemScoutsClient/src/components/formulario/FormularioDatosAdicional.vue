@@ -74,7 +74,7 @@
 
     <div class="section-grid">
       <div class="campo">
-        <label for="consideraciones">Observaciones o consideraciones adicionales:</label>
+        <label for="consideraciones">Observaciones o consideraciones adicionales (Opcional):</label>
         <textarea
           id="consideraciones"
           v-model="consideraciones"

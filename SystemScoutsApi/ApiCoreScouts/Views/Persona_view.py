@@ -14,6 +14,11 @@ from ..Models.pago_model import Pago_Persona
 from ..Permissions import PerfilPermission
 from django.db.models import Prefetch, Q, Value, CharField
 from django.db.models.functions import Concat
+import base64
+import uuid
+import os
+from django.conf import settings
+from django.core.files.base import ContentFile
 
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 100
@@ -31,6 +36,78 @@ class PersonaViewSet(viewsets.ModelViewSet):
     search_fields = ['per_nombres', 'per_apelpta', 'per_apelmat', 'per_run', 'per_apodo']
     renderer_classes = [JSONRenderer]
     pagination_class = StandardResultsSetPagination
+
+    def _process_base64_foto(self, foto_data, rut):
+        """
+        Decodifica un string base64 y lo guarda como archivo de imagen.
+        Retorna la ruta relativa para guardar en la BD.
+        """
+        if not foto_data or not foto_data.startswith('data:image'):
+            return foto_data # Probablemente null, o ya es una URL
+
+        try:
+            format, imgstr = foto_data.split(';base64,')
+            ext = format.split('/')[-1]
+            filename = f"{rut}_{uuid.uuid4().hex[:8]}.{ext}"
+            
+            # Directorio de fotos dentro de MEDIA_ROOT
+            fotos_dir = os.path.join(settings.MEDIA_ROOT, 'fotos_perfil')
+            os.makedirs(fotos_dir, exist_ok=True)
+            
+            file_path = os.path.join(fotos_dir, filename)
+            
+            with open(file_path, 'wb') as f:
+                f.write(base64.b64decode(imgstr))
+                
+            return f"/media/fotos_perfil/{filename}"
+        except Exception as e:
+            print(f"Error procesando foto base64: {e}")
+            return None
+
+    def create(self, request, *args, **kwargs):
+        # Interceptar foto base64
+        data = request.data.copy()
+        
+        # Soportar tanto minúsculas como mayúsculas (por toUpperKeys de Vue)
+        foto_base64 = data.get('per_foto') or data.get('PER_FOTO')
+        
+        if foto_base64:
+            rut = data.get('per_run') or data.get('PER_RUN', 'nuevo')
+            ruta_foto = self._process_base64_foto(foto_base64, rut)
+            data['per_foto'] = ruta_foto
+            if 'PER_FOTO' in data:
+                # Actualizar también la clave en mayúscula si existe,
+                # pero el serializer consumirá la versión en minúscula
+                data['PER_FOTO'] = ruta_foto
+            
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=201, headers=headers)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        
+        # Interceptar foto base64
+        data = request.data.copy()
+        foto_base64 = data.get('per_foto') or data.get('PER_FOTO')
+        
+        if foto_base64:
+            ruta_foto = self._process_base64_foto(foto_base64, instance.per_run)
+            data['per_foto'] = ruta_foto
+            if 'PER_FOTO' in data:
+                data['PER_FOTO'] = ruta_foto
+            
+        serializer = self.get_serializer(instance, data=data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        if getattr(instance, '_prefetched_objects_cache', None):
+            instance._prefetched_objects_cache = {}
+
+        return Response(serializer.data)
 
     @action(detail=False, methods=['post'])
     def acreditacion_manual_acreditar(self, request):
@@ -100,6 +177,89 @@ class PersonaViewSet(viewsets.ModelViewSet):
         
         serializer = MU_S.PersonaCorreoSerializer(queryset, many=True)
         return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def para_mantenedor(self, request):
+        """
+        Endpoint ultra-optimizado para la tabla principal de Gestión de Personas.
+        Retorna solo los campos mínimos: nombre, email, rol, rut, fono, vigente.
+        """
+        # Prefetch de Persona_Curso optimizado (solo último registro para sacar el rol)
+        pc_qs = Persona_Curso.objects.select_related('rol_id').only(
+            'pec_id', 'per_id', 'rol_id'
+        ).order_by('-pec_id')
+        
+        queryset = Persona.objects.prefetch_related(
+            Prefetch('persona_curso_set', queryset=pc_qs)
+        )
+
+        # Búsqueda manual exhaustiva con 'q'
+        q = request.query_params.get('q', '').strip()
+        if q:
+            # Construir combinaciones de nombre y RUT
+            queryset = queryset.annotate(
+                full_name_1=Concat('per_nombres', Value(' '), 'per_apelpta', Value(' '), 'per_apelmat', output_field=CharField()),
+                full_name_2=Concat('per_nombres', Value(' '), 'per_apelpta', output_field=CharField()),
+                full_name_3=Concat('per_nombres', Value(' '), 'per_apelmat', output_field=CharField()),
+                full_rut=Concat('per_run', Value('-'), 'per_dv', output_field=CharField())
+            )
+            
+            # Buscar dividiendo los términos si hay espacios (opcional, o buscar el string exacto en las concatenaciones)
+            # Para coincidir con el requerimiento del usuario (nombres, pat, mat combinados) 
+            # buscaremos el string q completo si coincide parcial o totalmente con las combinaciones,
+            # más email, run, etc.
+            queryset = queryset.filter(
+                Q(full_name_1__icontains=q) |
+                Q(full_name_2__icontains=q) |
+                Q(full_name_3__icontains=q) |
+                Q(per_nombres__icontains=q) |
+                Q(per_apelpta__icontains=q) |
+                Q(per_apelmat__icontains=q) |
+                Q(per_run__icontains=q) |
+                Q(full_rut__icontains=q) |
+                Q(per_mail__icontains=q)
+            )
+
+        # Aplicar filtros estándar adicionales
+        queryset = self.filter_queryset(queryset).distinct().order_by('per_id')
+        
+        # Paginación si se requiere, de lo contrario retornar todo
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = MU_S.PersonaMantenedorSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = MU_S.PersonaMantenedorSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def check_rut(self, request):
+        """
+        Endpoint ultra-rápido para verificar la existencia de un RUT.
+        Solo busca en la tabla principal y retorna la información mínima si existe.
+        """
+        run = request.query_params.get('rut', '').strip()
+        if not run:
+            return Response({'error': 'Debe proporcionar un RUT (parámetro query "rut")'}, status=400)
+            
+        persona = Persona.objects.filter(per_run=run).only(
+            'per_id', 'per_run', 'per_dv', 'per_nombres', 'per_apelpta', 'per_apelmat'
+        ).first()
+        
+        if persona:
+            return Response({
+                'exists': True,
+                'persona': {
+                    'per_id': persona.per_id,
+                    'per_run': persona.per_run,
+                    'per_dv': persona.per_dv,
+                    'per_nombres': persona.per_nombres,
+                    'per_apelpta': persona.per_apelpta,
+                    'per_apelmat': persona.per_apelmat,
+                }
+            })
+        else:
+            return Response({'exists': False})
     
     def get_queryset(self):
         """

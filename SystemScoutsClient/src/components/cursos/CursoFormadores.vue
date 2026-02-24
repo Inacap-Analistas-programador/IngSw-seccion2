@@ -4,46 +4,50 @@
     <div class="section-box">
       <h4>Equipo Formadores</h4>
       
-      <table class="fechas-table">
-        <thead>
-          <tr>
-            <th>Persona</th>
-            <th>Rol</th>
-            <th>Sección</th>
-            <th>Director</th>
-            <th v-if="!modoVer">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="localList.length === 0">
-            <td :colspan="modoVer ? 4 : 5" class="no-results-small">Sin formadores</td>
-          </tr>
-          <tr v-for="(item, index) in localList" :key="item.CUF_ID || ('tmp-' + (item.__tmpId || index))">
-            <td>{{ getPersonaName(item.PER_ID) }}</td>
-            <td>{{ getRolName(item.ROL_ID) }}</td>
-            <td>{{ getSeccionName(item.CUS_ID) }}</td>
-            <td>{{ item.CUO_DIRECTOR ? 'Sí' : 'No' }}</td>
-            <td v-if="!modoVer">
-              <BaseButton @click="iniciarEdicion(index)" variant="secondary" size="sm">Modificar</BaseButton>
-              <BaseButton @click="eliminar(index)" variant="danger" size="sm">Eliminar</BaseButton>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="table-responsive">
+        <table class="fechas-table">
+          <thead>
+            <tr>
+              <th>Persona</th>
+              <th>Rol</th>
+              <th>Sección</th>
+              <th>Director</th>
+              <th v-if="!modoVer">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="localList.length === 0">
+              <td :colspan="modoVer ? 4 : 5" class="no-results-small">Sin formadores</td>
+            </tr>
+            <tr v-for="(item, index) in localList" :key="item.CUF_ID || ('tmp-' + (item.__tmpId || index))">
+              <td>{{ getPersonaName(item.PER_ID) }}</td>
+              <td>{{ getRolName(item.ROL_ID) }}</td>
+              <td>{{ getSeccionName(item.CUS_ID) }}</td>
+              <td>{{ item.CUO_DIRECTOR ? 'Sí' : 'No' }}</td>
+              <td v-if="!modoVer">
+                <div class="acciones-buttons">
+                  <BaseButton @click="iniciarEdicion(index)" variant="secondary" size="sm">Modificar</BaseButton>
+                  <BaseButton @click="eliminar(index)" variant="danger" size="sm">Eliminar</BaseButton>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
       <!-- Formulario -->
       <div class="add-fecha-form add-formadores-form" v-if="!modoVer">
         <div class="form-group">
           <label>Persona</label>
-          <BaseSelect v-model="form.PER_ID" :options="personasOptions" optionLabel="text" />
+          <FilterSelect v-model="form.PER_ID" :options="personasOptions" labelKey="text" valueKey="value" />
         </div>
         <div class="form-group">
           <label>Rol</label>
-          <BaseSelect v-model="form.ROL_ID" :options="rolesOptions" optionLabel="text" />
+          <FilterSelect v-model="form.ROL_ID" :options="rolesOptions" labelKey="text" valueKey="value" />
         </div>
         <div class="form-group">
           <label>Sección</label>
-          <BaseSelect v-model="form.CUS_ID" :options="seccionesOptions" optionLabel="text" />
+          <FilterSelect v-model="form.CUS_ID" :options="seccionesOptions" labelKey="text" valueKey="value" />
         </div>
         <div class="form-group">
           <label>Director</label>
@@ -62,7 +66,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import BaseButton from '@/components/BaseButton.vue'
-import BaseSelect from '@/components/BaseSelect.vue'
+import FilterSelect from '@/components/common/FilterSelect.vue'
 
 const props = defineProps({
   modelValue: { type: Array, default: () => [] },

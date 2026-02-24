@@ -4,7 +4,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.response import Response
 
 from ..Models.persona_model import Persona
-from ..Models.mantenedor_model import Tipo_Curso, Rol, Cargo, Rama
+from ..Models.mantenedor_model import Tipo_Curso, Rol, Cargo, Rama, Grupo
 
 @api_view(['GET'])
 @authentication_classes([])
@@ -69,4 +69,17 @@ def ramas_min(request):
         qs = qs.filter(ram_descripcion__istartswith=q)
     qs = qs.values('ram_id', 'ram_descripcion')[:max(1, min(limit, 200))]
     data = [{'id': int(r['ram_id']), 'nombre': r['ram_descripcion'] or ''} for r in qs]
+    return Response({'results': data, 'count': len(data)})
+
+@api_view(['GET'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def grupos_min(request):
+    limit = int(request.query_params.get('limit', '50'))
+    q = (request.query_params.get('q') or '').strip()
+    qs = Grupo.objects.filter(gru_vigente=True)
+    if q:
+        qs = qs.filter(gru_descripcion__istartswith=q)
+    qs = qs.values('gru_id', 'gru_descripcion')[:max(1, min(limit, 200))]
+    data = [{'id': int(r['gru_id']), 'nombre': r['gru_descripcion'] or ''} for r in qs]
     return Response({'results': data, 'count': len(data)})

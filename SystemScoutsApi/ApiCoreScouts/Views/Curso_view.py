@@ -64,6 +64,25 @@ class CursoViewSet(viewsets.ModelViewSet):
         ).order_by('cur_estado', 'cur_descripcion')
 
     @action(detail=False, methods=['get'])
+    def para_mantenedor(self, request):
+        """
+        Endpoint ultra-optimizado para la tabla principal del mantenedor de Cursos.
+        Retorna solo los campos mínimos para la tabla.
+        """
+        queryset = Curso.objects.prefetch_related(
+            'curso_fecha_set'
+        )
+        queryset = self.filter_queryset(queryset).distinct().order_by('-cur_id')
+        
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = MC_S.CursoMantenedorSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = MC_S.CursoMantenedorSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
     def get_cursos_acreditacion(self, request):
         """
         Retorna cursos vigentes que inician hoy o mañana.

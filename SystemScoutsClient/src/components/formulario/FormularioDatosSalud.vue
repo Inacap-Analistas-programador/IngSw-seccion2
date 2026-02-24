@@ -224,6 +224,23 @@ watch(() => props.cursoSeleccionado, (newVal) => {
   cargarAlimentacionCurso(newVal);
 });
 
+// Watch para setear "Ninguno" si la respuesta es No
+watch(tieneAlergiaEnfermedad, (newVal) => {
+  if (newVal === 'No') {
+    detalleAlergiaEnfermedad.value = 'Ninguno';
+  } else if (newVal === 'Si' && (!detalleAlergiaEnfermedad.value || detalleAlergiaEnfermedad.value === 'Ninguno')) {
+    detalleAlergiaEnfermedad.value = '';
+  }
+});
+
+watch(tieneLimitacion, (newVal) => {
+  if (newVal === 'No') {
+    detalleLimitacion.value = 'Ninguno';
+  } else if (newVal === 'Si' && (!detalleLimitacion.value || detalleLimitacion.value === 'Ninguno')) {
+    detalleLimitacion.value = '';
+  }
+});
+
 onMounted(async () => {
   if (props.cursoSeleccionado) {
     cargarAlimentacionCurso(props.cursoSeleccionado);

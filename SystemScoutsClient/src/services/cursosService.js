@@ -16,6 +16,12 @@ const makeCrud = base => ({
 
 export const cursos = {
   ...makeCrud('cursos/cursos'),
+  paraMantenedor: (params) => {
+    const searchParams = new URLSearchParams(params || {})
+    if (!searchParams.has('page_size')) searchParams.set('page_size', '20')
+    const qs = searchParams.toString()
+    return request(`cursos/cursos/para_mantenedor/${qs ? `?${qs}` : ''}`)
+  },
   get_acreditacion: () => request('cursos/cursos/get_cursos_acreditacion/'),
   get_alimentacion_curso: (id) => request(`cursos/cursos/${id}/get_alimentacion_curso/`)
 }
