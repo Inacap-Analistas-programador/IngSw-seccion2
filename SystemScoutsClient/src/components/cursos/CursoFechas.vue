@@ -87,10 +87,9 @@ const form = ref({
 })
 
 const opcionesTipoFecha = [
-  { value: 1, text: 'Clase Regular' },
-  { value: 2, text: 'Evaluación' },
-  { value: 3, text: 'Recuperativa' },
-  { value: 4, text: 'Extraprogramática' },
+  { value: 1, text: 'Presencial' },
+  { value: 2, text: 'Online' },
+  { value: 3, text: 'Híbrido' },
 ]
 
 function getTipoFechaText(val) {

@@ -37,3 +37,7 @@ SystemScoutsLogs/
 SystemScoutsApi/media/archivos/*
 SystemScoutsApi/media/fotos_perfil/*
 
+localhost.har
+vue3-vite-best-practices.md
+django-rest-framework-best-practices.md
+*.txt

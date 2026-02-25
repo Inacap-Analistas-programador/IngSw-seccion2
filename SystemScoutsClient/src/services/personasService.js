@@ -58,7 +58,9 @@ export const obtenerRoles = async () => {
     try {
       const resp = await request('mantenedores/rol/min')
       if (resp && resp.results) {
-        const result = resp.results.map(r => ({ value: r.id || r.nombre, label: r.nombre }))
+        // En Roles, típicamente se guardan como texto en las personas (ej: formador, participante), o como ID.
+        // Gestionpersonas guardaba ROL_NOMBRE como string muchas veces, pero si el Form usa IDs, pasamos id.
+        const result = resp.results.map(r => ({ value: r.id, label: r.nombre }))
         localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: result }))
         return result
       }
@@ -104,7 +106,7 @@ export const obtenerRamas = async () => {
     try {
       const resp = await request('mantenedores/rama/min')
       if (resp && resp.results) {
-        const result = resp.results.map(r => ({ value: r.id || r.nombre, label: r.nombre }))
+        const result = resp.results.map(r => ({ value: r.id, label: r.nombre }))
         localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: result }))
         return result
       }
@@ -150,7 +152,7 @@ export const obtenerGrupos = async () => {
     try {
       const resp = await request('mantenedores/grupo/min')
       if (resp && resp.results) {
-        const result = resp.results.map(g => ({ value: g.id || g.nombre, label: g.nombre }))
+        const result = resp.results.map(g => ({ value: g.id, label: g.nombre }))
         localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: result }))
         return result
       }

@@ -36,7 +36,7 @@
           </thead>
           <tbody>
             <tr v-for="zona in filteredZonas" :key="zona.id">
-              <td data-label="Descripción">{{ zona.descripcion }}</td>
+              <td class="text-left" data-label="Descripción">{{ zona.descripcion }}</td>
               <td data-label="Unilateral">{{ zona.unilateral ? 'SÍ' : 'NO' }}</td>
               <td data-label="Estado">
                 <span class="status-badge" :class="zona.vigente ? 'status-active' : 'status-inactive'">
@@ -749,4 +749,5 @@ onMounted(() => {
     overflow: visible;
   }
 }
+.text-left { text-align: left !important; }
 </style>

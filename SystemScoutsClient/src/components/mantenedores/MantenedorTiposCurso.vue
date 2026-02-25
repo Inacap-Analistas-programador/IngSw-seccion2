@@ -36,7 +36,7 @@
           </thead>
           <tbody>
             <tr v-for="item in filteredItems" :key="item.id">
-              <td data-label="Descripción">{{ item.descripcion }}</td>
+              <td class="text-left" data-label="Descripción">{{ item.descripcion }}</td>
               <td data-label="Tipo">{{ getTipoNombre(item.tipo) }}</td>
               <td data-label="Participantes">{{ item.cant_participante }}</td>
               <td data-label="Estado">
@@ -227,7 +227,7 @@ const viewModalVisible = ref(false)
 const elementoSeleccionado = ref(null)
 
 const getTipoNombre = (tipo) => {
-  const tipos = { 1: 'CURSO', 2: 'TALLER', 3: 'CHARLA', 4: 'SEMINARIO', 5: 'VERIFICACIÓN', 6: 'INSTITUCIONAL' }
+  const tipos = { 1: 'INCIAL', 2: 'MEDIO', 3: 'AVANZADO', 4: 'HABILITACION', 5: 'VERIFICACION', 6: 'INSTITUCIONAL' }
   return tipos[tipo] || 'DESCONOCIDO'
 }
 
@@ -517,4 +517,5 @@ onMounted(() => { cargarDatos() })
   }
   .action-buttons { justify-content: space-evenly; width: 100%; }
 }
+.text-left { text-align: left !important; }
 </style>

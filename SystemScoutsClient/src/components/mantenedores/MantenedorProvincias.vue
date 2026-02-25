@@ -2,9 +2,6 @@
   <div class="mantenedor-section">
     <div class="mantenedor-header">
       <h2>Gestión de Provincias</h2>
-      <!-- <button class="btn-primary" @click="abrirModalCrear">
-        <AppIcons name="plus" :size="18" /> Nueva Provincia
-      </button> -->
     </div>
 
     <Teleport to="#search-container">
@@ -37,7 +34,7 @@
           </thead>
           <tbody>
             <tr v-for="item in filteredItems" :key="item.id">
-              <td data-label="Descripción">{{ item.descripcion }}</td>
+              <td class="text-left" data-label="Descripción">{{ item.descripcion }}</td>
               <td data-label="Región">{{ getRegionNombre(item.region_id) }}</td>
               <td data-label="Estado">
                 <span class="status-badge" :class="item.vigente ? 'status-active' : 'status-inactive'">
@@ -132,10 +129,11 @@ const items = ref([])
 const search = ref('')
 const tempSearch = ref('')
 const filtroRegion = ref('')
-const isFilterOpen = ref(false)
-const filterContainer = ref(null)
 const cargando = ref(false)
 const saving = ref(false)
+
+const emit = defineEmits(['show-message', 'confirm-action'])
+defineExpose({ abrirModalCrear })
 
 const ejecutarBusqueda = () => {
   search.value = tempSearch.value
@@ -153,16 +151,34 @@ const cargarDatos = async () => {
       mantenedoresService.provincia.list().catch(() => []),
       mantenedoresService.region.list().catch(() => [])
     ])
-    const getData = (resp) => Array.isArray(resp) ? resp : (resp?.results || resp?.data || [])
-    items.value = getData(respProv).map(p => ({
-      id: p.pro_id ?? p.PRO_ID ?? p.id,
-      descripcion: (p.pro_descripcion ?? p.PRO_DESCRIPCION ?? p.DESCRIPCION ?? p.descripcion ?? '').toString(),
-      region_id: p.reg_id?.reg_id ?? p.REG_ID?.REG_ID ?? p.reg_id ?? p.REG_ID ?? p.region_id ?? null,
-      vigente: !!(p.pro_vigente ?? p.PRO_VIGENTE ?? p.vigente ?? true)
-    }))
+    const getData = (resp) => {
+      if (!resp) return []
+      if (Array.isArray(resp)) return resp
+      return resp.results || (resp.data?.results) || resp.data || resp.items || []
+    }
+    
+    items.value = getData(respProv).map(p => {
+      let regId = null
+      if (p.reg_id) {
+        regId = typeof p.reg_id === 'object' ? (p.reg_id.reg_id || p.reg_id.id) : p.reg_id
+      } else if (p.REG_ID) {
+        regId = typeof p.REG_ID === 'object' ? (p.REG_ID.REG_ID || p.REG_ID.ID) : p.REG_ID
+      } else if (p.region_id) {
+        regId = p.region_id
+      }
+      
+      return {
+        id: p.pro_id ?? p.PRO_ID ?? p.id,
+        descripcion: (p.pro_descripcion ?? p.PRO_DESCRIPCION ?? p.DESCRIPCION ?? p.descripcion ?? '').toString(),
+        region_id: regId,
+        vigente: !!(p.pro_vigente ?? p.PRO_VIGENTE ?? p.vigente ?? true)
+      }
+    })
+    
     regiones.value = getData(respReg).map(r => ({
       id: r.reg_id ?? r.REG_ID ?? r.id,
-      descripcion: (r.reg_descripcion ?? r.REG_DESCRIPCION ?? r.DESCRIPCION ?? r.descripcion ?? '').toString()
+      descripcion: (r.reg_descripcion ?? r.REG_DESCRIPCION ?? r.DESCRIPCION ?? r.descripcion ?? '').toString(),
+      vigente: !!(r.reg_vigente ?? r.REG_VIGENTE ?? r.vigente ?? true)
     }))
   } catch (error) {
     console.error('Error cargando provincias:', error)
@@ -321,4 +337,5 @@ onMounted(() => { cargarDatos() })
   .table-container { height: auto; overflow: visible; }
 }
 .no-data { text-align: center; padding: 20px; color: #999; }
+.text-left { text-align: left !important; }
 </style>

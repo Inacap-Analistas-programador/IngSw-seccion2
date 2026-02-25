@@ -34,7 +34,7 @@
           </thead>
           <tbody>
             <tr v-for="item in filteredItems" :key="item.id">
-              <td data-label="Descripción">{{ item.descripcion }}</td>
+              <td class="text-left" data-label="Descripción">{{ item.descripcion }}</td>
               <td data-label="Estado">
                 <span class="status-badge" :class="item.vigente ? 'status-active' : 'status-inactive'">
                   {{ item.vigente ? 'ACTIVO' : 'INACTIVO' }}
@@ -435,4 +435,5 @@ onMounted(() => { cargarDatos() })
   }
   .action-buttons { justify-content: space-evenly; width: 100%; }
 }
+.text-left { text-align: left !important; }
 </style>

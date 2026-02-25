@@ -42,7 +42,7 @@
               <td colspan="5" class="text-center">No se encontraron registros</td>
             </tr>
             <tr v-else v-for="item in filteredItems" :key="item.id">
-              <td data-label="Descripción">{{ item.descripcion }}</td>
+              <td class="text-left" data-label="Descripción">{{ item.descripcion }}</td>
               <td data-label="Contacto">{{ item.celular1 }}<span v-if="item.celular2"> / {{ item.celular2 }}</span></td>
               <td data-label="Dirección">{{ item.direccion }}</td>
               <td data-label="Estado">
@@ -730,4 +730,5 @@ export default {
   padding: 40px;
   color: #999;
 }
+.text-left { text-align: left !important; }
 </style>

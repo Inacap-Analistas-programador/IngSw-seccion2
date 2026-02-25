@@ -41,8 +41,8 @@ class RolViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def min(self, request):
         queryset = self.filter_queryset(self.get_queryset())
-        data = queryset.values('ROL_ID', 'ROL_NOMBRE')
-        results = [{'id': item['ROL_ID'], 'nombre': item['ROL_NOMBRE']} for item in data]
+        data = queryset.values('rol_id', 'rol_nombre')
+        results = [{'id': item['rol_id'], 'nombre': item['rol_nombre']} for item in data]
         return Response({'results': results})
 
 class CargoViewSet(viewsets.ModelViewSet):
@@ -67,8 +67,8 @@ class RamaViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def min(self, request):
         queryset = self.filter_queryset(self.get_queryset())
-        data = queryset.values('RAM_ID', 'RAM_DESCRIPCION')
-        results = [{'id': item['RAM_ID'], 'nombre': item['RAM_DESCRIPCION']} for item in data]
+        data = queryset.values('ram_id', 'ram_descripcion')
+        results = [{'id': item['ram_id'], 'nombre': item['ram_descripcion']} for item in data]
         return Response({'results': results})
 
 class EstadoCivilViewSet(viewsets.ModelViewSet):
@@ -119,8 +119,8 @@ class GrupoViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def min(self, request):
         queryset = self.filter_queryset(self.get_queryset())
-        data = queryset.values('GRU_ID', 'GRU_DESCRIPCION')
-        results = [{'id': item['GRU_ID'], 'nombre': item['GRU_DESCRIPCION']} for item in data]
+        data = queryset.values('gru_id', 'gru_descripcion')
+        results = [{'id': item['gru_id'], 'nombre': item['gru_descripcion']} for item in data]
         return Response({'results': results})
 
 class RegionViewSet(viewsets.ModelViewSet):

@@ -44,8 +44,6 @@
 
     <!-- Indicador de Carga -->
     <div v-if="isLoading" class="loading-indicator">
-      <div class="spinner"></div>
-      Cargando datos...
     </div>
 
     <!-- Tabla de Cursos -->
@@ -64,8 +62,6 @@
       @cambioEstado="abrirModalCambioEstadoCurso"
       @dashboard="abrirDashboard"
     />
-
-    
 
     <!-- Modal de Creación/Edición de Curso -->
     <BaseModal v-model="mostrarModal" @close="cerrarModal" class="curso-modal modal-editar-mejorado">
@@ -266,7 +262,10 @@ const tempSearchQuery = ref('')
 
 const hasAnyFilter = computed(() => {
   const f = filtros.value
-  return Boolean((f.searchQuery && f.searchQuery.trim()) || f.estado || f.tipoCurso || f.responsable)
+  const hasEstado = f.estado !== null && f.estado !== undefined && f.estado !== ''
+  const hasTipo = f.tipoCurso !== null && f.tipoCurso !== undefined && f.tipoCurso !== ''
+  const hasResp = f.responsable !== null && f.responsable !== undefined && f.responsable !== ''
+  return Boolean((f.searchQuery && f.searchQuery.trim()) || hasEstado || hasTipo || hasResp)
 })
 
 const form = ref(null)
@@ -372,80 +371,37 @@ const getData = (resp) => {
   return r.results || (r.data?.results) || r.data || r.items || []
 }
 
-async function cargarDatos({ page = 1, page_size = 20, search = '' } = {}) {
+async function cargarCursos({ page = 1, page_size = 50, search = '', estado = null, tipoCurso = null, responsable = null } = {}) {
   if (isLoadingData.value) return
-  // Permitir carga sin filtros para mostrar todos los cursos inicialmente
   isLoadingData.value = true
   isLoading.value = true
 
-  // cancelar carga previa si existe
   try {
     if (lastController.ctrl) lastController.ctrl.abort()
   } catch { /* noop */ }
   lastController.ctrl = new AbortController()
 
-  try {
-    // Pedir cursos desde el servicio específico y catálogos relacionados
-    const cursosCacheKey = cacheKey('cursos/cursos', { page, page_size, search })
+  try {  // ← AGREGUÉ ESTE TRY
+    const params = { page, page_size }
+    if (search) params.search = search
+    if (estado !== null && estado !== undefined && estado !== '') params.cur_estado = estado
+    if (tipoCurso !== null && tipoCurso !== undefined && tipoCurso !== '') params.tcu_id = tipoCurso
+    if (responsable !== null && responsable !== undefined && responsable !== '') params.per_id_responsable = responsable
+
+    const cursosCacheKey = cacheKey('cursos/cursos', params)
     let cursosDataPromise
     if (_cache.has(cursosCacheKey)) {
       cursosDataPromise = _cache.get(cursosCacheKey)
     } else {
-      cursosDataPromise = cursosApi.paraMantenedor({ page, page_size, search })
+      cursosDataPromise = cursosApi.paraMantenedor(params)
       _cache.set(cursosCacheKey, cursosDataPromise)
     }
 
     const cursosData = await cursosDataPromise
-
-    // Catálogos y recursos asociados (usar servicios concretos)
-    const fetchPromises = []
-    
-    // Solo solicitar catálogos reales (personas, tipos, ramas, comunas, cargos, roles, alimentacion).
-    // Secciones, Fechas, Cuotas, etc. vienen anidados en el curso gracias al nuevo Serializer.
-    
-    const personasPromise = (Array.isArray(personasList.value) && personasList.value.length) ? Promise.resolve(personasList.value) : personasService.personas.list()
-    fetchPromises.push(personasPromise)
-
-    const tiposPromise = (Array.isArray(tiposCursoList.value) && tiposCursoList.value.length) ? Promise.resolve(tiposCursoList.value) : mantenedores.tipoCursos.list()
-    fetchPromises.push(tiposPromise)
-
-    const ramasPromise = (Array.isArray(ramaslist.value) && ramaslist.value.length) ? Promise.resolve(ramaslist.value) : mantenedores.rama.list()
-    fetchPromises.push(ramasPromise)
-
-    // seccionesApi.list y fechasApi.list ELIMINADOS de aquí por ineficientes (traían todo paginado).
-    // Ahora vienen en el payload del curso.
-
-    const comunasPromise = (Array.isArray(comunasList?.value) && comunasList.value.length) ? Promise.resolve(comunasList.value) : mantenedores.comuna.list()
-    fetchPromises.push(comunasPromise)
-
-    const cargosPromise = (Array.isArray(cargosList?.value) && cargosList.value.length) ? Promise.resolve(cargosList.value) : mantenedores.cargo.list()
-    fetchPromises.push(cargosPromise)
-
-    const rolesPromise = (Array.isArray(rolesList.value) && rolesList.value.length) ? Promise.resolve(rolesList.value) : mantenedores.rol.list()
-    fetchPromises.push(rolesPromise)
-
-    const alimentacionPromise = (Array.isArray(alimentacionCatalogo.value) && alimentacionCatalogo.value.length) ? Promise.resolve(alimentacionCatalogo.value) : mantenedores.alimentacion.list()
-    fetchPromises.push(alimentacionPromise)
-
-    const [personasApi, tiposApi, ramasApi, comunasApi, cargosApi, rolesApi, alimentacionCat] = await Promise.all(fetchPromises)
-
-    // Normalizar cursos (puede venir paginado)
     let cursosArray = getData(cursosData)
     cursosArray = cursosArray.map(toUpperKeys)
 
-    // Asignar catálogos
-    personasList.value = (Array.isArray(personasApi) ? personasApi : (personasApi?.results || [])).map(toUpperKeys)
-    tiposCursoList.value = (Array.isArray(tiposApi) ? tiposApi : (tiposApi?.results || [])).map(toUpperKeys)
-    ramaslist.value = (Array.isArray(ramasApi) ? ramasApi : (ramasApi?.results || [])).map(toUpperKeys)
-    comunasList.value = (Array.isArray(comunasApi) ? comunasApi : (comunasApi?.results || [])).map(toUpperKeys)
-    cargosList.value = (Array.isArray(cargosApi) ? cargosApi : (cargosApi?.results || [])).map(toUpperKeys)
-    rolesList.value = (Array.isArray(rolesApi) ? rolesApi : (rolesApi?.results || [])).map(toUpperKeys)
-    alimentacionCatalogo.value = (Array.isArray(alimentacionCat) ? alimentacionCat : (alimentacionCat?.results || [])).map(toUpperKeys)
-
-    // Procesar cursos para extraer listas anidadas normalizadas
     cursosList.value = cursosArray.map(c => {
-      // Normalizar sub-listas si existen (backend response > toUpperKeys > propiedades FECHAS/SECCIONES/etc)
-      // Nota: toUpperKeys mantiene las claves originales, así que 'fechas' o 'FECHAS' funciona.
       const rawFechas = c.FECHAS || c.fechas || []
       const rawSecciones = c.SECCIONES || c.secciones || []
       const rawFormadores = c.FORMADORES || c.formadores || []
@@ -454,21 +410,29 @@ async function cargarDatos({ page = 1, page_size = 20, search = '' } = {}) {
       
       return {
         ...c,
-        fechas: fechasNorm, // Sobrescribir con normalizado
+        fechas: fechasNorm,
         secciones: rawSecciones.map(toUpperKeys),
         formadores: rawFormadores.map(toUpperKeys) 
       }
     })
-    
-    // Listas globales eliminadas
 
-    // Filtrado cliente como fallback; cuando uses búsqueda remota, pasar `search` hará que el servidor filtre
-    aplicarFiltros()
+    let items = [...cursosList.value]
+    items.sort((a, b) => {
+      const estadoA = Number(a.CUR_ESTADO) || 0
+      const estadoB = Number(b.CUR_ESTADO) || 0
+      if (estadoA !== estadoB) return estadoA - estadoB
+      const descA = (a.CUR_DESCRIPCION || '').toLowerCase()
+      const descB = (b.CUR_DESCRIPCION || '').toLowerCase()
+      return descA.localeCompare(descB)
+    })
+    
+    cursosFiltrados.value = items
+
   } catch (e) {
     if (e.name === 'AbortError') {
-      console.info('Carga de datos abortada')
+      console.info('Carga de cursos abortada')
     } else {
-      console.error('Error cargando datos desde API:', e)
+      console.error('Error cargando cursos:', e)
       cursosList.value = []
       cursosFiltrados.value = []
     }
@@ -613,21 +577,31 @@ if (typeof window !== 'undefined') {
 }
 
 // --- Filtros controlados por botón ---
-function aplicarFiltros() {
-  // Sincronizar búsqueda manual
+async function aplicarFiltros() {
   filtros.value.searchQuery = tempSearchQuery.value
 
   let items = [...cursosList.value]
   const { searchQuery, estado, tipoCurso, responsable } = filtros.value
+  
   if (!hasAnyFilter.value) {
     cursosFiltrados.value = items
     return
   }
+  
   // Si no hay cursos cargados aún, solicitar al servidor
   if (!items.length) {
-    cargarDatos({ page: 1, page_size: 20 })
-    return
+    await cargarCursos({  // ← ESPERA a que termine
+      page: 1, 
+      page_size: 20,
+      search: searchQuery,
+      estado: estado,
+      tipoCurso: tipoCurso,
+      responsable: responsable
+    })
+    items = [...cursosList.value] // ← DESPUÉS de que termine, obtén los nuevos cursos
   }
+  
+  // Aplicar filtros locales
   if (searchQuery) {
     const q = String(searchQuery).toLowerCase()
     items = items.filter(c => (c.CUR_DESCRIPCION || '').toLowerCase().includes(q) || (c.CUR_CODIGO || '').toLowerCase().includes(q))
@@ -636,7 +610,6 @@ function aplicarFiltros() {
   if (tipoCurso !== null && tipoCurso !== undefined && tipoCurso !== '') items = items.filter(c => Number(c.TCU_ID) === Number(tipoCurso))
   if (responsable !== null && responsable !== undefined && responsable !== '') items = items.filter(c => Number(c.PER_ID_RESPONSABLE) === Number(responsable))
   
-  // Ordenar por ESTADO (ascendente 0-3) y luego por DESCRIPCIÓN (ascendente)
   items.sort((a, b) => {
     const estadoA = Number(a.CUR_ESTADO) || 0
     const estadoB = Number(b.CUR_ESTADO) || 0
@@ -651,13 +624,9 @@ function aplicarFiltros() {
 
 function limpiarFiltros() {
   filtros.value = { searchQuery: '', estado: null, tipoCurso: null, responsable: null }
-  aplicarFiltros()
-}
-
-
-function getRamaName(id) {
-  const rama = ramaslist.value.find(r => r.RAM_ID === id)
-  return rama ? rama.RAM_DESCRIPCION : 'No definida'
+  tempSearchQuery.value = ''
+  cursosList.value = []
+  cursosFiltrados.value = []
 }
 
 // Lazy load helpers for select catalogs
@@ -700,70 +669,85 @@ async function abrirModalCrear() {
     cargosList.value?.length === 0 ||
     ramaslist.value.length === 0
   ) {
-    try { await cargarDatos() } catch (e) { console.warn('No se pudieron refrescar catálogos antes de crear:', e) }
+    try { await cargarCatalogos() } catch (e) { console.warn('No se pudieron refrescar catálogos antes de crear:', e) }
   }
   mostrarModal.value = true
 }
+
+const isLoadingModal = ref(false) // ← NUEVA BANDERA
 
 async function abrirModalEditar(cursoMin) {
   isTrulyNew.value = false
   esEdicion.value = true
   modoVer.value = false
   
-  isLoading.value = true
-  let curso = cursoMin
-  try {
-    const fullData = await cursosApi.get(cursoMin.CUR_ID)
-    curso = toUpperKeys(fullData)
-  } catch (e) {
-    mostrarAlerta('Error cargando detalles del curso', 'error')
-  } finally {
-    isLoading.value = false
-  }
-
+  // Mostrar el modal RÁPIDO con datos mínimos
   form.value = {
     ...inicializarFormulario(),
-    ...curso,
-    CUR_FECHA_SOLICITUD: curso.CUR_FECHA_SOLICITUD ? curso.CUR_FECHA_SOLICITUD.split('T')[0] : '',
-    TCU_ID: curso.TCU_ID ? Number(curso.TCU_ID) : null,
-    PER_ID_RESPONSABLE: curso.PER_ID_RESPONSABLE ? Number(curso.PER_ID_RESPONSABLE) : null,
-    CAR_ID_RESPONSABLE: curso.CAR_ID_RESPONSABLE ? Number(curso.CAR_ID_RESPONSABLE) : null,
-    COM_ID_LUGAR: curso.COM_ID_LUGAR ? Number(curso.COM_ID_LUGAR) : null,
-    CUR_MODALIDAD: curso.CUR_MODALIDAD ? Number(curso.CUR_MODALIDAD) : null,
-    CUR_TIPO_CURSO: curso.CUR_TIPO_CURSO ? Number(curso.CUR_TIPO_CURSO) : null,
-    CUR_ADMINISTRA: curso.CUR_ADMINISTRA ? Number(curso.CUR_ADMINISTRA) : null,
+    ...cursoMin,
   }
   originalCursoBackup.value = JSON.parse(JSON.stringify(form.value))
-  await cargarFechasDelCurso(curso.CUR_ID)
-  await cargarSeccionesDelCurso(curso.CUR_ID)
-  // Cargar equipo, alimentación, cuotas y coordinadores del curso
+  mostrarModal.value = true
+  
+  // Cargar datos completos EN BACKGROUND (sin afectar la tabla)
+  isLoadingModal.value = true // ← USAR ESTA EN LUGAR DE isLoading
   try {
-    const [forms, alims, cuots] = await Promise.all([
+    const fullData = await cursosApi.get(cursoMin.CUR_ID)
+    const curso = toUpperKeys(fullData)
+    
+    form.value = {
+      ...form.value,
+      ...curso,
+      CUR_FECHA_SOLICITUD: curso.CUR_FECHA_SOLICITUD ? curso.CUR_FECHA_SOLICITUD.split('T')[0] : '',
+      TCU_ID: curso.TCU_ID ? Number(curso.TCU_ID) : null,
+      PER_ID_RESPONSABLE: curso.PER_ID_RESPONSABLE ? Number(curso.PER_ID_RESPONSABLE) : null,
+      CAR_ID_RESPONSABLE: curso.CAR_ID_RESPONSABLE ? Number(curso.CAR_ID_RESPONSABLE) : null,
+      COM_ID_LUGAR: curso.COM_ID_LUGAR ? Number(curso.COM_ID_LUGAR) : null,
+      CUR_MODALIDAD: curso.CUR_MODALIDAD ? Number(curso.CUR_MODALIDAD) : null,
+      CUR_TIPO_CURSO: curso.CUR_TIPO_CURSO ? Number(curso.CUR_TIPO_CURSO) : null,
+      CUR_ADMINISTRA: curso.CUR_ADMINISTRA ? Number(curso.CUR_ADMINISTRA) : null,
+    }
+    
+    // Cargar TODO en paralelo
+    const [formadores, alimentaciones, cuotas] = await Promise.all([
       formadoresApi.list({ cur_id: curso.CUR_ID }).catch(() => []),
       alimentacionesApi.list({ cur_id: curso.CUR_ID }).catch(() => []),
       cuotasApi.list({ cur_id: curso.CUR_ID }).catch(() => []),
     ])
-    formadoresCurso.value = (Array.isArray(forms?.results) ? forms.results : (forms || [])).map(toUpperKeys)
-    alimentacionesCurso.value = (Array.isArray(alims?.results) ? alims.results : (alims || [])).map(toUpperKeys)
-    cuotasCurso.value = (Array.isArray(cuots?.results) ? cuots.results : (cuots || [])).map(toUpperKeys)
 
-    // Populate global quota fields from the list
+    await Promise.all([
+      cargarFechasDelCurso(curso.CUR_ID),
+      cargarSeccionesDelCurso(curso.CUR_ID),
+    ])
+    
+    formadoresCurso.value = (Array.isArray(formadores?.results) ? formadores.results : (formadores || [])).map(toUpperKeys)
+    alimentacionesCurso.value = (Array.isArray(alimentaciones?.results) ? alimentaciones.results : (alimentaciones || [])).map(toUpperKeys)
+    cuotasCurso.value = (Array.isArray(cuotas?.results) ? cuotas.results : (cuotas || [])).map(toUpperKeys)
+
     const quotaCon = cuotasCurso.value.find(q => Number(q.CUU_TIPO) === 1)
     const quotaSin = cuotasCurso.value.find(q => Number(q.CUU_TIPO) === 2)
     form.value.CUR_COTA_CON_ALMUERZO = quotaCon ? Number(quotaCon.CUU_VALOR) : 0
     form.value.CUR_COTA_SIN_ALMUERZO = quotaSin ? Number(quotaSin.CUU_VALOR) : 0
 
-  } catch (e) { console.warn('No se pudo cargar datos relacionados:', e) }
-  originalBuffersBackup.value = {
-    fechas: JSON.parse(JSON.stringify(fechasCurso.value)),
-    secciones: JSON.parse(JSON.stringify(seccionesCurso.value)),
-    formadores: JSON.parse(JSON.stringify(formadoresCurso.value)),
-    alimentaciones: JSON.parse(JSON.stringify(alimentacionesCurso.value)),
-    cuotas: JSON.parse(JSON.stringify(cuotasCurso.value)),
-  }
-// (Reset de sub-buffers locales implícito al asignar array vacío)
-  mostrarModal.value = true
+    originalCursoBackup.value = JSON.parse(JSON.stringify(form.value))
+    originalBuffersBackup.value = {
+      fechas: JSON.parse(JSON.stringify(fechasCurso.value)),
+      secciones: JSON.parse(JSON.stringify(seccionesCurso.value)),
+      formadores: JSON.parse(JSON.stringify(formadoresCurso.value)),
+      alimentaciones: JSON.parse(JSON.stringify(alimentacionesCurso.value)),
+      cuotas: JSON.parse(JSON.stringify(cuotasCurso.value)),
+    }
 
+  } catch (e) {
+    mostrarAlerta('Error cargando detalles del curso', 'error')
+  } finally {
+    isLoadingModal.value = false // ← USAR ESTA
+  }
+}
+
+function abrirModalVer(curso) {
+  abrirModalEditar(curso) // Sin await, abre inmediatamente
+  modoVer.value = true
 }
 
 function cerrarModal() {
@@ -868,10 +852,6 @@ async function guardarCurso() {
       mostrarAlerta('Debes seleccionar un tipo de curso.', 'warning')
       return
     }
-    if (!form.value.PER_ID_RESPONSABLE) {
-      mostrarAlerta('Debes seleccionar un responsable.', 'warning')
-      return
-    }
 
     // Sync global quotas from local list before saving
     const quotaCon = cuotasCurso.value.find(q => Number(q.CUU_TIPO) === 1)
@@ -893,7 +873,7 @@ async function guardarCurso() {
     payload.CUR_COTA_CON_ALMUERZO = Number(payload.CUR_COTA_CON_ALMUERZO)
     payload.CUR_COTA_SIN_ALMUERZO = Number(payload.CUR_COTA_SIN_ALMUERZO)
     payload.TCU_ID = Number(payload.TCU_ID)
-    payload.PER_ID_RESPONSABLE = Number(payload.PER_ID_RESPONSABLE)
+    payload.PER_ID_RESPONSABLE = payload.PER_ID_RESPONSABLE ? Number(payload.PER_ID_RESPONSABLE) : null
     payload.CAR_ID_RESPONSABLE = payload.CAR_ID_RESPONSABLE ? Number(payload.CAR_ID_RESPONSABLE) : null
     payload.COM_ID_LUGAR = payload.COM_ID_LUGAR ? Number(payload.COM_ID_LUGAR) : null
     payload.CUR_MODALIDAD = Number(payload.CUR_MODALIDAD || 1)
@@ -1210,19 +1190,6 @@ const seccionesOptions = computed(() => seccionesCurso.value.map(s => {
   const ramaText = rama ? rama.RAM_DESCRIPCION : ''
   return { value: s.CUS_ID || `tmp-${s.__tmpId}`, text: `SECCION N° ${s.CUS_SECCION} (${ramaText})` }
 }))
-
-
-
-async function abrirModalVer(curso) {
-  // Reutilizar la lógica de carga de edición pero en modo solo lectura
-  await abrirModalEditar(curso)
-  modoVer.value = true
-}
-
-function cerrarModalVer() {
-  // Legacy cleanup if needed
-  mostrarModalVer.value = false
-}
 
 function abrirDashboard(curso) {
   cursoIdDashboard.value = curso.CUR_ID

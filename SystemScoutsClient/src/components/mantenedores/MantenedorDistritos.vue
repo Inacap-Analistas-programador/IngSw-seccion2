@@ -35,7 +35,7 @@
           </thead>
           <tbody>
             <tr v-for="distrito in filteredDistritos" :key="distrito.id">
-              <td data-label="Descripción">{{ distrito.descripcion }}</td>
+              <td class="text-left" data-label="Descripción">{{ distrito.descripcion }}</td>
               <td data-label="Zona">{{ getZonaNombre(distrito.zona_id) }}</td>
               <td data-label="Estado">
                 <span class="status-badge" :class="distrito.vigente ? 'status-active' : 'status-inactive'">
@@ -817,4 +817,5 @@ onMounted(() => {
     width: 100%;
   }
 }
+.text-left { text-align: left !important; }
 </style>

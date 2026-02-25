@@ -34,7 +34,7 @@
           </thead>
           <tbody>
             <tr v-for="grupo in filteredGrupos" :key="grupo.id">
-              <td data-label="Descripción">{{ grupo.descripcion }}</td>
+              <td class="text-left" data-label="Descripción">{{ grupo.descripcion }}</td>
               <td data-label="Distrito">{{ getDistritoNombre(grupo.distrito_id) }}</td>
               <td data-label="Estado">
                 <span class="status-badge" :class="grupo.vigente ? 'status-active' : 'status-inactive'">
@@ -89,10 +89,19 @@
               >
             </div>
             <div class="form-group">
+              <label class="form-label">ZONA (Filtro):</label>
+              <select class="form-control" v-model="form.zona_id">
+                <option :value="null">SELECCIONE ZONA</option>
+                <option v-for="zona in zonasActivas" :key="zona.id" :value="zona.id">
+                  {{ zona.descripcion }}
+                </option>
+              </select>
+            </div>
+            <div class="form-group">
               <label class="form-label">DISTRITO:</label>
-              <select class="form-control" v-model="form.distrito_id" required>
+              <select class="form-control" v-model="form.distrito_id" :disabled="!form.zona_id" required>
                 <option :value="null" disabled>SELECCIONE DISTRITO</option>
-                <option v-for="distrito in distritosActivos" :key="distrito.id" :value="distrito.id">
+                <option v-for="distrito in distritosFiltradosPorZonaForm" :key="distrito.id" :value="distrito.id">
                   {{ distrito.descripcion }}
                 </option>
               </select>
@@ -172,6 +181,7 @@ defineExpose({ abrirModalCrear })
 
 const grupos = ref([])
 const distritos = ref([])
+const zonas = ref([])
 const search = ref('')
 const tempSearch = ref('')
 const filtroDistrito = ref('')
@@ -190,6 +200,7 @@ const editando = ref(false)
 const form = reactive({
   id: null,
   descripcion: '',
+  zona_id: null,
   distrito_id: null,
   vigente: true
 })
@@ -202,16 +213,26 @@ const grupoSeleccionado = ref(null)
 const cargarDatos = async () => {
   cargando.value = true
   try {
-    const [respGrupos, respDistritos] = await Promise.all([
+    const [respGrupos, respDistritos, respZonas] = await Promise.all([
       mantenedoresService.grupo.list().catch(e => { console.error('Grupos:', e); return [] }),
-      mantenedoresService.distrito.list().catch(e => { console.error('Distritos:', e); return [] })
+      mantenedoresService.distrito.list().catch(e => { console.error('Distritos:', e); return [] }),
+      mantenedoresService.zona.list().catch(e => { console.error('Zonas:', e); return [] })
     ])
     
+    // Normalizar Zonas
+    const rawZonas = (respZonas && Array.isArray(respZonas)) ? respZonas : (respZonas?.results || respZonas?.data || [])
+    zonas.value = rawZonas.map(z => ({
+      id: z.zon_id ?? z.ZON_ID ?? z.id,
+      descripcion: (z.zon_descripcion ?? z.ZON_DESCRIPCION ?? z.DESCRIPCION ?? z.descripcion ?? '').toString(),
+      vigente: !!(z.zon_vigente ?? z.ZON_VIGENTE ?? z.vigente ?? true)
+    }))
+
     // Normalizar Distritos (para dropdown y nombres)
     const rawDistritos = (respDistritos && Array.isArray(respDistritos)) ? respDistritos : (respDistritos?.results || respDistritos?.data || [])
     distritos.value = rawDistritos.map(d => ({
       id: d.dis_id ?? d.DIS_ID ?? d.id,
       descripcion: (d.dis_descripcion ?? d.DIS_DESCRIPCION ?? d.DESCRIPCION ?? d.descripcion ?? '').toString(),
+      zona_id: (d.zon_id?.zon_id ?? d.ZON_ID?.ZON_ID ?? d.zon_id ?? d.ZON_ID ?? d.zona_id ?? null),
       vigente: !!(d.dis_vigente ?? d.DIS_VIGENTE ?? d.vigente ?? true)
     }))
 
@@ -232,7 +253,14 @@ const cargarDatos = async () => {
   }
 }
 
+const zonasActivas = computed(() => zonas.value.filter(z => z.vigente))
 const distritosActivos = computed(() => distritos.value.filter(d => d.vigente))
+
+const distritosFiltradosPorZonaForm = computed(() => {
+  if (!form.zona_id) return []
+  return distritosActivos.value.filter(d => d.zona_id === form.zona_id)
+})
+
 
 const filteredGrupos = computed(() => {
   let filtered = grupos.value
@@ -257,15 +285,21 @@ const getDistritoNombre = (distritoId) => {
 
 function abrirModalCrear() {
   editando.value = false
-  Object.assign(form, { id: null, descripcion: '', distrito_id: '', vigente: true })
+  Object.assign(form, { id: null, descripcion: '', zona_id: null, distrito_id: null, vigente: true })
   modalVisible.value = true
 }
 
 const editarGrupo = (grupo) => {
   editando.value = true
+  
+  // Buscar a qué zona pertenece el distrito del grupo actual
+  const distritoInfo = distritos.value.find(d => d.id === grupo.distrito_id)
+  const zonaId = distritoInfo ? distritoInfo.zona_id : null
+  
   Object.assign(form, { 
     id: grupo.id, 
     descripcion: grupo.descripcion, 
+    zona_id: zonaId,
     distrito_id: grupo.distrito_id, 
     vigente: grupo.vigente 
   })
@@ -760,4 +794,5 @@ onMounted(() => {
   }
   .action-buttons { justify-content: space-evenly; width: 100%; }
 }
+.text-left { text-align: left !important; }
 </style>

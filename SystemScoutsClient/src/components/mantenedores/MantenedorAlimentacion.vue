@@ -35,7 +35,7 @@
           </thead>
           <tbody>
             <tr v-for="item in filteredItems" :key="item.id">
-              <td data-label="Descripción">{{ item.descripcion }}</td>
+              <td class="text-left" data-label="Descripción">{{ item.descripcion }}</td>
               <td data-label="Tipo">
                 <span :class="item.tipo === 1 ? 'badge-primary' : 'badge-secondary'">
                   {{ item.tipo === 1 ? 'CON ALMUERZO' : 'SIN ALMUERZO' }}
@@ -426,4 +426,5 @@ onMounted(() => { cargarDatos() })
   .mantenedor-section { height: auto; overflow: visible; }
   .table-container { height: auto; overflow: visible; }
 }
+.text-left { text-align: left !important; }
 </style>

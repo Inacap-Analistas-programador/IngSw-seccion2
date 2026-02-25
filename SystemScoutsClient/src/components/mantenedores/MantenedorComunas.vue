@@ -35,7 +35,7 @@
           </thead>
           <tbody>
             <tr v-for="item in filteredItems" :key="item.id">
-              <td data-label="Descripción">{{ item.descripcion }}</td>
+              <td class="text-left" data-label="Descripción">{{ item.descripcion }}</td>
               <td data-label="Provincia">{{ getProvinciaNombre(item.provincia_id) }}</td>
               <td data-label="Estado">
                 <span class="status-badge" :class="item.vigente ? 'status-active' : 'status-inactive'">
@@ -415,4 +415,5 @@ onMounted(() => { cargarDatos() })
   .mantenedor-section { height: auto; overflow: visible; }
   .table-container { height: auto; overflow: visible; }
 }
+.text-left { text-align: left !important; }
 </style>

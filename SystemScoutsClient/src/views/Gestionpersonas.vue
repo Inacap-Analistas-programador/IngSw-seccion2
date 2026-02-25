@@ -39,7 +39,7 @@
       <div class="header-content">
         <h2>Personas</h2>
         <div class="header-actions-group">
-          <BaseButton class="header-icon-btn" variant="primary" v-if="canCreate" @click="handleCreateClick" title="Nueva Persona">
+          <BaseButton class="header-icon-btn" variant="primary" @click="handleCreateClick" title="Nueva Persona">
             <AppIcons name="plus" :size="20" />
             <span class="btn-label-desktop">Nuevo</span>
           </BaseButton>
@@ -62,8 +62,8 @@
         <PersonaTable 
           :personas="filteredPersonas" 
           :hasSearched="state.hasSearched"
-          :can-edit="canEdit"
-          :can-delete="canDelete"
+          :can-edit="true"
+          :can-delete="true"
           @view="(p) => abrirModalPersona(p, true)"
           @edit="(p) => abrirModalPersona(p, false)"
           @deactivate="confirmarAnulacion"
@@ -179,7 +179,6 @@ import PersonaModals from '@/components/personas/PersonaModals.vue'
 
 import personasService from '@/services/personasService.js'
 import mantenedoresService from '@/services/mantenedoresService.js'
-import { usePermissions } from '@/composables/usePermissions'
 import { toUpperKeys } from '@/utils/formatters'
 
 export default {
@@ -189,8 +188,6 @@ export default {
     PersonaFilters, PersonaTable, PersonaForm, PersonaModals 
   },
   setup() {
-    const { isAdmin, canCreate, canEdit, canDelete } = usePermissions()
-    
     // State
     const loading = ref(false)
     const guardando = ref(false)
@@ -256,22 +253,23 @@ export default {
         const [roles, grupos, cursos, ramas, regiones, ec, ali, niv] = await Promise.all([
           personasService.obtenerRoles(),
           personasService.obtenerGrupos(),
-          personasService.personaCursos.list(),
+          personasService.personaCursos.list(), // No tiene .min() documentado
           personasService.obtenerRamas(),
-          mantenedoresService.region.list(),
-          mantenedoresService.estadoCivil.list(),
-          mantenedoresService.alimentacion.list(),
-          mantenedoresService.nivel.list()
+          mantenedoresService.region.list(), // Podría añadirse .min() a regiones pero por ahora mantendremos list() que es chico
+          mantenedoresService.estadoCivil.list(), // Mantenedores pequeños
+          mantenedoresService.alimentacion.list(), // Mantenedores pequeños
+          mantenedoresService.nivel.list() // Mantenedores pequeños
         ])
         
+        // Asignaciones optimizadas leyendo desde min() donde corresponda
         options.roles = roles
         options.grupos = grupos
         options.cursos = (cursos.results || cursos).map(c => ({ value: c.CUR_ID || c.cur_id, label: c.CUR_NOMBRE || c.descripcion || c.cur_nombre }))
         options.ramas = ramas
-        options.regiones = (regiones.results || regiones).map(r => ({ value: r.REG_ID || r.reg_id, label: r.REG_NOMBRE || r.reg_descripcion }))
-        options.estadoCivil = (ec.results || ec).map(e => ({ value: e.ESC_ID || e.esc_id, label: e.ESC_DESCRIPCION || e.esc_descripcion }))
-        options.alimentacion = (ali.results || ali).map(a => ({ value: a.ALI_ID || a.ali_id, label: a.ALI_NOMBRE || a.ali_descripcion }))
-        options.niveles = (niv.results || niv).map(n => ({ value: n.NIV_ID || n.niv_id, label: n.NIV_DESCRIPCION || n.niv_descripcion }))
+        options.regiones = (regiones.results || regiones).map(r => ({ value: r.REG_ID || r.reg_id || r.id, label: r.REG_NOMBRE || r.reg_descripcion || r.nombre }))
+        options.estadoCivil = (ec.results || ec).map(e => ({ value: e.ESC_ID || e.esc_id || e.id, label: e.ESC_DESCRIPCION || e.esc_descripcion || e.nombre }))
+        options.alimentacion = (ali.results || ali).map(a => ({ value: a.ALI_ID || a.ali_id || a.id, label: a.ALI_NOMBRE || a.ali_descripcion || a.nombre }))
+        options.niveles = (niv.results || niv).map(n => ({ value: n.NIV_ID || n.niv_id || n.id, label: n.NIV_DESCRIPCION || n.niv_descripcion || n.nombre }))
       } catch (e) {
         console.error('Error cargando catálogos:', e)
       }
@@ -405,15 +403,15 @@ export default {
     }
 
     const cargarProvincias = async (regId) => {
-      const resp = await mantenedoresService.provincia.list({ reg_id: regId })
+      const resp = await mantenedoresService.provincia.list({ region_id: regId })
       const list = resp.results || resp
-      options.provincias = list.map(p => ({ value: p.PRO_ID, label: p.PRO_NOMBRE }))
+      options.provincias = list.map(p => ({ value: p.PRO_ID || p.pro_id || p.id, label: p.PRO_DESCRIPCION || p.pro_descripcion || p.nombre || p.PRO_NOMBRE }))
     }
 
     const cargarComunas = async (proId) => {
-      const resp = await mantenedoresService.comuna.list({ pro_id: proId })
+      const resp = await mantenedoresService.comuna.list({ provincia_id: proId })
       const list = resp.results || resp
-      options.comunas = list.map(c => ({ value: c.COM_ID, label: c.COM_NOMBRE }))
+      options.comunas = list.map(c => ({ value: c.COM_ID || c.com_id || c.id, label: c.COM_DESCRIPCION || c.com_descripcion || c.nombre || c.COM_NOMBRE }))
     }
 
     const handleSave = async (data) => {
@@ -506,7 +504,6 @@ export default {
     })
 
       return {
-      isAdmin, canCreate, canEdit, canDelete,
       loading, guardando, importando, modoSoloLectura,
       filteredPersonas, personaEditada, importPreview, alertas,
       filtros, options, modals, isMobile, filtrosColapsados, hasAnyFilter,

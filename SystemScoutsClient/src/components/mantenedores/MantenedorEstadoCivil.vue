@@ -24,7 +24,7 @@
           <thead><tr><th>DESCRIPCIÓN</th><th>ESTADO</th><th class="text-center">ACCIONES</th></tr></thead>
           <tbody>
             <tr v-for="item in filteredItems" :key="item.id">
-              <td data-label="Descripción">{{ item.descripcion }}</td>
+              <td class="text-left" data-label="Descripción">{{ item.descripcion }}</td>
               <td data-label="Estado"><span class="status-badge" :class="item.vigente ? 'status-active' : 'status-inactive'">{{ item.vigente ? 'ACTIVO' : 'INACTIVO' }}</span></td>
               <td class="actions-cell" data-label="Acciones">
                 <div class="action-buttons">
@@ -232,4 +232,5 @@ onMounted(() => { cargarDatos() })
   .mantenedor-section { height: auto; overflow: visible; }
   .table-container { height: auto; overflow: visible; }
 }
+.text-left { text-align: left !important; }
 </style>

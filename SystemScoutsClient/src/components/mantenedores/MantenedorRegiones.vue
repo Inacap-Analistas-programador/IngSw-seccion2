@@ -29,7 +29,7 @@
           </thead>
           <tbody>
             <tr v-for="region in filteredItems" :key="region.id">
-              <td data-label="Descripción">{{ region.descripcion }}</td>
+              <td class="text-left" data-label="Descripción">{{ region.descripcion }}</td>
               <td data-label="Estado">
                 <span class="status-badge" :class="region.vigente ? 'status-active' : 'status-inactive'">
                   {{ region.vigente ? 'ACTIVO' : 'INACTIVO' }}
@@ -317,4 +317,5 @@ onMounted(() => { cargarDatos() })
   .table-container { height: auto; overflow: visible; }
 }
 .no-data { text-align: center; padding: 20px; color: #999; }
+.text-left { text-align: left !important; }
 </style>

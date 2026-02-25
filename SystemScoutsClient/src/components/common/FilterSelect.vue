@@ -5,17 +5,10 @@
       @click="toggleDropdown" 
       :class="{ 'active': isOpen, 'disabled': disabled }"
     >
-      <span>{{ displayedLabel }}</span>
+      <span v-if="!isOpen">{{ displayedLabel }}</span>
       <div class="custom-arrow" :class="{ 'open': isOpen }">▼</div>
     </div>
     <div v-if="isOpen" class="custom-options">
-      <div 
-        class="custom-option" 
-        :class="{ 'selected': !hasValue }"
-        @click="selectOption('')"
-      >
-        {{ defaultLabel }}
-      </div>
       <div 
         v-for="option in options" 
         :key="option[valueKey]" 
@@ -100,6 +93,7 @@ onUnmounted(() => {
 .custom-select-container {
   position: relative;
   width: 100%;
+  max-width: 280px;
   height: 40px;
   font-family: 'Inter', Arial, sans-serif;
   box-sizing: border-box;

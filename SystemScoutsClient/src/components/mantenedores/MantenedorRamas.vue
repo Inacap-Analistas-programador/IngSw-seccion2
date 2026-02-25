@@ -34,7 +34,7 @@
           </thead>
           <tbody>
             <tr v-for="rama in filteredItems" :key="rama.id">
-              <td data-label="Descripción">{{ rama.descripcion }}</td>
+              <td class="text-left" data-label="Descripción">{{ rama.descripcion }}</td>
               <td data-label="Estado">
                 <span class="status-badge" :class="rama.vigente ? 'status-active' : 'status-inactive'">
                   {{ rama.vigente ? 'ACTIVO' : 'INACTIVO' }}
@@ -710,4 +710,5 @@ onMounted(() => {
   }
   .action-buttons { justify-content: space-evenly; width: 100%; }
 }
+.text-left { text-align: left !important; }
 </style>
