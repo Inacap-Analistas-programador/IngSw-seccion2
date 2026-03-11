@@ -56,11 +56,20 @@ class PersonaCompletaSerializer(serializers.ModelSerializer):
     zon_id = serializers.SerializerMethodField()
     pei_vigente = serializers.SerializerMethodField()
     
-    # Campos de Nivel
+    # Campos de Comuna (Región y Provincia)
+    reg_id = serializers.SerializerMethodField()
+    pro_id = serializers.SerializerMethodField()
+    
+    # Rol ID exacto
+    rol_id = serializers.SerializerMethodField()
+    
+    # Alimentación ID exacto
+    ali_id = serializers.SerializerMethodField()
+
+    # Campos de Nivel/Rama (Múltiples)
     niv_id = serializers.SerializerMethodField()
     ram_id_nivel = serializers.SerializerMethodField()
-
-
+    ramas = serializers.SerializerMethodField()
     
     # Campos de Vehículo
     pev_patente = serializers.SerializerMethodField()
@@ -77,6 +86,10 @@ class PersonaCompletaSerializer(serializers.ModelSerializer):
     per_pago_confirmado = serializers.SerializerMethodField()
     per_acreditado = serializers.SerializerMethodField()
     
+    # Campo para control de UI (Grupo vs Individual)
+    tipo_organizacion = serializers.SerializerMethodField()
+    is_formador = serializers.SerializerMethodField()
+    
     class Meta:
         model = Persona
         fields = '__all__'
@@ -84,30 +97,24 @@ class PersonaCompletaSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         ret = super().to_representation(instance)
         # Convertir Decimal a int para campos ID
-        if 'per_id' in ret and ret['per_id'] is not None:
-            ret['per_id'] = int(ret['per_id'])
-        if 'usu_id' in ret and ret['usu_id'] is not None:
-            ret['usu_id'] = int(ret['usu_id'])
-        if 'esc_id' in ret and ret['esc_id'] is not None:
-            ret['esc_id'] = int(ret['esc_id'])
-        if 'com_id' in ret and ret['com_id'] is not None:
-            ret['com_id'] = int(ret['com_id'])
-        # Convertir otros campos enteros que podrían ser Decimal
-        if 'per_num_mma' in ret and ret['per_num_mma'] is not None:
-            ret['per_num_mma'] = int(ret['per_num_mma'])
-        if 'per_tipo_fono' in ret and ret['per_tipo_fono'] is not None:
-            ret['per_tipo_fono'] = int(ret['per_tipo_fono'])
-        # Convertir RUN y DV si vienen como Decimal
+        for field in ['per_id', 'usu_id', 'esc_id', 'com_id', 'per_num_mma', 'per_tipo_fono']:
+            if field in ret and ret[field] is not None:
+                try:
+                    ret[field] = int(ret[field])
+                except (ValueError, TypeError):
+                    pass
+        # Convertir RUN a string sin decimales
         if 'per_run' in ret and ret['per_run'] is not None:
-            ret['per_run'] = str(int(ret['per_run']))
-        if 'per_dv' in ret and ret['per_dv'] is not None:
-            ret['per_dv'] = str(ret['per_dv'])
+            try:
+                ret['per_run'] = str(int(ret['per_run']))
+            except (ValueError, TypeError):
+                pass
         return ret
 
     def get_per_rol(self, obj):
         """Obtener rol desde persona_curso (último rol activo)"""
         try:
-            persona_curso = Persona_Curso.objects.filter(per_id=obj.per_id).first()
+            persona_curso = Persona_Curso.objects.filter(per_id=obj.per_id).order_by('-pec_id').first()
             if persona_curso and persona_curso.rol_id:
                 return persona_curso.rol_id.rol_descripcion
         except:
@@ -117,7 +124,7 @@ class PersonaCompletaSerializer(serializers.ModelSerializer):
     def get_per_rama(self, obj):
         """Obtener rama desde persona_nivel"""
         try:
-            persona_nivel = Persona_Nivel.objects.filter(per_id=obj.per_id).first()
+            persona_nivel = Persona_Nivel.objects.filter(per_id=obj.per_id).order_by('-pen_id').first()
             if persona_nivel and persona_nivel.ram_id:
                 return persona_nivel.ram_id.ram_descripcion
         except:
@@ -127,7 +134,7 @@ class PersonaCompletaSerializer(serializers.ModelSerializer):
     def get_per_grupo(self, obj):
         """Obtener grupo desde persona_grupo"""
         try:
-            persona_grupo = Persona_Grupo.objects.filter(per_id=obj.per_id).first()
+            persona_grupo = Persona_Grupo.objects.filter(per_id=obj.per_id).order_by('-peg_id').first()
             if persona_grupo and persona_grupo.gru_id:
                 return persona_grupo.gru_id.gru_descripcion
         except:
@@ -245,11 +252,63 @@ class PersonaCompletaSerializer(serializers.ModelSerializer):
         except:
             pass
         return None
+
+    def get_ramas(self, obj):
+        """Retorna todas las ramas/niveles de esta persona para edición."""
+        try:
+            niveles = Persona_Nivel.objects.filter(per_id=obj.per_id)
+            ramas = []
+            for n in niveles:
+                ramas.append({
+                    "NIV_ID": int(n.niv_id.niv_id) if n.niv_id else '',
+                    "RAM_ID_NIVEL": int(n.ram_id.ram_id) if n.ram_id else ''
+                })
+            return ramas if ramas else [{"NIV_ID": '', "RAM_ID_NIVEL": ''}]
+        except:
+            return [{"NIV_ID": '', "RAM_ID_NIVEL": ''}]
+
+    def get_rol_id(self, obj):
+        """Obtener el ID exacto del rol para bindear en el select."""
+        try:
+            persona_curso = Persona_Curso.objects.filter(per_id=obj.per_id).order_by('-pec_id').first()
+            if persona_curso and persona_curso.rol_id:
+                return int(persona_curso.rol_id.rol_id)
+        except:
+            pass
+        return None
+
+    def get_ali_id(self, obj):
+        """Obtener el ID exacto de la alimentación para bindear en el select."""
+        try:
+            persona_curso = Persona_Curso.objects.filter(per_id=obj.per_id).order_by('-pec_id').first()
+            if persona_curso and persona_curso.ali_id:
+                return int(persona_curso.ali_id.ali_id)
+        except:
+            pass
+        return None
+
+    def get_reg_id(self, obj):
+        """Obtener ID Región mediante Comuna->Provincia->Región"""
+        try:
+            if obj.com_id and obj.com_id.pro_id and obj.com_id.pro_id.reg_id:
+                return int(obj.com_id.pro_id.reg_id.reg_id)
+        except:
+            pass
+        return None
+
+    def get_pro_id(self, obj):
+        """Obtener ID Provincia mediante Comuna->Provincia"""
+        try:
+            if obj.com_id and obj.com_id.pro_id:
+                return int(obj.com_id.pro_id.pro_id)
+        except:
+            pass
+        return None
     
     # Métodos para Vehículo
     def get_pev_patente(self, obj):
         try:
-            persona_vehiculo = Persona_Vehiculo.objects.filter(per_id=obj.per_id).first()
+            persona_vehiculo = Persona_Vehiculo.objects.filter(pec_id__per_id=obj.per_id).order_by('-pev_id').first()
             if persona_vehiculo:
                 return persona_vehiculo.pev_patente
         except:
@@ -258,7 +317,7 @@ class PersonaCompletaSerializer(serializers.ModelSerializer):
     
     def get_pev_marca(self, obj):
         try:
-            persona_vehiculo = Persona_Vehiculo.objects.filter(per_id=obj.per_id).first()
+            persona_vehiculo = Persona_Vehiculo.objects.filter(pec_id__per_id=obj.per_id).order_by('-pev_id').first()
             if persona_vehiculo:
                 return persona_vehiculo.pev_marca
         except:
@@ -267,7 +326,7 @@ class PersonaCompletaSerializer(serializers.ModelSerializer):
     
     def get_pev_modelo(self, obj):
         try:
-            persona_vehiculo = Persona_Vehiculo.objects.filter(per_id=obj.per_id).first()
+            persona_vehiculo = Persona_Vehiculo.objects.filter(pec_id__per_id=obj.per_id).order_by('-pev_id').first()
             if persona_vehiculo:
                 return persona_vehiculo.pev_modelo
         except:
@@ -276,8 +335,8 @@ class PersonaCompletaSerializer(serializers.ModelSerializer):
     
     def get_pev_anio(self, obj):
         try:
-            persona_vehiculo = Persona_Vehiculo.objects.filter(per_id=obj.per_id).first()
-            if persona_vehiculo:
+            persona_vehiculo = Persona_Vehiculo.objects.filter(pec_id__per_id=obj.per_id).order_by('-pev_id').first()
+            if persona_vehiculo and hasattr(persona_vehiculo, 'pev_anio'):
                 return persona_vehiculo.pev_anio
         except:
             pass
@@ -285,8 +344,8 @@ class PersonaCompletaSerializer(serializers.ModelSerializer):
     
     def get_pev_color(self, obj):
         try:
-            persona_vehiculo = Persona_Vehiculo.objects.filter(per_id=obj.per_id).first()
-            if persona_vehiculo:
+            persona_vehiculo = Persona_Vehiculo.objects.filter(pec_id__per_id=obj.per_id).order_by('-pev_id').first()
+            if persona_vehiculo and hasattr(persona_vehiculo, 'pev_color'):
                 return persona_vehiculo.pev_color
         except:
             pass
@@ -294,8 +353,8 @@ class PersonaCompletaSerializer(serializers.ModelSerializer):
     
     def get_pev_capacidad(self, obj):
         try:
-            persona_vehiculo = Persona_Vehiculo.objects.filter(per_id=obj.per_id).first()
-            if persona_vehiculo:
+            persona_vehiculo = Persona_Vehiculo.objects.filter(pec_id__per_id=obj.per_id).order_by('-pev_id').first()
+            if persona_vehiculo and hasattr(persona_vehiculo, 'pev_capacidad'):
                 return persona_vehiculo.pev_capacidad
         except:
             pass
@@ -315,7 +374,7 @@ class PersonaCompletaSerializer(serializers.ModelSerializer):
     def get_per_alimentacion(self, obj):
         """Obtener descripción de alimentación"""
         try:
-            pec = Persona_Curso.objects.filter(per_id=obj.per_id).first()
+            pec = Persona_Curso.objects.filter(per_id=obj.per_id).order_by('-pec_id').first()
             if pec and pec.ali_id:
                 return pec.ali_id.ali_descripcion
         except:
@@ -348,6 +407,18 @@ class PersonaCompletaSerializer(serializers.ModelSerializer):
             return False
         except:
             return False
+
+    def get_tipo_organizacion(self, obj):
+        """Determina si la persona pertenece a un grupo o es individual"""
+        if Persona_Grupo.objects.filter(per_id=obj.per_id).exists():
+            return 'GRUPO'
+        if Persona_Individual.objects.filter(per_id=obj.per_id).exists():
+            return 'INDIVIDUAL'
+        return 'GRUPO' # Default
+
+    def get_is_formador(self, obj):
+        """Determina si el registro de formador existe"""
+        return Persona_Formador.objects.filter(per_id=obj.per_id).exists()
 
 
 class PersonaGrupoSerializer(serializers.ModelSerializer):

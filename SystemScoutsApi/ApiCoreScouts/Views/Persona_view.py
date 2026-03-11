@@ -35,7 +35,7 @@ class PersonaViewSet(viewsets.ModelViewSet):
     filterset_class = PersonaFilter
     search_fields = ['per_nombres', 'per_apelpta', 'per_apelmat', 'per_run', 'per_apodo']
     renderer_classes = [JSONRenderer]
-    pagination_class = StandardResultsSetPagination
+    pagination_class = None
 
     def _process_base64_foto(self, foto_data, rut):
         """
@@ -83,6 +83,111 @@ class PersonaViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
+        instance = serializer.instance
+
+        # Guardar ramas/niveles
+        ramas = data.get('ramas') or data.get('RAMAS')
+        if ramas and isinstance(ramas, list):
+            try:
+                for r in ramas:
+                    niv_id = r.get('NIV_ID') or r.get('niv_id')
+                    ram_id = r.get('RAM_ID_NIVEL') or r.get('ram_id_nivel')
+                    if niv_id or ram_id:
+                        nuevo_pn = Persona_Nivel(per_id=instance)
+                        if niv_id:
+                            nuevo_pn.niv_id = Nivel.objects.get(pk=niv_id)
+                        if ram_id:
+                            nuevo_pn.ram_id = Rama.objects.get(pk=ram_id)
+                        nuevo_pn.save()
+            except Exception as e:
+                print(f"Error creando ramas/niveles: {e}")
+
+        # Guardar rol/alimento (Crear Persona_Curso inicial)
+        rol_id = data.get('rol_id') or data.get('ROL_ID')
+        ali_id = data.get('ali_id') or data.get('ALI_ID')
+        if rol_id or ali_id:
+            try:
+                # Intentar obtener el curso activo para el registro inicial
+                # Si no viene cus_id, buscaremos uno por defecto
+                from ..Models.curso_model import Curso_Seccion
+                default_sec = Curso_Seccion.objects.filter(cur_id__cur_estado=1).first() or Curso_Seccion.objects.first()
+                
+                if default_sec:
+                    persona_curso = Persona_Curso(per_id=instance, cus_id=default_sec)
+                    if rol_id:
+                        persona_curso.rol_id = Rol.objects.get(pk=rol_id)
+                    else:
+                        # Rol 1 (Participante) por defecto si no viene
+                        persona_curso.rol_id = Rol.objects.get(pk=1)
+                        
+                    if ali_id:
+                        persona_curso.ali_id = Alimentacion.objects.get(pk=ali_id)
+                    persona_curso.save()
+            except Exception as e:
+                print(f"Error creando registro inicial de curso: {e}")
+
+        # Guardar Organización (Grupo o Individual)
+        tipo_org = data.get('tipo_organizacion') or data.get('TIPO_ORGANIZACION') or 'GRUPO'
+        
+        if tipo_org == 'GRUPO':
+            gru_id = data.get('gru_id') or data.get('GRU_ID')
+            if gru_id:
+                try:
+                    persona_grupo = Persona_Grupo(per_id=instance)
+                    persona_grupo.gru_id = Grupo.objects.get(pk=gru_id)
+                    persona_grupo.save()
+                except Exception as e:
+                    print(f"Error creando grupo: {e}")
+        else: # INDIVIDUAL
+            car_id = data.get('car_id') or data.get('CAR_ID')
+            if car_id:
+                try:
+                    persona_ind = Persona_Individual(per_id=instance)
+                    persona_ind.car_id = Cargo.objects.get(pk=car_id)
+                    dis_id = data.get('dis_id') or data.get('DIS_ID')
+                    if dis_id:
+                        persona_ind.dis_id = Distrito.objects.get(pk=dis_id)
+                    zon_id = data.get('zon_id') or data.get('ZON_ID')
+                    if zon_id:
+                        persona_ind.zon_id = Zona.objects.get(pk=zon_id)
+                    persona_ind.save()
+                except Exception as e:
+                    print(f"Error creando individual: {e}")
+
+        # Guardar Formador
+        is_formador = data.get('is_formador', False) or data.get('IS_FORMADOR', False)
+        if is_formador:
+            try:
+                per_form = Persona_Formador(per_id=instance)
+                per_form.pef_hab_1 = bool(data.get('pef_hab_1') or data.get('PEF_HAB_1'))
+                per_form.pef_hab_2 = bool(data.get('pef_hab_2') or data.get('PEF_HAB_2'))
+                per_form.pef_verif = bool(data.get('pef_verif') or data.get('PEF_VERIF'))
+                per_form.pef_historial = data.get('pef_historial') or data.get('PEF_HISTORIAL')
+                per_form.save()
+            except Exception as e:
+                print(f"Error creando formador: {e}")
+
+        # Guardar Vehículo
+        pev_marca = data.get('pev_marca') or data.get('PEV_MARCA')
+        pev_modelo = data.get('pev_modelo') or data.get('PEV_MODELO')
+        pev_patente = data.get('pev_patente') or data.get('PEV_PATENTE')
+        
+        if pev_marca or pev_modelo or pev_patente:
+            try:
+                # Buscamos el Persona_Curso que acabamos de crear arriba
+                persona_curso = Persona_Curso.objects.filter(per_id=instance).order_by('-pec_id').first()
+                if persona_curso:
+                    persona_vehiculo = Persona_Vehiculo(pec_id=persona_curso)
+                    persona_vehiculo.pev_marca = pev_marca or ''
+                    persona_vehiculo.pev_modelo = pev_modelo or ''
+                    persona_vehiculo.pev_patente = pev_patente or ''
+                    persona_vehiculo.save()
+            except Exception as e:
+                print(f"Error creando vehículo: {e}")
+
+        # Re-serializar para incluir datos actualizados (rol_id, ali_id, etc)
+        instance.refresh_from_db()
+        serializer = self.get_serializer(instance)
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=201, headers=headers)
 
@@ -104,9 +209,148 @@ class PersonaViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
+        # Actualizar campos relacionados
+        rol_id = data.get('rol_id') or data.get('ROL_ID')
+        ali_id = data.get('ali_id') or data.get('ALI_ID')
+        gru_id = data.get('gru_id') or data.get('GRU_ID')
+        
+        print(f"DEBUG UPDATE: per_id={instance.per_id}, rol_id={rol_id}, ali_id={ali_id}, gru_id={gru_id}")
+
+        # Manejar Persona_Curso (Rol y Alimentación)
+        if rol_id or ali_id:
+            try:
+                persona_curso = Persona_Curso.objects.filter(per_id=instance.per_id).order_by('-pec_id').first()
+                if not persona_curso:
+                    print(f"DEBUG: No persona_curso found, creating new one")
+                    # Crear nuevo si no existe (Necesitamos un cus_id)
+                    from ..Models.curso_model import Curso_Seccion
+                    default_sec = Curso_Seccion.objects.filter(cur_id__cur_estado=1).first() or Curso_Seccion.objects.first()
+                    if default_sec:
+                        persona_curso = Persona_Curso(per_id=instance, cus_id=default_sec)
+                        # Asignar rol obligatorio si se está creando
+                        persona_curso.rol_id = Rol.objects.get(pk=rol_id if rol_id else 1)
+                
+                if persona_curso:
+                    if rol_id:
+                        persona_curso.rol_id = Rol.objects.get(pk=rol_id)
+                    if ali_id:
+                        persona_curso.ali_id = Alimentacion.objects.get(pk=ali_id)
+                    persona_curso.save()
+                    print(f"DEBUG: Saved persona_curso {persona_curso.pec_id}, ali_id={persona_curso.ali_id_id}")
+            except Exception as e:
+                print(f"DEBUG: Error actualizando/creando curso: {e}")
+
+        # Manejar Organización (Grupo o Individual)
+        tipo_org = data.get('tipo_organizacion') or data.get('TIPO_ORGANIZACION')
+        
+        # Si no viene tipo_org explícito, intentamos deducirlo o mantenemos el actual
+        if not tipo_org:
+            if Persona_Individual.objects.filter(per_id=instance.per_id).exists():
+                tipo_org = 'INDIVIDUAL'
+            else:
+                tipo_org = 'GRUPO'
+
+        if tipo_org == 'GRUPO':
+            if gru_id:
+                try:
+                    persona_grupo = Persona_Grupo.objects.filter(per_id=instance.per_id).first()
+                    if not persona_grupo:
+                        persona_grupo = Persona_Grupo(per_id=instance)
+                    persona_grupo.gru_id = Grupo.objects.get(pk=gru_id)
+                    persona_grupo.save()
+                    # Eliminar registro individual si existe
+                    Persona_Individual.objects.filter(per_id=instance.per_id).delete()
+                except Exception as e:
+                    print(f"Error actualizando grupo: {e}")
+        else: # INDIVIDUAL
+            car_id = data.get('car_id') or data.get('CAR_ID')
+            if car_id:
+                try:
+                    persona_ind = Persona_Individual.objects.filter(per_id=instance.per_id).first()
+                    if not persona_ind:
+                        persona_ind = Persona_Individual(per_id=instance)
+                    persona_ind.car_id = Cargo.objects.get(pk=car_id)
+                    dis_id = data.get('dis_id') or data.get('DIS_ID')
+                    if dis_id:
+                        persona_ind.dis_id = Distrito.objects.get(pk=dis_id)
+                    zon_id = data.get('zon_id') or data.get('ZON_ID')
+                    if zon_id:
+                        persona_ind.zon_id = Zona.objects.get(pk=zon_id)
+                    persona_ind.save()
+                    # Eliminar registro grupo si existe
+                    Persona_Grupo.objects.filter(per_id=instance.per_id).delete()
+                except Exception as e:
+                    print(f"Error actualizando individual: {e}")
+
+        # Manejar Formador
+        is_formador = data.get('is_formador')
+        if is_formador is None:
+            is_formador = data.get('IS_FORMADOR')
+            
+        if is_formador is not None:
+            try:
+                if is_formador:
+                    per_form = Persona_Formador.objects.filter(per_id=instance.per_id).first()
+                    if not per_form:
+                        per_form = Persona_Formador(per_id=instance)
+                    per_form.pef_hab_1 = bool(data.get('pef_hab_1') or data.get('PEF_HAB_1'))
+                    per_form.pef_hab_2 = bool(data.get('pef_hab_2') or data.get('PEF_HAB_2'))
+                    per_form.pef_verif = bool(data.get('pef_verif') or data.get('PEF_VERIF'))
+                    per_form.pef_historial = data.get('pef_historial') or data.get('PEF_HISTORIAL')
+                    per_form.save()
+                else:
+                    # Si is_formador es false, eliminamos el registro
+                    Persona_Formador.objects.filter(per_id=instance.per_id).delete()
+            except Exception as e:
+                print(f"Error actualizando formador: {e}")
+
+        # Manejar Vehículo
+        pev_marca = data.get('pev_marca') or data.get('PEV_MARCA')
+        pev_modelo = data.get('pev_modelo') or data.get('PEV_MODELO')
+        pev_patente = data.get('pev_patente') or data.get('PEV_PATENTE')
+
+        if pev_marca is not None or pev_modelo is not None or pev_patente is not None:
+            try:
+                # Buscamos el último Persona_Curso
+                persona_curso = Persona_Curso.objects.filter(per_id=instance.per_id).order_by('-pec_id').first()
+                if persona_curso:
+                    persona_vehiculo = Persona_Vehiculo.objects.filter(pec_id=persona_curso).first()
+                    if not persona_vehiculo:
+                        persona_vehiculo = Persona_Vehiculo(pec_id=persona_curso)
+                    
+                    if pev_marca is not None: persona_vehiculo.pev_marca = pev_marca
+                    if pev_modelo is not None: persona_vehiculo.pev_modelo = pev_modelo
+                    if pev_patente is not None: persona_vehiculo.pev_patente = pev_patente
+                    persona_vehiculo.save()
+            except Exception as e:
+                print(f"Error actualizando vehículo: {e}")
+
+        # Actualizar ramas/niveles
+        ramas = data.get('ramas') or data.get('RAMAS')
+        if ramas and isinstance(ramas, list):
+            try:
+                # Opcional: borrar niveles/ramas anteriores para limpiarlos, o actualizar el primero.
+                # Como el array "ramas" suele reemplazar todo:
+                Persona_Nivel.objects.filter(per_id=instance.per_id).delete()
+                for r in ramas:
+                    niv_id = r.get('NIV_ID') or r.get('niv_id')
+                    ram_id = r.get('RAM_ID_NIVEL') or r.get('ram_id_nivel')
+                    if niv_id or ram_id:
+                        nuevo_pn = Persona_Nivel(per_id=instance)
+                        if niv_id:
+                            nuevo_pn.niv_id = Nivel.objects.get(pk=niv_id)
+                        if ram_id:
+                            nuevo_pn.ram_id = Rama.objects.get(pk=ram_id)
+                        nuevo_pn.save()
+            except Exception as e:
+                print(f"Error actualizando ramas/niveles: {e}")
+
         if getattr(instance, '_prefetched_objects_cache', None):
             instance._prefetched_objects_cache = {}
 
+        # Re-serializar para incluir datos actualizados (rol_id, ali_id, etc)
+        instance.refresh_from_db()
+        serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
     @action(detail=False, methods=['post'])
@@ -485,7 +729,7 @@ class PersonaCursoViewSet(viewsets.ModelViewSet):
             'rol_id',               # Rol
             'ali_id',               # Alimentacion
             'niv_id'                # Nivel
-        ).all()
+        ).all().order_by('pec_id')
         # .prefetch_related(
         #     # Prefetch Estado del curso si existe relación inversa
         #     Prefetch(

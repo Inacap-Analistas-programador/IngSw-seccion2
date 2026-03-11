@@ -46,7 +46,7 @@ export const personaIndividuales = makeCrud('personas/individuales') // Reutiliz
 
 // ✨ Funciones auxiliares para obtener datos de filtros
 export const obtenerRoles = async () => {
-  const cacheKey = 'gs_catalog_roles_v3'
+  const cacheKey = 'gs_catalog_roles_v4'
   const ttl = 10 * 60 * 1000 // 10 minutes
   try {
     const cached = JSON.parse(localStorage.getItem(cacheKey))
@@ -56,11 +56,11 @@ export const obtenerRoles = async () => {
   try {
     // 1. Intentar desde el endpoint minimalista del backend (Más rápido y eficiente)
     try {
-      const resp = await request('mantenedores/rol/min')
+      const resp = await request('mantenedores/rol/min?vigente=true')
       if (resp && resp.results) {
         // En Roles, típicamente se guardan como texto en las personas (ej: formador, participante), o como ID.
         // Gestionpersonas guardaba ROL_NOMBRE como string muchas veces, pero si el Form usa IDs, pasamos id.
-        const result = resp.results.map(r => ({ value: r.id, label: r.nombre }))
+        const result = resp.results.map(r => ({ value: r.id, label: r.nombre || r.descripcion || r.ROL_DESCRIPCION || r.rol_descripcion }))
         localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: result }))
         return result
       }
@@ -94,7 +94,7 @@ export const obtenerRoles = async () => {
 };
 
 export const obtenerRamas = async () => {
-  const cacheKey = 'gs_catalog_ramas_v3'
+  const cacheKey = 'gs_catalog_ramas_v4'
   const ttl = 10 * 60 * 1000 // 10 minutes
   try {
     const cached = JSON.parse(localStorage.getItem(cacheKey))
@@ -104,9 +104,9 @@ export const obtenerRamas = async () => {
   try {
     // 1. Intentar desde el endpoint minimalista del backend
     try {
-      const resp = await request('mantenedores/rama/min')
+      const resp = await request('mantenedores/rama/min?vigente=true')
       if (resp && resp.results) {
-        const result = resp.results.map(r => ({ value: r.id, label: r.nombre }))
+        const result = resp.results.map(r => ({ value: r.id, label: r.nombre || r.descripcion || r.RAM_DESCRIPCION || r.ram_descripcion }))
         localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: result }))
         return result
       }
@@ -140,7 +140,7 @@ export const obtenerRamas = async () => {
 };
 
 export const obtenerGrupos = async () => {
-  const cacheKey = 'gs_catalog_grupos_v2'
+  const cacheKey = 'gs_catalog_grupos_v3'
   const ttl = 10 * 60 * 1000 // 10 minutes
   try {
     const cached = JSON.parse(localStorage.getItem(cacheKey))
@@ -150,9 +150,9 @@ export const obtenerGrupos = async () => {
   try {
     // 1. Intentar desde el endpoint minimalista del backend
     try {
-      const resp = await request('mantenedores/grupo/min')
+      const resp = await request('mantenedores/grupo/min?vigente=true')
       if (resp && resp.results) {
-        const result = resp.results.map(g => ({ value: g.id, label: g.nombre }))
+        const result = resp.results.map(g => ({ value: g.id, label: g.nombre || g.descripcion || g.GRU_DESCRIPCION || g.gru_descripcion }))
         localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: result }))
         return result
       }

@@ -168,22 +168,76 @@
           <!-- Organización -->
           <section class="form-section glass-panel">
             <h3 class="section-title"><AppIcons name="users" :size="18" /> Organización</h3>
+            
+            <!-- Selector de Tipo de Organización -->
+            <div class="org-type-selector mb-4">
+              <label class="block-label">Tipo de Organización</label>
+              <div class="radio-group-premium">
+                <label :class="{ active: formData.TIPO_ORGANIZACION === 'GRUPO' }">
+                  <input type="radio" v-model="formData.TIPO_ORGANIZACION" value="GRUPO" :disabled="isReadOnly" />
+                  <span>Grupo Scout</span>
+                </label>
+                <label :class="{ active: formData.TIPO_ORGANIZACION === 'INDIVIDUAL' }">
+                  <input type="radio" v-model="formData.TIPO_ORGANIZACION" value="INDIVIDUAL" :disabled="isReadOnly" />
+                  <span>Individual</span>
+                </label>
+              </div>
+            </div>
+
             <div class="fields-row">
               <div class="field">
                 <label>Rol Principal</label>
                 <FilterSelect 
-                  v-model="formData.PER_ROL" 
+                  v-model="formData.ROL_ID" 
                   :options="options.roles" 
                   :disabled="isReadOnly"
                   value-key="value"
                   label-key="label"
                 />
               </div>
-              <div class="field">
+
+              <!-- Condicional Grupo -->
+              <div class="field" v-if="formData.TIPO_ORGANIZACION === 'GRUPO'">
                 <label>Grupo Scout</label>
                 <FilterSelect 
                   v-model="formData.GRU_ID" 
                   :options="options.grupos" 
+                  :disabled="isReadOnly"
+                  value-key="value"
+                  label-key="label"
+                />
+              </div>
+
+              <!-- Condicional Individual: Cargo -->
+              <div class="field" v-if="formData.TIPO_ORGANIZACION === 'INDIVIDUAL'">
+                <label>Cargo</label>
+                <FilterSelect 
+                  v-model="formData.CAR_ID" 
+                  :options="options.cargos" 
+                  :disabled="isReadOnly"
+                  value-key="value"
+                  label-key="label"
+                />
+              </div>
+            </div>
+
+            <!-- Condicional Individual: Distrito y Zona -->
+            <div class="fields-row mt-2" v-if="formData.TIPO_ORGANIZACION === 'INDIVIDUAL'">
+              <div class="field">
+                <label>Distrito</label>
+                <FilterSelect 
+                  v-model="formData.DIS_ID" 
+                  :options="options.distritos" 
+                  :disabled="isReadOnly"
+                  value-key="value"
+                  label-key="label"
+                />
+              </div>
+              <div class="field">
+                <label>Zona</label>
+                <FilterSelect 
+                  v-model="formData.ZON_ID" 
+                  :options="options.zonas" 
                   :disabled="isReadOnly"
                   value-key="value"
                   label-key="label"
@@ -234,11 +288,70 @@
                 <InputBase v-model="formData.PER_PROFESION" :readonly="isReadOnly" />
               </div>
             </div>
+
+            <!-- APARTADO FORMADOR (RELOCATED) -->
+            <div class="formador-toggle-section mt-4 mb-2">
+              <div class="toggle-container">
+                <label class="switch">
+                  <input type="checkbox" v-model="formData.IS_FORMADOR" :disabled="isReadOnly">
+                  <span class="slider round"></span>
+                </label>
+                <span class="toggle-label">Es Formador</span>
+              </div>
+            </div>
+
+            <div v-if="formData.IS_FORMADOR" class="formador-details glass-panel grey mt-2">
+              <div class="fields-row mb-3">
+                <div class="check-field">
+                  <input type="checkbox" v-model="formData.PEF_HAB_1" :disabled="isReadOnly" id="hab1">
+                  <label for="hab1">Habilitación 1</label>
+                </div>
+                <div class="check-field">
+                  <input type="checkbox" v-model="formData.PEF_HAB_2" :disabled="isReadOnly" id="hab2">
+                  <label for="hab2">Habilitación 2</label>
+                </div>
+              </div>
+              <div class="fields-row mb-3">
+                <div class="check-field">
+                  <input type="checkbox" v-model="formData.PEF_VERIF" :disabled="isReadOnly" id="verif">
+                  <label for="verif">Verificado</label>
+                </div>
+              </div>
+              <div class="field">
+                <label>Historial de Formación</label>
+                <textarea 
+                  v-model="formData.PEF_HISTORIAL" 
+                  :readonly="isReadOnly" 
+                  class="premium-textarea"
+                  placeholder="Detalle historial..."
+                ></textarea>
+              </div>
+            </div>
           </section>
 
-          <!-- Salud y Vehículo -->
+          <!-- Información de Vehículo -->
+          <section class="form-section glass-panel">
+            <h3 class="section-title"><AppIcons name="truck" :size="18" /> Información de Vehículo</h3>
+            <div class="fields-row">
+              <div class="field">
+                <label>Marca</label>
+                <InputBase v-model="formData.PEV_MARCA" :readonly="isReadOnly" placeholder="Ej: Toyota" />
+              </div>
+              <div class="field">
+                <label>Modelo</label>
+                <InputBase v-model="formData.PEV_MODELO" :readonly="isReadOnly" placeholder="Ej: Hilux" />
+              </div>
+              <div class="field">
+                <label>Patente</label>
+                <InputBase v-model="formData.PEV_PATENTE" :readonly="isReadOnly" placeholder="Ej: AB-CD-12" />
+              </div>
+            </div>
+          </section>
+
+          <!-- Salud y Logística -->
           <section class="form-section glass-panel">
             <h3 class="section-title"><AppIcons name="heart" :size="18" /> Salud y Logística</h3>
+            
             <div class="fields-row">
               <div class="field">
                 <label>Tipo Alimentación</label>
@@ -424,9 +537,10 @@ const removePhoto = () => { formData.PER_FOTO = null }
 // Logic
 const limitDate = (val) => {
   if (!val) return
-  const year = val.split('-')[0]
+  const strVal = String(val)
+  const year = strVal.split('-')[0]
   if (year && year.length > 4) {
-    formData.PER_FECHA_NAC = val.slice(0, 4) + val.slice(5) // Not perfect logic but placeholder for refinement
+    formData.PER_FECHA_NAC = strVal.slice(0, 4) + strVal.slice(5) // Not perfect logic but placeholder for refinement
   }
 }
 
@@ -610,6 +724,135 @@ const handleSave = () => {
   .form-grid { grid-template-columns: 1fr; }
   .persona-form { height: 95vh; max-height: none; }
 }
+
+.org-type-selector { display: flex; flex-direction: column; gap: 8px; }
+.block-label { font-size: 0.85rem; font-weight: 700; color: #475569; margin-bottom: 4px; }
+
+.radio-group-premium {
+  display: flex;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 12px;
+  gap: 4px;
+}
+
+.radio-group-premium label {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.radio-group-premium label.active {
+  background: white;
+  color: #1a237e;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.radio-group-premium input { display: none; }
+
+/* Toggle Switch */
+.formador-toggle-section {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.toggle-container { display: flex; align-items: center; gap: 12px; }
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.switch input { opacity: 0; width: 0; height: 0; }
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: #cbd5e1;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+}
+
+input:checked + .slider { background-color: #1a237e; }
+input:checked + .slider:before { transform: translateX(20px); }
+.slider.round { border-radius: 34px; }
+.slider.round:before { border-radius: 50%; }
+
+.toggle-label { font-weight: 700; color: #1e293b; font-size: 0.95rem; }
+
+.formador-details {
+  border-left: 4px solid #1a237e;
+  background: #f1f5f9;
+  padding: 20px;
+}
+
+.check-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.check-field input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.check-field label {
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.premium-textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+
+.premium-textarea:focus {
+  outline: none;
+  border-color: #1a237e;
+  box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
+}
+
+.mt-2 { margin-top: 8px; }
+.mt-4 { margin-top: 16px; }
+.mb-2 { margin-bottom: 8px; }
+.mb-3 { margin-bottom: 12px; }
+.mb-4 { margin-bottom: 16px; }
 
 .spin { animation: spin 1s linear infinite; }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }

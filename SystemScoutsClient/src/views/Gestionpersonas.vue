@@ -250,26 +250,42 @@ export default {
     // Methods Data
     const cargarCatalogos = async () => {
       try {
-        const [roles, grupos, cursos, ramas, regiones, ec, ali, niv] = await Promise.all([
+        const [roles, grupos, cursos, ramas, regiones, ec, ali, niv, car, dis, zon] = await Promise.all([
           personasService.obtenerRoles(),
           personasService.obtenerGrupos(),
-          personasService.personaCursos.list(), // No tiene .min() documentado
+          personasService.personaCursos.list(), 
           personasService.obtenerRamas(),
-          mantenedoresService.region.list(), // Podría añadirse .min() a regiones pero por ahora mantendremos list() que es chico
-          mantenedoresService.estadoCivil.list(), // Mantenedores pequeños
-          mantenedoresService.alimentacion.list(), // Mantenedores pequeños
-          mantenedoresService.nivel.list() // Mantenedores pequeños
+          mantenedoresService.region.list({ vigente: true }),
+          mantenedoresService.estadoCivil.list({ vigente: true }),
+          mantenedoresService.alimentacion.list({ vigente: true }),
+          mantenedoresService.nivel.list({ vigente: true }),
+          mantenedoresService.cargo.list({ vigente: true }),
+          mantenedoresService.distrito.list({ vigente: true }),
+          mantenedoresService.zona.list({ vigente: true })
         ])
         
-        // Asignaciones optimizadas leyendo desde min() donde corresponda
-        options.roles = roles
-        options.grupos = grupos
-        options.cursos = (cursos.results || cursos).map(c => ({ value: c.CUR_ID || c.cur_id, label: c.CUR_NOMBRE || c.descripcion || c.cur_nombre }))
-        options.ramas = ramas
-        options.regiones = (regiones.results || regiones).map(r => ({ value: r.REG_ID || r.reg_id || r.id, label: r.REG_NOMBRE || r.reg_descripcion || r.nombre }))
-        options.estadoCivil = (ec.results || ec).map(e => ({ value: e.ESC_ID || e.esc_id || e.id, label: e.ESC_DESCRIPCION || e.esc_descripcion || e.nombre }))
-        options.alimentacion = (ali.results || ali).map(a => ({ value: a.ALI_ID || a.ali_id || a.id, label: a.ALI_NOMBRE || a.ali_descripcion || a.nombre }))
-        options.niveles = (niv.results || niv).map(n => ({ value: n.NIV_ID || n.niv_id || n.id, label: n.NIV_DESCRIPCION || n.niv_descripcion || n.nombre }))
+        // Asignaciones optimizadas
+        options.roles = roles || []
+        options.grupos = grupos || []
+        options.cargos = (car?.results || car || []).map(c => ({ value: c.CAR_ID || c.car_id || c.id, label: c.CAR_DESCRIPCION || c.car_descripcion || c.nombre }))
+        options.distritos = (dis?.results || dis || []).map(d => ({ value: d.DIS_ID || d.dis_id || d.id, label: d.DIS_DESCRIPCION || d.dis_descripcion || d.nombre }))
+        options.zonas = (zon?.results || zon || []).map(z => ({ value: z.ZON_ID || z.zon_id || z.id, label: z.ZON_DESCRIPCION || z.zon_descripcion || z.nombre }))
+        
+        // Deduplicar cursos asegurándonos de que sea un array seguro
+        const safeCursos = cursos?.results || cursos || []
+        const uniqueCursos = new Map()
+        safeCursos.forEach(c => {
+          const val = c.CUR_ID || c.cur_id
+          const lab = c.CUR_NOMBRE || c.descripcion || c.cur_nombre || c.CUR_DESCRIPCION || c.cur_descripcion
+          if (val) uniqueCursos.set(val, { value: val, label: lab })
+        })
+        options.cursos = Array.from(uniqueCursos.values())
+        
+        options.ramas = ramas || []
+        options.regiones = (regiones?.results || regiones || []).map(r => ({ value: r.REG_ID || r.reg_id || r.id, label: r.REG_NOMBRE || r.reg_descripcion || r.nombre || r.REG_DESCRIPCION }))
+        options.estadoCivil = (ec?.results || ec || []).map(e => ({ value: e.ESC_ID || e.esc_id || e.id, label: e.ESC_DESCRIPCION || e.esc_descripcion || e.nombre }))
+        options.alimentacion = (ali?.results || ali || []).map(a => ({ value: a.ALI_ID || a.ali_id || a.id, label: a.ALI_NOMBRE || a.ali_descripcion || a.nombre }))
+        options.niveles = (niv?.results || niv || []).map(n => ({ value: n.NIV_ID || n.niv_id || n.id, label: n.NIV_DESCRIPCION || n.niv_descripcion || n.nombre }))
       } catch (e) {
         console.error('Error cargando catálogos:', e)
       }
@@ -356,7 +372,7 @@ export default {
         
         if (response.exists && response.persona) {
           // Guardamos la referencia para mostrar el nombre
-          personaExistente.value = response.persona
+          personaExistente.value = toUpperKeys(response.persona)
           // Cerramos modal de RUT y abrimos el de confirmación
           modals.rut = false
           modals.confirmExist = true // This modal is still used for RUT confirmation
@@ -386,6 +402,47 @@ export default {
       try {
         const fullPersona = await personasService.personas.get(persona.PER_ID)
         personaEditada.value = toUpperKeys(fullPersona)
+        console.log("Persona cargada en UI:", personaEditada.value)
+        console.log("Opciones Roles:", options.roles)
+        console.log("Opciones Grupos:", options.grupos)
+        console.log("Opciones Alimentacion:", options.alimentacion)
+        
+        // Inicializar tipo_organizacion e is_formador
+        personaEditada.value.TIPO_ORGANIZACION = fullPersona.tipo_organizacion || 'GRUPO'
+        personaEditada.value.IS_FORMADOR = fullPersona.is_formador || false
+        
+        if (personaEditada.value.RAMAS) {
+          personaEditada.value.ramas = personaEditada.value.RAMAS
+        } else if (!personaEditada.value.ramas) {
+          personaEditada.value.ramas = [{ NIV_ID: '', RAM_ID_NIVEL: '' }]
+        }
+
+        // Asegurar que IDs clave existan para el binding de FilterSelect
+        if (personaEditada.value.ROL_ID === null || personaEditada.value.ROL_ID === undefined) personaEditada.value.ROL_ID = ''
+        if (personaEditada.value.GRU_ID === null || personaEditada.value.GRU_ID === undefined) personaEditada.value.GRU_ID = ''
+        if (personaEditada.value.ALI_ID === null || personaEditada.value.ALI_ID === undefined) personaEditada.value.ALI_ID = ''
+        if (personaEditada.value.REG_ID === null || personaEditada.value.REG_ID === undefined) personaEditada.value.REG_ID = ''
+        if (personaEditada.value.PRO_ID === null || personaEditada.value.PRO_ID === undefined) personaEditada.value.PRO_ID = ''
+        if (personaEditada.value.COM_ID === null || personaEditada.value.COM_ID === undefined) personaEditada.value.COM_ID = ''
+        if (personaEditada.value.ESC_ID === null || personaEditada.value.ESC_ID === undefined) personaEditada.value.ESC_ID = ''
+        if (personaEditada.value.USU_ID === null || personaEditada.value.USU_ID === undefined) personaEditada.value.USU_ID = ''
+        
+        // Nuevos campos de Organización Individual
+        if (!personaEditada.value.CAR_ID) personaEditada.value.CAR_ID = ''
+        if (!personaEditada.value.DIS_ID) personaEditada.value.DIS_ID = ''
+        if (!personaEditada.value.ZON_ID) personaEditada.value.ZON_ID = ''
+        
+        // Campos de Formador
+        if (personaEditada.value.PEF_HAB_1 === undefined) personaEditada.value.PEF_HAB_1 = false
+        if (personaEditada.value.PEF_HAB_2 === undefined) personaEditada.value.PEF_HAB_2 = false
+        if (personaEditada.value.PEF_VERIF === undefined) personaEditada.value.PEF_VERIF = false
+        if (personaEditada.value.PEF_HISTORIAL === undefined) personaEditada.value.PEF_HISTORIAL = ''
+        
+        // Nuevos campos de Vehículo
+        if (!personaEditada.value.PEV_MARCA) personaEditada.value.PEV_MARCA = ''
+        if (!personaEditada.value.PEV_MODELO) personaEditada.value.PEV_MODELO = ''
+        if (!personaEditada.value.PEV_PATENTE) personaEditada.value.PEV_PATENTE = ''
+
         modoSoloLectura.value = soloLectura
         
         const hist = await personasService.obtenerCursosPersona(persona.PER_ID)
@@ -417,16 +474,42 @@ export default {
     const handleSave = async (data) => {
       guardando.value = true
       try {
-        if (data.PER_ID) {
-          await personasService.personas.update(data.PER_ID, data)
+        // Transformar MAYUSCULAS a minusculas (Django format)
+        // PRIORIDAD: Si existen ambas (ali_id y ALI_ID), la mayuscula es la que bindea el form
+        const parsedData = {}
+        
+        // Primero procesamos todo
+        for (const [k, v] of Object.entries(data)) {
+          const lowerKey = k.toLowerCase()
+          // Si k es mayuscula, siempre gana
+          if (k === k.toUpperCase() && k !== lowerKey) {
+            parsedData[lowerKey] = v
+          } else {
+            // Si es minuscula, solo la ponemos si no habia ya una version mayuscula (que ya se convirtio a lowerKey)
+            if (parsedData[lowerKey] === undefined) {
+              parsedData[lowerKey] = v
+            }
+          }
+        }
+
+        // Caso especial: per_foto suele ser base64 pesado o ruta, asegurar que se envie la version correcta
+        if (data.PER_FOTO) parsedData.per_foto = data.PER_FOTO
+        
+        // Defaults requeridos
+        if (!parsedData.usu_id) parsedData.usu_id = 1
+        if (!parsedData.per_tipo_fono) parsedData.per_tipo_fono = 1
+
+        if (parsedData.per_id) {
+          await personasService.personas.update(parsedData.per_id, parsedData)
           mostrarAlerta('Persona actualizada exitosamente', 'success')
         } else {
-          await personasService.personas.create(data)
+          await personasService.personas.create(parsedData)
           mostrarAlerta('Persona registrada exitosamente', 'success')
         }
         await cargarPersonas()
         modals.form = false
       } catch (e) {
+        console.error("Error Saving Persona:", e.response?.data || e)
         mostrarAlerta('Error al guardar datos. Revisa los campos obligatorios.', 'error')
       } finally {
         guardando.value = false
@@ -550,7 +633,7 @@ export default {
 .btn-large { padding: 12px 24px !important; font-weight: 600 !important; border-radius: 12px !important; }
 
 .gestion-personas {
-  padding: 0 24px 24px;
+  padding: 24px 24px;
   height: 100%;
   display: flex;
   flex-direction: column;

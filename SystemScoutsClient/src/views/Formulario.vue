@@ -548,8 +548,7 @@ const enviarFormulario = async () => {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: var(--color-background-soft);
-  padding-bottom: 50px;
+  padding: 24px 24px;
 }
 
 .form-outer {

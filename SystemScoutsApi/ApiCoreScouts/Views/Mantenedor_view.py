@@ -41,8 +41,8 @@ class RolViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def min(self, request):
         queryset = self.filter_queryset(self.get_queryset())
-        data = queryset.values('rol_id', 'rol_nombre')
-        results = [{'id': item['rol_id'], 'nombre': item['rol_nombre']} for item in data]
+        data = queryset.values('rol_id', 'rol_descripcion')
+        results = [{'id': item['rol_id'], 'nombre': item['rol_descripcion']} for item in data]
         return Response({'results': results})
 
 class CargoViewSet(viewsets.ModelViewSet):
