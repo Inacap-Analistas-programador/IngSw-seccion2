@@ -26,7 +26,6 @@
           <thead>
             <tr>
               <th>Descripción</th>
-              <th>Estado</th>
               <th style="width:220px">Acciones</th>
             </tr>
           </thead>
@@ -39,11 +38,6 @@
             </tr>
             <tr v-else v-for="rol in roles" :key="rol.id">
               <td>{{ getDescripcion(rol) }}</td>
-              <td>
-                <span class="badge" :class="!isVigente(rol) ? 'estado-inactivo' : 'badge-activo'">
-                  {{ !isVigente(rol) ? 'Inactivo' : 'Activo' }}
-                </span>
-              </td>
               <td class="actions-cell">
                 <BaseButton size="sm" variant="secondary" @click="abrirEditar(rol)">
                   <AppIcons name="edit" :size="14" /> Editar
@@ -76,21 +70,6 @@
                   <div class="form-group flex-1">
                     <label>Descripción <span class="required">*</span></label>
                     <InputBase v-model="form.descripcion" placeholder="Ej: Administrador" />
-                  </div>
-                  <div class="form-group estado-group">
-                    <label>Estado</label>
-                    <div class="estado-selector">
-                      <span 
-                        class="estado-badge" 
-                        :class="form.vigente ? 'badge-activo' : 'estado-inactivo'"
-                      >
-                        {{ form.vigente ? 'Activo' : 'Inactivo' }}
-                      </span>
-                      <select v-model="form.vigente" class="estado-select">
-                        <option :value="true">Activo</option>
-                        <option :value="false">Inactivo</option>
-                      </select>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -190,7 +169,7 @@ import InputBase from '@/components/InputBase.vue'
 import NotificationToast from '@/components/NotificationToast.vue'
 import AppIcons from '@/components/icons/AppIcons.vue'
 import ModernMainScrollbar from '@/components/ModernMainScrollbar.vue'
-import { perfiles as perfilesService, aplicaciones as aplicacionesService, perfilAplicaciones as perfilAplicacionesService } from '@/services/usuariosService'
+import { perfiles as perfilesService, aplicaciones as aplicacionesService } from '@/services/usuariosService'
 
 export default {
   name: 'Roles',
@@ -240,11 +219,29 @@ export default {
       this.cargandoAplicaciones = true
       try {
         const resp = await aplicacionesService.list()
-        this.aplicaciones = Array.isArray(resp) ? resp : (resp.results || resp.data || [])
+        const allPerms = Array.isArray(resp) ? resp : (resp.results || resp.data || [])
+        
+        // Agrupar permisos por modelo (content_type)
+        const grouped = {}
+        allPerms.forEach(p => {
+          const model = p.name.split(' | ').pop() || p.codename.split('_').pop()
+          if (!grouped[model]) {
+            grouped[model] = {
+              id: model,
+              descripcion: model.charAt(0).toUpperCase() + model.slice(1),
+              perms: { consultar: null, ingresar: null, modificar: null, eliminar: null }
+            }
+          }
+          if (p.codename.startsWith('view_')) grouped[model].perms.consultar = p.id
+          if (p.codename.startsWith('add_')) grouped[model].perms.ingresar = p.id
+          if (p.codename.startsWith('change_')) grouped[model].perms.modificar = p.id
+          if (p.codename.startsWith('delete_')) grouped[model].perms.eliminar = p.id
+        })
+        
+        this.aplicaciones = Object.values(grouped).filter(g => g.perms.consultar || g.perms.ingresar)
       } catch (e) {
-        console.error('Error cargando aplicaciones:', e)
-        this.mostrarToast('No se pudieron cargar los módulos', 'warning')
-        this.aplicaciones = []
+        console.error('Error cargando permisos:', e)
+        this.mostrarToast('No se pudieron cargar los permisos', 'warning')
       } finally {
         this.cargandoAplicaciones = false
       }
@@ -253,8 +250,7 @@ export default {
     inicializarPermisos() {
       const permisos = {}
       this.aplicaciones.forEach(app => {
-        const appId = app.apl_id || app.APL_ID || app.id
-        permisos[appId] = {
+        permisos[app.id] = {
           consultar: false,
           ingresar: false,
           modificar: false,
@@ -264,27 +260,20 @@ export default {
       return permisos
     },
 
-    async cargarPermisosRol(rolId) {
-      try {
-        // Obtener permisos del rol desde perfil-aplicaciones
-        const resp = await perfilAplicacionesService.list({ pel_id: rolId })
-        const permisosList = Array.isArray(resp) ? resp : (resp.results || resp.data || [])
-        
-        const permisos = this.inicializarPermisos()
-        permisosList.forEach(p => {
-          const appId = p.apl_id || p.APL_ID?.APL_ID || p.APL_ID
-          if (permisos[appId]) {
-            permisos[appId].consultar = p.pea_consultar || p.PEA_CONSULTAR || false
-            permisos[appId].ingresar = p.pea_ingresar || p.PEA_INGRESAR || false
-            permisos[appId].modificar = p.pea_modificar || p.PEA_MODIFICAR || false
-            permisos[appId].eliminar = p.pea_eliminar || p.PEA_ELIMINAR || false
-          }
-        })
-        return permisos
-      } catch (e) {
-        console.error('Error cargando permisos del rol:', e)
-        return this.inicializarPermisos()
-      }
+    async cargarPermisosRol(rol) {
+      const permisosIds = rol.permissions || []
+      const permisos = this.inicializarPermisos()
+      
+      this.aplicaciones.forEach(app => {
+        const appId = app.id
+        if (permisos[appId]) {
+          permisos[appId].consultar = permisosIds.includes(app.perms.consultar)
+          permisos[appId].ingresar = permisosIds.includes(app.perms.ingresar)
+          permisos[appId].modificar = permisosIds.includes(app.perms.modificar)
+          permisos[appId].eliminar = permisosIds.includes(app.perms.eliminar)
+        }
+      })
+      return permisos
     },
 
     payloadFromForm() {
@@ -326,15 +315,14 @@ export default {
     async abrirEditar(rol) {
       this.editando = true
       this.rolSeleccionado = rol
-      const rolId = rol.PEL_ID || rol.id
+      const rolId = rol.id
       
-      // Cargar permisos existentes
-      const permisos = await this.cargarPermisosRol(rolId)
+      const permisos = await this.cargarPermisosRol(rol)
       
       this.form = {
         id: rolId,
         descripcion: this.getDescripcion(rol),
-        vigente: this.isVigente(rol),
+        vigente: true, // Groups don't have active status in Django by default
         permisos: permisos
       }
       this.modalVisible = true
@@ -350,87 +338,38 @@ export default {
       }
     },
 
-    async guardarPermisos(rolId) {
-      // Guardar permisos por cada aplicación
-      const promises = []
-      
-      for (const appId in this.form.permisos) {
-        const perms = this.form.permisos[appId]
-        
-        try {
-          // Buscar si ya existe una entrada perfil-aplicación
-          // Intentamos buscar con ambos formatos de clave para asegurar compatibilidad
-          let existing = null
-          try {
-            const existingResp = await perfilAplicacionesService.list({ 
-              pel_id: rolId, 
-              apl_id: appId 
-            })
-            const existingList = Array.isArray(existingResp) ? existingResp : (existingResp.results || existingResp.data || [])
-                        if (existingList.length > 0) existing = existingList[0]
-          } catch {
-            // Fallback a mayúsculas si falla
-            const existingResp = await perfilAplicacionesService.list({ 
-              PEL_ID: rolId, 
-              APL_ID: appId 
-            })
-            const existingList = Array.isArray(existingResp) ? existingResp : (existingResp.results || existingResp.data || [])
-            if (existingList.length > 0) existing = existingList[0]
-          }
-
-          const permisoData = {
-            pel_id: rolId,
-            apl_id: appId,
-            pea_consultar: perms.consultar,
-            pea_ingresar: perms.ingresar,
-            pea_modificar: perms.modificar,
-            pea_eliminar: perms.eliminar,
-            // Compatibilidad
-            PEL_ID: rolId,
-            APL_ID: appId,
-            PEA_CONSULTAR: perms.consultar,
-            PEA_INGRESAR: perms.ingresar,
-            PEA_MODIFICAR: perms.modificar,
-            PEA_ELIMINAR: perms.eliminar
-          }
-
-          if (existing) {
-            // Actualizar
-            promises.push(perfilAplicacionesService.partialUpdate(existing.pea_id || existing.PEA_ID || existing.id, permisoData))
-          } else {
-            // Crear
-            promises.push(perfilAplicacionesService.create(permisoData))
-          }
-        } catch (e) {
-          console.error(`Error procesando permisos para app ${appId}:`, e)
-        }
-      }
-
-      await Promise.all(promises)
-    },
-
     async guardar() {
       if (!this.formValido) return
       this.guardando = true
       try {
-        let rolId = this.form.id
+        // Recopilar IDs de permisos seleccionados
+        const selectedPerms = []
+        this.aplicaciones.forEach(app => {
+          const p = this.form.permisos[app.id]
+          if (p.consultar && app.perms.consultar) selectedPerms.push(app.perms.consultar)
+          if (p.ingresar && app.perms.ingresar) selectedPerms.push(app.perms.ingresar)
+          if (p.modificar && app.perms.modificar) selectedPerms.push(app.perms.modificar)
+          if (p.eliminar && app.perms.eliminar) selectedPerms.push(app.perms.eliminar)
+        })
+
+        const payload = {
+          name: this.form.descripcion,
+          permissions: selectedPerms
+        }
         
-          if (this.editando && rolId != null) {
-          await perfilesService.partialUpdate(rolId, this.payloadFromForm())
-          await this.guardarPermisos(rolId)
-          this.mostrarToast('Perfil y permisos actualizados', 'success')
+        if (this.editando) {
+          await perfilesService.update(this.form.id, payload)
+          this.mostrarToast('Perfil actualizado', 'success')
         } else {
-          const resp = await perfilesService.create(this.payloadFromForm())
-          rolId = resp.PEL_ID || resp.id
-          await this.guardarPermisos(rolId)
-          this.mostrarToast('Perfil y permisos creados', 'success')
+          await perfilesService.create(payload)
+          this.mostrarToast('Perfil creado', 'success')
         }
         
         this.modalVisible = false
         await this.cargar()
       } catch (e) {
         console.error('Error guardando rol:', e)
-        this.mostrarToast('No se pudo guardar el rol: ' + (e?.message || e), 'error')
+        this.mostrarToast('No se pudo guardar el rol', 'error')
       } finally {
         this.guardando = false
       }

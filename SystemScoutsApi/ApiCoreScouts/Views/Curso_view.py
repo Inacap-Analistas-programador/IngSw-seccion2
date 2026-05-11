@@ -7,7 +7,11 @@ from ..Serializers import Curso_serializer as MC_S
 from ..Filters import curso_filter as CF
 from ..Permissions import PerfilPermission
 from rest_framework.permissions import AllowAny
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from django.utils import timezone
+from datetime import timedelta
 
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 100
@@ -58,6 +62,80 @@ class CursoViewSet(viewsets.ModelViewSet):
             'curso_cuota_set',
             'curso_alimentacion_set',
         ).order_by('cur_estado', 'cur_descripcion')
+
+    @action(detail=False, methods=['get'])
+    def para_mantenedor(self, request):
+        """
+        Endpoint ultra-optimizado para la tabla principal del mantenedor de Cursos.
+        Retorna solo los campos mínimos para la tabla.
+        """
+        queryset = Curso.objects.prefetch_related(
+            'curso_fecha_set'
+        )
+        queryset = self.filter_queryset(queryset).distinct().order_by('-cur_id')
+        
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = MC_S.CursoMantenedorSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = MC_S.CursoMantenedorSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def get_cursos_acreditacion(self, request):
+        """
+        Retorna cursos vigentes que inician hoy o mañana.
+        """
+        # Calcular fechas en la zona horaria del servidor (o configurada)
+        today = timezone.now().date()
+        tomorrow = today + timedelta(days=1)
+        
+        cursos = Curso.objects.filter(
+            cur_estado=1,
+            curso_fecha__cuf_fecha_inicio__date__in=[today, tomorrow]
+        ).distinct().order_by('cur_descripcion')
+        
+        data = []
+        for c in cursos:
+            data.append({
+                'cur_id': c.cur_id,
+                'cur_descripcion': c.cur_descripcion
+            })
+            
+        return Response(data)
+
+    @action(detail=True, methods=['get'])
+    def get_alimentacion_curso(self, request, pk=None):
+        """
+        Retorna opciones de alimentación para un curso específico,
+        optimizadas para el formulario de registro.
+        """
+        curso = self.get_object()
+        alimentaciones = Curso_Alimentacion.objects.filter(
+            cur_id=curso,
+            cua_vigente=True
+        ).select_related('ali_id')
+
+        # Mapeo de cua_tiempo a nombres legibles
+        tiempos = {
+            1: 'Desayuno',
+            2: 'Almuerzo',
+            3: 'Once',
+            4: 'Cena',
+            5: 'Once/Cena',
+        }
+
+        data = []
+        for a in alimentaciones:
+            tiempo_str = tiempos.get(a.cua_tiempo, 'Otro')
+            data.append({
+                'cua_id': a.cua_id,
+                'ali_id': a.ali_id.ali_id,
+                'label': f"[{tiempo_str}] {a.cua_descripcion}"
+            })
+
+        return Response(data)
 
 class CursoCuotaViewSet(viewsets.ModelViewSet):
     serializer_class = MC_S.CursoCuotaSerializer

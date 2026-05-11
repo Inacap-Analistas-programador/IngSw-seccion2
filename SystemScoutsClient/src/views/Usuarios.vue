@@ -638,15 +638,14 @@ export default {
 
         // Map to internal shape
         this.usuarios = usuariosList.map(u => ({
-          id: u.usu_id || u.USU_ID || u.id,
-          nombre: u.usu_username || u.USU_USERNAME || u.nombre || u.username || '',
-          username: u.usu_username || u.USU_USERNAME || u.username || '',
-          email: u.usu_email || u.USU_EMAIL || u.email || '',
-          perfil_id: u.pel_id || u.PEL_ID || u.perfil_id || u.perfil || null,
-          rol: this.getRolLabelById(u.pel_id || u.PEL_ID || u.perfil_id || u.perfil, roles),
-          activo: u.usu_vigente !== undefined ? u.usu_vigente : (u.USU_VIGENTE !== undefined ? u.USU_VIGENTE : (u.vigente !== undefined ? u.vigente : true)),
-          foto: u.usu_ruta_foto || u.USU_RUTA_FOTO || u.foto || null,
-          password_hash: u.USU_PASSWORD || u.password || null
+          id: u.usu_id || u.id,
+          nombre: u.username || u.usu_username || '', // Use username as nombre if not present
+          username: u.username || u.usu_username || '',
+          email: u.email || u.usu_email || '',
+          perfil_id: u.groups && u.groups.length > 0 ? (this.rolesOptions.find(r => r.label === u.groups[0])?.value || u.groups[0]) : null,
+          rol: u.groups && u.groups.length > 0 ? u.groups[0] : '',
+          activo: u.is_active !== undefined ? u.is_active : true,
+          foto: u.usu_ruta_foto || u.foto || null
         }))
 
         // Initialize perms map for loaded users
@@ -802,48 +801,38 @@ export default {
         return
       }
       
-      this.procesando = true
+        this.procesando = true
       try {
         const roleOpt = this.rolesOptions.find(r => String(r.value) === String(this.usuarioForm.rol))
         
-        // Preparar datos para la API
+        // Preparar datos para la API (Django standard fields)
         const usuarioData = {
-          usu_username: this.usuarioForm.username,
-          usu_email: this.usuarioForm.email,
-          pel_id: this.usuarioForm.rol,
-          usu_vigente: this.usuarioForm.activo,
-          usu_ruta_foto: this.usuarioForm.fotoPreview || this.defaultFoto,
-          // Compatibilidad
-          USU_USERNAME: this.usuarioForm.username,
-          USU_EMAIL: this.usuarioForm.email,
-          PEL_ID: this.usuarioForm.rol,
-          USU_VIGENTE: this.usuarioForm.activo,
-          USU_RUTA_FOTO: this.usuarioForm.fotoPreview || this.defaultFoto
+          username: this.usuarioForm.username,
+          email: this.usuarioForm.email,
+          groups: roleOpt && roleOpt.label !== 'Todos los perfiles' ? [roleOpt.label] : [],
+          is_active: this.usuarioForm.activo,
+          usu_ruta_foto: this.usuarioForm.fotoPreview || this.defaultFoto
         }
 
-        // Solo incluir password si hay uno nuevo
         if (this.usuarioForm.password) {
-          // El backend espera el campo `password` (no `USU_PASSWORD`) en el serializer
           usuarioData.password = this.usuarioForm.password
         }
 
         if (this.modoEdicion) {
-          // Actualizar usuario existente
-          console.log('Editando usuario ID:', this.usuarioForm.id, 'con datos:', usuarioData)
           const usuarioActualizado = await usuariosService.partialUpdate(this.usuarioForm.id, usuarioData)
           
           // Actualizar en el array local
           const idx = this.usuarios.findIndex(u => u.id === this.usuarioForm.id)
           if (idx !== -1) {
             this.usuarios[idx] = {
-              id: usuarioActualizado.USU_ID || usuarioActualizado.id || this.usuarioForm.id,
-              nombre: usuarioActualizado.USU_USERNAME || this.usuarioForm.username,
-              username: usuarioActualizado.USU_USERNAME || this.usuarioForm.username,
-              email: usuarioActualizado.USU_EMAIL || usuarioActualizado.usu_email || this.usuarioForm.email,
-              perfil_id: usuarioActualizado.PEL_ID || this.usuarioForm.rol,
+              id: usuarioActualizado.id || this.usuarioForm.id,
+              nombre: usuarioActualizado.username || this.usuarioForm.username,
+              username: usuarioActualizado.username || this.usuarioForm.username,
+              email: usuarioActualizado.email || this.usuarioForm.email,
+              perfil_id: this.usuarioForm.rol, 
               rol: roleOpt ? roleOpt.label : '',
-              activo: usuarioActualizado.USU_VIGENTE !== undefined ? usuarioActualizado.USU_VIGENTE : this.usuarioForm.activo,
-              foto: usuarioActualizado.USU_RUTA_FOTO || this.usuarioForm.fotoPreview || this.defaultFoto
+              activo: usuarioActualizado.is_active !== undefined ? usuarioActualizado.is_active : this.usuarioForm.activo,
+              foto: usuarioActualizado.usu_ruta_foto || this.usuarioForm.fotoPreview || this.defaultFoto
             }
           }
           
@@ -854,14 +843,14 @@ export default {
           
           // Agregar al array local
           this.usuarios.push({
-            id: nuevoUsuario.USU_ID || nuevoUsuario.id,
-            nombre: nuevoUsuario.USU_USERNAME || this.usuarioForm.username,
-            username: nuevoUsuario.USU_USERNAME || this.usuarioForm.username,
-            email: nuevoUsuario.USU_EMAIL || nuevoUsuario.usu_email || this.usuarioForm.email,
-            perfil_id: nuevoUsuario.PEL_ID || this.usuarioForm.rol,
+            id: nuevoUsuario.id,
+            nombre: nuevoUsuario.username || this.usuarioForm.username,
+            username: nuevoUsuario.username || this.usuarioForm.username,
+            email: nuevoUsuario.email || this.usuarioForm.email,
+            perfil_id: this.usuarioForm.rol,
             rol: roleOpt ? roleOpt.label : '',
-            activo: nuevoUsuario.USU_VIGENTE !== undefined ? nuevoUsuario.USU_VIGENTE : true,
-            foto: nuevoUsuario.USU_RUTA_FOTO || this.usuarioForm.fotoPreview || this.defaultFoto
+            activo: nuevoUsuario.is_active !== undefined ? nuevoUsuario.is_active : true,
+            foto: nuevoUsuario.usu_ruta_foto || this.usuarioForm.fotoPreview || this.defaultFoto
           })
           
           this.mostrarNotificacion('Usuario creado exitosamente', 'success')
@@ -892,8 +881,7 @@ export default {
       try {
         // Actualizar en el backend
         await usuariosService.partialUpdate(usuario.id, {
-          usu_vigente: nuevoEstado,
-          USU_VIGENTE: nuevoEstado
+          is_active: nuevoEstado
         })
         
         // Actualizar en memoria
@@ -1009,7 +997,7 @@ export default {
         // Actualizar en el backend
         const promesas = this.selectedIds.map(async (id) => {
           try {
-            await usuariosService.partialUpdate(id, { usu_vigente: nuevoEstado, USU_VIGENTE: nuevoEstado })
+            await usuariosService.partialUpdate(id, { is_active: nuevoEstado })
             return id
           } catch (err) {
             console.error(`Error al actualizar usuario ${id}:`, err)
@@ -1051,7 +1039,7 @@ export default {
           .map(async (u) => {
             try {
               const nuevoEstado = !u.activo
-              await usuariosService.partialUpdate(u.id, { usu_vigente: nuevoEstado, USU_VIGENTE: nuevoEstado })
+              await usuariosService.partialUpdate(u.id, { is_active: nuevoEstado })
               return { id: u.id, nuevoEstado }
             } catch (err) {
               console.error(`Error al actualizar usuario ${u.id}:`, err)

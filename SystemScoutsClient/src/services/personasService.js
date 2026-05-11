@@ -1,4 +1,5 @@
 import { request } from './apiClient'
+import { archivos, archivoPersonas } from './archivosService'
 
 const makeCrud = base => ({
   list: (params) => request(`${base}${params ? `?${new URLSearchParams(params)}` : ''}`),
@@ -7,6 +8,9 @@ const makeCrud = base => ({
   update: (id, data) => request(`${base}/${id}/`, { method: 'PUT', body: JSON.stringify(data) }),
   partialUpdate: (id, data) => request(`${base}/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
   remove: (id) => request(`${base}/${id}/`, { method: 'DELETE' }),
+  paraCorreos: (params) => request(`${base}/para_correos/${params ? `?${new URLSearchParams(params)}` : ''}`),
+  paraMantenedor: (params) => request(`${base}/para_mantenedor/${params ? `?${new URLSearchParams(params)}` : ''}`),
+  checkRut: (rut) => request(`${base}/check_rut/?rut=${rut}`),
 })
 
 // Exportaciones CON prefijo 'personas/' (para componentes actuales como Gestionpersonas.vue)
@@ -42,36 +46,47 @@ export const personaIndividuales = makeCrud('personas/individuales') // Reutiliz
 
 // ✨ Funciones auxiliares para obtener datos de filtros
 export const obtenerRoles = async () => {
+  const cacheKey = 'gs_catalog_roles_v4'
+  const ttl = 10 * 60 * 1000 // 10 minutes
   try {
-    const rolesSet = new Set();
+    const cached = JSON.parse(localStorage.getItem(cacheKey))
+    if (cached && (Date.now() - cached.ts < ttl)) return cached.data
+  } catch { }
 
-    // Obtener de personas completas
+  try {
+    // 1. Intentar desde el endpoint minimalista del backend (Más rápido y eficiente)
     try {
-      const data = await personasCompletas.list();
-      data.forEach(persona => {
-        if (persona.PER_ROL && persona.PER_ROL.trim() !== '') {
-          rolesSet.add(persona.PER_ROL);
-        }
-      });
-    } catch (error) {
-      console.warn('No se pudieron cargar roles desde personas-completas:', error.message);
+      const resp = await request('mantenedores/rol/min?vigente=true')
+      if (resp && resp.results) {
+        // En Roles, típicamente se guardan como texto en las personas (ej: formador, participante), o como ID.
+        // Gestionpersonas guardaba ROL_NOMBRE como string muchas veces, pero si el Form usa IDs, pasamos id.
+        const result = resp.results.map(r => ({ value: r.id, label: r.nombre || r.descripcion || r.ROL_DESCRIPCION || r.rol_descripcion }))
+        localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: result }))
+        return result
+      }
+    } catch (e) {
+      console.warn('Endpoint roles/min no disponible, usando fallback:', e.message)
     }
 
-    // Obtener de formadores (tabla de relación)
+    const rolesSet = new Set();
+    // Fallback: Obtener de personas
     try {
-      const formadoresData = await formadores.list();
-      formadoresData.forEach(formador => {
-        if (formador.rol || formador.FOR_ROL) {
-          rolesSet.add(formador.rol || formador.FOR_ROL);
+      const resp = await personas.paraMantenedor(); // Usar versión ligera
+      const data = Array.isArray(resp) ? resp : (resp.results || []);
+      data.forEach(persona => {
+        const rol = persona.PER_ROL || persona.per_rol
+        if (rol && String(rol).trim() !== '') {
+          rolesSet.add(rol);
         }
       });
     } catch (error) {
-      console.warn('No se pudieron cargar roles desde formadores:', error.message);
+      console.warn('No se pudieron cargar roles desde personas:', error.message);
     }
 
     const rolesUnicos = Array.from(rolesSet);
-    console.log('Roles encontrados:', rolesUnicos);
-    return rolesUnicos.map(rol => ({ value: rol, label: rol }));
+    const result = rolesUnicos.map(rol => ({ value: rol, label: rol }));
+    localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: result }))
+    return result;
   } catch (error) {
     console.warn('Error obteniendo roles:', error);
     return [];
@@ -79,36 +94,45 @@ export const obtenerRoles = async () => {
 };
 
 export const obtenerRamas = async () => {
+  const cacheKey = 'gs_catalog_ramas_v4'
+  const ttl = 10 * 60 * 1000 // 10 minutes
   try {
-    const ramasSet = new Set();
+    const cached = JSON.parse(localStorage.getItem(cacheKey))
+    if (cached && (Date.now() - cached.ts < ttl)) return cached.data
+  } catch { }
 
-    // Obtener de personas completas
+  try {
+    // 1. Intentar desde el endpoint minimalista del backend
     try {
-      const data = await personasCompletas.list();
-      data.forEach(persona => {
-        if (persona.PER_RAMA && persona.PER_RAMA.trim() !== '') {
-          ramasSet.add(persona.PER_RAMA);
-        }
-      });
-    } catch (error) {
-      console.warn('No se pudieron cargar ramas desde personas-completas:', error.message);
+      const resp = await request('mantenedores/rama/min?vigente=true')
+      if (resp && resp.results) {
+        const result = resp.results.map(r => ({ value: r.id, label: r.nombre || r.descripcion || r.RAM_DESCRIPCION || r.ram_descripcion }))
+        localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: result }))
+        return result
+      }
+    } catch (e) {
+      console.warn('Endpoint ramas/min no disponible, usando fallback:', e.message)
     }
 
-    // Obtener de individuales (tabla de relación)
+    const ramasSet = new Set();
+    // Fallback: Obtener de personas
     try {
-      const individualesData = await individuales.list();
-      individualesData.forEach(individual => {
-        if (individual.rama || individual.IND_RAMA) {
-          ramasSet.add(individual.rama || individual.IND_RAMA);
+      const resp = await personas.paraMantenedor();
+      const data = Array.isArray(resp) ? resp : (resp.results || []);
+      data.forEach(persona => {
+        const rama = persona.PER_RAMA || persona.per_rama
+        if (rama && String(rama).trim() !== '') {
+          ramasSet.add(rama);
         }
       });
     } catch (error) {
-      console.warn('No se pudieron cargar ramas desde individuales:', error.message);
+      console.warn('No se pudieron cargar ramas desde personas:', error.message);
     }
 
     const ramasUnicas = Array.from(ramasSet);
-    console.log('Ramas encontradas:', ramasUnicas);
-    return ramasUnicas.map(rama => ({ value: rama, label: rama }));
+    const result = ramasUnicas.map(rama => ({ value: rama, label: rama }));
+    localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: result }))
+    return result;
   } catch (error) {
     console.warn('Error obteniendo ramas:', error);
     return [];
@@ -116,36 +140,56 @@ export const obtenerRamas = async () => {
 };
 
 export const obtenerGrupos = async () => {
+  const cacheKey = 'gs_catalog_grupos_v3'
+  const ttl = 10 * 60 * 1000 // 10 minutes
   try {
-    const gruposSet = new Set();
+    const cached = JSON.parse(localStorage.getItem(cacheKey))
+    if (cached && (Date.now() - cached.ts < ttl)) return cached.data
+  } catch { }
 
-    // Obtener de personas completas
+  try {
+    // 1. Intentar desde el endpoint minimalista del backend
     try {
-      const data = await personasCompletas.list();
-      data.forEach(persona => {
-        if (persona.PER_GRUPO && persona.PER_GRUPO.trim() !== '') {
-          gruposSet.add(persona.PER_GRUPO);
-        }
-      });
-    } catch (error) {
-      console.warn('No se pudieron cargar grupos desde personas-completas:', error.message);
+      const resp = await request('mantenedores/grupo/min?vigente=true')
+      if (resp && resp.results) {
+        const result = resp.results.map(g => ({ value: g.id, label: g.nombre || g.descripcion || g.GRU_DESCRIPCION || g.gru_descripcion }))
+        localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: result }))
+        return result
+      }
+    } catch (e) {
+      console.warn('Endpoint grupos/min no disponible, intentando con mantenedor:', e.message)
     }
 
-    // Obtener de grupos (tabla de relación)
     try {
-      const gruposData = await grupos.list();
-      gruposData.forEach(grupo => {
-        if (grupo.nombre || grupo.GRU_NOMBRE) {
-          gruposSet.add(grupo.nombre || grupo.GRU_NOMBRE);
+      const resp = await grupos.list()
+      if (Array.isArray(resp)) {
+        const result = resp.map(g => ({ value: g.gru_descripcion || g.nombre, label: g.gru_descripcion || g.nombre }))
+        localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: result }))
+        return result
+      }
+    } catch (e) {
+      console.warn('Error cargando grupos desde mantenedor:', e.message)
+    }
+
+    const gruposSet = new Set();
+    // Fallback: personas
+    try {
+      const resp = await personas.paraMantenedor();
+      const data = Array.isArray(resp) ? resp : (resp.results || []);
+      data.forEach(persona => {
+        const grupo = persona.PER_GRUPO || persona.per_grupo
+        if (grupo && String(grupo).trim() !== '') {
+          gruposSet.add(grupo);
         }
       });
     } catch (error) {
-      console.warn('No se pudieron cargar grupos desde tabla grupos:', error.message);
+      console.warn('No se pudieron cargar grupos desde personas:', error.message);
     }
 
     const gruposUnicos = Array.from(gruposSet);
-    console.log('Grupos encontrados:', gruposUnicos);
-    return gruposUnicos.map(grupo => ({ value: grupo, label: grupo }));
+    const result = gruposUnicos.map(grupo => ({ value: grupo, label: grupo }));
+    localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: result }))
+    return result;
   } catch (error) {
     console.warn('Error obteniendo grupos:', error);
     return [];
@@ -170,15 +214,43 @@ export default {
   obtenerRamas,
   obtenerGrupos,
   // Orquestador: crear Persona -> Persona_Curso -> Persona_Vehiculo
-  createPersonaWithCourseAndVehicle: async ({ personaData, cursoData = null, vehiculoData = null, formadorData = null, ramasData = null, grupoData = null }) => {
-    // 1) Crear persona
-    const personaCreada = await personas.create(personaData);
-
+  createPersonaWithCourseAndVehicle: async ({ personaData, cursoData = null, vehiculoData = null, formadorData = null, ramasData = null, grupoData = null, individualData = null, medicalFile = null, personalPhoto = null }) => {
     let personaCursoCreado = null;
     let vehiculoCreado = null;
     let formadorCreado = null;
     let grupoCreado = null;
+    let individualCreado = null;
     let ramasCreadas = [];
+    let medicalFileResult = null;
+    let personalPhotoResult = null;
+
+    // 0) Subir Foto Personal FIRST (si existe) para obtener la URL para PER_FOTO (tar_id: 1)
+    if (personalPhoto) {
+      try {
+        console.log("Subiendo foto personal ANTES de crear persona...");
+        const archivoResp = await archivos.uploadArchivo(personalPhoto, 1);
+
+        // El backend suele retornar el path en 'file' o 'arc_archivo' o 'url'
+        // Según Gestionpersonas.vue y el estándar de la API:
+        const fotoUrlServidor = archivoResp.url || archivoResp.file || archivoResp.arc_archivo;
+        const arcId = archivoResp.arc_id || archivoResp.ARC_ID;
+
+        if (fotoUrlServidor) {
+          personaData.per_foto = fotoUrlServidor;
+          console.log("URL de foto obtenida y asignada a PER_FOTO:", fotoUrlServidor);
+        }
+
+        if (arcId) {
+          // Guardamos el ID para vincularlo luego en Archivo_Persona (paso 9)
+          personalPhotoResult = { arc_id: arcId };
+        }
+      } catch (err) {
+        console.warn("Error al subir foto personal inicial:", err);
+      }
+    }
+
+    // 1) Crear persona (ahora ya puede incluir per_foto)
+    const personaCreada = await personas.create(personaData);
 
     // Validar ID de persona (puede venir como per_id o PER_ID según serializador)
     const perId = personaCreada.per_id || personaCreada.PER_ID;
@@ -279,6 +351,22 @@ export default {
       }
     }
 
+    // 6.5) Si se solicita crear Individual (Persona_Individual)
+    if (individualData && individualData.car_id && individualData.zon_id && individualData.dis_id) {
+      const indPayload = {
+        per_id: perId,
+        car_id: individualData.car_id,
+        zon_id: individualData.zon_id,
+        dis_id: individualData.dis_id,
+        pei_vigente: true
+      };
+      try {
+        individualCreado = await individuales.create(indPayload);
+      } catch (err) {
+        console.warn("Error creando Persona_Individual:", err);
+      }
+    }
+
     // 7) Crear estado inicial curso (Persona_Estado_Curso)
     // Estado 1 = Pre Inscrito (según modelo)
     if (personaCursoCreado && personaCursoCreado.pec_id) {
@@ -294,13 +382,52 @@ export default {
       }
     }
 
+    // 8) Subir y vincular Ficha Médica si existe (tar_id: 2)
+    if (medicalFile && perId) {
+      try {
+        console.log("Subiendo ficha médica para persona ID:", perId);
+        const archivoResp = await archivos.uploadArchivo(medicalFile, 2);
+        const arcId = archivoResp.arc_id || archivoResp.ARC_ID;
+
+        if (arcId) {
+          medicalFileResult = await archivoPersonas.create({
+            per_id: perId,
+            arc_id: arcId,
+            cus_id: (personaCursoCreado && (personaCursoCreado.cus_id || personaCursoCreado.CUS_ID)) || null
+          });
+          console.log("Ficha médica vinculada con éxito");
+        }
+      } catch (err) {
+        console.warn("Error subiendo/vinculando ficha médica:", err);
+      }
+    }
+
+    // 9) Vincular Foto Personal si se subió en el paso 0
+    if (personalPhotoResult && personalPhotoResult.arc_id && perId) {
+      try {
+        console.log("Vinculando foto personal (ya subida) a la persona ID:", perId);
+        const vinculacion = await archivoPersonas.create({
+          per_id: perId,
+          arc_id: personalPhotoResult.arc_id,
+          cus_id: (personaCursoCreado && (personaCursoCreado.cus_id || personaCursoCreado.CUS_ID)) || null
+        });
+        personalPhotoResult = vinculacion;
+        console.log("Foto personal vinculada con éxito en Archivo_Persona");
+      } catch (err) {
+        console.warn("Error vinculando foto personal en Archivo_Persona:", err);
+      }
+    }
+
     return {
       persona: personaCreada,
       personaCurso: personaCursoCreado,
       vehiculo: vehiculoCreado,
       formador: formadorCreado,
       ramas: ramasCreadas,
-      grupo: grupoCreado
+      grupo: grupoCreado,
+      individual: individualCreado,
+      medicalFile: medicalFileResult,
+      personalPhoto: personalPhotoResult
     };
   },
   // Método personalizado para obtener cursos de una persona

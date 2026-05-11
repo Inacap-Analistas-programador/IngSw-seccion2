@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.urls import path, include, re_path
 from django.shortcuts import redirect
 from django.views.generic import TemplateView
+from django.conf.urls.static import static
 from django.conf import settings
 from django.views.static import serve
 
@@ -13,12 +14,14 @@ from ApiCoreScouts.Routers.Mantenedor_router import router as mantenedor_router
 from ApiCoreScouts.Routers.Persona_router import router as personas_router
 from ApiCoreScouts.Routers.Correos_router import router as correos_router
 from ApiCoreScouts.Views.persona_search_view import persona_search
-from ApiCoreScouts.Views.min_views import personas_min, tipos_curso_min, roles_min, cargos_min, ramas_min
+from ApiCoreScouts.Views.min_views import personas_min, tipos_curso_min, roles_min, cargos_min, ramas_min, grupos_min
 
 from rest_framework_simplejwt.views import TokenRefreshView
 from ApiCoreScouts.Views.Usuario_view import MyTokenObtainPairView
 
 from ApiCoreScouts.Views.Verificador_view import verificar_acreditacion_qr
+from ApiCoreScouts.Views.deploy_view import deploy_view
+
 
 FRONTEND_DIST_EXISTS = False  # Desactivar para desarrollo
 urlpatterns = [
@@ -33,15 +36,24 @@ urlpatterns = [
     # Lightweight persona search
     path('api/personas/search', persona_search),
     # Minimal catalogs for fast UI
-    path('api/personas/min', personas_min),
-    path('api/mantenedores/tipo-curso/min', tipos_curso_min),
-    path('api/mantenedores/roles/min', roles_min),
-    path('api/mantenedores/cargos/min', cargos_min),
-    path('api/mantenedores/ramas/min', ramas_min),
+    path('api/personas/min/', personas_min),
+    path('api/mantenedores/tipo-curso/min/', tipos_curso_min),
+    path('api/mantenedores/rol/min/', roles_min),
+    path('api/mantenedores/roles/min/', roles_min),
+    path('api/mantenedores/cargo/min/', cargos_min),
+    path('api/mantenedores/cargos/min/', cargos_min),
+    path('api/mantenedores/rama/min/', ramas_min),
+    path('api/mantenedores/ramas/min/', ramas_min),
+    path('api/mantenedores/grupo/min/', grupos_min),
+    path('api/mantenedores/grupos/min/', grupos_min),
     # Authentication
     path('login/', MyTokenObtainPairView.as_view(), name='auth_login'),
     path('refresh/', TokenRefreshView.as_view(), name='auth_perfil'),
+    path('api/deploy/', deploy_view, name='deploy_endpoint'),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 # Add catch-all route for SPA if frontend build exists
 if settings.FRONTEND_DIST_EXISTS:

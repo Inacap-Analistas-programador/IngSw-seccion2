@@ -6,14 +6,15 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.core.mail import EmailMultiAlternatives
 from django.conf import settings
 from django.utils import timezone
-from ..Models.persona_model import Persona
-from ..Models.curso_model import Persona_Curso
+from ..Models.persona_model import Persona, Persona_Individual, Persona_Estado_Curso
+from ..Models.curso_model import Persona_Curso, Curso
 from ..Permissions import PerfilPermission
 import logging
 import secrets
 import qrcode
 from io import BytesIO
 import base64
+from email.mime.image import MIMEImage
 
 logger = logging.getLogger(__name__)
 
@@ -33,20 +34,53 @@ class CorreosViewSet(viewsets.ViewSet):
         {
             "recipient_ids": [1, 2, 3],
             "subject": "Email Subject",
-            "message": "Email Body",
-            "curso_id": 123  # Optional: to filter persona_curso records
+            "message": "Email Body with placeholders",
+            "curso_id": 123
         }
         """
         recipient_ids = request.data.get('recipient_ids', [])
-        subject = request.data.get('subject', '')
-        message = request.data.get('message', '')
+        subject_template = request.data.get('subject', '')
+        message_template = request.data.get('message', '')
         curso_id = request.data.get('curso_id')
 
-        if not recipient_ids or not subject or not message:
+        if not recipient_ids:
             return Response(
-                {'error': 'Missing required fields (recipient_ids, subject, message)'},
+                {'error': 'Missing recipient_ids'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+        # Context data gathering
+        course_context = {}
+        user_zone_name = "Zona no definida"
+
+        # 1. Fetch User Zone
+        try:
+            user_persona = Persona.objects.filter(usu_id=request.user).first()
+            if user_persona:
+                # Assuming simple relation for now, adjust if strictly needing distinct types
+                pi = Persona_Individual.objects.filter(per_id=user_persona).first()
+                if pi and pi.zon_id:
+                    user_zone_name = pi.zon_id.zon_descripcion
+        except Exception as e:
+            logger.warning(f"Error fetching user zone: {e}")
+
+        # 2. Fetch Course Details
+        curso_obj = None
+        if curso_id:
+            try:
+                curso_obj = Curso.objects.get(cur_id=curso_id)
+                responsable = curso_obj.per_id_responsable
+                resp_nombre = f"{responsable.per_nombres} {responsable.per_apelpta}" if responsable else "Responsable no asignado"
+                
+                course_context = {
+                    '[nombre curso]': curso_obj.cur_descripcion,
+                    '[nombre del curso]': curso_obj.cur_descripcion,
+                    '[ubicacion del curso]': curso_obj.cur_lugar, # Could append comuna if needed
+                    '[nombre responsable del curos]': resp_nombre,
+                    '[zona a la que el usuario logeado esta acargo]': user_zone_name
+                }
+            except Curso.DoesNotExist:
+                logger.warning(f"Curso ID {curso_id} not found")
 
         # Fetch personas
         personas = Persona.objects.filter(per_id__in=recipient_ids)
@@ -60,72 +94,90 @@ class CorreosViewSet(viewsets.ViewSet):
                 continue
 
             try:
-                # Generate unique token for this person+course
-                token = secrets.token_urlsafe(32)
+                # Per-recipient context
+                recipient_context = course_context.copy()
                 
-                # Find or create persona_curso record
+                # Fetch Registration Date
+                fecha_postulacion = "Fecha no encontrada"
                 persona_curso = None
-                if curso_id:
-                    try:
-                        # Try to find existing persona_curso record
-                        persona_curso = Persona_Curso.objects.filter(
-                            per_id=persona,
-                            cus_id__cur_id=curso_id
-                        ).first()
-                    except Exception as e:
-                        logger.warning(f"Could not find persona_curso for PER_ID={persona.per_id}, CUR_ID={curso_id}: {e}")
+                
+                if curso_obj:
+                    # Find persona_curso logic
+                    persona_curso = Persona_Curso.objects.filter(
+                        per_id=persona,
+                        cus_id__cur_id=curso_id
+                    ).first()
 
-                # Generate QR code
-                # Use full URL with protocol for QR code
-                base_url = getattr(settings, 'SITE_URL', f"https://{settings.ALLOWED_HOSTS[0]}")
-                qr_data = f"{base_url}/api/correos/correos/verify/?token={token}&per_id={persona.per_id}"
-                if curso_id:
-                    qr_data += f"&curso_id={curso_id}"
+                    if persona_curso:
+                        # Get latest status date (Inscrito usually)
+                        last_state = Persona_Estado_Curso.objects.filter(pec_id=persona_curso).order_by('-peu_fecha_hora').first()
+                        if last_state:
+                            fecha_postulacion = last_state.peu_fecha_hora.strftime("%d-%m-%Y")
+                
+                recipient_context['[fecha a la que postulo la persona]'] = fecha_postulacion
+
+                # Generate QR
+                # Format: "RUN-DV,CUR_CODIGO"
+                rut_full = f"{persona.per_run}-{persona.per_dv}"
+                qr_data = f"{rut_full},{curso_obj.cur_codigo if curso_obj else 'SIN_CURSO'}"
                 
                 qr = qrcode.QRCode(version=1, box_size=10, border=4)
                 qr.add_data(qr_data)
                 qr.make(fit=True)
                 img = qr.make_image(fill_color="black", back_color="white")
                 
-                # Convert QR to base64
                 buffer = BytesIO()
                 img.save(buffer, format='PNG')
-                qr_base64 = base64.b64encode(buffer.getvalue()).decode()
+                qr_bytes = buffer.getvalue()
+                
+                # Create MIMEImage for CID embedding
+                logo_name = f"qr_{persona.per_id}.png"
+                logo_cid = f"qr_{persona.per_id}"
+                
+                # QR HTML placeholder with CID
+                qr_html = f'<img src="cid:{logo_cid}" alt="QR Acreditación" style="width: 200px; height: 200px;">'
 
-                # Create HTML email with embedded QR
-                html_message = f"""
-                <html>
-                <body>
-                    <p>{message}</p>
-                    <br>
-                    <p><strong>Código QR de Acreditación:</strong></p>
-                    <img src="data:image/png;base64,{qr_base64}" alt="QR Code" style="width: 200px; height: 200px;">
-                    <br>
-                    <p style="color: #666; font-size: 12px;">Presenta este código QR al llegar al curso para acreditarte.</p>
-                </body>
-                </html>
-                """
+                # Replace content
+                final_message = message_template
+                # Replace QR placeholder specially or append
+                if '[qr generado para esa persona]' in final_message:
+                    final_message = final_message.replace('[qr generado para esa persona]', qr_html)
+                else:
+                    # Fallback if placeholder missing
+                    final_message += f"<br><br>{qr_html}"
 
-                # Send email
+                # Replace other placeholders
+                for key, val in recipient_context.items():
+                    final_message = final_message.replace(key, str(val))
+                
+                # Handle line breaks for email body (if coming from textarea)
+                final_message = final_message.replace('\n', '<br>')
+
+                # Send
                 email = EmailMultiAlternatives(
-                    subject,
-                    message,  # Plain text fallback
+                    subject_template.replace('[nombre curso]', course_context.get('[nombre curso]', '')), # Simple subject replacement
+                    message_template, # Plain text fallback (imperfect but okay)
                     settings.DEFAULT_FROM_EMAIL,
                     [persona.per_mail]
                 )
-                email.attach_alternative(html_message, "text/html")
+                email.attach_alternative(f"<html><body>{final_message}</body></html>", "text/html")
+                
+                # Attach CID Image
+                image = MIMEImage(qr_bytes)
+                image.add_header('Content-ID', f"<{logo_cid}>")
+                image.add_header('Content-Disposition', 'inline', filename=logo_name)
+                email.attach(image)
+                
                 email.send(fail_silently=False)
 
-                # Update PEC_ENVIO_CORREO_QR if persona_curso exists
+                # Update state
                 if persona_curso:
                     persona_curso.pec_envio_correo_qr = True
                     persona_curso.save(update_fields=['pec_envio_correo_qr'])
 
-                # Store token temporarily (you might want to create a Token model for this)
-                # For now, we'll just log it
-                logger.info(f"Generated token for PER_ID={persona.per_id}")
-
+                logger.info(f"Sent email to PER_ID={persona.per_id}")
                 sent_count += 1
+
             except Exception as e:
                 logger.error(f"Failed to send email to {persona.per_mail}: {str(e)}")
                 failed_count += 1
