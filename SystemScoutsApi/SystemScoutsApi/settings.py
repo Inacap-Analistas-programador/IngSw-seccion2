@@ -24,37 +24,42 @@ for name in env_names:
         env_path = candidate
         break
 
+class ChainedRepository:
+    """
+    Repository that looks in os.environ first, then the provided repository (file).
+    This ensures that hosting variables override .env files, and both are available.
+    """
+    def __init__(self, file_repo=None):
+        self.file_repo = file_repo
+        self.system_env = os.environ
+
+    def __contains__(self, key):
+        return key in self.system_env or (self.file_repo and key in self.file_repo)
+
+    def __getitem__(self, key):
+        if key in self.system_env:
+            return self.system_env[key]
+        if self.file_repo and key in self.file_repo:
+            return self.file_repo[key]
+        raise KeyError(key)
+
+file_repository = None
 if env_path and env_path.exists():
     try:
-        config = Config(RepositoryEnv(env_path, encoding='utf-8'))
+        file_repository = RepositoryEnv(env_path, encoding='utf-8')
     except UnicodeDecodeError:
         # fallback al encoding
-        config = Config(RepositoryEnv(env_path, encoding='latin-1'))
+        file_repository = RepositoryEnv(env_path, encoding='latin-1')
 else:
-    print(f"⚠️  Warning: .env file not found. Using environment variables.")
-    print(f"💡 For local development, copy .env.example to .env and configure it:")
-    print(f"   cp {BASE_DIR}/.env.example {BASE_DIR}/.env")
-    # usar os.environ directamente
-    # Crear un repositorio personalizado que lee de os.environ
-    class EnvRepository:
-        """Repository that reads from os.environ, compatible with python-decouple"""
-        def __init__(self): 
-            self.data = os.environ
-        
-        def __contains__(self, key): 
-            return key in os.environ
-        
-        def __getitem__(self, key):
-            """Get value from environment or raise KeyError for Config to handle defaults"""
-            if key in os.environ:
-                return os.environ[key]
-            raise KeyError(key)
-    
-    config = Config(EnvRepository())
+    print(f"⚠️  Warning: .env file not found. Relying on environment variables.")
+
+# Create config that defaults to os.environ, falling back to .env file
+config = Config(ChainedRepository(file_repository))
 
 # CONFIGURACION BASICA
 # Default to development mode if no configuration is found
 DEBUG = config('DJANGO_DEBUG', default=True, cast=bool)
+DEPLOY_SECRET = config('DEPLOY_SECRET', default='temp-secret-change-me')
 
 # SECRET_KEY configuration with secure defaults
 # In production (DEBUG=False), SECRET_KEY MUST be provided via environment variable
@@ -74,7 +79,7 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     SECURE_BROWSER_XSS_FILTER = True
     X_FRAME_OPTIONS = 'DENY'
-ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', default='sistema.guiasyscoutsbiobio.cl,www.sistema.guiasyscoutsbiobio.cl,localhost,127.0.0.1,testserver', cast=Csv())
+ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', default='api.guiasyscoutsbiobio.cl,www.api.guiasyscoutsbiobio.cl,guiasyscoutsbiobio.cl,www.guiasyscoutsbiobio.cl,localhost,127.0.0.1,testserver', cast=Csv())
 
 
 # APLICACIONES INSTALADAS
@@ -109,12 +114,6 @@ MIDDLEWARE = [
     # 'scout_project.security_middleware.SecurityLoggingMiddleware',
 ]
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "https://sistema.guiasyscoutsbiobio.cl",
-]
-
 CORS_ALLOW_METHODS = [
     "GET",
     "POST",
@@ -137,6 +136,9 @@ CORS_ALLOW_HEADERS = [
 
 # PERMITIR EL USO DE CREDENCIALES Y COOKIES 
 CORS_ALLOW_CREDENTIALS = True
+
+# CACHE DE PREFLIGHT (24 horas)
+CORS_PREFLIGHT_MAX_AGE = 86400
 
 # Enable automatic slash append to fix 404s when client omits trailing slash
 APPEND_SLASH = True
@@ -174,8 +176,8 @@ if DB_NAME and DB_HOST:
         'default': {
             'ENGINE': 'django.db.backends.mysql',
             'NAME': DB_NAME,
-            'USER': config("USER", default=config("DB_USER", default=None)),
-            'PASSWORD': config("PASSWORD_DB", default=config("DB_PASSWORD", default=None)),
+            'USER': config("DB_USER", default="MISSING_DB_USER"),
+            'PASSWORD': config("DB_PASSWORD", default="MISSING_DB_PASSWORD"),
             'HOST': DB_HOST,
             'PORT': config("PORT", default="3306"),
             'OPTIONS': {
@@ -310,6 +312,9 @@ LOGGING = {
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
@@ -322,11 +327,19 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
     "http://localhost:5174",
     "http://127.0.0.1:5174",
+    "http://localhost:4173",
+    "http://127.0.0.1:4173",
+    "https://api.guiasyscoutsbiobio.cl",
     "https://sistema.guiasyscoutsbiobio.cl",
+    "https://guiasyscoutsbiobio.cl",
+    "https://www.guiasyscoutsbiobio.cl",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
+    "https://api.guiasyscoutsbiobio.cl",
     "https://sistema.guiasyscoutsbiobio.cl",
+    "https://guiasyscoutsbiobio.cl",
+    "https://www.guiasyscoutsbiobio.cl",
 ]
 
 # Email configuration
@@ -339,7 +352,7 @@ EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 
 # Site URL for QR codes and external links
-SITE_URL = config('SITE_URL', default='https://sistema.guiasyscoutsbiobio.cl')
+SITE_URL = config('SITE_URL', default='https://api.guiasyscoutsbiobio.cl')
 
 
 REST_FRAMEWORK = {

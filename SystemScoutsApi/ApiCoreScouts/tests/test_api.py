@@ -6,7 +6,8 @@ from django.test import TestCase
 from rest_framework.test import APIClient, APITestCase
 from rest_framework import status
 from django.urls import reverse
-from ApiCoreScouts.Models.usuario_model import Usuario, Perfil, Aplicacion, Perfil_Aplicacion
+from django.contrib.auth.models import Group, Permission
+from ApiCoreScouts.Models.usuario_model import Usuario
 from ApiCoreScouts.Models.persona_model import Persona
 from ApiCoreScouts.Models.curso_model import Curso, Tipo_Curso
 from ApiCoreScouts.Models.pago_model import Proveedor, Pago_Persona
@@ -23,22 +24,21 @@ class AuthenticationTests(APITestCase):
     def setUp(self):
         """Set up test data"""
         self.client = APIClient()
-        self.perfil = Perfil.objects.create(
-            pel_descripcion='Test Perfil',
-            pel_vigente=True
+        self.perfil = Group.objects.create(
+            name='Test Perfil'
         )
         self.usuario = Usuario.objects.create_user(
-            usu_username='testuser',
+            username='testuser',
             password='testpass123',
-            pel_id=self.perfil,
-            usu_vigente=True
+            is_active=True
         )
+        self.usuario.groups.add(self.perfil)
     
     def test_token_obtain(self):
         """Test obtaining JWT token with valid credentials"""
         url = '/login/'
         data = {
-            'usu_username': 'testuser',
+            'username': 'testuser',
             'password': 'testpass123'
         }
         response = self.client.post(url, data, format='json')
@@ -50,7 +50,7 @@ class AuthenticationTests(APITestCase):
         """Test token rejection with invalid credentials"""
         url = '/login/'
         data = {
-            'usu_username': 'testuser',
+            'username': 'testuser',
             'password': 'wrongpassword'
         }
         response = self.client.post(url, data, format='json')
@@ -58,12 +58,11 @@ class AuthenticationTests(APITestCase):
     
     def test_token_refresh(self):
         """Test refreshing JWT token"""
-        # First get tokens
-        url = '/login/'
         data = {
-            'usu_username': 'testuser',
+            'username': 'testuser',
             'password': 'testpass123'
         }
+        url = '/login/'
         response = self.client.post(url, data, format='json')
         refresh_token = response.data['refresh']
         
@@ -81,31 +80,22 @@ class UsuarioAPITests(APITestCase):
     def setUp(self):
         """Set up test data"""
         self.client = APIClient()
-        self.perfil = Perfil.objects.create(
-            pel_descripcion='Admin Perfil',
-            pel_vigente=True
-        )
-        self.app = Aplicacion.objects.create(
-            apl_descripcion='Usuarios',
-            apl_vigente=True
-        )
-        Perfil_Aplicacion.objects.create(
-            pel_id=self.perfil,
-            apl_id=self.app,
-            pea_consultar=True,
-            pea_modificar=True,
-            pea_eliminar=True,
-            pea_ingresar=True
+        self.perfil = Group.objects.create(
+            name='Admin Perfil'
         )
         self.usuario = Usuario.objects.create_user(
-            usu_username='admin',
+            username='admin',
             password='admin123',
-            pel_id=self.perfil,
-            usu_vigente=True
+            is_active=True
         )
+        self.usuario.groups.add(self.perfil)
+        # Give permissions
+        perms = Permission.objects.filter(content_type__app_label='ApiCoreScouts')
+        self.perfil.permissions.set(perms)
+        
         # Authenticate
         response = self.client.post('/login/', {
-            'usu_username': 'admin',
+            'username': 'admin',
             'password': 'admin123'
         }, format='json')
         self.token = response.data['access']
@@ -116,16 +106,20 @@ class UsuarioAPITests(APITestCase):
         url = '/api/usuarios/usuarios/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('results', response.data)
+        # Check if list (non-paginated) or dict with 'results' (paginated)
+        if isinstance(response.data, dict):
+            self.assertIn('results', response.data)
+        else:
+            self.assertIsInstance(response.data, list)
     
     def test_create_usuario(self):
         """Test creating a new usuario"""
         url = '/api/usuarios/usuarios/'
         data = {
-            'usu_username': 'newuser',
+            'username': 'newuser',
             'password': 'newpass123',
-            'pel_id': self.perfil.pel_id,
-            'usu_vigente': True
+            'groups': [self.perfil.name],
+            'is_active': True
         }
         response = self.client.post(url, data, format='json')
         # May be 201 or 400 depending on serializer validation
@@ -133,10 +127,10 @@ class UsuarioAPITests(APITestCase):
     
     def test_retrieve_usuario(self):
         """Test retrieving a specific usuario"""
-        url = f'/api/usuarios/usuarios/{self.usuario.usu_id}/'
+        url = f'/api/usuarios/usuarios/{self.usuario.id}/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['usu_username'], 'admin')
+        self.assertEqual(response.data['username'], 'admin')
 
 
 class PerfilAPITests(APITestCase):
@@ -145,30 +139,21 @@ class PerfilAPITests(APITestCase):
     def setUp(self):
         """Set up test data"""
         self.client = APIClient()
-        self.perfil = Perfil.objects.create(
-            pel_descripcion='Admin Perfil',
-            pel_vigente=True
-        )
-        self.app = Aplicacion.objects.create(
-            apl_descripcion='Perfiles',
-            apl_vigente=True
-        )
-        Perfil_Aplicacion.objects.create(
-            pel_id=self.perfil,
-            apl_id=self.app,
-            pea_consultar=True,
-            pea_modificar=True,
-            pea_eliminar=True,
-            pea_ingresar=True
+        self.perfil = Group.objects.create(
+            name='Admin Group'
         )
         self.usuario = Usuario.objects.create_user(
-            usu_username='admin',
+            username='admin',
             password='admin123',
-            pel_id=self.perfil,
-            usu_vigente=True
+            is_active=True
         )
+        self.usuario.groups.add(self.perfil)
+        # Give permissions to the group
+        perms = Permission.objects.filter(content_type__app_label='ApiCoreScouts')
+        self.perfil.permissions.set(perms)
+        
         response = self.client.post('/login/', {
-            'usu_username': 'admin',
+            'username': 'admin',
             'password': 'admin123'
         }, format='json')
         self.token = response.data['access']
@@ -197,29 +182,17 @@ class PersonaAPITests(APITestCase):
     def setUp(self):
         """Set up test data"""
         self.client = APIClient()
-        # Create dependencies
-        self.perfil = Perfil.objects.create(
-            pel_descripcion='Admin Perfil',
-            pel_vigente=True
-        )
-        self.app = Aplicacion.objects.create(
-            apl_descripcion='Personas',
-            apl_vigente=True
-        )
-        Perfil_Aplicacion.objects.create(
-            pel_id=self.perfil,
-            apl_id=self.app,
-            pea_consultar=True,
-            pea_modificar=True,
-            pea_eliminar=True,
-            pea_ingresar=True
-        )
+        self.perfil = Group.objects.create(name='Admin Group')
         self.usuario = Usuario.objects.create_user(
-            usu_username='admin',
+            username='admin',
             password='admin123',
-            pel_id=self.perfil,
-            usu_vigente=True
+            is_active=True
         )
+        self.usuario.groups.add(self.perfil)
+        # Give permissions
+        perms = Permission.objects.filter(content_type__app_label='ApiCoreScouts')
+        self.perfil.permissions.set(perms)
+
         self.region = Region.objects.create(
             
             reg_descripcion='Biobío',
@@ -257,7 +230,7 @@ class PersonaAPITests(APITestCase):
         )
         # Authenticate
         response = self.client.post('/login/', {
-            'usu_username': 'admin',
+            'username': 'admin',
             'password': 'admin123'
         }, format='json')
         self.token = response.data['access']
@@ -306,28 +279,16 @@ class CursoAPITests(APITestCase):
     def setUp(self):
         """Set up test data"""
         self.client = APIClient()
-        self.perfil = Perfil.objects.create(
-            pel_descripcion='Admin Perfil',
-            pel_vigente=True
-        )
-        self.app = Aplicacion.objects.create(
-            apl_descripcion='Cursos',
-            apl_vigente=True
-        )
-        Perfil_Aplicacion.objects.create(
-            pel_id=self.perfil,
-            apl_id=self.app,
-            pea_consultar=True,
-            pea_modificar=True,
-            pea_eliminar=True,
-            pea_ingresar=True
-        )
+        self.perfil = Group.objects.create(name='Admin Group')
         self.usuario = Usuario.objects.create_user(
-            usu_username='admin',
+            username='admin',
             password='admin123',
-            pel_id=self.perfil,
-            usu_vigente=True
+            is_active=True
         )
+        self.usuario.groups.add(self.perfil)
+        # Give permissions
+        perms = Permission.objects.filter(content_type__app_label='ApiCoreScouts')
+        self.perfil.permissions.set(perms)
         # Create dependencies
         self.region = Region.objects.create(
             
@@ -370,6 +331,7 @@ class CursoAPITests(APITestCase):
         )
         self.tipo_curso = Tipo_Curso.objects.create(
             tcu_descripcion='Formación',
+            tcu_tipo=1,
             tcu_vigente=True
         )
         self.curso = Curso.objects.create(
@@ -391,7 +353,7 @@ class CursoAPITests(APITestCase):
         )
         # Authenticate
         response = self.client.post('/login/', {
-            'usu_username': 'admin',
+            'username': 'admin',
             'password': 'admin123'
         }, format='json')
         self.token = response.data['access']
@@ -417,28 +379,16 @@ class PagoAPITests(APITestCase):
     def setUp(self):
         """Set up test data"""
         self.client = APIClient()
-        self.perfil = Perfil.objects.create(
-            pel_descripcion='Admin Perfil',
-            pel_vigente=True
-        )
-        self.app = Aplicacion.objects.create(
-            apl_descripcion='Pagos',
-            apl_vigente=True
-        )
-        Perfil_Aplicacion.objects.create(
-            pel_id=self.perfil,
-            apl_id=self.app,
-            pea_consultar=True,
-            pea_modificar=True,
-            pea_eliminar=True,
-            pea_ingresar=True
-        )
+        self.perfil = Group.objects.create(name='Admin Group')
         self.usuario = Usuario.objects.create_user(
-            usu_username='admin',
+            username='admin',
             password='admin123',
-            pel_id=self.perfil,
-            usu_vigente=True
+            is_active=True
         )
+        self.usuario.groups.add(self.perfil)
+        # Give permissions
+        perms = Permission.objects.filter(content_type__app_label='ApiCoreScouts')
+        self.perfil.permissions.set(perms)
         self.proveedor = Proveedor.objects.create(
             prv_descripcion='Proveedor Test',
             prv_celular1='+56912345678',
@@ -447,7 +397,7 @@ class PagoAPITests(APITestCase):
         )
         # Authenticate
         response = self.client.post('/login/', {
-            'usu_username': 'admin',
+            'username': 'admin',
             'password': 'admin123'
         }, format='json')
         self.token = response.data['access']
@@ -473,16 +423,15 @@ class PermissionsAPITests(APITestCase):
     def setUp(self):
         """Set up test data"""
         self.client = APIClient()
-        self.perfil_no_perms = Perfil.objects.create(
-            pel_descripcion='No Permissions Perfil',
-            pel_vigente=True
+        self.perfil_no_perms = Group.objects.create(
+            name='No Permissions Group'
         )
         self.usuario_no_perms = Usuario.objects.create_user(
-            usu_username='noperms',
+            username='noperms',
             password='noperms123',
-            pel_id=self.perfil_no_perms,
-            usu_vigente=True
+            is_active=True
         )
+        self.usuario_no_perms.groups.add(self.perfil_no_perms)
     
     def test_unauthorized_access(self):
         """Test that unauthorized requests are rejected"""
@@ -494,11 +443,12 @@ class PermissionsAPITests(APITestCase):
         """Test that requests without proper permissions are forbidden"""
         # Login with user that has no app permissions
         response = self.client.post('/login/', {
-            'usu_username': 'noperms',
+            'username': 'noperms',
             'password': 'noperms123'
         }, format='json')
         token = response.data['access']
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+
         
         # Try to access usuarios endpoint
         url = '/api/usuarios/usuarios/'

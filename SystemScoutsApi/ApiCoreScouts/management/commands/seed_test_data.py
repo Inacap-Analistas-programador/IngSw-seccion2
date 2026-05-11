@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from ApiCoreScouts.Models.usuario_model import Usuario, Perfil
+from django.contrib.auth.models import Group
+from ApiCoreScouts.Models.usuario_model import Usuario
 from ApiCoreScouts.Models.persona_model import Persona
 from ApiCoreScouts.Models.mantenedor_model import Estado_Civil, Comuna, Provincia, Region, Zona, Distrito, Grupo, Rol, Cargo, Nivel, Rama
 from faker import Faker
@@ -83,9 +84,8 @@ class Command(BaseCommand):
         # Ensure we have required foreign keys
         comunas = list(Comuna.objects.filter(com_vigente=True))
         estados_civil = list(Estado_Civil.objects.filter(esc_vigente=True))
-        perfil_default, _ = Perfil.objects.get_or_create(
-            pel_descripcion='Usuario Standard', 
-            defaults={'pel_vigente': True}
+        perfil_default, _ = Group.objects.get_or_create(
+            name='Usuario Standard'
         )
         
         if not comunas or not estados_civil:
@@ -96,18 +96,18 @@ class Command(BaseCommand):
             # User Data
             username = fake.user_name()
             # Ensure unique username
-            while Usuario.objects.filter(usu_username=username).exists():
+            while Usuario.objects.filter(username=username).exists():
                 username = fake.user_name() + str(random.randint(1, 999))
                 
             password = 'password123'
             
             user = Usuario.objects.create_user(
-                usu_username=username,
+                username=username,
                 password=password,
-                pel_id=perfil_default,
-                usu_email=fake.email(),
-                usu_vigente=True
+                email=fake.email(),
+                is_active=True
             )
+            user.groups.add(perfil_default)
             
             # Persona Data
             rut_raw = fake.unique.rut()
@@ -125,7 +125,7 @@ class Command(BaseCommand):
                 per_apelpta=fake.last_name(),
                 per_apelmat=fake.last_name(),
                 per_nombres=fake.first_name(),
-                per_mail=user.usu_email,
+                per_mail=user.email,
                 per_fecha_nac=fake.date_of_birth(minimum_age=18, maximum_age=80),
                 per_direccion=fake.address(),
                 per_tipo_fono=random.randint(1, 4),

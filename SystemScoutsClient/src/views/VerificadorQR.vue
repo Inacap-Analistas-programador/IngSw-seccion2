@@ -1,22 +1,47 @@
 <template>
   <div class="verificador-container">
-    <h2>Pantalla de Verificación</h2>
-    <div id="lector" ref="lectorRef"></div>
-
-    <div :class="['verification-result', resultadoClase]">
-      {{ resultadoTexto }}
+    <PageHeader 
+      title="App Verificador" 
+      subtitle="Escanea el código QR de los participantes para validar su acreditación."
+    />
+    
+    <div class="scanner-wrapper">
+      <div id="lector" ref="lectorRef"></div>
+      <!-- Overlay personalizado -->
+      <div class="scanner-overlay">
+        <div class="scanner-corners">
+          <div class="corner top-left"></div>
+          <div class="corner top-right"></div>
+          <div class="corner bottom-left"></div>
+          <div class="corner bottom-right"></div>
+        </div>
+        <div class="scanner-laser"></div>
+      </div>
     </div>
 
-    <p id="texto_escaneado">ID Escaneado: {{ idEscaneado }}</p>
+    <div :class="['verification-result', resultadoClase]">
+      <div v-if="resultadoClase === 'verde'" class="result-icon-box">
+        <AppIcons name="check-circle" :size="28" stroke-width="2.5" />
+      </div>
+      <div v-else-if="resultadoClase === 'rojo'" class="result-icon-box">
+        <AppIcons name="x-circle" :size="28" stroke-width="2.5" />
+      </div>
+      <div v-else class="result-icon-box idle">
+        <AppIcons name="qrcode" :size="28" stroke-width="2" />
+      </div>
+      
+      <span class="result-text">{{ resultadoTexto }}</span>
+    </div>
   </div>
 </template>
 
 <script setup>
+import PageHeader from '@/components/common/PageHeader.vue'
+import AppIcons from '@/components/icons/AppIcons.vue'
 import {verificarUsuario} from '@/services/VerificadorService.js'
 
 const { 
   resultadoTexto, 
-  idEscaneado, 
   resultadoClase, 
   lectorRef 
 } = verificarUsuario()
@@ -26,81 +51,96 @@ const {
 <style scoped>
 /* Contenedor principal */
 .verificador-container {
-  max-width: 700px; 
+  max-width: 500px; /* Reducido de 600px */
   margin: 0 auto;
   padding: 1.5rem;
   width: 100%;
   box-sizing: border-box;
-  /* Evita que el contenedor cause scroll horizontal */
-  overflow-x: hidden;
 }
 
-/* Título */
-h2 {
-  font-size: 24px; 
-  font-weight: 600; 
-  color: #111827; 
-  margin: 0;
-  margin-bottom: 2rem; 
-  padding-bottom: 1rem; 
-  border-bottom: 2px solid #e0e0e0; 
-  text-align: left; 
-  /* Ajuste responsivo para el texto */
-  word-wrap: break-word;
-}
+/* Título ya manejado por PageHeader, quitamos estilos de h2 */
 
-/* Caja del Lector */
-#lector {
-  background: #fff; 
-  border-radius: 8px; 
-  box-shadow: 0 2px 8px rgba(0,0,0,.08); 
-  /* Overflow hidden recorta cualquier cosa que se salga */
-  overflow: hidden; 
-  padding: 1rem;
-  border: 1px solid #e0e0e0; 
-  
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem; 
-  min-height: 250px;
-  
-  /* Asegura que el lector nunca sea más ancho que su padre */
+/* Envoltura del escáner */
+.scanner-wrapper {
+  position: relative;
   width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
+  max-width: 360px; /* Reducido de 500px para PC */
+  aspect-ratio: 1 / 1; /* Forzamos que sea un cuadrado perfecto */
+  margin: 0 auto;
+  background: #f8fafc;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border: 0.5px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#lector {
+  width: 100% !important;
+  height: 100% !important;
+  border: none !important;
+  background: transparent !important;
+  overflow: hidden;
 }
 
 /* Caja de Resultado */
 .verification-result {
-  margin-top: 1.5rem; 
-  padding: 1.25rem;
-  border-radius: 8px; 
-  font-size: 1.5em; 
-  font-weight: 700; 
-  min-height: 80px;
+  margin: 1.5rem auto 0;
+  max-width: 360px;
+  max-height: 62px;
+  padding: 1rem;
+  border-radius: 6px;
+  /* min-height: 90px; */
   display: flex;
+  gap: 16px;
   justify-content: center;
   align-items: center;
-  transition: all 0.3s ease; 
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  color: #64748b;
+  background: #f8fafc;
+  text-align: left;
+  box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+  border: 0.5px solid #e2e8f0;
+  font-family: 'Inter', Arial, sans-serif;
+}
+
+.result-icon-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.verde .result-icon-box { background: rgba(255, 255, 255, 0.2); }
+.rojo .result-icon-box { background: rgba(255, 255, 255, 0.2); }
+.idle { background: #f1f5f9; color: #94a3b8; }
+
+.result-text {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+
+
+.verification-result.verde, .verification-result.rojo {
   color: white;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-  text-align: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,.1); 
-  border: 1px solid transparent;
-  /* Ajuste responsivo */
-  width: 100%;
-  box-sizing: border-box;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border: none;
 }
 
 .rojo {
-  background-color: #e74c3c; 
-  border-color: #c0392b;
+  background: #ef4444;
 }
 
 .verde {
-  background-color: #27ae60;
-  border-color: #229954;
+  background: #22c55e;
 }
 
 #texto_escaneado {
@@ -117,11 +157,66 @@ h2 {
 #lector :deep(video),
 #lector :deep(canvas),
 #lector :deep(img) {
-  max-width: 100% !important;
-  height: auto !important;
+  width: 100% !important;
+  height: 100% !important;
   order: 1;
   border-radius: 6px; 
-  object-fit: cover; /* Asegura que el video llene el espacio sin estirarse */
+  object-fit: cover !important; 
+  display: block;
+}
+
+/* Ocultar la región sombreada de la librería para usar nuestro overlay */
+#lector :deep(#qr-shaded-region) {
+  display: none !important;
+}
+
+/* Overlay Personalizado */
+.scanner-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scanner-corners {
+  position: relative;
+  width: 80%; /* Sincronizado con el qrbox s = Math.min(w, h) * 0.8 */
+  height: 80%;
+}
+
+.corner {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border: 4px solid #fff;
+  filter: drop-shadow(0 0 5px rgba(0,0,0,0.5));
+}
+
+.top-left { top: -2px; left: -2px; border-right: none; border-bottom: none; border-top-left-radius: 12px; }
+.top-right { top: -2px; right: -2px; border-left: none; border-bottom: none; border-top-right-radius: 12px; }
+.bottom-left { bottom: -2px; left: -2px; border-right: none; border-top: none; border-bottom-left-radius: 12px; }
+.bottom-right { bottom: -2px; right: -2px; border-left: none; border-top: none; border-bottom-right-radius: 12px; }
+
+.scanner-laser {
+  position: absolute;
+  width: 80%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 15px 2px rgba(255, 255, 255, 0.6);
+  z-index: 11;
+  animation: scanning 2s ease-in-out infinite;
+  opacity: 0.6;
+}
+
+@keyframes scanning {
+  0%, 100% { top: 10%; }
+  50% { top: 90%; }
 }
 
 /* Esto lo fuerza a adaptarse a la pantalla */
@@ -156,7 +251,7 @@ h2 {
   /* Cambiado width fijo por 100% relativo al padre */
   width: 100%; 
   max-width: 400px;
-  padding: 0.75rem 1rem; 
+  padding: 0.5rem 1rem; 
   margin-top: 0.5rem; 
   font-size: 0.9rem;
   font-weight: 600; 
@@ -206,6 +301,10 @@ h2 {
   transform: translateY(-1px); 
 }
 
+/* Esconder elementos innecesarios generados por la librería */
+#lector :deep(img[alt="Info icon"]) { display: none !important; }
+#lector :deep(img[alt="Camera menu icon"]) { display: none !important; }
+
 /* Media Query - Ajustes para móviles pequeños */
 @media (max-width: 480px) {
   .verificador-container {
@@ -213,24 +312,29 @@ h2 {
   }
 
   .verification-result {
-    font-size: 1.1em;
-    min-height: 60px;
-    padding: 1rem;
+    padding: 1.25rem;
+    min-height: 80px;
+    gap: 12px;
+  }
+  
+  .result-text {
+    font-size: 1rem;
+  }
+  
+  .result-icon-box {
+    width: 40px;
+    height: 40px;
   }
   
   h2 {
     font-size: 1.2em; 
     margin-bottom: 1.5rem;
   }
-  
-  #lector {
-    padding: 0.5rem; /* Menos espacio interno en móvil para aprovechar pantalla */
-  }
 
   #lector :deep(button),
   #lector :deep(select) {
      font-size: 0.85em;
-     padding: 10px; /* Botones un poco más fáciles de presionar */
+     padding: 8px 10px; /* Reducido de 10px */
      padding-right: 2rem !important;
      background-position: right 0.5rem center;
   }

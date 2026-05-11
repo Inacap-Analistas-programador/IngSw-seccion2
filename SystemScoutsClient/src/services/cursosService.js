@@ -14,9 +14,17 @@ const makeCrud = base => ({
   remove: (id) => request(`${base}/${id}/`, { method: 'DELETE' }),
 })
 
-// NOTE: Backend mounts course routes under /api/cursos/
-// Base paths should NOT have trailing slash; makeCrud adds '/' between base and ID
-export const cursos = makeCrud('cursos/cursos')
+export const cursos = {
+  ...makeCrud('cursos/cursos'),
+  paraMantenedor: (params) => {
+    const searchParams = new URLSearchParams(params || {})
+    if (!searchParams.has('page_size')) searchParams.set('page_size', '20')
+    const qs = searchParams.toString()
+    return request(`cursos/cursos/para_mantenedor/${qs ? `?${qs}` : ''}`)
+  },
+  get_acreditacion: () => request('cursos/cursos/get_cursos_acreditacion/'),
+  get_alimentacion_curso: (id) => request(`cursos/cursos/${id}/get_alimentacion_curso/`)
+}
 export const cuotas = makeCrud('cursos/cuotas')
 export const fechas = makeCrud('cursos/fechas')
 export const alimentaciones = makeCrud('cursos/alimentaciones')

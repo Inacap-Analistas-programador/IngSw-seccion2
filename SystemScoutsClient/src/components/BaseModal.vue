@@ -4,9 +4,8 @@
       <!-- Header opcional -->
       <div class="modal-header" v-if="$slots.title">
         <h3 class="modal-title"><slot name="title"></slot></h3>
+        <button class="modal-close-btn" @click="closeModal" aria-label="Cerrar">×</button>
       </div>
-      <!-- Botón cerrar siempre visible -->
-      <button class="close-btn" @click="closeModal" aria-label="Cerrar ventana">×</button>
       <!-- Cuerpo con scrollbar personalizado -->
       <ModernMainScrollbar class="modal-body-content">
         <slot></slot>
@@ -68,14 +67,32 @@ const closeModal = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 24px;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 15px 20px;
+  border-bottom: 1px solid #eee;
+  background-color: white;
 }
 
 .modal-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #111827;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1a237e;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+  line-height: 1;
+  padding: 4px;
+  transition: color 0.2s;
+}
+
+.modal-close-btn:hover {
+  color: #3949ab;
 }
 
 .modal-body-content {
@@ -100,39 +117,6 @@ const closeModal = () => {
   border-top: 1px solid #e5e7eb;
 }
 
- .close-btn {
-  position: absolute;
-  top: 1rem;
-  right: 1rem; /* Posicionado a la derecha */
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: none;
-  background: #f8f9fa;
-  color: #7f8c8d;
-  font-size: 24px;
-  font-weight: 300;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 10;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  line-height: 1;
-  padding: 0;
-}
-
-.close-btn:hover {
-  background: #e74c3c;
-  color: white;
-  transform: rotate(90deg) scale(1.1);
-  box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
-}
-
-.close-btn:active {
-  transform: rotate(90deg) scale(0.95);
-}
 
 @keyframes modal-in {
   from { opacity: 0; transform: scale(0.95) translateY(10px); }

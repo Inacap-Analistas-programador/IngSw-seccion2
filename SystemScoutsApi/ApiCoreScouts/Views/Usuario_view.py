@@ -1,27 +1,36 @@
-# ApiCoreScouts/Views/Usuario_view.py
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
-from ..Serializers import Usuario_serializer as MU_S
-from ..Models.usuario_model import *
+from ..Serializers import (
+    UsuarioSerializer, 
+    GroupSerializer, 
+    PermissionSerializer, 
+    MyTokenObtainPairSerializer
+)
+from ..Models.usuario_model import Usuario
+from django.contrib.auth.models import Group, Permission
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from ..Permissions import PerfilPermission
 from rest_framework_simplejwt.views import TokenObtainPairView
-from ..Serializers.Usuario_serializer import MyTokenObtainPairSerializer
+
+class MyTokenObtainPairView(TokenObtainPairView):
+    """
+    Vista de login personalizada que usa MyTokenObtainPairSerializer.
+    """
+    serializer_class = MyTokenObtainPairSerializer
+
+
 import logging
 
 logger = logging.getLogger(__name__)
 
-class MyTokenObtainPairView(TokenObtainPairView):
-    serializer_class = MyTokenObtainPairSerializer
-
 class UsuarioViewSet(viewsets.ModelViewSet):
     queryset = Usuario.objects.all()
-    serializer_class = MU_S.UsuarioSerializer
+    serializer_class = UsuarioSerializer
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated, PerfilPermission]
     app_name = 'Usuarios'
 
-    # Envoltorio para capturar y loggear excepciones durante list (500s)
+
     def list(self, request, *args, **kwargs):
         try:
             return super().list(request, *args, **kwargs)
@@ -31,25 +40,19 @@ class UsuarioViewSet(viewsets.ModelViewSet):
             from rest_framework import status
             return Response({'detail': 'internal_server_error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-class PerfilViewSet(viewsets.ModelViewSet):
-    queryset = Perfil.objects.all()
-    serializer_class = MU_S.PerfilSerializer
+class GroupViewSet(viewsets.ModelViewSet):
+    queryset = Group.objects.all()
+    serializer_class = GroupSerializer
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated, PerfilPermission]
+    permission_classes = [IsAuthenticated]
     app_name = 'Perfiles'
 
-class AplicacionViewSet(viewsets.ModelViewSet):
-    queryset = Aplicacion.objects.all()
-    serializer_class = MU_S.AplicacionSerializer
+class PermissionViewSet(viewsets.ModelViewSet):
+    queryset = Permission.objects.all()
+    serializer_class = PermissionSerializer
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated, PerfilPermission]
-    app_name = 'Aplicaciones'
+    permission_classes = [IsAuthenticated]
+    app_name = 'Permisos'
 
-class PerfilAplicacionViewSet(viewsets.ModelViewSet):
-    queryset = Perfil_Aplicacion.objects.all()
-    serializer_class = MU_S.PerfilAplicacionSerializer
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated, PerfilPermission]
-    app_name = 'Perfiles'
 
 

@@ -14,7 +14,7 @@ class UsuarioBackend(BaseBackend):
             return None
         try:
             # Usar iexact para búsqueda de nombre de usuario insensible a mayúsculas/minúsculas
-            user = Usuario.objects.get(usu_username__iexact=username)
+            user = Usuario.objects.get(username__iexact=username)
             
             # Verificar hash estándar de Django
             if user.check_password(password):

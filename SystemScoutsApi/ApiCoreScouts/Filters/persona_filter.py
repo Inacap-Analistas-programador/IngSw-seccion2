@@ -59,6 +59,10 @@ class PersonaFilter(django_filters.FilterSet):
         field_name='persona_curso__pec_acreditacion',
         label='Filtrar por estado de acreditación')
     
+    correo_qr_enviado = django_filters.BooleanFilter(
+        field_name='persona_curso__pec_envio_correo_qr',
+        label='Filtrar por correo enviado')
+    
     # --- Filtro de cursos asociados ---
     curso_codigo = django_filters.CharFilter(
         field_name='persona_curso__cus_id__cur_id__cur_codigo',

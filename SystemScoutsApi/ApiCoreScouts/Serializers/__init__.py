@@ -8,7 +8,8 @@ from .Persona_serializer import *
 serializers_dict = {
     # USUARIOS y CURSOS
     'Usuario': UsuarioSerializer,
-    'Perfil': PerfilSerializer,
+    'Group': GroupSerializer,
+    'Permission': PermissionSerializer,
     'Persona': PersonaSerializer,
     'Persona_Grupo': PersonaGrupoSerializer,
     'Persona_Formador': PersonaFormadorSerializer,

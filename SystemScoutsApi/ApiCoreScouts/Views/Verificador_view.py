@@ -9,8 +9,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 @api_view(['GET'])
-@authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated])
+@authentication_classes([]) # No auth required for public verifier
+@permission_classes([])     # No permissions required
 def verificar_acreditacion_qr(request):
     
     # Se reciben los datos por parámetros get
@@ -20,14 +20,14 @@ def verificar_acreditacion_qr(request):
     # Valida que los datos llegaron
     if not rut_completo or not curso_codigo:
         # Si no se envían los parámetros, devuelve "No Acreditado" 
-        return Response(None) 
+        return Response({"acreditado": False}) 
 
     try:
         # Busca a la Persona
         # Separa el RUT (ej: "13815851" y "5")
         partes_rut = rut_completo.split('-')
         if len(partes_rut) != 2:
-            return Response(None)
+            return Response({"acreditado": False})
             
         run = partes_rut[0]
         dv = partes_rut[1]
@@ -48,7 +48,7 @@ def verificar_acreditacion_qr(request):
 
         if not lista_ids_secciones:
             # Si el curso existe pero no tiene secciones, no hay inscritos
-            return Response(None) # No Acreditado
+            return Response({"acreditado": False}) # No Acreditado
 
         # Busca la Inscripción en la tabla persona_curso que conecte a la persona 
         # con cualquiera de las secciones de ese curso
@@ -69,13 +69,15 @@ def verificar_acreditacion_qr(request):
                 })
             else:
                 # Está inscrito, pero no acreditado devuelve "No Acreditado"
-                return Response(None) 
+                return Response({"acreditado": False}) 
         else:
             # No se encontró ninguna inscripción que conecte a esa persona con ese curso
-            return Response(None) # Tambien devuelve "No Acreditado"
+            return Response({"acreditado": False}) # Tambien devuelve "No Acreditado"
 
+    except (Persona.DoesNotExist, Curso.DoesNotExist):
+        # Si no existe la persona o el curso el QR es inválido
+        return Response({"acreditado": False, "error": "invalid_qr"})
     except Exception as e:
-        # Captura cualquier error (ej: Persona no encontrada, Curso no encontrado)
-        # y lo trata como "No Acreditado"
+        # Captura cualquier otro error inesperado
         logger.warning(f"Error en la verificación de acreditación: {str(e)}")
-        return Response(None)
+        return Response({"acreditado": False})

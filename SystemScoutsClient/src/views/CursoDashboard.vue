@@ -425,7 +425,7 @@ async function cargarDatos() {
 function cerrar() {
   emit('close')
   if (route.name === 'curso-detalle') {
-    router.push({ name: 'dashboard2' })
+    router.push({ name: 'dashboard' })
   }
 }
 

@@ -10,7 +10,17 @@ const makeCrud = base => ({
 })
 
 // Archivo main resources
-export const archivos = makeCrud('archivos')
+const baseArchivos = makeCrud('archivos')
+export const archivos = {
+  ...baseArchivos,
+  uploadArchivo: (file, tarId = 1) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('tar_id', tarId)
+    // Custom action: archivos/archivos/upload/ (due to router.register('archivos', ...) inside api/archivos/)
+    return request('archivos/archivos/upload/', { method: 'POST', body: formData })
+  }
+}
 // Sub-resources under archivos router
 export const archivoCursos = makeCrud('archivos/cursos')
 export const archivoPersonas = makeCrud('archivos/personas')
