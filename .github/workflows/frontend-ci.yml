@@ -12,6 +12,9 @@ on:
       - 'SystemScoutsClient/**'
       - '.github/workflows/frontend-ci.yml'
 
+permissions:
+  contents: read
+
 jobs:
   lint-and-build:
     runs-on: ubuntu-latest
