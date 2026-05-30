@@ -57,6 +57,9 @@ class Pago_Persona(models.Model):
 
     class Meta:
         db_table = 'pago_persona'
+        permissions = [
+            ("view_screen_pago_persona", "Puede visualizar la pantalla de Pagos"),
+        ]
 
 class Prepago(models.Model):
     ppa_id = models.BigAutoField(primary_key=True, db_column='ppa_id')

@@ -5,29 +5,7 @@
       title="Gestión de Pagos" 
       subtitle="Registra, busca y administra los pagos y egresos del sistema."
     />
-
-    <!-- Tabs Principales -->
-    <div class="tabs">
-      <BaseButton
-        :variant="tabPrincipal === 'registro' ? 'primary' : 'secondary'"
-        @click="tabPrincipal = 'registro'"
-      >
-        <AppIcons name="plus-circle" :size="18" /> Registro de Pagos
-      </BaseButton>
-      <BaseButton
-        :variant="tabPrincipal === 'historico' ? 'primary' : 'secondary'"
-        @click="tabPrincipal = 'historico'"
-      >
-        <AppIcons name="history" :size="18" /> Historial de Pagos
-      </BaseButton>
-      <BaseButton
-        :variant="tabPrincipal === 'comprobantes' ? 'primary' : 'secondary'"
-        @click="tabPrincipal = 'comprobantes'"
-      >
-        <AppIcons name="file-text" :size="18" /> Comprobantes
-      </BaseButton>
-    </div>
-
+    
     <!-- Contenido Tab Registro -->
     <div v-if="tabPrincipal === 'registro'" class="card card-registro">
       <div class="subtabs">
@@ -169,9 +147,15 @@ export default {
     PagosProveedoresForm,
     PagosModals
   },
+  computed: {
+    tabPrincipal() {
+      if (this.$route.name === 'pagos-historial') return 'historico'
+      if (this.$route.name === 'pagos-comprobantes') return 'comprobantes'
+      return 'registro'
+    }
+  },
   data() {
     return {
-      tabPrincipal: 'registro',
       subTabRegistro: 'individual',
       
       // Shared options

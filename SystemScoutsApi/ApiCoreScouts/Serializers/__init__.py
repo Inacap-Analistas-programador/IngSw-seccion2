@@ -4,6 +4,7 @@ from .Mantenedor_serializer import *
 from .Pago_serializer import *
 from .Archivo_serializer import *
 from .Persona_serializer import *
+from .PerfilAmbito_serializer import PerfilAmbitoSerializer, GroupWithAmbitoSerializer
 
 serializers_dict = {
     # USUARIOS y CURSOS

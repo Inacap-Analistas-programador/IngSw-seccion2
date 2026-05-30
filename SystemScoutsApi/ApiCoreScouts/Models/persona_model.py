@@ -39,6 +39,9 @@ class Persona(models.Model):
 
     class Meta:
         db_table = 'persona'
+        permissions = [
+            ("view_screen_persona", "Puede visualizar la pantalla de Personas"),
+        ]
 
 class Persona_Grupo(models.Model):
     peg_id = models.BigAutoField(primary_key=True, db_column='peg_id')
@@ -56,6 +59,7 @@ class Persona_Formador(models.Model):
     pef_hab_2 = models.BooleanField(default=False, null=False, db_column='pef_hab_2')
     pef_verif = models.BooleanField(default=False, null=False, db_column='pef_verif')
     pef_historial = models.CharField(max_length=500, blank=True, null=True, db_column='pef_historial')
+    pef_vigente = models.BooleanField(default=True, null=False, db_column='pef_vigente')
 
     class Meta:
         db_table = 'persona_formador'

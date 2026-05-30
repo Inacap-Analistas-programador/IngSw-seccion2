@@ -17,17 +17,34 @@ function getCookie(name) {
 }
 
 function getAuthHeaders() {
-  // 1. Intentar obtener de cookies (preferido para producción)
-  let token = getCookie('access_token') || getCookie('token') || getCookie('accessToken')
+  // Leer de la clave unificada; migrar silenciosamente si existen claves legacy
+  let token = localStorage.getItem('auth_token')
 
-  // 2. Fallback a localStorage solo para desarrollo local
-  if (!token && typeof localStorage !== 'undefined') {
-    token = localStorage.getItem('token') || localStorage.getItem('accessToken')
+  if (!token) {
+    token = localStorage.getItem('accessToken') || localStorage.getItem('token')
+    if (token) localStorage.setItem('auth_token', token) // migración silenciosa
   }
 
   if (!token) return {}
-  // Adjust prefix if your backend expects a different scheme
   return { Authorization: `Bearer ${token}` }
+}
+
+// Redirigir al login cuando el token no se puede renovar.
+// Debounced: si múltiples requests fallan simultáneamente, solo redirige una vez.
+let _redirectScheduled = false
+function _redirectToLogin() {
+  if (_redirectScheduled) return
+  _redirectScheduled = true
+  // Limpiar sesión
+  ;['auth_token', 'token', 'accessToken', 'refreshToken'].forEach(k => {
+    try { localStorage.removeItem(k) } catch { /* ignore */ }
+  })
+  setTimeout(() => {
+    _redirectScheduled = false
+    if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+      window.location.href = '/'
+    }
+  }, 100)
 }
 
 // Gestionar refresh de JWT evitando múltiples llamadas concurrentes
@@ -112,17 +129,26 @@ export async function request(path, options = {}) {
   }
 
   let res = await fetch(url, fetchOptions)
+
   if (!res.ok && res.status === 401) {
-    // intentar refresh si el token expiró
-    // Usar un clon para leer el cuerpo sin consumir el original
     let bodyText = ''
     try { bodyText = await res.clone().text() } catch { /* ignore */ }
+
     if (/token_not_valid|Token is expired|expired/i.test(bodyText)) {
+      // 1. Intentar refresh
       const ok = await refreshAccessToken()
       if (ok) {
         const retryHeaders = { ...headers, ...getAuthHeaders() }
         res = await fetch(url, { ...fetchOptions, headers: retryHeaders })
+      } else {
+        // 2. Refresh fallido → limpiar sesión y redirigir al login
+        _redirectToLogin()
+        throw new Error('401 Sesión expirada. Redirigiendo al login...')
       }
+    } else {
+      // 401 sin poder refrescar (sin token de refresh, o ruta de login misma)
+      _redirectToLogin()
+      throw new Error('401 No autorizado')
     }
   }
   if (!res.ok) {

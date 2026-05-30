@@ -24,20 +24,27 @@ const router = createRouter({
       path: '/dashboard',
       name: 'dashboard',
       component: Dashboard,
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, module: 'Dashboard' }
     },
 
     {
-      path: '/usuarios',
-      name: 'usuarios',
-      component: UsuariosRoles,
-      meta: { requiresAuth: true, module: 'Usuarios' }
-    },
-    {
-      path: '/roles',
-      name: 'roles',
-      component: Roles,
-      meta: { requiresAuth: true, module: 'Perfiles' }
+      path: '/usuarios-perfiles',
+      meta: { requiresAuth: true },
+      children: [
+        { path: '', redirect: { name: 'usuarios' } },
+        {
+          path: 'usuarios',
+          name: 'usuarios',
+          component: UsuariosRoles,
+          meta: { module: 'Usuarios' }
+        },
+        {
+          path: 'perfiles',
+          name: 'roles',
+          component: Roles,
+          meta: { module: 'Perfiles' }
+        },
+      ]
     },
     // Mantenedores admite pestaña vía parámetro opcional
     {
@@ -56,9 +63,14 @@ const router = createRouter({
     },
     {
       path: '/pagos',
-      name: 'pagos',
       component: PagosView,
-      meta: { requiresAuth: true, module: 'Pagos' }
+      meta: { requiresAuth: true, module: 'Pagos' },
+      children: [
+        { path: '', redirect: { name: 'pagos-registro' } },
+        { path: 'registro', name: 'pagos-registro', component: PagosView },
+        { path: 'historial', name: 'pagos-historial', component: PagosView },
+        { path: 'comprobantes', name: 'pagos-comprobantes', component: PagosView },
+      ]
     },
     {
       path: '/manual-acreditacion',
@@ -105,7 +117,7 @@ const router = createRouter({
       name: 'curso-detalle',
       component: () => import('@/views/CursoDashboard.vue'),
       props: route => ({ cursoId: Number(route.params.id) }),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, module: 'Cursos' }
     },
     {
       path: '/cursos/editar/:id',
@@ -126,10 +138,13 @@ const DISABLE_AUTH_GUARD = String(import.meta.env.VITE_DISABLE_AUTH_GUARD || '')
 router.beforeEach(async (to, from, next) => {
   if (DISABLE_AUTH_GUARD) return next()
 
-  let token = localStorage.getItem('token') || localStorage.getItem('accessToken')
-  // Normalizar: si sólo existe accessToken, duplica en 'token' para compatibilidad
-  if (!localStorage.getItem('token') && token) {
-    try { localStorage.setItem('token', token) } catch { /* ignore */ }
+  // Leer el token unificado o las claves legacy (migración silenciosa)
+  let token = localStorage.getItem('auth_token') ||
+              localStorage.getItem('token') ||
+              localStorage.getItem('accessToken')
+  // Migración silenciosa: unificar en auth_token
+  if (token && !localStorage.getItem('auth_token')) {
+    try { localStorage.setItem('auth_token', token) } catch { /* ignore */ }
   }
 
   // Verificar autenticación
@@ -138,13 +153,24 @@ router.beforeEach(async (to, from, next) => {
     return
   }
 
-  // Verificar permisos por módulo
+  // Verificar permisos por módulo (Acceso a Pantalla)
   if (to.meta?.module) {
-    const hasAccess = await authService.hasPermission(to.meta.module, 'consultar')
-    if (!hasAccess) {
-      console.warn(`Acceso denegado a ${to.path}. Módulo requerido: ${to.meta.module}`)
-      next({ name: 'dashboard' })
-      return
+    try {
+      const hasAccess = await authService.hasPermission(to.meta.module, 'consultar')
+      if (!hasAccess) {
+        console.warn(`[Router Guard] Acceso denegado a ${to.path}. Módulo requerido: ${to.meta.module}`)
+        // Si no es el dashboard, redirigir al dashboard. Si ya es el dashboard, dejar entrar (último recurso)
+        if (to.name !== 'dashboard') {
+          next({ name: 'dashboard' })
+          return
+        }
+      }
+    } catch (e) {
+      console.error(`[Router Guard] Error crítico al verificar permisos para ${to.path}:`, e)
+      if (to.name !== 'dashboard') {
+        next({ name: 'dashboard' })
+        return
+      }
     }
   }
 

@@ -155,14 +155,24 @@ class PersonaViewSet(viewsets.ModelViewSet):
                     print(f"Error creando individual: {e}")
 
         # Guardar Formador
-        is_formador = data.get('is_formador', False) or data.get('IS_FORMADOR', False)
+        is_formador_raw = data.get('is_formador', False) or data.get('IS_FORMADOR', False)
+        # Normalizar bool (puede llegar como string 'true'/'false' desde form-data)
+        if isinstance(is_formador_raw, str):
+            is_formador = is_formador_raw.strip().lower() in ('true', '1', 'yes')
+        else:
+            is_formador = bool(is_formador_raw)
+
         if is_formador:
             try:
-                per_form = Persona_Formador(per_id=instance)
+                # Reutilizar registro existente si hay (inactivo), o crear uno nuevo
+                per_form = Persona_Formador.objects.filter(per_id=instance).first()
+                if not per_form:
+                    per_form = Persona_Formador(per_id=instance)
                 per_form.pef_hab_1 = bool(data.get('pef_hab_1') or data.get('PEF_HAB_1'))
                 per_form.pef_hab_2 = bool(data.get('pef_hab_2') or data.get('PEF_HAB_2'))
                 per_form.pef_verif = bool(data.get('pef_verif') or data.get('PEF_VERIF'))
                 per_form.pef_historial = data.get('pef_historial') or data.get('PEF_HISTORIAL')
+                per_form.pef_vigente = True
                 per_form.save()
             except Exception as e:
                 print(f"Error creando formador: {e}")
@@ -283,24 +293,45 @@ class PersonaViewSet(viewsets.ModelViewSet):
                     print(f"Error actualizando individual: {e}")
 
         # Manejar Formador
-        is_formador = data.get('is_formador')
-        if is_formador is None:
-            is_formador = data.get('IS_FORMADOR')
-            
-        if is_formador is not None:
+        # Obtener el valor raw (puede ser bool True/False o string "true"/"false")
+        is_formador_raw = data.get('is_formador')
+        if is_formador_raw is None:
+            is_formador_raw = data.get('IS_FORMADOR')
+
+        if is_formador_raw is not None:
+            # Normalizar a bool correctamente (JSON bool, string "true"/"false", int 1/0)
+            if isinstance(is_formador_raw, bool):
+                is_formador = is_formador_raw
+            elif isinstance(is_formador_raw, str):
+                is_formador = is_formador_raw.strip().lower() in ('true', '1', 'yes')
+            else:
+                is_formador = bool(is_formador_raw)
+
             try:
-                if is_formador:
-                    per_form = Persona_Formador.objects.filter(per_id=instance.per_id).first()
-                    if not per_form:
-                        per_form = Persona_Formador(per_id=instance)
-                    per_form.pef_hab_1 = bool(data.get('pef_hab_1') or data.get('PEF_HAB_1'))
-                    per_form.pef_hab_2 = bool(data.get('pef_hab_2') or data.get('PEF_HAB_2'))
-                    per_form.pef_verif = bool(data.get('pef_verif') or data.get('PEF_VERIF'))
-                    per_form.pef_historial = data.get('pef_historial') or data.get('PEF_HISTORIAL')
+                # Siempre buscar o crear el registro (nunca eliminar)
+                per_form = Persona_Formador.objects.filter(per_id=instance.per_id).first()
+                if per_form:
+                    # Registro existente: actualizar vigente y campos
+                    per_form.pef_vigente = is_formador
+                    if is_formador:
+                        per_form.pef_hab_1 = bool(data.get('pef_hab_1') or data.get('PEF_HAB_1'))
+                        per_form.pef_hab_2 = bool(data.get('pef_hab_2') or data.get('PEF_HAB_2'))
+                        per_form.pef_verif = bool(data.get('pef_verif') or data.get('PEF_VERIF'))
+                        per_form.pef_historial = data.get('pef_historial') or data.get('PEF_HISTORIAL')
                     per_form.save()
-                else:
-                    # Si is_formador es false, eliminamos el registro
-                    Persona_Formador.objects.filter(per_id=instance.per_id).delete()
+                    print(f"DEBUG Formador: pef_vigente={is_formador} para per_id={instance.per_id}")
+                elif is_formador:
+                    # No existe registro y se activa: crear nuevo
+                    per_form = Persona_Formador(
+                        per_id=instance,
+                        pef_hab_1=bool(data.get('pef_hab_1') or data.get('PEF_HAB_1')),
+                        pef_hab_2=bool(data.get('pef_hab_2') or data.get('PEF_HAB_2')),
+                        pef_verif=bool(data.get('pef_verif') or data.get('PEF_VERIF')),
+                        pef_historial=data.get('pef_historial') or data.get('PEF_HISTORIAL'),
+                        pef_vigente=True,
+                    )
+                    per_form.save()
+                    print(f"DEBUG Formador: creado para per_id={instance.per_id}")
             except Exception as e:
                 print(f"Error actualizando formador: {e}")
 
@@ -598,6 +629,39 @@ class PersonaViewSet(viewsets.ModelViewSet):
 
         except Exception as e:
             return Response({'error': str(e)}, status=500)
+    @action(detail=False, methods=['get'])
+    def min(self, request):
+        """
+        Endpoint ultra-lightweight for listing persons with only ID and Full Name.
+        """
+        # Usar .only() para traer solo los campos necesarios de la DB
+        queryset = Persona.objects.only('per_id', 'per_nombres', 'per_apelpta', 'per_apelmat')
+        
+        # Opcional: filtrar por búsqueda si se provee
+        q = request.query_params.get('q', '').strip()
+        if q:
+            queryset = queryset.filter(
+                Q(per_nombres__icontains=q) |
+                Q(per_apelpta__icontains=q) |
+                Q(per_run__icontains=q)
+            )
+
+        limit = request.query_params.get('limit', 1000)
+        try:
+            limit = int(limit)
+        except (ValueError, TypeError):
+            limit = 1000
+            
+        # Ejecutar query con el límite
+        data = queryset[:limit]
+        
+        results = []
+        for p in data:
+            results.append({
+                'id': p.per_id,
+                'nombre': f"{p.per_nombres} {p.per_apelpta} {p.per_apelmat or ''}".strip()
+            })
+        return Response({'results': results})
 
     @action(detail=False, methods=['get'])
     def search_acreditacion(self, request):

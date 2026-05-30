@@ -171,7 +171,9 @@
 					<div class="modal-content">
 						<div class="modal-header">
 							<h3>📧 Redactar Correo</h3>
-							<button class="modal-close" @click="closeEmailModal">×</button>
+							<button class="modal-close" @click="closeEmailModal">
+								<AppIcons name="x" :size="20" />
+							</button>
 						</div>
 						<div class="modal-body">
 							<div class="form-group">
@@ -518,7 +520,7 @@ const marcarButtonIcon = computed(() => {
 	const sel = rows.value.filter(r => r.selected)
 	if (!sel.length) return 'check'
 	const allSent = sel.every(t => Boolean(t.pecEnvioCorreoQR))
-	return allSent ? 'circle-x' : 'check'
+	return allSent ? 'x' : 'check'
 })
 
 function vigenteClass(row) { return row.vigente ? 'status-active' : 'status-inactive' }

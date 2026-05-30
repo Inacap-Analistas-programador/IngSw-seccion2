@@ -34,7 +34,7 @@
       <div class="header-content">
         <h2>Cursos</h2>
         <div class="header-actions-group">
-          <BaseButton class="header-icon-btn" variant="primary" @click="abrirModalCrear" title="Nuevo Curso">
+          <BaseButton v-if="can.ingresar" class="header-icon-btn" variant="primary" @click="abrirModalCrear" title="Nuevo Curso">
             <AppIcons name="plus" :size="20" />
             <span class="btn-label-desktop">Nuevo</span>
           </BaseButton>
@@ -57,6 +57,8 @@
       :getCargoName="getCargoName"
       :getEstadoClass="getEstadoClass"
       :getEstadoText="getEstadoText"
+      :can-edit="can.modificar"
+      :can-change-status="can.modificar"
       @ver="abrirModalVer"
       @editar="abrirModalEditar"
       @cambioEstado="abrirModalCambioEstadoCurso"
@@ -130,6 +132,8 @@ import CursoFilters from '@/components/cursos/CursoFilters.vue'
 import CursoTable from '@/components/cursos/CursoTable.vue'
 import CursoForm from '@/components/cursos/CursoForm.vue'
 
+import { usePermissions } from '@/composables/usePermissions'
+
 // Local aliases matching legacy names used across this component
 const cursosApi = cursosService.cursos
 const seccionesApi = cursosService.secciones
@@ -146,6 +150,9 @@ import PageHeader from '@/components/common/PageHeader.vue'
 import AppIcons from '@/components/icons/AppIcons.vue'
 import NotificationToast from '@/components/NotificationToast.vue'
 import { comunasCoords } from '@/data/comunasChile.js'
+
+// --- Permisos ---
+const { can } = usePermissions('Cursos')
 
 // --- Constantes Estáticas ---
 const opcionesEstado = [
@@ -564,12 +571,12 @@ async function preloadCatalogosMin() {
 // watch(() => filtros.value.searchQuery, (v) => { ... })
 
 // Listener de almacenamiento (multi-tab / login en otra pestaña)
+const TOKEN_KEYS_CURSOS = ['auth_token', 'token', 'accessToken']
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', (e) => {
-    if (e.key === 'token' || e.key === 'accessToken') {
-      const t = localStorage.getItem('accessToken') || localStorage.getItem('token')
+    if (TOKEN_KEYS_CURSOS.includes(e.key)) {
+      const t = localStorage.getItem('auth_token') || localStorage.getItem('accessToken') || localStorage.getItem('token')
       if (t && cursosList.value.length === 0) {
-        console.info('[CRUDcursos] Detectado cambio de token vía storage event. Cargando datos...')
         cargarDatos()
       }
     }

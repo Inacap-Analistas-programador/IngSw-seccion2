@@ -20,8 +20,8 @@
         </div>
         <Transition name="submenu-slide">
           <div v-if="access.usuarios || access.perfiles" v-show="showUsuarios" class="submenu">
-            <router-link v-if="access.usuarios" to="/usuarios" class="submenu-item"><span class="submenu-icon"><AppIcons name="user" :size="16" /></span>Usuarios</router-link>
-            <router-link v-if="access.perfiles" to="/roles" class="submenu-item"><span class="submenu-icon"><AppIcons name="lock" :size="16" /></span>Perfiles</router-link>
+            <router-link v-if="access.usuarios" to="/usuarios-perfiles/usuarios" class="submenu-item"><span class="submenu-icon"><AppIcons name="user" :size="16" /></span>Usuarios</router-link>
+            <router-link v-if="access.perfiles" to="/usuarios-perfiles/perfiles" class="submenu-item"><span class="submenu-icon"><AppIcons name="lock" :size="16" /></span>Perfiles</router-link>
           </div>
         </Transition>
 
@@ -37,10 +37,19 @@
           <span class="nav-icon"><AppIcons name="users" :size="20" /></span>
           <span class="nav-text">Gestión de Personas</span>
         </router-link>
-        <router-link v-if="access.pagos" to="/pagos" class="nav-item">
+        <!-- Apartado desplegable: Pagos -->
+        <div v-if="access.pagos" class="nav-item nav-collapsible" @click="togglePagos" :class="{ 'router-link-exact-active': showPagos }">
           <span class="nav-icon"><AppIcons name="credit-card" :size="20" /></span>
-          <span class="nav-text">Pagos</span>
-        </router-link>
+          <span class="nav-collapsible-title">Pagos</span>
+          <span class="caret" :class="{ open: showPagos }">▾</span>
+        </div>
+        <Transition name="submenu-slide">
+          <div v-if="access.pagos" v-show="showPagos" class="submenu">
+            <router-link to="/pagos/registro" class="submenu-item"><span class="submenu-icon"><AppIcons name="add" :size="16" /></span>Registro de pago</router-link>
+            <router-link to="/pagos/historial" class="submenu-item"><span class="submenu-icon"><AppIcons name="clock" :size="16" /></span>Historial de pago</router-link>
+            <router-link to="/pagos/comprobantes" class="submenu-item"><span class="submenu-icon"><AppIcons name="file-text" :size="16" /></span>Comprobantes</router-link>
+          </div>
+        </Transition>
         <router-link v-if="access.correos" to="/correos" class="nav-item">
           <span class="nav-icon"><AppIcons name="mail" :size="20" /></span>
           <span class="nav-text">Envío de Correos</span>
@@ -79,136 +88,47 @@
 </template>
 
 <script setup>
-import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue';
-import { useRoute } from 'vue-router';
-import authService from '../services/authService';
-import AppIcons from './icons/AppIcons.vue';
+import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useRoute } from 'vue-router'
+import AppIcons from './icons/AppIcons.vue'
+import { useSidebarAccess } from '@/composables/useSidebarAccess'
 
-// Estado del usuario actual
-const currentUser = ref(null)
-const userRole = computed(() => currentUser.value?.role || '')
+const { access, updateAccess } = useSidebarAccess()
 
-// Fallback para administradores si falla la carga de permisos granulares
-const isAdmin = computed(() => {
-  const r = (userRole.value || '').toLowerCase()
-  return r.includes('admin') || r.includes('sistema')
-})
 
-// Permisos dinámicos
-const access = ref({
-  usuarios: false,
-  perfiles: false,
-  cursos: false,
-  personas: false,
-  pagos: false,
-  correos: false,
-  mantenedores: false,
-  acreditacionManual: false,
-  verificadorQR: false
-})
-
-// Cargar usuario al montar
-onMounted(async () => {
-  isLoggedIn.value = hasToken()
-  loadCollapsedState()
-  
-  if (isLoggedIn.value) {
-    currentUser.value = await authService.getCurrentUser()
-    updatePermissions()
-  }
-})
-
-function updatePermissions() {
-  const user = currentUser.value
-  // Si es admin, dar acceso total por defecto (fallback)
-  const adminOverride = isAdmin.value
-
-  if (user && user.payload && user.payload.aplicaciones) {
-    const apps = user.payload.aplicaciones
-    const check = (name) => {
-      const app = apps.find(a => {
-        const appName = a.apl_descripcion || a.APL_DESCRIPCION || ''
-        return appName.toLowerCase() === name.toLowerCase()
-      })
-      if (!app) return false
-      // Check permissions object
-      if (app.permisos) {
-        if (app.permisos.pea_consultar === true) return true
-        if (app.permisos.PEA_CONSULTAR === true) return true
-      }
-      return false
-    }
-    
-    access.value.usuarios = check('Usuarios') || adminOverride
-    access.value.perfiles = check('Perfiles') || adminOverride
-    access.value.cursos = check('Cursos') || adminOverride
-    access.value.personas = check('Personas') || adminOverride
-    access.value.pagos = check('Pagos') || adminOverride
-    access.value.correos = check('Correos') || adminOverride
-    access.value.mantenedores = check('Mantenedores') || adminOverride
-    access.value.acreditacionManual = check('AcreditacionManual') || adminOverride
-    access.value.verificadorQR = check('VerificadorQR') || adminOverride
-  } else {
-    // Si no hay info de aplicaciones pero es admin, habilitar todo
-    if (adminOverride) {
-      Object.keys(access.value).forEach(k => access.value[k] = true)
-    } else {
-      Object.keys(access.value).forEach(k => access.value[k] = false)
-    }
-  }
-}
-
-// isLoggedIn: derivado del token en localStorage para reflejar estado real de autenticación
-const STORAGE_TOKEN_KEYS = ['token', 'accessToken']
+// isLoggedIn: derivado del token en localStorage
+const TOKEN_KEYS = ['auth_token', 'token', 'accessToken']
 function hasToken() {
-  try {
-    return STORAGE_TOKEN_KEYS.some((k) => !!localStorage.getItem(k))
-  } catch {
-    return false
-  }
+  try { return TOKEN_KEYS.some(k => !!localStorage.getItem(k)) } catch { return false }
 }
 
 const isLoggedIn = ref(hasToken())
 
-// Escuchar cambios en localStorage (otras pestañas o logout/login) para mantener sincronizado
+// Escuchar cambios en localStorage (otras pestañas o logout/login)
 function onStorage(e) {
-  // `storage` events include a `key`; custom events may call this handler
-  if (!e) return
-  if (e.key && STORAGE_TOKEN_KEYS.includes(e.key)) {
-    // Recalcular por si cambia una u otra clave
-    isLoggedIn.value = hasToken()
-    if (isLoggedIn.value) {
-      authService.getCurrentUser().then(u => {
-        currentUser.value = u
-        updatePermissions()
-      })
-    } else {
-      currentUser.value = null
-      updatePermissions()
-    }
-  }
+  if (!e?.key || !TOKEN_KEYS.includes(e.key)) return
+  isLoggedIn.value = hasToken()
+  if (isLoggedIn.value) updateAccess()
+  else access.value = Object.fromEntries(Object.keys(access.value).map(k => [k, false]))
 }
 
-// Handler para cambios de auth dentro de la MISMA pestaña (evento custom)
+// Handler para cambios de auth dentro de la MISMA pestaña
 function handleAuthChanged() {
   isLoggedIn.value = hasToken()
-  if (isLoggedIn.value) {
-    authService.getCurrentUser().then(u => {
-      currentUser.value = u
-      updatePermissions()
-    })
-  } else {
-    currentUser.value = null
-    updatePermissions()
-  }
+  if (isLoggedIn.value) updateAccess()
+  else access.value = Object.fromEntries(Object.keys(access.value).map(k => [k, false]))
 }
 
-// Desplegable de Mantenedores
+// Desplegables
 const showUsuarios = ref(false)
-
+const showPagos = ref(false)
 
 function toggleUsuarios() {
   showUsuarios.value = !showUsuarios.value
+}
+
+function togglePagos() {
+  showPagos.value = !showPagos.value
 }
 
 
@@ -254,29 +174,31 @@ onMounted(() => {
   
   if (typeof window !== 'undefined') {
     const route = useRoute()
-    // Abrir automáticamente si se navega a /mantenedores o /usuarios
+    // Abrir automáticamente si se navega a secciones con submenú
     if (route && route.path) {
-      showUsuarios.value = route.path.startsWith('/usuarios') || route.path.startsWith('/roles')
+      showUsuarios.value = route.path.startsWith('/usuarios-perfiles')
+      showPagos.value = route.path.startsWith('/pagos')
     }
 
     // Watch para actualizar estado al cambiar de ruta
     watch(() => route && route.path, async (p) => {
       if (p) {
-        showUsuarios.value = p.startsWith('/usuarios') || p.startsWith('/roles')
+        showUsuarios.value = p.startsWith('/usuarios-perfiles')
+        showPagos.value = p.startsWith('/pagos')
         // Auto-cerrar en móvil al navegar
         closeMobile()
       }
     })
     
-    // Registrar listener de storage para detectar login/logout en otras pestañas
-    window.addEventListener('storage', onStorage)
-    // También escuchar un evento custom para cambios de auth en la MISMA pestaña
-    window.addEventListener('auth-changed', handleAuthChanged)
-    // Registrar listener para abrier/cerrar sidebar en móviles
-    window.addEventListener('toggle-sidebar-mobile', toggleMobileHandler)
-    window.addEventListener('open-sidebar-mobile', openMobileHandler)
-    // Cerrar sidebar con tecla Escape
-    window.addEventListener('keydown', escHandler)
+  window.addEventListener('storage', onStorage)
+  window.addEventListener('auth-changed', handleAuthChanged)
+  window.addEventListener('toggle-sidebar-mobile', toggleMobileHandler)
+  window.addEventListener('open-sidebar-mobile', openMobileHandler)
+  window.addEventListener('keydown', escHandler)
+
+  isLoggedIn.value = hasToken()
+  loadCollapsedState()
+  if (isLoggedIn.value) updateAccess()
   }
 })
 
@@ -621,7 +543,8 @@ function escHandler(e) {
 }
 
 .submenu-item {
-  display: block;
+  display: flex;
+  align-items: center;
   color: rgba(255,255,255,0.95);
   text-decoration: none;
   padding: 10px 32px;

@@ -1,126 +1,162 @@
-const API_URL = (import.meta.env?.VITE_API_BASE || 'http://127.0.0.1:8000').replace(/\/api\/?$/, '');
+/**
+ * authService.js
+ * Responsabilidades: login, logout, sesión y decodificación de JWT.
+ * La verificación de permisos se delega a usePermissions() composable.
+ */
 
+const API_URL = (import.meta.env?.VITE_API_BASE || 'http://127.0.0.1:8000').replace(/\/api\/?$/, '')
+
+// ─── Claves de sesión (fuente de verdad única) ─────────────────────────────
+const TOKEN_KEY = 'auth_token'
+const REFRESH_KEY = 'auth_refresh'
+
+function setSession(access, refresh) {
+  localStorage.setItem(TOKEN_KEY, access)
+  if (refresh) localStorage.setItem(REFRESH_KEY, refresh)
+}
+
+function clearSession() {
+  localStorage.removeItem(TOKEN_KEY)
+  localStorage.removeItem(REFRESH_KEY)
+  // Limpiar claves legacy para evitar tokens huérfanos
+  localStorage.removeItem('accessToken')
+  localStorage.removeItem('refreshToken')
+  localStorage.removeItem('token')
+}
+
+function getToken() {
+  // Leer de clave nueva primero; si no existe, migrar desde clave legacy en caliente
+  const token = localStorage.getItem(TOKEN_KEY)
+  if (token) return token
+
+  const legacy = localStorage.getItem('accessToken') || localStorage.getItem('token')
+  if (legacy) {
+    // Migración silenciosa: escribir en la nueva clave
+    localStorage.setItem(TOKEN_KEY, legacy)
+  }
+  return legacy
+}
+
+// ─── Decode JWT ────────────────────────────────────────────────────────────
+function decodeJwtPayload(token) {
+  try {
+    const base64Url = token.split('.')[1]
+    if (!base64Url) return null
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+    const padded = base64.padEnd(base64.length + (4 - (base64.length % 4)) % 4, '=')
+    return JSON.parse(atob(padded))
+  } catch {
+    return null
+  }
+}
+
+// ─── API pública ───────────────────────────────────────────────────────────
 export default {
+  getToken,
+
   async login(username, password) {
     const response = await fetch(`${API_URL}/login/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      // Con AUTH_USER_MODEL=ApiCoreScouts.Usuario, el USERNAME_FIELD es 'USU_USERNAME'
-      // SimpleJWT usa get_user_model().USERNAME_FIELD, por lo que el backend espera 'USU_USERNAME'
-      body: JSON.stringify({ usu_username: username, password })
-    });
+      body: JSON.stringify({ username, password })
+    })
 
-    // Leer el body una sola vez
-    const text = await response.text(); // siempre funciona
-    let data;
-        try {
-      data = JSON.parse(text); // intenta parsear como JSON
+    const text = await response.text()
+    let data
+    try {
+      data = JSON.parse(text)
     } catch {
-      console.error('No JSON received:', text);
-      throw new Error('Respuesta inesperada del servidor');
+      throw new Error('Respuesta inesperada del servidor')
     }
 
     if (!response.ok) {
-      console.error('Login failed:', response.status, data);
-      throw new Error(data.detail || `Error al iniciar sesión (${response.status})`);
+      throw new Error(data.detail || `Error al iniciar sesión (${response.status})`)
     }
 
     if (data.access) {
-      // Guardar con dos claves para compatibilidad con el resto del frontend
-      localStorage.setItem('accessToken', data.access);
-      localStorage.setItem('refreshToken', data.refresh);
-      localStorage.setItem('token', data.access);
+      setSession(data.access, data.refresh)
     }
 
-    return data;
+    return data
   },
 
   logout() {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('token');
+    clearSession()
   },
 
+  /** Alias de getToken para compatibilidad con apiClient.js */
   getAccessToken() {
-    return localStorage.getItem('accessToken') || localStorage.getItem('token');
+    return getToken()
   },
 
-  // Función temporal que devuelve datos básicos del usuario
-  // TODO: reemplazar con llamada real al backend cuando esté disponible
+  /**
+   * Decodifica el JWT actual y devuelve datos del usuario.
+   * Opera completamente en memoria (sin llamadas de red).
+   */
   async getCurrentUser() {
-    const token = this.getAccessToken();
-    if (!token) return null;
+    const token = getToken()
+    if (!token) return null
 
+    const payload = decodeJwtPayload(token)
+    if (!payload) return null
+
+    const id = payload.usu_id || payload.user_id || payload.id || null
+    const username = payload.usu_username || payload.username || payload.sub || null
+    const name = payload.name || username || 'Usuario'
+    const avatarUrl = payload.usu_ruta_foto || payload.USU_RUTA_FOTO || null
+
+    let role = 'Invitado'
+    if (payload.perfil?.pel_descripcion) role = payload.perfil.pel_descripcion
+    else if (payload.perfil?.PEL_DESCRIPCION) role = payload.perfil.PEL_DESCRIPCION
+
+    // is_admin: solo se confía en el claim is_superuser emitido por Django.
+    // NO se usa el nombre del rol para evitar escalada de privilegios por nombre de perfil.
+    const isAdmin = payload.is_superuser === true
+
+    return { id, username, name, role, isAdmin, avatarUrl, payload }
+  },
+
+  /**
+   * Verifica si el usuario tiene un permiso específico para un módulo.
+   * Admite el alias 'Mantenedores' para cualquier módulo 'Mantenedor - *'.
+   */
+  async hasPermission(moduleName, action = 'consultar') {
     try {
-      // Decodificar payload JWT (base64url)
-      const parts = token.split('.');
-      if (parts.length < 2) return null;
-      const payloadB64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-      const padded = payloadB64.padEnd(payloadB64.length + (4 - (payloadB64.length % 4)) % 4, '=');
-      const json = atob(padded);
-      const payload = JSON.parse(json);
+      const user = await this.getCurrentUser()
+      if (!user) return false
 
-      // Preferir claims personalizados del backend (usu_id, usu_username)
-      const id = payload.usu_id || payload.user_id || payload.id || null;
-      const username = payload.usu_username || payload.username || payload.sub || null;
-      const name = payload.name || username || 'Usuario';
-      
-      // Map role from token payload if backend includes 'perfil'
-      // Backend sends 'perfil': { 'pel_id': ..., 'pel_descripcion': ... }
-      let role = 'Invitado';
-      if (payload.perfil && payload.perfil.pel_descripcion) {
-        role = payload.perfil.pel_descripcion;
-      } else if (payload.perfil && payload.perfil.PEL_DESCRIPCION) {
-        role = payload.perfil.PEL_DESCRIPCION;
+      // Administradores: acceso total
+      if (user.isAdmin) return true
+
+      const normalizedModule = String(moduleName).trim().toLowerCase()
+
+      // Dashboard: acceso público para usuarios autenticados
+      if (normalizedModule === 'dashboard') return true
+
+      const apps = user.payload?.aplicaciones
+      if (!apps?.length) return false
+
+      const permKey = `pea_${String(action).trim().toLowerCase()}`
+
+      // Alias especial: "Mantenedores" = acceso a cualquier sub-módulo Mantenedor
+      if (normalizedModule === 'mantenedores') {
+        return apps.some(a => {
+          const name = a.apl_descripcion || a.APL_DESCRIPCION || ''
+          return name.startsWith('Mantenedor - ') &&
+            a.permisos?.pea_consultar === true
+        })
       }
 
-      // avatar may not be included in token; prefer usu_ruta_foto if present
-      const avatarUrl = payload.usu_ruta_foto || payload.USU_RUTA_FOTO || payload.avatarUrl || null;
+      const app = apps.find(a => {
+        const name = a.apl_descripcion || a.APL_DESCRIPCION || ''
+        return name.toLowerCase() === normalizedModule
+      })
 
-      return {
-        id,
-        username,
-        name,
-        role,
-        avatarUrl,
-        payload
-      };
-    } catch (e) {
-      console.warn('No se pudo decodificar token JWT en getCurrentUser:', e);
-      return null;
+      if (!app?.permisos) return false
+
+      return app.permisos[permKey] === true || app.permisos[permKey.toUpperCase()] === true
+    } catch {
+      return false
     }
-  },
-
-  async hasPermission(moduleName, action = 'consultar') {
-    const user = await this.getCurrentUser();
-    if (!user) return false;
-
-    // Admin bypass: permitir todo a administradores
-    const role = (user.role || '').toLowerCase();
-    if (role.includes('admin') || role.includes('sistema')) {
-      return true;
-    }
-
-    if (!user.payload || !user.payload.aplicaciones) return false;
-    
-    // Normalize
-    const targetModule = String(moduleName).trim().toLowerCase();
-    const targetAction = `pea_${String(action).trim().toLowerCase()}`; // pea_consultar, pea_ingresar, etc.
-    
-    const app = user.payload.aplicaciones.find(a => {
-      const name = a.apl_descripcion || a.APL_DESCRIPCION || '';
-      return name.toLowerCase() === targetModule;
-    });
-    
-    if (!app) return false;
-    
-    // Check permissions object
-    if (app.permisos) {
-      if (app.permisos[targetAction] === true) return true;
-      // Fallback for uppercase keys
-      if (app.permisos[targetAction.toUpperCase()] === true) return true;
-    }
-    
-    return false;
   }
-};
+}

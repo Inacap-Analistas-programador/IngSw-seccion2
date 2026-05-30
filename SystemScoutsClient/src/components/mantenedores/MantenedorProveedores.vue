@@ -54,13 +54,13 @@
                 <BaseButton variant="secondary" class="btn-action" @click="verElemento(item)">
                   <AppIcons name="eye" :size="16" /> Ver
                 </BaseButton>
-                <BaseButton variant="secondary" class="btn-action" @click="editarElemento(item)">
+                <BaseButton v-if="can.modificar" variant="secondary" class="btn-action" @click="editarElemento(item)">
                   <AppIcons name="edit" :size="16" /> Editar
                 </BaseButton>
-                <BaseButton v-if="item.vigente" variant="secondary" class="btn-action" @click="confirmarAccion(item, 'anular')">
+                <BaseButton v-if="item.vigente && can.eliminar" variant="secondary" class="btn-action" @click="confirmarAccion(item, 'anular')">
                   <AppIcons name="block" :size="16" /> Anular
                 </BaseButton>
-                <BaseButton v-else variant="primary" class="btn-action" @click="confirmarAccion(item, 'activar')">
+                <BaseButton v-else-if="!item.vigente && can.eliminar" variant="primary" class="btn-action" @click="confirmarAccion(item, 'activar')">
                   <AppIcons name="check" :size="16" /> Activar
                 </BaseButton>
               </td>
@@ -212,6 +212,9 @@ export default {
   components: { BaseButton, AppIcons, ModernMainScrollbar },
   emits: ['show-message', 'confirm-action'],
   expose: ['abrirModalCrear'], // Options API expose
+  props: {
+    can: { type: Object, default: () => ({ modificar: true, eliminar: true }) }
+  },
   
   setup(props, { emit }) {
     const items = ref([])

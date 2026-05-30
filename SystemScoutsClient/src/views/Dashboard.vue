@@ -39,7 +39,8 @@
       <!-- Tarjetas de Estadísticas (Solo visibles si hay curso seleccionado) -->
       <div v-if="!cursoSeleccionado" class="no-selection-placeholder">
         <div class="placeholder-content">
-          <h3>👈 Por favor, seleccione un curso</h3>
+          <AppIcons name="bar-chart" :size="40" class="placeholder-icon" />
+          <h3>Seleccione un curso</h3>
           <p>Para visualizar el dashboard, debe seleccionar un curso del listado.</p>
         </div>
       </div>
@@ -258,7 +259,8 @@ import DataCard from '@/components/DataCard.vue'
 import BaseButton from '@/components/BaseButton.vue'
 
 // CORREGIDO: Importación correcta de servicios
-import dashboardService_2 from '@/services/dashboardService_2'
+import dashboardService from '@/services/dashboardService'
+
 
 // Otros componentes
 import BaseModal from '@/components/BaseModal.vue'
@@ -498,13 +500,11 @@ export default {
         
         // Cargar cursos con manejo de error específico
         try {
-          let cursosData = await dashboardService_2.cursos.list()
+          let cursosData = await dashboardService.cursos.list()
           if (cursosData.results) cursosData = cursosData.results
           if (cursosData && Array.isArray(cursosData)) {
             cursos.value = cursosData
-            console.log(`✓ Cursos cargados: ${cursosData.length}`)
           } else {
-            console.warn('Respuesta de cursos no es un array:', cursosData)
             cursos.value = []
           }
         } catch (e) {
@@ -514,11 +514,10 @@ export default {
         
         // Cargar personas
         try {
-          let personasData = await dashboardService_2.personas.list()
+          let personasData = await dashboardService.personas.list()
           if (personasData.results) personasData = personasData.results
           if (personasData && Array.isArray(personasData)) {
             personas.value = personasData
-            console.log(`✓ Personas cargadas: ${personasData.length}`)
           }
         } catch (e) {
           console.warn('Error cargando personas:', e.message)
@@ -526,11 +525,10 @@ export default {
         
         // Cargar inscripciones
         try {
-          let personasCursoData = await dashboardService_2.personaCursos.list()
+          let personasCursoData = await dashboardService.personaCursos.list()
           if (personasCursoData.results) personasCursoData = personasCursoData.results
           if (personasCursoData && Array.isArray(personasCursoData)) {
             personasCurso.value = personasCursoData
-            console.log(`✓ Inscripciones cargadas: ${personasCursoData.length}`)
           }
         } catch (e) {
           console.warn('Error cargando inscripciones:', e.message)
@@ -538,25 +536,22 @@ export default {
         
         // Cargar pagos con manejo de error 404
         try {
-          let pagosData = await dashboardService_2.pagoPersona.list()
+          let pagosData = await dashboardService.pagoPersona.list()
           if (pagosData.results) pagosData = pagosData.results
           if (pagosData && Array.isArray(pagosData)) {
             pagosPersona.value = pagosData
-            console.log(`✓ Pagos cargados: ${pagosData.length}`)
           }
         } catch (e) {
           console.warn('Error cargando pagos (puede ser ruta no implementada):', e.message)
-          // Inicializar array vacío para evitar errores
           pagosPersona.value = []
         }
         
         // Cargar coordinadores
         try {
-          let coordinadoresData = await dashboardService_2.coordinadores.list()
+          let coordinadoresData = await dashboardService.coordinadores.list()
           if (coordinadoresData.results) coordinadoresData = coordinadoresData.results
           if (coordinadoresData && Array.isArray(coordinadoresData)) {
             cursoCoordinadores.value = coordinadoresData
-            console.log(`✓ Coordinadores cargados: ${coordinadoresData.length}`)
           }
         } catch (e) {
           console.warn('Error cargando coordinadores:', e.message)
@@ -564,12 +559,12 @@ export default {
         
         // Cargar formadores
         try {
-          let formadoresData = await dashboardService_2.formadores.list()
+          let formadoresData = await dashboardService.formadores.list()
           if (formadoresData.results) formadoresData = formadoresData.results
           if (formadoresData && Array.isArray(formadoresData)) {
             cursoFormadores.value = formadoresData
-            console.log(`✓ Formadores cargados: ${formadoresData.length}`)
           }
+
         } catch (e) {
           console.warn('Error cargando formadores:', e.message)
         }
@@ -766,6 +761,12 @@ export default {
   align-items: center;
   gap: 24px;
   flex-wrap: wrap;
+}
+
+.placeholder-icon {
+  color: #2c5aa0;
+  opacity: 0.45;
+  margin-bottom: 12px;
 }
 
 .native-select-wrapper {

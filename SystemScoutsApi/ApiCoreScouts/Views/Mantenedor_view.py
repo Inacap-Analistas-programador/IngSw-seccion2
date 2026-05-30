@@ -22,12 +22,11 @@ BASE_ACTION_PERMISSIONS = {
 class ConceptoViewSet(viewsets.ModelViewSet):
     queryset = Concepto_Contable.objects.all()
     serializer_class = MP_S.ConceptoContableSerializer
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [PerfilPermission]
+    authentication_classes = []
+    permission_classes = [AllowAny]
     filter_backends = [DjangoFilterBackend]
     filterset_class = MP_F.ConceptoContableFilter
     APP_NAME = "Mantenedores"
-    ACTION_PERMISSIONS = BASE_ACTION_PERMISSIONS
 
 class RolViewSet(viewsets.ModelViewSet):
     queryset = Rol.objects.all()
@@ -48,12 +47,11 @@ class RolViewSet(viewsets.ModelViewSet):
 class CargoViewSet(viewsets.ModelViewSet):
     queryset = Cargo.objects.all()
     serializer_class = MP_S.CargoSerializer
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [PerfilPermission]
+    authentication_classes = []
+    permission_classes = [AllowAny]
     filter_backends = [DjangoFilterBackend]
     filterset_class = MP_F.CargoFilter
     APP_NAME = "Mantenedores"
-    ACTION_PERMISSIONS = BASE_ACTION_PERMISSIONS
 
 class RamaViewSet(viewsets.ModelViewSet):
     queryset = Rama.objects.all()
@@ -98,6 +96,13 @@ class ZonaViewSet(viewsets.ModelViewSet):
     filterset_class = MP_F.ZonaFilter
     APP_NAME = "Mantenedores"
 
+    @action(detail=False, methods=['get'])
+    def min(self, request):
+        queryset = self.filter_queryset(self.get_queryset())
+        data = queryset.values('zon_id', 'zon_descripcion')
+        results = [{'id': item['zon_id'], 'nombre': item['zon_descripcion']} for item in data]
+        return Response({'results': results})
+
 class DistritoViewSet(viewsets.ModelViewSet):
     queryset = Distrito.objects.all()
     serializer_class = MP_S.DistritoSerializer
@@ -106,6 +111,13 @@ class DistritoViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_class = MP_F.DistritoFilter
     APP_NAME = "Mantenedores"
+
+    @action(detail=False, methods=['get'])
+    def min(self, request):
+        queryset = self.filter_queryset(self.get_queryset())
+        data = queryset.values('dis_id', 'dis_descripcion')
+        results = [{'id': item['dis_id'], 'nombre': item['dis_descripcion']} for item in data]
+        return Response({'results': results})
 
 class GrupoViewSet(viewsets.ModelViewSet):
     queryset = Grupo.objects.all()
@@ -132,6 +144,13 @@ class RegionViewSet(viewsets.ModelViewSet):
     filterset_class = MP_F.RegionFilter
     APP_NAME = "Mantenedores"
 
+    @action(detail=False, methods=['get'])
+    def min(self, request):
+        queryset = self.filter_queryset(self.get_queryset())
+        data = queryset.values('reg_id', 'reg_descripcion')
+        results = [{'id': item['reg_id'], 'nombre': item['reg_descripcion']} for item in data]
+        return Response({'results': results})
+
 class ProvinciaViewSet(viewsets.ModelViewSet):
     queryset = Provincia.objects.all()
     serializer_class = MP_S.ProvinciaSerializer
@@ -140,6 +159,13 @@ class ProvinciaViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_class = MP_F.ProvinciaFilter
     APP_NAME = "Mantenedores"
+
+    @action(detail=False, methods=['get'])
+    def min(self, request):
+        queryset = self.filter_queryset(self.get_queryset())
+        data = queryset.values('pro_id', 'pro_descripcion')
+        results = [{'id': item['pro_id'], 'nombre': item['pro_descripcion']} for item in data]
+        return Response({'results': results})
 
 class ComunaViewSet(viewsets.ModelViewSet):
     queryset = Comuna.objects.all()
@@ -162,12 +188,12 @@ class TipoCursoViewSet(viewsets.ModelViewSet):
 class TipoArchivoViewSet(viewsets.ModelViewSet):
     queryset = Tipo_Archivo.objects.all()
     serializer_class = MP_S.TipoArchivoSerializer
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [PerfilPermission]
+    authentication_classes = []
+    permission_classes = [AllowAny]
     filter_backends = [DjangoFilterBackend]
     filterset_class = MP_F.TipoArchivoFilter
     APP_NAME = "Mantenedores"
-    ACTION_PERMISSIONS = BASE_ACTION_PERMISSIONS
+
 
 class AlimentacionViewSet(viewsets.ModelViewSet):
     queryset = Alimentacion.objects.all()

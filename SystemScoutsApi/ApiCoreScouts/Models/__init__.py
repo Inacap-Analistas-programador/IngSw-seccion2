@@ -4,3 +4,4 @@ from .mantenedor_model import *
 from .persona_model import *
 from .usuario_model import *
 from .pago_model import *
+from .perfil_ambito_model import *

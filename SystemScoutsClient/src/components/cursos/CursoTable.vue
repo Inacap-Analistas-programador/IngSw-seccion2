@@ -36,10 +36,11 @@
               <button class="action-btn btn-view" title="Ver" @click="$emit('ver', c)">
                 <AppIcons name="eye" :size="16" />
               </button>
-              <button class="action-btn btn-edit" title="Editar" @click="$emit('editar', c)">
+              <button v-if="canEdit" class="action-btn btn-edit" title="Editar" @click="$emit('editar', c)">
                 <AppIcons name="edit" :size="16" />
               </button>
               <button 
+                v-if="canChangeStatus"
                 class="action-btn" 
                 :class="c.CUR_ESTADO == 1 ? 'btn-delete' : 'btn-activate'"
                 :title="c.CUR_ESTADO == 1 ? 'Anular' : 'Activar (Vigente)'" 
@@ -84,7 +85,9 @@ defineProps({
   getPersonaName: Function,
   getCargoName: Function,
   getEstadoClass: Function,
-  getEstadoText: Function
+  getEstadoText: Function,
+  canEdit: { type: Boolean, default: true },
+  canChangeStatus: { type: Boolean, default: true }
 })
 
 defineEmits(['ver', 'editar', 'cambioEstado', 'dashboard'])
@@ -95,7 +98,7 @@ defineEmits(['ver', 'editar', 'cambioEstado', 'dashboard'])
 .table-container { flex: 1; overflow: hidden; border-radius: 8px; }
 
 .data-table { width: 100%; min-width: 800px; border-collapse: collapse; }
-.data-table th, .data-table td { padding: 12px 15px; text-align: center; border-bottom: 1px solid #f0f0f0; }
+.data-table th, .data-table td { padding: 4px 15px; text-align: center; border-bottom: 1px solid #f0f0f0; }
 .data-table th { background-color: #f8f9fa; color: #333; font-weight: 600; position: sticky; top: 0; z-index: 10; font-size: 0.85rem; text-transform: uppercase; }
 
 .text-left {

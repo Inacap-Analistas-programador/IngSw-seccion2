@@ -47,10 +47,11 @@
                   <button class="action-btn btn-view" @click="verElemento(item)" title="Ver detalle">
                     <AppIcons name="eye" :size="16" />
                   </button>
-                  <button class="action-btn btn-edit" @click="editarElemento(item)" title="Editar">
+                  <button v-if="can.modificar" class="action-btn btn-edit" @click="editarElemento(item)" title="Editar">
                     <AppIcons name="edit" :size="16" />
                   </button>
                   <button 
+                    v-if="can.eliminar"
                     class="action-btn" 
                     :class="item.vigente ? 'btn-delete' : 'btn-activate'"
                     @click="item.vigente ? confirmarAnular(item) : confirmarActivar(item)"
@@ -79,19 +80,33 @@
         <div class="modal-body">
           <form @submit.prevent="guardar">
             <div class="form-group">
-              <label class="form-label">PROVINCIA:</label>
-              <select class="form-control" v-model="form.provincia_id" required>
-                <option :value="null" disabled>SELECCIONE PROVINCIA</option>
-                <option v-for="prov in provinciasActivas" :key="prov.id" :value="prov.id">
-                  {{ prov.descripcion }}
+              <label class="form-label">DESCRIPCIÓN:</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                v-model="form.descripcion"
+                @input="form.descripcion = form.descripcion.toUpperCase()"
+                placeholder="EJ: Arica"
+                required
+              >
+            </div>
+            <div class="form-group">
+              <label class="form-label">REGIÓN (Filtro):</label>
+              <select class="form-control" v-model="form.region_id">
+                <option :value="null">SELECCIONE REGIÓN</option>
+                <option v-for="region in regionesActivas" :key="region.id" :value="region.id">
+                  {{ region.descripcion }}
                 </option>
               </select>
             </div>
             <div class="form-group">
-              <label class="form-label">DESCRIPCIÓN:</label>
-              <input type="text" class="form-control" v-model="form.descripcion"
-                @input="form.descripcion = form.descripcion.toUpperCase()"
-                placeholder="EJ: SANTIAGO" required>
+              <label class="form-label">PROVINCIA:</label>
+              <select class="form-control" v-model="form.provincia_id" :disabled="!form.region_id" required>
+                <option :value="null" disabled>SELECCIONE PROVINCIA</option>
+                <option v-for="provincia in provinciasActivas" :key="provincia.id" :value="provincia.id">
+                  {{ provincia.descripcion }}
+                </option>
+              </select>
             </div>
             <div class="form-actions">
               <BaseButton variant="secondary" @click="cerrarModal">
@@ -166,10 +181,14 @@ import FilterSelect from '@/components/common/FilterSelect.vue'
 import SearchBar from '@/components/common/SearchBar.vue'
 
 const emit = defineEmits(['confirm-action'])
+const props = defineProps({
+  can: { type: Object, default: () => ({ modificar: true, eliminar: true }) }
+})
 defineExpose({ abrirModalCrear })
 
 const comunas = ref([])
 const provincias = ref([])
+const regiones = ref([])
 const items = ref([])
 const search = ref('')
 const tempSearch = ref('')
@@ -191,7 +210,7 @@ const showToast = (message, icon = 'check') => {
 
 const modalVisible = ref(false)
 const editando = ref(false)
-const form = reactive({ id: null, descripcion: '', provincia_id: null, vigente: true })
+const form = reactive({ id: null, descripcion: '', region_id: null, provincia_id: null, vigente: true })
 const viewModalVisible = ref(false)
 const itemSeleccionado = ref(null)
 
@@ -349,7 +368,11 @@ onMounted(() => { cargarDatos() })
 }
 .table-container { flex: 1; overflow: hidden; border: 1px solid #eee; border-radius: 8px; }
 .data-table { width: 100%; border-collapse: collapse; }
-.data-table th, .data-table td { padding: 12px 15px; text-align: center; border-bottom: 1px solid #f0f0f0; }
+.data-table th, .data-table td {
+  padding: 4px 15px;
+  text-align: center;
+  border-bottom: 1px solid #f0f0f0;
+}
 .data-table th { background-color: #f8f9fa; color: #333; font-weight: 600; position: sticky; top: 0; z-index: 10; }
 .status-badge { padding: 4px 8px; border-radius: 12px; font-size: 0.85rem; font-weight: 500; }
 .status-active { background-color: #e8f5e9; color: #2e7d32; }

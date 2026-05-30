@@ -39,11 +39,11 @@
       <div class="header-content">
         <h2>Personas</h2>
         <div class="header-actions-group">
-          <BaseButton class="header-icon-btn" variant="primary" @click="handleCreateClick" title="Nueva Persona">
+          <BaseButton v-if="can.ingresar" class="header-icon-btn" variant="primary" @click="handleCreateClick" title="Nueva Persona">
             <AppIcons name="plus" :size="20" />
             <span class="btn-label-desktop">Nuevo</span>
           </BaseButton>
-          <BaseButton class="header-icon-btn" variant="secondary" @click="modals.import = true" title="Importar Excel">
+          <BaseButton v-if="can.ingresar" class="header-icon-btn" variant="secondary" @click="modals.import = true" title="Importar Excel">
             <AppIcons name="upload" :size="20" />
             <span class="btn-label-desktop">Importar</span>
           </BaseButton>
@@ -62,8 +62,8 @@
         <PersonaTable 
           :personas="filteredPersonas" 
           :hasSearched="state.hasSearched"
-          :can-edit="true"
-          :can-delete="true"
+          :can-edit="can.modificar"
+          :can-delete="can.eliminar"
           @view="(p) => abrirModalPersona(p, true)"
           @edit="(p) => abrirModalPersona(p, false)"
           @deactivate="confirmarAnulacion"
@@ -177,6 +177,8 @@ import PersonaTable from '@/components/personas/PersonaTable.vue'
 import PersonaForm from '@/components/personas/PersonaForm.vue'
 import PersonaModals from '@/components/personas/PersonaModals.vue'
 
+import { usePermissions } from '@/composables/usePermissions'
+
 import personasService from '@/services/personasService.js'
 import mantenedoresService from '@/services/mantenedoresService.js'
 import { toUpperKeys } from '@/utils/formatters'
@@ -188,6 +190,9 @@ export default {
     PersonaFilters, PersonaTable, PersonaForm, PersonaModals 
   },
   setup() {
+    // Permisos
+    const { can } = usePermissions('Personas')
+
     // State
     const loading = ref(false)
     const guardando = ref(false)
@@ -596,7 +601,8 @@ export default {
       confirmModal, confirmLoading, cancelarConfirmacion, confirmarConfirmacion,
       exportarExcel, copyEmails, procesarExcel, importarPersonas, exportarPlantilla, navToCourse,
       removerAlerta, mostrarAlerta, state, cargarPersonas,
-      personaExistente, confirmarEdicionExistente, cancelarEdicionExistente
+      personaExistente, confirmarEdicionExistente, cancelarEdicionExistente,
+      can
     }
   }
 }

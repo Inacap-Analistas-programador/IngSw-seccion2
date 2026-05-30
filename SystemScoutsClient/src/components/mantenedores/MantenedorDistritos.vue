@@ -47,10 +47,11 @@
                   <button class="action-btn btn-view" @click="verDistrito(distrito)" title="Ver detalle">
                     <AppIcons name="eye" :size="16" />
                   </button>
-                  <button class="action-btn btn-edit" @click="editarDistrito(distrito)" title="Editar">
+                  <button v-if="can.modificar" class="action-btn btn-edit" @click="editarDistrito(distrito)" title="Editar">
                     <AppIcons name="edit" :size="16" />
                   </button>
                   <button 
+                    v-if="can.eliminar"
                     class="action-btn" 
                     :class="distrito.vigente ? 'btn-delete' : 'btn-activate'"
                     @click="distrito.vigente ? confirmarAnular(distrito) : confirmarActivar(distrito)"
@@ -168,6 +169,9 @@ import FilterSelect from '@/components/common/FilterSelect.vue'
 import SearchBar from '@/components/common/SearchBar.vue'
 
 const emit = defineEmits(['show-message', 'confirm-action'])
+const props = defineProps({
+  can: { type: Object, default: () => ({ modificar: true, eliminar: true }) }
+})
 defineExpose({ abrirModalCrear })
 
 
@@ -515,7 +519,7 @@ onMounted(() => {
 }
 
 .data-table th, .data-table td {
-  padding: 12px 15px;
+  padding: 4px 15px;
   text-align: center;
   border-bottom: 1px solid #f0f0f0;
 }

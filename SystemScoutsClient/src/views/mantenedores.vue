@@ -26,7 +26,7 @@
           <div class="dropdown-icon" :class="{ 'rotate': isDropdownOpen }">▼</div>
         </button>
         
-        <div v-if="isDropdownOpen" class="dropdown-menu">
+        <ModernMainScrollbar v-if="isDropdownOpen" class="dropdown-menu" style="height: auto;">
           <div 
             v-for="tab in tabs" 
             :key="tab.id"
@@ -37,14 +37,14 @@
             <span class="dropdown-item-icon">{{ tab.icon }}</span>
             <span class="dropdown-item-text">{{ tab.label }}</span>
           </div>
-        </div>
+        </ModernMainScrollbar>
       </div>
 
       <!-- Contenedor Destino para el Buscador (Teleport) -->
       <div id="search-container" class="search-target-container"></div>
       
       <!-- Botón Nuevo Item (Global) -->
-      <button class="btn-primary-global" type="button" @click="handleCreate">
+      <button v-if="can.ingresar" class="btn-primary-global" type="button" @click="handleCreate">
           <AppIcons name="plus" :size="18" />
           <span class="btn-label-desktop">Nuevo</span>
       </button>
@@ -54,24 +54,24 @@
     <div class="main-content">
       <!-- Componentes ya existentes -->
       <template v-if="isParentMounted">
-        <MantenedorZonas           v-if="activeTab === 'zonas'"              :ref="el => setComponentRef(el, 'zonas')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
-        <MantenedorDistritos       v-if="activeTab === 'distritos'"          :ref="el => setComponentRef(el, 'distritos')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
-        <MantenedorGrupos          v-if="activeTab === 'grupos'"             :ref="el => setComponentRef(el, 'grupos')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
-        <MantenedorRamas           v-if="activeTab === 'ramas'"              :ref="el => setComponentRef(el, 'ramas')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
-        <MantenedorTiposCurso      v-if="activeTab === 'tipos-curso'"        :ref="el => setComponentRef(el, 'tipos-curso')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
-        <MantenedorCargos          v-if="activeTab === 'cargos'"             :ref="el => setComponentRef(el, 'cargos')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
-        <MantenedorProveedores     v-if="activeTab === 'proveedores'"        :ref="el => setComponentRef(el, 'proveedores')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
-        <MantenedorAlimentacion    v-if="activeTab === 'alimentacion'"       :ref="el => setComponentRef(el, 'alimentacion')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
-        <MantenedorComunas         v-if="activeTab === 'comunas'"            :ref="el => setComponentRef(el, 'comunas')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+       <MantenedorZonas           v-if="activeTab === 'zonas'"              :can="can" :ref="el => setComponentRef(el, 'zonas')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+        <MantenedorDistritos       v-if="activeTab === 'distritos'"          :can="can" :ref="el => setComponentRef(el, 'distritos')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+        <MantenedorGrupos          v-if="activeTab === 'grupos'"             :can="can" :ref="el => setComponentRef(el, 'grupos')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+        <MantenedorRamas           v-if="activeTab === 'ramas'"              :can="can" :ref="el => setComponentRef(el, 'ramas')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+        <MantenedorTiposCurso      v-if="activeTab === 'tipos-curso'"        :can="can" :ref="el => setComponentRef(el, 'tipos-curso')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+        <MantenedorCargos          v-if="activeTab === 'cargos'"             :can="can" :ref="el => setComponentRef(el, 'cargos')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+        <MantenedorProveedores     v-if="activeTab === 'proveedores'"        :can="can" :ref="el => setComponentRef(el, 'proveedores')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+        <MantenedorAlimentacion    v-if="activeTab === 'alimentacion'"       :can="can" :ref="el => setComponentRef(el, 'alimentacion')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+        <MantenedorComunas         v-if="activeTab === 'comunas'"            :can="can" :ref="el => setComponentRef(el, 'comunas')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
 
         <!-- Componentes nuevos (antes inline) -->
-        <MantenedorProvincias      v-if="activeTab === 'provincias'"         :ref="el => setComponentRef(el, 'provincias')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
-        <MantenedorRegiones        v-if="activeTab === 'regiones'"           :ref="el => setComponentRef(el, 'regiones')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
-        <MantenedorNiveles         v-if="activeTab === 'niveles'"            :ref="el => setComponentRef(el, 'niveles')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
-        <MantenedorEstadoCivil     v-if="activeTab === 'estados-civiles'"    :ref="el => setComponentRef(el, 'estados-civiles')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
-        <MantenedorRoles           v-if="activeTab === 'roles'"              :ref="el => setComponentRef(el, 'roles')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
-        <MantenedorConceptosContables v-if="activeTab === 'conceptos-contables'" :ref="el => setComponentRef(el, 'conceptos-contables')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
-        <MantenedorTiposArchivo    v-if="activeTab === 'tipos-archivo'"      :ref="el => setComponentRef(el, 'tipos-archivo')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+        <MantenedorProvincias      v-if="activeTab === 'provincias'"         :can="can" :ref="el => setComponentRef(el, 'provincias')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+        <MantenedorRegiones        v-if="activeTab === 'regiones'"           :can="can" :ref="el => setComponentRef(el, 'regiones')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+        <MantenedorNiveles         v-if="activeTab === 'niveles'"            :can="can" :ref="el => setComponentRef(el, 'niveles')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+        <MantenedorEstadoCivil     v-if="activeTab === 'estados-civiles'"    :can="can" :ref="el => setComponentRef(el, 'estados-civiles')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+        <MantenedorRoles           v-if="activeTab === 'roles'"              :can="can" :ref="el => setComponentRef(el, 'roles')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+        <MantenedorConceptosContables v-if="activeTab === 'conceptos-contables'" :can="can" :ref="el => setComponentRef(el, 'conceptos-contables')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
+        <MantenedorTiposArchivo    v-if="activeTab === 'tipos-archivo'"      :can="can" :ref="el => setComponentRef(el, 'tipos-archivo')" @show-message="handleMessage" @confirm-action="handleConfirmAction" />
       </template>
 
       <!-- Modal de Confirmación compartido -->
@@ -113,8 +113,11 @@
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import BaseButton from '@/components/BaseButton.vue'
 import AppIcons from '@/components/icons/AppIcons.vue'
+import { usePermissions } from '@/composables/usePermissions'
 
+import authService from '@/services/authService'
 import NotificationToast from '@/components/NotificationToast.vue'
+import ModernMainScrollbar from '@/components/ModernMainScrollbar.vue'
 
 // Componentes ya existentes
 import MantenedorZonas from '@/components/mantenedores/MantenedorZonas.vue'
@@ -139,14 +142,15 @@ import MantenedorTiposArchivo from '@/components/mantenedores/MantenedorTiposArc
 export default {
   name: 'MantenedoresScouts',
   components: {
-    BaseButton, AppIcons, NotificationToast,
+    BaseButton, AppIcons, NotificationToast, ModernMainScrollbar,
     MantenedorZonas, MantenedorDistritos, MantenedorGrupos, MantenedorRamas, MantenedorTiposCurso,
     MantenedorCargos, MantenedorProveedores, MantenedorAlimentacion, MantenedorComunas,
     MantenedorProvincias, MantenedorRegiones, MantenedorNiveles, MantenedorEstadoCivil,
     MantenedorRoles, MantenedorConceptosContables, MantenedorTiposArchivo
   },
   setup() {
-    const activeTab = ref('zonas')
+    // Estado reactivo
+    const activeTab = ref('')
     const isDropdownOpen = ref(false)
     const dropdownContainer = ref(null)
     const error = ref(null)
@@ -155,29 +159,85 @@ export default {
     const pendingConfirmAction = ref(null)
     const isParentMounted = ref(false)
 
+    // Permisos dinámicos
+    const can = reactive({
+      consultar: false,
+      ingresar: false,
+      modificar: false,
+      eliminar: false
+    })
 
-    const tabs = [
-      { id: 'zonas', label: 'Zonas', icon: '🗺️' },
-      { id: 'distritos', label: 'Distritos', icon: '📍' },
-      { id: 'grupos', label: 'Grupos', icon: '👥' },
-      { id: 'ramas', label: 'Ramas', icon: '🏕️' },
-      { id: 'tipos-curso', label: 'Tipos de Curso', icon: '📚' },
-      { id: 'cargos', label: 'Cargos', icon: '👔' },
-      { id: 'proveedores', label: 'Proveedores', icon: '🏷️' },
-      { id: 'alimentacion', label: 'Alimentación', icon: '🍽️' },
-      { id: 'regiones', label: 'Regiones', icon: '🗾' },
-      { id: 'provincias', label: 'Provincias', icon: '🏞️' },
-      { id: 'comunas', label: 'Comunas', icon: '🏘️' },
-      { id: 'niveles', label: 'Niveles', icon: '📊' },
-      { id: 'estados-civiles', label: 'Estado Civil', icon: '💑' },
-      { id: 'roles', label: 'Roles', icon: '👤' },
-      { id: 'conceptos-contables', label: 'Conceptos Contables', icon: '💰' },
-      { id: 'tipos-archivo', label: 'Tipos de Archivo', icon: '📁' }
+    const updateCurrentPermissions = async () => {
+      const selected = getSelectedTabInfo()
+      if (!selected || !selected.permission) return
+
+      const [con, ing, mod, eli] = await Promise.all([
+        authService.hasPermission(selected.permission, 'consultar'),
+        authService.hasPermission(selected.permission, 'ingresar'),
+        authService.hasPermission(selected.permission, 'modificar'),
+        authService.hasPermission(selected.permission, 'eliminar')
+      ])
+
+      can.consultar = con
+      can.ingresar = ing
+      can.modificar = mod
+      can.eliminar = eli
+    }
+
+    const allTabs = [
+      { id: 'zonas', label: 'Zonas', icon: '🗺️', permission: 'Mantenedor - Zona' },
+      { id: 'distritos', label: 'Distritos', icon: '📍', permission: 'Mantenedor - Distrito' },
+      { id: 'grupos', label: 'Grupos', icon: '👥', permission: 'Mantenedor - Grupo' },
+      { id: 'ramas', label: 'Ramas', icon: '🏕️', permission: 'Mantenedor - Rama' },
+      { id: 'tipos-curso', label: 'Tipos de Curso', icon: '📚', permission: 'Mantenedor - Tipo Curso' },
+      { id: 'cargos', label: 'Cargos', icon: '👔', permission: 'Mantenedor - Cargo' },
+      { id: 'proveedores', label: 'Proveedores', icon: '🏷️', permission: 'Mantenedor - Proveedor' },
+      { id: 'alimentacion', label: 'Alimentación', icon: '🍽️', permission: 'Mantenedor - Alimentacion' },
+      { id: 'regiones', label: 'Regiones', icon: '🗾', permission: 'Mantenedor - Region' },
+      { id: 'provincias', label: 'Provincias', icon: '🏞️', permission: 'Mantenedor - Provincia' },
+      { id: 'comunas', label: 'Comunas', icon: '🏘️', permission: 'Mantenedor - Comuna' },
+      { id: 'niveles', label: 'Niveles', icon: '📊', permission: 'Mantenedor - Nivel' },
+      { id: 'estados-civiles', label: 'Estado Civil', icon: '💑', permission: 'Mantenedor - Estado Civil' },
+      { id: 'roles', label: 'Roles', icon: '👤', permission: 'Mantenedor - Rol' },
+      { id: 'conceptos-contables', label: 'Conceptos Contables', icon: '💰', permission: 'Mantenedor - Concepto Contable' },
+      { id: 'tipos-archivo', label: 'Tipos de Archivo', icon: '📁', permission: 'Mantenedor - Tipo Archivo' }
     ]
 
-    const getSelectedTabInfo = () => tabs.find(t => t.id === activeTab.value) || tabs[0]
+    const tabs = ref([])
+
+    const filterTabs = async () => {
+      const user = await authService.getCurrentUser()
+      const isAdmin = user && (user.role.toLowerCase().includes('admin') || user.role.toLowerCase().includes('sistema'))
+      
+      if (isAdmin) {
+        tabs.value = allTabs
+      } else {
+        const authorizedTabs = []
+        for (const tab of allTabs) {
+          const hasConsultar = await authService.hasPermission(tab.permission, 'consultar')
+          if (hasConsultar) {
+            authorizedTabs.push(tab)
+          }
+        }
+        tabs.value = authorizedTabs
+      }
+
+      if (tabs.value.length > 0) {
+        // Si la pestaña activa no está en las autorizadas, cambiar a la primera disponible
+        if (!tabs.value.find(t => t.id === activeTab.value)) {
+          activeTab.value = tabs.value[0].id
+        }
+        await updateCurrentPermissions()
+      }
+    }
+
+    const getSelectedTabInfo = () => tabs.value.find(t => t.id === activeTab.value) || tabs.value[0] || allTabs[0]
     const toggleDropdown = () => { isDropdownOpen.value = !isDropdownOpen.value }
-    const selectTab = (id) => { activeTab.value = id; isDropdownOpen.value = false }
+    const selectTab = async (id) => { 
+      activeTab.value = id
+      isDropdownOpen.value = false
+      await updateCurrentPermissions()
+    }
 
     const handleClickOutside = (e) => {
       if (dropdownContainer.value && !dropdownContainer.value.contains(e.target)) {
@@ -258,9 +318,10 @@ export default {
         }
     }
 
-    onMounted(() => { 
+    onMounted(async () => { 
       document.addEventListener('click', handleClickOutside) 
       isParentMounted.value = true
+      await filterTabs()
     })
     onUnmounted(() => { document.removeEventListener('click', handleClickOutside) })
 
@@ -271,7 +332,7 @@ export default {
       handleMessage, handleConfirmAction,
       cancelarConfirmacion, confirmarConfirmacion,
       toast, activeComponentRef, handleCreate, setComponentRef,
-      isParentMounted
+      isParentMounted, can
     }
   }
 }

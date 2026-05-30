@@ -13,9 +13,20 @@ const makeCrud = base => ({
 })
 
 // Mapeo a las rutas de Django
-export const usuarios = makeCrud('usuarios/usuarios')
-export const perfiles = makeCrud('usuarios/perfiles') // Ahora maneja django.contrib.auth.Group
+export const usuarios     = makeCrud('usuarios/usuarios')
+export const perfiles     = makeCrud('usuarios/perfiles') // Ahora maneja django.contrib.auth.Group
 export const aplicaciones = makeCrud('usuarios/aplicaciones') // Ahora maneja django.contrib.auth.Permission
 
-export default { usuarios, perfiles, aplicaciones }
+/** Perfiles con ámbito geográfico — endpoint /api/usuarios/perfiles-ambito/ */
+export const perfilesAmbito = {
+  ...makeCrud('usuarios/perfiles-ambito'),
+  /** Devuelve el ámbito del perfil: { nivel, zona, distrito, grupo } */
+  getAmbito: (id) => request(`usuarios/perfiles-ambito/${id}/ambito/`),
+  /** Actualiza el ámbito del perfil */
+  updateAmbito: (id, data) =>
+    request(`usuarios/perfiles-ambito/${id}/ambito/`, { method: 'PUT', body: JSON.stringify(data) }),
+  /** Lista los niveles disponibles */
+  getNiveles: () => request('usuarios/perfiles-ambito/niveles/'),
+}
 
+export default { usuarios, perfiles, aplicaciones, perfilesAmbito }

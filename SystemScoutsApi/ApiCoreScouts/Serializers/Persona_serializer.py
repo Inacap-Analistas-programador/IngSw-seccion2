@@ -163,7 +163,7 @@ class PersonaCompletaSerializer(serializers.ModelSerializer):
     # Métodos para Formador
     def get_pef_hab_1(self, obj):
         try:
-            persona_formador = Persona_Formador.objects.filter(per_id=obj.per_id).first()
+            persona_formador = Persona_Formador.objects.filter(per_id=obj.per_id, pef_vigente=True).first()
             if persona_formador:
                 return persona_formador.pef_hab_1
         except:
@@ -172,7 +172,7 @@ class PersonaCompletaSerializer(serializers.ModelSerializer):
     
     def get_pef_hab_2(self, obj):
         try:
-            persona_formador = Persona_Formador.objects.filter(per_id=obj.per_id).first()
+            persona_formador = Persona_Formador.objects.filter(per_id=obj.per_id, pef_vigente=True).first()
             if persona_formador:
                 return persona_formador.pef_hab_2
         except:
@@ -181,7 +181,7 @@ class PersonaCompletaSerializer(serializers.ModelSerializer):
     
     def get_pef_verif(self, obj):
         try:
-            persona_formador = Persona_Formador.objects.filter(per_id=obj.per_id).first()
+            persona_formador = Persona_Formador.objects.filter(per_id=obj.per_id, pef_vigente=True).first()
             if persona_formador:
                 return persona_formador.pef_verif
         except:
@@ -190,7 +190,7 @@ class PersonaCompletaSerializer(serializers.ModelSerializer):
     
     def get_pef_historial(self, obj):
         try:
-            persona_formador = Persona_Formador.objects.filter(per_id=obj.per_id).first()
+            persona_formador = Persona_Formador.objects.filter(per_id=obj.per_id, pef_vigente=True).first()
             if persona_formador:
                 return persona_formador.pef_historial
         except:
@@ -417,8 +417,8 @@ class PersonaCompletaSerializer(serializers.ModelSerializer):
         return 'GRUPO' # Default
 
     def get_is_formador(self, obj):
-        """Determina si el registro de formador existe"""
-        return Persona_Formador.objects.filter(per_id=obj.per_id).exists()
+        """Determina si el registro de formador está activo (vigente)"""
+        return Persona_Formador.objects.filter(per_id=obj.per_id, pef_vigente=True).exists()
 
 
 class PersonaGrupoSerializer(serializers.ModelSerializer):

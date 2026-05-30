@@ -1,15 +1,15 @@
 <template>
   <ModernMainScrollbar>
     <div class="roles-view">
-      <header class="page-header">
-        <h3>Perfiles</h3>
-        <p class="page-description">Administra los perfiles del sistema y sus permisos.</p>
-      </header>
+      <PageHeader
+        title="Perfiles"
+        subtitle="Administra los perfiles del sistema y sus permisos."
+      />
 
       <div class="table-header-bar">
         <h3 class="table-title">Lista de Perfiles</h3>
         <div class="table-actions">
-          <BaseButton variant="primary" @click="abrirCrear">
+          <BaseButton v-if="can.ingresar" variant="primary" @click="abrirCrear">
             <AppIcons name="plus" :size="16" /> Nuevo Perfil
           </BaseButton>
         </div>
@@ -39,10 +39,10 @@
             <tr v-else v-for="rol in roles" :key="rol.id">
               <td>{{ getDescripcion(rol) }}</td>
               <td class="actions-cell">
-                <BaseButton size="sm" variant="secondary" @click="abrirEditar(rol)">
+                <BaseButton v-if="can.modificar" size="sm" variant="secondary" @click="abrirEditar(rol)">
                   <AppIcons name="edit" :size="14" /> Editar
                 </BaseButton>
-                <BaseButton size="sm" variant="secondary" @click="toggleVigente(rol)">
+                <BaseButton v-if="can.eliminar" size="sm" variant="secondary" @click="toggleVigente(rol)">
                   <AppIcons :name="!isVigente(rol) ? 'check' : 'x'" :size="14" />
                   {{ !isVigente(rol) ? 'Activar' : 'Desactivar' }}
                 </BaseButton>
@@ -94,8 +94,7 @@
                           <th class="text-center">Consultar</th>
                           <th class="text-center">Crear</th>
                           <th class="text-center">Modificar</th>
-                          <th class="text-center">Eliminar</th>
-                          <th class="text-center">Acciones</th>
+                          <th class="text-center">Cambiar Estado / Eliminar</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -108,35 +107,46 @@
                               <span class="app-name">{{ app.apl_descripcion || app.APL_DESCRIPCION || app.descripcion }}</span>
                             </div>
                           </td>
+
                           <td class="text-center">
-                            <BaseSwitch 
-                              v-model="form.permisos[app.apl_id || app.APL_ID || app.id].consultar"
-                            />
+                            <BaseButton 
+                              type="button"
+                              size="sm" 
+                              :variant="form.permisos[app.apl_id || app.APL_ID || app.id].consultar ? 'primary' : 'secondary'"
+                              @click="form.permisos[app.apl_id || app.APL_ID || app.id].consultar = !form.permisos[app.apl_id || app.APL_ID || app.id].consultar"
+                            >
+                              <AppIcons :name="form.permisos[app.apl_id || app.APL_ID || app.id].consultar ? 'check' : 'x'" :size="14" />
+                            </BaseButton>
                           </td>
                           <td class="text-center">
-                            <BaseSwitch 
-                              v-model="form.permisos[app.apl_id || app.APL_ID || app.id].ingresar"
-                            />
+                            <BaseButton 
+                              type="button"
+                              size="sm" 
+                              :variant="form.permisos[app.apl_id || app.APL_ID || app.id].ingresar ? 'primary' : 'secondary'"
+                              @click="form.permisos[app.apl_id || app.APL_ID || app.id].ingresar = !form.permisos[app.apl_id || app.APL_ID || app.id].ingresar"
+                            >
+                              <AppIcons :name="form.permisos[app.apl_id || app.APL_ID || app.id].ingresar ? 'check' : 'x'" :size="14" />
+                            </BaseButton>
                           </td>
                           <td class="text-center">
-                            <BaseSwitch 
-                              v-model="form.permisos[app.apl_id || app.APL_ID || app.id].modificar"
-                            />
+                            <BaseButton 
+                              type="button"
+                              size="sm" 
+                              :variant="form.permisos[app.apl_id || app.APL_ID || app.id].modificar ? 'primary' : 'secondary'"
+                              @click="form.permisos[app.apl_id || app.APL_ID || app.id].modificar = !form.permisos[app.apl_id || app.APL_ID || app.id].modificar"
+                            >
+                              <AppIcons :name="form.permisos[app.apl_id || app.APL_ID || app.id].modificar ? 'check' : 'x'" :size="14" />
+                            </BaseButton>
                           </td>
                           <td class="text-center">
-                            <BaseSwitch 
-                              v-model="form.permisos[app.apl_id || app.APL_ID || app.id].eliminar"
-                            />
-                          </td>
-                          <td class="text-center">
-                            <div class="row-actions-compact">
-                              <BaseButton size="sm" variant="secondary" title="Permitir Todo" @click="toggleTodosPermisos(app.apl_id || app.APL_ID || app.id, true)">
-                                <AppIcons name="check" :size="16" />
-                              </BaseButton>
-                              <BaseButton size="sm" variant="secondary" title="Denegar Todo" @click="toggleTodosPermisos(app.apl_id || app.APL_ID || app.id, false)">
-                                <AppIcons name="x" :size="16" />
-                              </BaseButton>
-                            </div>
+                            <BaseButton 
+                              type="button"
+                              size="sm" 
+                              :variant="form.permisos[app.apl_id || app.APL_ID || app.id].eliminar ? 'danger' : 'secondary'"
+                              @click="form.permisos[app.apl_id || app.APL_ID || app.id].eliminar = !form.permisos[app.apl_id || app.APL_ID || app.id].eliminar"
+                            >
+                              <AppIcons :name="form.permisos[app.apl_id || app.APL_ID || app.id].eliminar ? 'check' : 'x'" :size="14" />
+                            </BaseButton>
                           </td>
                         </tr>
                       </tbody>
@@ -144,6 +154,86 @@
                   </div>
                 </div>
               </div>
+
+              <!-- ─── Sección Ámbito de Datos ───────────────────────────── -->
+              <div class="form-section ambito-section">
+                <div class="section-title">
+                  <AppIcons name="map-pin" :size="22" />
+                  <span>Ámbito de Datos</span>
+                  <span class="permisos-subtitle">Restricción geográfica de visibilidad</span>
+                </div>
+
+                <!-- Selector de Nivel -->
+                <div class="ambito-niveles">
+                  <button
+                    v-for="n in nivelesAmbito"
+                    :key="n.valor"
+                    type="button"
+                    class="nivel-btn"
+                    :class="{ active: form.ambito.nivel === n.valor }"
+                    @click="onNivelChange(n.valor)"
+                  >
+                    <span class="nivel-icon">{{ nivelIcon(n.valor) }}</span>
+                    <span class="nivel-label">{{ n.etiqueta }}</span>
+                  </button>
+                </div>
+
+                <!-- Descripción del nivel seleccionado -->
+                <p class="nivel-desc">{{ nivelDescripcion }}</p>
+
+                <!-- Selects anidados -->
+                <div class="ambito-selects">
+                  <!-- Zona -->
+                  <div v-if="form.ambito.nivel <= 3" class="form-group">
+                    <label>Zona <span class="required">*</span></label>
+                    <select
+                      v-model="form.ambito.zona"
+                      class="ambito-select"
+                      @change="onZonaChange"
+                      :disabled="cargandoGeo"
+                    >
+                      <option :value="null">— Seleccionar zona —</option>
+                      <option v-for="z in zonas" :key="z.zon_id" :value="z.zon_id">
+                        {{ z.zon_descripcion }}
+                      </option>
+                    </select>
+                  </div>
+
+                  <!-- Distrito -->
+                  <div v-if="form.ambito.nivel <= 2" class="form-group">
+                    <label>Distrito <span class="required">*</span></label>
+                    <select
+                      v-model="form.ambito.distrito"
+                      class="ambito-select"
+                      @change="onDistritoChange"
+                      :disabled="cargandoGeo || !form.ambito.zona"
+                    >
+                      <option :value="null">— Seleccionar distrito —</option>
+                      <option v-for="d in distritosFiltrados" :key="d.dis_id" :value="d.dis_id">
+                        {{ d.dis_descripcion }}
+                      </option>
+                    </select>
+                    <span v-if="!form.ambito.zona" class="ambito-hint">Selecciona primero una zona</span>
+                  </div>
+
+                  <!-- Grupo -->
+                  <div v-if="form.ambito.nivel === 1" class="form-group">
+                    <label>Grupo <span class="required">*</span></label>
+                    <select
+                      v-model="form.ambito.grupo"
+                      class="ambito-select"
+                      :disabled="cargandoGeo || !form.ambito.distrito"
+                    >
+                      <option :value="null">— Seleccionar grupo —</option>
+                      <option v-for="g in gruposFiltrados" :key="g.gru_id" :value="g.gru_id">
+                        {{ g.gru_descripcion }}
+                      </option>
+                    </select>
+                    <span v-if="!form.ambito.distrito" class="ambito-hint">Selecciona primero un distrito</span>
+                  </div>
+                </div>
+              </div>
+              <!-- ─────────────────────────────────────────────────────────── -->
 
               <div class="form-actions">
                 <BaseButton variant="secondary" type="button" @click="cerrarModal">Cancelar</BaseButton>
@@ -169,15 +259,27 @@ import InputBase from '@/components/InputBase.vue'
 import NotificationToast from '@/components/NotificationToast.vue'
 import AppIcons from '@/components/icons/AppIcons.vue'
 import ModernMainScrollbar from '@/components/ModernMainScrollbar.vue'
-import { perfiles as perfilesService, aplicaciones as aplicacionesService } from '@/services/usuariosService'
+import { perfiles as perfilesService, aplicaciones as aplicacionesService, perfilesAmbito as perfilesAmbitoService } from '@/services/usuariosService'
+import { zona as zonaService, distrito as distritoService, grupo as grupoService } from '@/services/mantenedoresService'
+import { usePermissions } from '@/composables/usePermissions'
 
 export default {
   name: 'Roles',
   components: { BaseButton, BaseModal, BaseSwitch, InputBase, NotificationToast, AppIcons, ModernMainScrollbar },
+  setup() {
+    const { can } = usePermissions('Perfiles')
+    return { can }
+  },
   data() {
     return {
       roles: [],
       aplicaciones: [],
+      nivelesAmbito: [], // [{ valor, etiqueta }]
+      // Listas de geo para selects
+      zonas: [],
+      distritos: [],  // todos los distritos cargados
+      grupos: [],     // todos los grupos cargados
+      cargandoGeo: false,
       cargando: false,
       cargandoAplicaciones: false,
       guardando: false,
@@ -188,7 +290,8 @@ export default {
         id: null, 
         descripcion: '', 
         vigente: true,
-        permisos: {} // { aplicacionId: { consultar, ingresar, modificar, eliminar } }
+        permisos: {},
+        ambito: { nivel: 4, zona: null, distrito: null, grupo: null }
       },
       toast: { visible: false, message: '', type: 'info' }
     }
@@ -196,16 +299,36 @@ export default {
   computed: {
     formValido() {
       return !!(this.form.descripcion && this.form.descripcion.trim().length >= 3)
-    }
+    },
+    distritosFiltrados() {
+      if (!this.form.ambito.zona) return []
+      return this.distritos.filter(d => d.zon_id === this.form.ambito.zona)
+    },
+    gruposFiltrados() {
+      if (!this.form.ambito.distrito) return []
+      return this.grupos.filter(g => g.dis_id === this.form.ambito.distrito)
+    },
+    nivelDescripcion() {
+      const niveles = {
+        4: 'Sin restricciones. El perfil puede ver toda la información del sistema.',
+        3: 'Solo puede ver datos de la zona seleccionada y sus distritos.',
+        2: 'Solo puede ver datos del distrito seleccionado dentro de la zona.',
+        1: 'Solo puede ver datos del grupo específico dentro del distrito y zona.',
+      }
+      return niveles[this.form.ambito.nivel] || ''
+    },
   },
   async mounted() {
-    await this.cargar()
-    await this.cargarAplicaciones()
+    await Promise.all([
+      this.cargar(),
+      this.cargarAplicaciones(),
+      this.cargarGeo(),
+    ])
   },
   methods: {
     getDescripcion(rol) {
       if (!rol) return ''
-      return rol.pel_descripcion || rol.PEL_DESCRIPCION || rol.descripcion || rol.nombre || ''
+      return rol.name || rol.pel_descripcion || rol.PEL_DESCRIPCION || rol.descripcion || ''
     },
 
     isVigente(rol) {
@@ -214,7 +337,62 @@ export default {
       if (rol.vigente !== undefined) return rol.vigente
       return true
     },
-    
+
+    nivelIcon(nivel) {
+      return { 4: '🌐', 3: '🗺️', 2: '📍', 1: '👥' }[nivel] || '❓'
+    },
+
+    onNivelChange(nivel) {
+      this.form.ambito = { nivel, zona: null, distrito: null, grupo: null }
+    },
+
+    onZonaChange() {
+      this.form.ambito.distrito = null
+      this.form.ambito.grupo    = null
+    },
+
+    onDistritoChange() {
+      this.form.ambito.grupo = null
+    },
+
+    async cargarGeo() {
+      this.cargandoGeo = true
+      try {
+        // Cargar niveles con fallback estático por si el endpoint requiere auth
+        const nivelesPromise = perfilesAmbitoService.getNiveles().catch(() => null)
+        const [zonasResp, distritosResp, gruposResp] = await Promise.all([
+          zonaService.list(),
+          distritoService.list(),
+          grupoService.list(),
+        ])
+        this.zonas     = Array.isArray(zonasResp)     ? zonasResp     : (zonasResp?.results     || [])
+        this.distritos = Array.isArray(distritosResp) ? distritosResp : (distritosResp?.results || [])
+        this.grupos    = Array.isArray(gruposResp)    ? gruposResp    : (gruposResp?.results    || [])
+
+        // Niveles: usar respuesta del API o fallback estático
+        const nivelesResp = await nivelesPromise
+        this.nivelesAmbito = nivelesResp
+          ? (Array.isArray(nivelesResp) ? nivelesResp : (nivelesResp.results || []))
+          : [
+              { valor: 4, etiqueta: 'Global' },
+              { valor: 3, etiqueta: 'Zona' },
+              { valor: 2, etiqueta: 'Distrito' },
+              { valor: 1, etiqueta: 'Grupo (Restricto)' },
+            ]
+      } catch (e) {
+        console.error('Error cargando geo:', e)
+        // Fallback estático de niveles
+        this.nivelesAmbito = [
+          { valor: 4, etiqueta: 'Global' },
+          { valor: 3, etiqueta: 'Zona' },
+          { valor: 2, etiqueta: 'Distrito' },
+          { valor: 1, etiqueta: 'Grupo (Restricto)' },
+        ]
+      } finally {
+        this.cargandoGeo = false
+      }
+    },
+
     async cargarAplicaciones() {
       this.cargandoAplicaciones = true
       try {
@@ -224,7 +402,16 @@ export default {
         // Agrupar permisos por modelo (content_type)
         const grouped = {}
         allPerms.forEach(p => {
-          const model = p.name.split(' | ').pop() || p.codename.split('_').pop()
+          // Si el nombre tiene el formato "Módulo | Modelo | Acción", extraemos el módulo
+            const parts = p.name.split(' | ')
+          let model = parts.length > 1 ? parts[1] : (p.codename.split('_').slice(1).join('_') || p.codename)
+          
+          // Soporte para permisos de pantalla específicos: view_screen_persona -> persona
+          if (model === 'screen' && p.codename.startsWith('view_screen_')) {
+            const cparts = p.codename.split('_')
+            if (cparts.length > 2) model = cparts.slice(2).join('_')
+          }
+          
           if (!grouped[model]) {
             grouped[model] = {
               id: model,
@@ -307,25 +494,43 @@ export default {
         id: null, 
         descripcion: '', 
         vigente: true,
-        permisos: this.inicializarPermisos()
+        permisos: this.inicializarPermisos(),
+        ambito: { nivel: 4, zona: null, distrito: null, grupo: null }
       }
       this.modalVisible = true
     },
 
     async abrirEditar(rol) {
       this.editando = true
-      this.rolSeleccionado = rol
-      const rolId = rol.id
-      
-      const permisos = await this.cargarPermisosRol(rol)
-      
-      this.form = {
-        id: rolId,
-        descripcion: this.getDescripcion(rol),
-        vigente: true, // Groups don't have active status in Django by default
-        permisos: permisos
-      }
+      this.cargandoAplicaciones = true
       this.modalVisible = true
+      
+      try {
+        // Obtener el perfil completo (Group en Django) porque el listado suele ser resumido
+        const fullRol = await perfilesService.get(rol.id)
+        this.rolSeleccionado = fullRol
+        
+        const [permisos, ambitoResp] = await Promise.all([
+          this.cargarPermisosRol(fullRol),
+          perfilesAmbitoService.getAmbito(rol.id).catch(() => null),
+        ])
+        
+        this.form = {
+          id: fullRol.id,
+          descripcion: fullRol.name || this.getDescripcion(fullRol),
+          vigente: true,
+          permisos,
+          ambito: ambitoResp
+            ? { nivel: ambitoResp.nivel, zona: ambitoResp.zona, distrito: ambitoResp.distrito, grupo: ambitoResp.grupo }
+            : { nivel: 4, zona: null, distrito: null, grupo: null },
+        }
+      } catch (e) {
+        console.error('Error al cargar detalle del perfil:', e)
+        this.mostrarToast('No se pudieron cargar los detalles del perfil', 'error')
+        this.cerrarModal()
+      } finally {
+        this.cargandoAplicaciones = false
+      }
     },
 
     cerrarModal() {
@@ -334,7 +539,8 @@ export default {
         id: null, 
         descripcion: '', 
         vigente: true,
-        permisos: {}
+        permisos: {},
+        ambito: { nivel: 4, zona: null, distrito: null, grupo: null }
       }
     },
 
@@ -357,12 +563,21 @@ export default {
           permissions: selectedPerms
         }
         
+        let savedId = this.form.id
         if (this.editando) {
           await perfilesService.update(this.form.id, payload)
           this.mostrarToast('Perfil actualizado', 'success')
         } else {
-          await perfilesService.create(payload)
+          const created = await perfilesService.create(payload)
+          savedId = created?.id
           this.mostrarToast('Perfil creado', 'success')
+        }
+
+        // Guardar el ámbito por separado
+        if (savedId) {
+          await perfilesAmbitoService.updateAmbito(savedId, this.form.ambito).catch(e =>
+            console.warn('No se pudo guardar el ámbito:', e)
+          )
         }
         
         this.modalVisible = false
@@ -504,6 +719,104 @@ export default {
   font-style: italic;
 }
 
+/* ── Ámbito de Datos ─────────────────────────────────────────────────── */
+.ambito-section {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #bae6fd;
+}
+
+.ambito-niveles {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.nivel-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.75rem 1.25rem;
+  border: 2px solid #cbd5e1;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 90px;
+  font-family: inherit;
+}
+.nivel-btn:hover {
+  border-color: #2563eb;
+  background: #eff6ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+}
+.nivel-btn.active {
+  border-color: #2563eb;
+  background: #2563eb;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  transform: translateY(-2px);
+}
+.nivel-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+.nivel-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.nivel-desc {
+  font-size: 0.85rem;
+  color: #475569;
+  background: rgba(255,255,255,0.7);
+  border-left: 3px solid #2563eb;
+  padding: 0.6rem 0.9rem;
+  border-radius: 0 6px 6px 0;
+  margin-bottom: 1.25rem;
+  min-height: 2rem;
+}
+
+.ambito-selects {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.ambito-select {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  background: #fff;
+  color: #374151;
+  transition: border-color 0.2s;
+  cursor: pointer;
+}
+.ambito-select:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+.ambito-select:disabled {
+  background: #f9fafb;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.ambito-hint {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  font-style: italic;
+}
+/* ─────────────────────────────────────────────────────────────────────── */
+
 .form-row { 
   display:flex; 
   gap:1rem; 
@@ -638,7 +951,8 @@ export default {
 .app-info {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
+  line-height: 1;
 }
 
 .app-icon-wrapper {
@@ -664,6 +978,25 @@ export default {
 
 .text-center :deep(.switch-container) {
   justify-content: center;
+  margin: 0;
+}
+
+.permiso-control {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.permiso-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #94a3b8;
+  transition: color 0.2s;
+}
+
+.permiso-label.text-active {
+  color: #2563eb;
 }
 
 .row-actions-compact {

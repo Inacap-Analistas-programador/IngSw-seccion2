@@ -51,10 +51,11 @@
                   <button class="action-btn btn-view" @click="verElemento(item)" title="Ver detalle">
                     <AppIcons name="eye" :size="16" />
                   </button>
-                  <button class="action-btn btn-edit" @click="editarElemento(item)" title="Editar">
+                  <button v-if="can.modificar" class="action-btn btn-edit" @click="editarElemento(item)" title="Editar">
                     <AppIcons name="edit" :size="16" />
                   </button>
                   <button 
+                    v-if="can.eliminar"
                     class="action-btn" 
                     :class="item.vigente ? 'btn-delete' : 'btn-activate'"
                     @click="item.vigente ? confirmarAnular(item) : confirmarActivar(item)"
@@ -172,6 +173,9 @@ function abrirModalCrear() {
   Object.assign(form, { id: null, descripcion: '', tipo: 1, vigente: true })
   modalVisible.value = true
 }
+const props = defineProps({
+  can: { type: Object, default: () => ({ modificar: true, eliminar: true }) }
+})
 defineExpose({ abrirModalCrear })
 
 const items = ref([])
@@ -376,7 +380,11 @@ onMounted(() => { cargarDatos() })
 }
 .table-container { flex: 1; overflow: hidden; border: 1px solid #eee; border-radius: 8px; }
 .data-table { width: 100%; border-collapse: collapse; }
-.data-table th, .data-table td { padding: 12px 15px; text-align: center; border-bottom: 1px solid #f0f0f0; }
+.data-table th, .data-table td {
+  padding: 4px 15px;
+  text-align: center;
+  border-bottom: 1px solid #f0f0f0;
+}
 .data-table th { background-color: #f8f9fa; color: #333; font-weight: 600; position: sticky; top: 0; z-index: 10; }
 .status-badge { padding: 4px 8px; border-radius: 12px; font-size: 0.85rem; font-weight: 500; }
 .status-active { background-color: #e8f5e9; color: #2e7d32; }
@@ -418,7 +426,7 @@ onMounted(() => { cargarDatos() })
   .data-table thead { display: none; }
   .data-table, .data-table tbody, .data-table tr, .data-table td { display: block; width: 100%; }
   .data-table tr { margin-bottom: 16px; background: white; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-  .data-table td { display: flex; justify-content: space-between; align-items: center; text-align: right; padding: 12px 16px; border-bottom: 1px solid #f3f4f6; }
+  .data-table td { display: flex; justify-content: space-between; align-items: center; text-align: right; padding: 4px 15px; border-bottom: 1px solid #f3f4f6; }
   .data-table td:last-child { border-bottom: none; justify-content: center; padding-top: 16px; }
   .data-table td::before { content: attr(data-label); font-weight: 600; color: #6b7280; font-size: 0.85rem; text-transform: uppercase; margin-right: 16px; text-align: left; }
   

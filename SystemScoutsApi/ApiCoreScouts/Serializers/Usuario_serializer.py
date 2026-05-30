@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from ..Models.usuario_model import Usuario
+from ..Models.perfil_ambito_model import NIVEL_GLOBAL
 from django.contrib.auth.models import Group, Permission
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -19,8 +20,42 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
                 'nombre': group.name
             })
 
-        # Mapeamos los permisos de Django al formato que el frontend espera
-        aplicaciones = {} # app_label -> { permisos }
+        # Mapeo de permisos de Django al formato que el frontend espera
+        aplicaciones = {} # Módulo -> { permisos }
+
+        # Diccionario de mapeo: modelo_django -> Módulo_Frontend
+        # Esto resuelve la discrepancia entre nombres de BD y nombres de UI
+        MAPEO_MODULOS = {
+            'pago_persona': 'Pagos',
+            'pago_comprobante': 'Pagos',
+            'comprobante_pago': 'Pagos',
+            'usuario': 'Usuarios',
+            'perfil': 'Perfiles',
+            'curso': 'Cursos',
+            'persona': 'Personas',
+            'persona_curso': 'Personas',
+            'correo': 'Correos',
+            'correos': 'Correos',
+            'acreditacion_manual': 'AcreditacionManual',
+            'verificador_qr': 'VerificadorQR',
+            # Granular grouping for maintainers (allows filtering tabs in the UI)
+            'region': 'Mantenedor - Region',
+            'provincia': 'Mantenedor - Provincia',
+            'comuna': 'Mantenedor - Comuna',
+            'distrito': 'Mantenedor - Distrito',
+            'zona': 'Mantenedor - Zona',
+            'rama': 'Mantenedor - Rama',
+            'nivel': 'Mantenedor - Nivel',
+            'tipo_curso': 'Mantenedor - Tipo Curso',
+            'tipo_archivo': 'Mantenedor - Tipo Archivo',
+            'cargo': 'Mantenedor - Cargo',
+            'estado_civil': 'Mantenedor - Estado Civil',
+            'rol': 'Mantenedor - Rol',
+            'concepto_contable': 'Mantenedor - Concepto Contable',
+            'proveedor': 'Mantenedor - Proveedor',
+            'alimentacion': 'Mantenedor - Alimentacion',
+            'grupo': 'Mantenedor - Grupo',
+        }
         
         # Django permissions are 'app.view_model', 'app.add_model', etc.
         for perm in user.get_all_permissions():
@@ -32,9 +67,12 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
                     action = parts[0]
                     model = "_".join(parts[1:])
                     
-                    if model not in aplicaciones:
-                        aplicaciones[model] = {
-                            'apl_descripcion': model.capitalize(),
+                    # Determinar módulo final usando el mapeo o capitalizando el modelo
+                    modulo = MAPEO_MODULOS.get(model, model.capitalize())
+                    
+                    if modulo not in aplicaciones:
+                        aplicaciones[modulo] = {
+                            'apl_descripcion': modulo,
                             'permisos': {
                                 'pea_ingresar': False,
                                 'pea_modificar': False,
@@ -43,10 +81,53 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
                             }
                         }
                     
-                    if action == 'view': aplicaciones[model]['permisos']['pea_consultar'] = True
-                    elif action == 'add': aplicaciones[model]['permisos']['pea_ingresar'] = True
-                    elif action == 'change': aplicaciones[model]['permisos']['pea_modificar'] = True
-                    elif action == 'delete': aplicaciones[model]['permisos']['pea_eliminar'] = True
+                    # Mapping actions to boolean flags
+                    # view -> consultar
+                    if action == 'view':
+                        if model.startswith('screen_'):
+                            # Custom permission view_screen_<model>
+                            actual_model = model.replace('screen_', '', 1)
+                            modulo = MAPEO_MODULOS.get(actual_model, actual_model.capitalize())
+                            
+                            if modulo not in aplicaciones:
+                                aplicaciones[modulo] = {
+                                    'apl_descripcion': modulo,
+                                    'permisos': { k: False for k in ['pea_ingresar', 'pea_modificar', 'pea_eliminar', 'pea_consultar'] }
+                                }
+                            aplicaciones[modulo]['permisos']['pea_consultar'] = True
+                        else:
+                            # Standard view_<model>
+                            modulo = MAPEO_MODULOS.get(model, model.capitalize())
+                            if modulo not in aplicaciones:
+                                aplicaciones[modulo] = {
+                                    'apl_descripcion': modulo,
+                                    'permisos': { k: False for k in ['pea_ingresar', 'pea_modificar', 'pea_eliminar', 'pea_consultar'] }
+                                }
+                            aplicaciones[modulo]['permisos']['pea_consultar'] = True
+                    elif action == 'add': 
+                        modulo = MAPEO_MODULOS.get(model, model.capitalize())
+                        if modulo not in aplicaciones:
+                            aplicaciones[modulo] = {
+                                'apl_descripcion': modulo,
+                                'permisos': { k: False for k in ['pea_ingresar', 'pea_modificar', 'pea_eliminar', 'pea_consultar'] }
+                            }
+                        aplicaciones[modulo]['permisos']['pea_ingresar'] = True
+                    elif action == 'change': 
+                        modulo = MAPEO_MODULOS.get(model, model.capitalize())
+                        if modulo not in aplicaciones:
+                            aplicaciones[modulo] = {
+                                'apl_descripcion': modulo,
+                                'permisos': { k: False for k in ['pea_ingresar', 'pea_modificar', 'pea_eliminar', 'pea_consultar'] }
+                            }
+                        aplicaciones[modulo]['permisos']['pea_modificar'] = True
+                    elif action == 'delete': 
+                        modulo = MAPEO_MODULOS.get(model, model.capitalize())
+                        if modulo not in aplicaciones:
+                            aplicaciones[modulo] = {
+                                'apl_descripcion': modulo,
+                                'permisos': { k: False for k in ['pea_ingresar', 'pea_modificar', 'pea_eliminar', 'pea_consultar'] }
+                            }
+                        aplicaciones[modulo]['permisos']['pea_eliminar'] = True
             except ValueError:
                 continue
 
@@ -59,18 +140,30 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
                 'permisos': data['permisos']
             })
 
-        return grupos, aplicaciones_list
+        # Ámbito geográfico: extraer del primer grupo que tenga PerfilAmbito
+        ambito_payload = None
+        for group in user.groups.select_related('ambito__zona', 'ambito__distrito', 'ambito__grupo').all():
+            try:
+                amb = group.ambito
+                if amb.nivel != NIVEL_GLOBAL:
+                    ambito_payload = amb.to_jwt_payload()
+                break  # Solo se usa el primer perfil encontrado
+            except Exception:
+                continue
+
+        return grupos, aplicaciones_list, ambito_payload
 
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
-        grupos, aplicaciones = cls._build_perms_payload(user)
+        grupos, aplicaciones, ambito = cls._build_perms_payload(user)
 
         token['usu_id'] = int(user.usu_id)
         token['usu_username'] = user.username
         token['usu_vigente'] = user.is_active
         token['grupos'] = grupos
         token['aplicaciones'] = aplicaciones
+        token['ambito'] = ambito   # None si acceso global
         
         # Para compatibilidad con frontend que busca 'perfil'
         if grupos:
@@ -93,7 +186,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
         data = super().validate(attrs)
         user = self.user
-        grupos, aplicaciones = self._build_perms_payload(user)
+        grupos, aplicaciones, ambito = self._build_perms_payload(user)
 
         data.update({
             'usu_id': int(user.usu_id),
@@ -101,6 +194,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
             'usu_vigente': user.is_active,
             'grupos': grupos,
             'aplicaciones': aplicaciones,
+            'ambito': ambito,   # None si acceso global
         })
         
         if grupos:

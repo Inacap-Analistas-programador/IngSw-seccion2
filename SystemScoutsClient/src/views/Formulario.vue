@@ -314,6 +314,29 @@ const handleSeccionChange = () => {
   }
 };
 
+// handleScroll necesita estar en scope de módulo para que onBeforeUnmount pueda eimplenarla
+function updateActiveNavItem(_section) { /* no-op si no hay implementación en este archivo */ }
+const handleScroll = () => {
+  const sections = [1, 2, 3, 4];
+  const viewportCenter = window.innerHeight / 2;
+  let closestSection = 1;
+  let minDistance = Infinity;
+  
+  sections.forEach((num) => {
+    const section = document.getElementById(`seccion-${num}`);
+    if (section) {
+      const rect = section.getBoundingClientRect();
+      const sectionCenter = rect.top + rect.height / 2;
+      const distance = Math.abs(sectionCenter - viewportCenter);
+      if (distance < minDistance && rect.top < viewportCenter && rect.bottom > 0) {
+        minDistance = distance;
+        closestSection = num;
+      }
+    }
+  });
+  updateActiveNavItem(closestSection);
+};
+
 onMounted(async () => {
   try {
     const nivResp = await nivelApi.list();
@@ -323,29 +346,11 @@ onMounted(async () => {
   }
 
   // Scroll spy logic
-  const handleScroll = () => {
-    const sections = [1, 2, 3, 4];
-    const viewportCenter = window.innerHeight / 2;
-    let closestSection = 1;
-    let minDistance = Infinity;
-    
-    sections.forEach((num) => {
-      const section = document.getElementById(`seccion-${num}`);
-      if (section) {
-        const rect = section.getBoundingClientRect();
-        const sectionCenter = rect.top + rect.height / 2;
-        const distance = Math.abs(sectionCenter - viewportCenter);
-        if (distance < minDistance && rect.top < viewportCenter && rect.bottom > 0) {
-          minDistance = distance;
-          closestSection = num;
-        }
-      }
-    });
-    updateActiveNavItem(closestSection);
-  };
-  
   window.addEventListener('scroll', handleScroll);
-  onBeforeUnmount(() => window.removeEventListener('scroll', handleScroll));
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', handleScroll);
 });
 
 function limpiarFormulario() {

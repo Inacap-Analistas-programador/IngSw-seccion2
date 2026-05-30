@@ -68,6 +68,25 @@
   --btn-font-weight: 700;
   --btn-shadow: 0 6px 18px rgba(16, 24, 40, 0.10);
   --btn-shadow-hover: 0 8px 24px rgba(16, 24, 40, 0.14);
+
+  /* ── Spacing scale ── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* ── Layout ── */
+  --page-padding: 24px;
+  --section-gap: 24px;
+  --card-radius: 12px;
+  --card-padding: 20px;
+  --card-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  --card-border: 1px solid var(--color-border);
 }
 
 @media (prefers-color-scheme: dark-disabled) {

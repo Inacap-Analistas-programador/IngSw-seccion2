@@ -44,8 +44,8 @@
               <td class="actions-cell" data-label="Acciones">
                 <div class="action-buttons">
                   <button class="action-btn btn-view" @click="verItem(item)" title="Ver detalle"><AppIcons name="eye" :size="16" /></button>
-                  <button class="action-btn btn-edit" @click="editarItem(item)" title="Editar"><AppIcons name="edit" :size="16" /></button>
-                  <button class="action-btn" :class="item.vigente ? 'btn-delete' : 'btn-activate'"
+                  <button v-if="can.modificar" class="action-btn btn-edit" @click="editarItem(item)" title="Editar"><AppIcons name="edit" :size="16" /></button>
+                  <button v-if="can.eliminar" class="action-btn" :class="item.vigente ? 'btn-delete' : 'btn-activate'"
                     @click="item.vigente ? confirmarAnular(item) : confirmarActivar(item)"
                     :title="item.vigente ? 'Anular' : 'Activar'">
                     <AppIcons :name="item.vigente ? 'trash' : 'check'" :size="16" />
@@ -133,6 +133,9 @@ const cargando = ref(false)
 const saving = ref(false)
 
 const emit = defineEmits(['show-message', 'confirm-action'])
+const props = defineProps({
+  can: { type: Object, default: () => ({ modificar: true, eliminar: true }) }
+})
 defineExpose({ abrirModalCrear })
 
 const ejecutarBusqueda = () => {
@@ -273,7 +276,11 @@ onMounted(() => { cargarDatos() })
 
 .table-container { flex: 1; overflow: hidden; border: 1px solid #eee; border-radius: 8px; }
 .data-table { width: 100%; border-collapse: collapse; }
-.data-table th, .data-table td { padding: 12px 15px; text-align: center; border-bottom: 1px solid #f0f0f0; }
+.data-table th, .data-table td {
+  padding: 4px 15px;
+  text-align: center;
+  border-bottom: 1px solid #f0f0f0;
+}
 .data-table th { background-color: #f8f9fa; color: #333; font-weight: 600; position: sticky; top: 0; z-index: 10; }
 .status-badge { padding: 4px 8px; border-radius: 12px; font-size: 0.85rem; font-weight: 500; }
 .status-active { background-color: #e8f5e9; color: #2e7d32; }

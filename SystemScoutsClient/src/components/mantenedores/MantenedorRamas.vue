@@ -45,10 +45,11 @@
                   <button class="action-btn btn-view" @click="verElemento(rama)" title="Ver detalle">
                     <AppIcons name="eye" :size="16" />
                   </button>
-                  <button class="action-btn btn-edit" @click="editarElemento(rama)" title="Editar">
+                  <button v-if="can.modificar" class="action-btn btn-edit" @click="editarElemento(rama)" title="Editar">
                     <AppIcons name="edit" :size="16" />
                   </button>
                   <button 
+                    v-if="can.eliminar"
                     class="action-btn" 
                     :class="rama.vigente ? 'btn-delete' : 'btn-activate'"
                     @click="rama.vigente ? confirmarAnular(rama) : confirmarActivar(rama)"
@@ -160,6 +161,9 @@ import ModernMainScrollbar from '@/components/ModernMainScrollbar.vue'
 import NotificationToast from '@/components/NotificationToast.vue'
 
 const emit = defineEmits(['confirm-action'])
+const props = defineProps({
+  can: { type: Object, default: () => ({ modificar: true, eliminar: true }) }
+})
 defineExpose({ abrirModalCrear })
 
 
@@ -433,7 +437,7 @@ onMounted(() => {
 }
 
 .data-table th, .data-table td {
-  padding: 12px 15px;
+  padding: 4px 15px;
   text-align: center;
   border-bottom: 1px solid #f0f0f0;
 }

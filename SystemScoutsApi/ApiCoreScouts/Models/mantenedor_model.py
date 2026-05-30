@@ -16,6 +16,9 @@ class Rol(models.Model):
 
     class Meta:
         db_table = 'rol'
+        permissions = [
+            ("view_screen_rol", "Puede visualizar la pantalla de Perfiles"),
+        ]
 
 class Cargo(models.Model):
     car_id = models.BigAutoField(primary_key=True, db_column='car_id')

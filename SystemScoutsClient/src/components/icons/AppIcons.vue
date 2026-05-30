@@ -531,8 +531,10 @@ const customIconSvg = computed(() => customIconsMap[props.name] || '')
 
 <style scoped>
 .icon-wrapper {
-  display: inline-block;
-  line-height: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
 }
 
 svg {

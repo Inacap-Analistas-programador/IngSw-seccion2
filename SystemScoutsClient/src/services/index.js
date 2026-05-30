@@ -12,25 +12,7 @@ import * as mantenedoresService from './mantenedoresService'
 import * as pagosService from './pagosService'
 import * as archivosService from './archivosService'
 import dashboardService from './dashboardService'
-import dashboard2Service from './dashboardService_2'
-// usuariosRolesService and CorreosService are legacy files removed after migration
-
-// Export everything as named exports. Prefer importing from '@/services' in views.
-export {
-  apiClient,
-  authService,
-  authViewsService,
-  personasService,
-  usuariosService,
-  // Removed legacy usuariosRolesService,
-  cursosService,
-  mantenedoresService,
-  pagosService,
-  archivosService,
-  dashboardService,
-  dashboard2Service,
-  // Removed legacy CorreosService and reportesService,
-}
+// dashboardService_2.js ha sido fusionado en dashboardService.js y puede eliminarse.
 
 // Backwards-compat aliases (safe to import old names from this barrel):
 export const personas = personasService.personas || personasService

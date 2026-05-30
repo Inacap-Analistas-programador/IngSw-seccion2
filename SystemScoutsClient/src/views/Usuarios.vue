@@ -1,11 +1,10 @@
 <template>
   <div class="usuarios-roles">
     <ModernMainScrollbar>
-      <!-- Encabezado de la sección -->
-      <header class="page-header">
-        <h3>Gestión de Usuarios</h3>
-        <p class="page-description">Administra, crea y organiza los usuarios del sistema.</p>
-      </header>
+      <PageHeader
+        title="Gestión de Usuarios"
+        subtitle="Administra, crea y organiza los usuarios del sistema."
+      />
 
     <!-- Barra de búsqueda y filtros -->
     <div class="filtros">
@@ -48,6 +47,7 @@
         <h3 class="table-title">Lista de Usuarios</h3>
         <div class="table-actions">
           <BaseButton 
+            v-if="can.modificar"
             variant="secondary" 
             @click="editarSeleccionado"
             :disabled="selectedIds.length !== 1"
@@ -56,6 +56,7 @@
             Editar
           </BaseButton>
           <BaseButton 
+            v-if="can.eliminar"
             variant="secondary" 
             @click="toggleEstadoSeleccionados"
             :disabled="selectedIds.length === 0"
@@ -64,6 +65,7 @@
             {{ botonEstadoLabel }}
           </BaseButton>
           <BaseButton 
+            v-if="can.ingresar"
             variant="primary" 
             @click="abrirModalCrear"
           >
@@ -280,31 +282,40 @@
                       <span>Seguridad</span>
                     </div>
 
-                    <div class="form-row">
-                      <div class="form-group flex-1">
-                        <label for="password">Contraseña <span class="required">{{ modoEdicion ? '' : '*' }}</span></label>
-                        <InputBase 
-                          id="password"
-                          v-model="usuarioForm.password" 
-                          type="password"
-                          :placeholder="modoEdicion ? 'Dejar vacío para no cambiar' : 'Mínimo 6 caracteres'"
-                          :required="!modoEdicion"
-                          :disabled="procesando"
-                        />
-                      </div>
-
-                      <div class="form-group flex-1">
-                        <label for="confirmPassword">Confirmar Contraseña <span class="required" v-if="usuarioForm.password">*</span></label>
-                        <InputBase 
-                          id="confirmPassword"
-                          v-model="usuarioForm.confirmPassword" 
-                          type="password"
-                          placeholder="Repetir contraseña"
-                          :required="!!usuarioForm.password"
-                          :disabled="procesando || !usuarioForm.password"
-                        />
-                      </div>
-                    </div>
+                    <!-- En edicion: toggle para campos de contrasena -->
+                     <div v-if="modoEdicion && !usuarioForm.cambiarPassword" class="cambiar-password-toggle">
+                       <BaseButton type="button" variant="secondary" size="sm" @click="usuarioForm.cambiarPassword = true">
+                         <AppIcons name="lock" :size="14" /> Cambiar contraseña
+                       </BaseButton>
+                       <span class="hint-text">La contraseña actual no será modificada</span>
+                     </div>
+                     <!-- Campos: siempre en creacion, solo con toggle en edicion -->
+                     <div v-if="!modoEdicion || usuarioForm.cambiarPassword" class="form-row">
+                       <div class="form-group flex-1">
+                         <label for="password">Contraseña <span class="required">*</span></label>
+                         <InputBase 
+                           id="password"
+                           v-model="usuarioForm.password" 
+                           type="password"
+                           :placeholder="
+modoEdicion ? 'Nueva contraseña (mín. 6 cáracters)' : 'Mínimo 6 caracteres'
+"
+                           required
+                           :disabled="procesando"
+                         />
+                       </div>
+                       <div class="form-group flex-1">
+                         <label for="confirmPassword">Confirmar Contraseña <span class="required">*</span></label>
+                         <InputBase 
+                           id="confirmPassword"
+                           v-model="usuarioForm.confirmPassword" 
+                           type="password"
+                           placeholder="Repetir contraseña"
+                           required
+                           :disabled="procesando"
+                         />
+                       </div>
+                     </div>
 
                     <div v-if="usuarioForm.password && usuarioForm.confirmPassword && usuarioForm.password !== usuarioForm.confirmPassword" class="error-message">
                       <AppIcons name="alert" :size="16" />
@@ -385,6 +396,7 @@ import NotificationToast from '../components/NotificationToast.vue'
 import AppIcons from '../components/icons/AppIcons.vue'
 import ModernMainScrollbar from '../components/ModernMainScrollbar.vue'
 import { usuarios as usuariosService, perfiles as perfilesService } from '@/services/usuariosService'
+import { usePermissions } from '@/composables/usePermissions'
 
 export default {
   name: 'UsuariosRoles',
@@ -400,7 +412,8 @@ export default {
   },
   setup() {
     const router = useRouter()
-    return { router }
+    const { can } = usePermissions('Usuarios')
+    return { router, can }
   },
   data() {
     return {
@@ -428,7 +441,8 @@ export default {
         confirmPassword: '',
         activo: true,
         foto: null,
-        fotoPreview: null
+        fotoPreview: null,
+        cambiarPassword: false
       },
       
       // Confirmación
@@ -528,16 +542,18 @@ export default {
         return false
       }
       
-      // En modo edición, la contraseña es opcional
-      if (this.modoEdicion) {
-        // Si hay contraseña, validarla
-        if (this.usuarioForm.password) {
-          if (!this.usuarioForm.confirmPassword) return false
-          if (this.usuarioForm.password !== this.usuarioForm.confirmPassword) return false
-          if (this.usuarioForm.password.length < 6) return false
-        }
-        return true
+      // En modo edición: contraseña solo obligatoria si el toggle está activo
+      if (!this.modoEdicion) return true
+
+      if (this.usuarioForm.cambiarPassword) {
+        const { password, confirmPassword } = this.usuarioForm
+
+        if (!password || !confirmPassword) return false
+        if (password.length < 6) return false
+        if (password !== confirmPassword) return false
       }
+
+      return true
       
       // En modo creación, la contraseña es obligatoria
       if (!this.usuarioForm.password || !this.usuarioForm.confirmPassword) {
@@ -597,7 +613,7 @@ export default {
         const perfilesList = Array.isArray(perfilesResponse) ? perfilesResponse : (perfilesResponse.results || perfilesResponse.data || [])
         const roles = perfilesList.map(p => ({
           value: p.pel_id || p.PEL_ID || p.id,
-          label: p.pel_descripcion || p.PEL_DESCRIPCION || p.descripcion || p.nombre || `Perfil ${p.pel_id || p.PEL_ID || p.id}`
+          label: p.name || p.pel_descripcion || p.PEL_DESCRIPCION || p.descripcion || p.nombre || `Perfil ${p.id}`
         }))
         this.rolesOptions = [{ value: '', label: 'Todos los perfiles' }, ...roles]
 
@@ -725,7 +741,8 @@ export default {
         confirmPassword: '',
         activo: true,
         foto: null,
-        fotoPreview: null
+        fotoPreview: null,
+        cambiarPassword: false
       }
     },
     
@@ -2186,5 +2203,16 @@ export default {
 .pagination-range {
   color: #6b7280;
   font-size: 0.9rem;
+}
+.cambiar-password-toggle {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 0 0.75rem 0;
+}
+.hint-text {
+  font-size: 0.82rem;
+  color: #6b7280;
+  font-style: italic;
 }
 </style>

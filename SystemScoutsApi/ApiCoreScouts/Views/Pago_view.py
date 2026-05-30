@@ -3,7 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db import transaction
 from rest_framework import filters as drf_filters
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django_filters.rest_framework import DjangoFilterBackend
 from ..Serializers import Pago_serializer as MP_S
@@ -14,8 +14,8 @@ from ..Permissions import PerfilPermission
 class ProveedorViewSet(viewsets.ModelViewSet):
     queryset = Proveedor.objects.all()
     serializer_class = MP_S.ProveedorSerializer
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated, PerfilPermission]
+    authentication_classes = []
+    permission_classes = [AllowAny]
     app_name = 'Pagos'
 
 class ComprobantePagoViewSet(viewsets.ModelViewSet):

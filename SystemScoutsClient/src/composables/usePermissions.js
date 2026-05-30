@@ -1,89 +1,77 @@
-// Composable para gestionar permisos de usuario basados en roles
-import { ref, computed, onMounted } from 'vue'
+/**
+ * usePermissions.js
+ * Composable que consulta permisos de un módulo dado para el usuario actual.
+ *
+ * Optimizaciones vs versión anterior:
+ * - Una sola llamada a getCurrentUser() (en vez de 5)
+ * - Lookup de permisos en memoria (sincrónico sobre el payload del JWT)
+ * - Soporte explícito de isAdmin desde payload JWT
+ */
+import { ref, onMounted } from 'vue'
 import authService from '@/services/authService'
 
-// Lista de roles con permisos de administración (pueden crear, editar y eliminar)
-const ADMIN_ROLES = [
-  'Administrador',
-  'Administradora',
-  'Administrador Regional',
-  'Administradora Regional',
-  'Admin',
-  'admin'
-]
+const ACTIONS = ['consultar', 'ingresar', 'modificar', 'eliminar']
 
-export function usePermissions() {
-  const currentRole = ref('')
+/**
+ * @param {string} moduleName - Nombre del módulo (Dashboard, Personas, etc.)
+ */
+export function usePermissions(moduleName) {
+  const can = ref(Object.fromEntries(ACTIONS.map(a => [a, false])))
+  const isAdmin = ref(false)
+  const loading = ref(true)
 
-  const getRoleSync = () => {
-    try {
-      if (typeof document !== 'undefined') {
-        const value = `; ${document.cookie}`
-        const parts = value.split(`; currentUser=`)
-        if (parts.length === 2) {
-          const userCookie = parts.pop().split(';').shift()
-          const user = JSON.parse(decodeURIComponent(userCookie))
-          return user.role || user.rol || ''
-        }
-      }
-
-      if (typeof localStorage !== 'undefined') {
-        const currentUser = localStorage.getItem('currentUser')
-        if (currentUser) {
-          const user = JSON.parse(currentUser)
-          return user.role || user.rol || ''
-        }
-      }
-    } catch (e) {
-      console.error('Error al obtener rol del usuario:', e)
+  const updatePermissions = async () => {
+    if (!moduleName) {
+      loading.value = false
+      return
     }
-    return ''
-  }
 
-  // Inicializar síncronamente si es posible
-  currentRole.value = getRoleSync()
-
-  // Actualizar asegurando que estemos en el cliente / onMounted
-  onMounted(async () => {
+    loading.value = true
     try {
       const user = await authService.getCurrentUser()
-      if (user) {
-        currentRole.value = user.role || user.rol || ''
+      if (!user) return
+
+      isAdmin.value = user.isAdmin
+
+      // Admins: acceso total sin buscar en aplicaciones
+      if (user.isAdmin) {
+        ACTIONS.forEach(a => (can.value[a] = true))
+        return
       }
-    } catch (e) {
-      console.error('Error onMounted al obtener rol', e)
-    }
-  })
 
-  const getUserRole = async () => {
-    try {
-      const user = await authService.getCurrentUser()
-      return user.role || user.rol || ''
+      const apps = user.payload?.aplicaciones
+      if (!apps?.length) return
+
+      const normalizedModule = moduleName.trim().toLowerCase()
+
+      // Alias especial: cualquier sub-módulo Mantenedor
+      let app
+      if (normalizedModule === 'mantenedores') {
+        app = apps.find(a =>
+          (a.apl_descripcion || '').startsWith('Mantenedor - ') &&
+          a.permisos?.pea_consultar === true
+        )
+      } else {
+        app = apps.find(a =>
+          (a.apl_descripcion || a.APL_DESCRIPCION || '').toLowerCase() === normalizedModule
+        )
+      }
+
+      if (!app?.permisos) return
+
+      // Mapear cada acción desde el payload (sin N llamadas a hasPermission)
+      ACTIONS.forEach(a => {
+        const key = `pea_${a}`
+        can.value[a] = app.permisos[key] === true || app.permisos[key.toUpperCase()] === true
+      })
     } catch (e) {
-      console.error('Error al obtener rol del usuario:', e)
-      return ''
+      console.error(`[usePermissions] Error cargando permisos para "${moduleName}":`, e)
+    } finally {
+      loading.value = false
     }
   }
 
-  const isAdmin = computed(() => {
-    const role = currentRole.value
-    if (!role) return false
-    return ADMIN_ROLES.some(adminRole =>
-      role.toLowerCase().includes(adminRole.toLowerCase())
-    )
-  })
+  onMounted(updatePermissions)
 
-  const canCreate = computed(() => isAdmin.value)
-  const canEdit = computed(() => isAdmin.value)
-  const canDelete = computed(() => isAdmin.value)
-  const isReadOnly = computed(() => !isAdmin.value)
-
-  return {
-    isAdmin,
-    canCreate,
-    canEdit,
-    canDelete,
-    isReadOnly,
-    getUserRole
-  }
+  return { can, isAdmin, loading, refreshPermissions: updatePermissions }
 }

@@ -1,64 +1,63 @@
-import { request } from './apiClient';
-
 /**
- * Dashboard Service - Conexión API para Dashboard Principal
- * Maneja todos los datos relacionados con cursos y finanzas
+ * dashboardService.js
+ * Servicio unificado para el Dashboard.
+ *
+ * Fusión de dashboardService.js (legacy) y dashboardService_2.js.
+ * `dashboardService_2.js` puede eliminarse de la carpeta una vez
+ * actualizado Dashboard.vue para importar desde aquí.
  */
+import { request } from './apiClient'
 
+// ─── Transformación de claves ──────────────────────────────────────────────
+// Dashboard.vue espera claves en MAYÚSCULAS por herencia del backend antiguo.
+// Esta función normaliza la respuesta sin modificar el apiClient ni las vistas.
+function toUpperKeys(value) {
+  if (Array.isArray(value)) return value.map(toUpperKeys)
+  if (value !== null && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [k.toUpperCase(), toUpperKeys(v)])
+    )
+  }
+  return value
+}
+
+async function requestUpper(path, params) {
+  const qs = params ? `?${new URLSearchParams(params)}` : ''
+  const data = await request(`${path}${qs}`)
+  // Desenvuelve paginación si es necesario
+  if (data?.results) return { ...data, results: toUpperKeys(data.results) }
+  return toUpperKeys(data)
+}
+
+// ─── API pública ───────────────────────────────────────────────────────────
 const dashboardService = {
-  /**
-   * Obtener todos los cursos vigentes
-   * Utilizado para: gráfico principal, tabla de cursos
-   */
   cursos: {
-    list: (params) => request(`cursos${params ? `?${new URLSearchParams(params)}` : ''}`)
+    list: (params) => requestUpper('cursos/cursos', params),
+    get: (id) => requestUpper(`cursos/cursos/${id}/`),
   },
-
-  /**
-   * Obtener todas las cuotas/montos de cursos
-   * Utilizado para: calcular montos estimados y recaudados
-   */
-  cuotas: {
-    list: (params) => request(`cuotas${params ? `?${new URLSearchParams(params)}` : ''}`)
-  },
-
-  /**
-   * Obtener todos los coordinadores de cursos
-   * Utilizado para: mostrar responsables en la tabla
-   */
-  coordinadores: {
-    list: (params) => request(`coordinadores${params ? `?${new URLSearchParams(params)}` : ''}`)
-  },
-
-  /**
-   * Obtener todas las personas
-   * Utilizado para: resolver nombres de responsables
-   */
   personas: {
-    list: (params) => request(`personas${params ? `?${new URLSearchParams(params)}` : ''}`)
+    list: (params) => requestUpper('personas/personas', params),
+    get: (id) => requestUpper(`personas/personas/${id}/`),
   },
+  personaCursos: {
+    list: (params) => requestUpper('personas/cursos', params),
+    get: (id) => requestUpper(`personas/cursos/${id}/`),
+  },
+  pagoPersona: {
+    list: (params) => requestUpper('pagos/pago-persona', params),
+    get: (id) => requestUpper(`pagos/pago-persona/${id}/`),
+  },
+  coordinadores: {
+    list: (params) => requestUpper('cursos/coordinadores', params),
+    get: (id) => requestUpper(`cursos/coordinadores/${id}/`),
+  },
+  formadores: {
+    list: (params) => requestUpper('cursos/formadores', params),
+    get: (id) => requestUpper(`cursos/formadores/${id}/`),
+  },
+  // Alias compactos para estadísticas (heredados del dashboardService original)
+  getCursoResumen: (id) => request(`cursos/${id}/resumen/`),
+  getEstadisticasGlobales: () => request('estadisticas/dashboard/'),
+}
 
-  /**
-   * Obtener resumen financiero de un curso específico
-   */
-  getCursoResumen: (cursoId) => 
-    request(`cursos/${cursoId}/resumen/`),
-
-  /**
-   * Obtener estadísticas financieras globales
-   */
-  getEstadisticasGlobales: () => 
-    request('estadisticas/dashboard/'),
-
-  /**
-   * Obtener pagos por rango de fechas
-   */
-  getPagosPorFecha: (params) => 
-    request(`pagos${params ? `?${new URLSearchParams(params)}` : ''}`),
-};
-
-export default dashboardService;
-
-
-
-
+export default dashboardService

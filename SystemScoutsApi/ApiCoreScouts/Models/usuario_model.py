@@ -19,6 +19,13 @@ class Usuario(AbstractUser):
         db_table = 'usuario'
         verbose_name = 'usuario'
         verbose_name_plural = 'usuarios'
+        permissions = [
+            ("view_screen_usuario", "Puede visualizar la pantalla de Usuarios"),
+            ("view_screen_perfil", "Puede visualizar la pantalla de Perfiles"),
+            ("view_screen_correo", "Puede visualizar la pantalla de Correos"),
+            ("view_screen_acreditacion_manual", "Puede visualizar la pantalla de Acreditación Manual"),
+            ("view_screen_verificador_qr", "Puede visualizar la pantalla de Verificador QR"),
+        ]
 
     def __str__(self):
         return self.username

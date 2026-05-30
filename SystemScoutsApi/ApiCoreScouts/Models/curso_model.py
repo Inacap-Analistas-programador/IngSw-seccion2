@@ -1,4 +1,4 @@
-from django.db import models
+﻿from django.db import models
 from .mantenedor_model import *
 from .persona_model import *
 from .usuario_model import *
@@ -47,6 +47,9 @@ class Curso(models.Model):
 
     class Meta:
         db_table = 'curso'
+        permissions = [
+            ("view_screen_curso", "Puede visualizar la pantalla de Cursos"),
+        ]
 
 class Curso_Cuota(models.Model):
     cuu_id = models.BigAutoField(primary_key=True, db_column='cuu_id')
