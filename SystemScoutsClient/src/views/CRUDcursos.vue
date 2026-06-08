@@ -66,10 +66,7 @@
     />
 
     <!-- Modal de Creación/Edición de Curso -->
-    <BaseModal v-model="mostrarModal" @close="cerrarModal" class="curso-modal modal-editar-mejorado">
-      <template #title>
-        {{ modoVer ? 'Detalle del Curso' : (isTrulyNew ? 'Crear Nuevo Curso' : 'Editar Curso') }}
-      </template>
+    <BaseModal v-model="mostrarModal" @close="cerrarModal" class="modal-xl no-padding-modal">
       <template #default>
         <CursoForm 
           :form="form"
@@ -566,6 +563,26 @@ async function preloadCatalogosMin() {
   }
 }
 
+async function cargarCatalogos() {
+  try {
+    const [cargosRes, ramasRes, rolesRes, alimRes, comunasRes] = await Promise.all([
+      mantenedores.cargo.list({ page_size: 200 }).catch(() => []),
+      mantenedores.rama.list({ page_size: 100 }).catch(() => []),
+      mantenedores.rol.list({ page_size: 100 }).catch(() => []),
+      mantenedores.alimentacion.list({ page_size: 100 }).catch(() => []),
+      mantenedores.comuna.list({ page_size: 500 }).catch(() => [])
+    ])
+    cargosList.value = (Array.isArray(cargosRes?.results) ? cargosRes.results : (cargosRes || [])).map(toUpperKeys)
+    ramaslist.value = (Array.isArray(ramasRes?.results) ? ramasRes.results : (ramasRes || [])).map(toUpperKeys)
+    rolesList.value = (Array.isArray(rolesRes?.results) ? rolesRes.results : (rolesRes || [])).map(toUpperKeys)
+    alimentacionCatalogo.value = (Array.isArray(alimRes?.results) ? alimRes.results : (alimRes || [])).map(toUpperKeys)
+    comunasList.value = (Array.isArray(comunasRes?.results) ? comunasRes.results : (comunasRes || [])).map(toUpperKeys)
+  } catch (error) {
+    console.error('Error cargando catálogos extendidos:', error)
+    throw error
+  }
+}
+
 // Debounced server search ELIMINADO para búsqueda manual
 // const _debouncedLoad = debounce((q) => cargarDatos({ page: 1, page_size: 20, search: (q || '').trim() }), 450)
 // watch(() => filtros.value.searchQuery, (v) => { ... })
@@ -905,6 +922,10 @@ async function guardarCurso() {
         cleanPayload[key] = payload[key]
       }
     })
+
+    if (cleanPayload.CUR_FECHA_SOLICITUD === '') {
+      cleanPayload.CUR_FECHA_SOLICITUD = null
+    }
 
     // Prepare payload for API (lowercase)
     const apiPayload = toLowerKeys(cleanPayload)
@@ -1286,5 +1307,10 @@ function cerrarDashboard() {
 .btn-close-x:hover {
   opacity: 1;
   background: #f3f4f6;
+}
+
+/* Remover padding del body del modal para que el form llene el espacio */
+.no-padding-modal :deep(.modal-body-content) {
+  padding: 0 !important;
 }
 </style>

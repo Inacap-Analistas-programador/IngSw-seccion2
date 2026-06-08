@@ -92,7 +92,7 @@
             </div>
             <div class="form-group">
               <label class="form-label">REGIÓN (Filtro):</label>
-              <select class="form-control" v-model="form.region_id">
+              <select class="form-control" v-model="form.region_id" @change="form.provincia_id = null">
                 <option :value="null">SELECCIONE REGIÓN</option>
                 <option v-for="region in regionesActivas" :key="region.id" :value="region.id">
                   {{ region.descripcion }}
@@ -103,7 +103,7 @@
               <label class="form-label">PROVINCIA:</label>
               <select class="form-control" v-model="form.provincia_id" :disabled="!form.region_id" required>
                 <option :value="null" disabled>SELECCIONE PROVINCIA</option>
-                <option v-for="provincia in provinciasActivas" :key="provincia.id" :value="provincia.id">
+                <option v-for="provincia in provinciasFormulario" :key="provincia.id" :value="provincia.id">
                   {{ provincia.descripcion }}
                 </option>
               </select>
@@ -217,9 +217,10 @@ const itemSeleccionado = ref(null)
 const cargarDatos = async () => {
   cargando.value = true
   try {
-    const [respComunas, respProvincias] = await Promise.all([
+    const [respComunas, respProvincias, respRegiones] = await Promise.all([
       mantenedoresService.comuna.list().catch(e => { console.error('Comunas list error:', e); return [] }),
-      mantenedoresService.provincia.list().catch(e => { console.error('Provincias list error:', e); return [] })
+      mantenedoresService.provincia.list().catch(e => { console.error('Provincias list error:', e); return [] }),
+      mantenedoresService.region.list().catch(e => { console.error('Regiones list error:', e); return [] })
     ])
 
     const getData = (resp) => {
@@ -247,10 +248,27 @@ const cargarDatos = async () => {
       }
     })
 
-    provincias.value = getData(respProvincias).map(p => ({
-      id: p.pro_id ?? p.PRO_ID ?? p.id,
-      descripcion: (p.pro_descripcion ?? p.PRO_DESCRIPCION ?? p.DESCRIPCION ?? p.descripcion ?? '').toString(),
-      vigente: !!(p.pro_vigente ?? p.PRO_VIGENTE ?? p.vigente ?? true)
+    provincias.value = getData(respProvincias).map(p => {
+      let regId = null
+      if (p.reg_id) {
+        regId = typeof p.reg_id === 'object' ? (p.reg_id.reg_id || p.reg_id.id) : p.reg_id
+      } else if (p.REG_ID) {
+        regId = typeof p.REG_ID === 'object' ? (p.REG_ID.REG_ID || p.REG_ID.ID) : p.REG_ID
+      } else if (p.region_id) {
+        regId = p.region_id
+      }
+      return {
+        id: p.pro_id ?? p.PRO_ID ?? p.id,
+        descripcion: (p.pro_descripcion ?? p.PRO_DESCRIPCION ?? p.DESCRIPCION ?? p.descripcion ?? '').toString(),
+        region_id: regId,
+        vigente: !!(p.pro_vigente ?? p.PRO_VIGENTE ?? p.vigente ?? true)
+      }
+    })
+
+    regiones.value = getData(respRegiones).map(r => ({
+      id: r.reg_id ?? r.REG_ID ?? r.id,
+      descripcion: (r.reg_descripcion ?? r.REG_DESCRIPCION ?? r.DESCRIPCION ?? r.descripcion ?? '').toString(),
+      vigente: !!(r.reg_vigente ?? r.REG_VIGENTE ?? r.vigente ?? true)
     }))
   } catch (error) {
     console.error('Error cargando datos:', error)
@@ -264,6 +282,13 @@ const getProvinciaNombre = (id) => {
 }
 
 const provinciasActivas = computed(() => provincias.value.filter(p => p.vigente))
+
+const regionesActivas = computed(() => regiones.value.filter(r => r.vigente))
+
+const provinciasFormulario = computed(() => {
+  if (!form.region_id) return []
+  return provincias.value.filter(p => p.vigente && p.region_id === form.region_id)
+})
 
 const filteredItems = computed(() => {
   let result = comunas.value
@@ -287,13 +312,15 @@ const filteredItems = computed(() => {
 
 function abrirModalCrear() {
   editando.value = false
-  Object.assign(form, { id: null, descripcion: '', provincia_id: '', vigente: true })
+  Object.assign(form, { id: null, descripcion: '', region_id: null, provincia_id: null, vigente: true })
   modalVisible.value = true
 }
 
 const editarElemento = (item) => {
   editando.value = true
-  Object.assign(form, { id: item.id, descripcion: item.descripcion, provincia_id: item.provincia_id, vigente: item.vigente })
+  const prov = provincias.value.find(p => p.id === item.provincia_id)
+  const regId = prov ? prov.region_id : null
+  Object.assign(form, { id: item.id, descripcion: item.descripcion, provincia_id: item.provincia_id, region_id: regId, vigente: item.vigente })
   modalVisible.value = true
 }
 

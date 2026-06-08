@@ -1,161 +1,203 @@
 <template>
-  <div class="curso-form-container">
+  <div class="persona-form">
+    <header class="form-header">
+      <div class="header-content">
+        <h2>{{ modoVer ? 'Ver Curso' : (isTrulyNew ? 'Nuevo Curso' : 'Editar Curso') }}</h2>
+        <p class="subtitle" v-if="form.CUR_DESCRIPCION">
+          {{ form.CUR_CODIGO }} - {{ form.CUR_DESCRIPCION }}
+        </p>
+      </div>
+      <div class="header-actions">
+        <BaseButton variant="secondary" @click="$emit('cancel')" :disabled="isSaving">
+          <AppIcons name="x" :size="18" />
+          {{ modoVer ? 'Cerrar' : 'Cancelar' }}
+        </BaseButton>
+        <BaseButton v-if="!modoVer" variant="primary" @click="validarYGuardar" :disabled="isSaving">
+          <AppIcons :name="isSaving ? 'refresh' : 'save'" :size="18" :class="{ 'spin': isSaving }" />
+          {{ isSaving ? 'Guardando...' : (isTrulyNew ? 'Guardar' : 'Actualizar') }}
+        </BaseButton>
+      </div>
+    </header>
 
-    <div class="modal-body-custom">
+    <div class="form-tabs">
+      <button :class="{ active: activeTab === 'info' }" @click="activeTab = 'info'">Información</button>
+      <button :class="{ active: activeTab === 'fechas' }" @click="activeTab = 'fechas'">Fechas y Cuotas</button>
+      <button :class="{ active: activeTab === 'logistica' }" @click="activeTab = 'logistica'">Logística y Equipo</button>
+    </div>
+
+    <div class="form-scroll-area relative-area">
       <!-- Bloqueo de UI durante guardado -->
       <div v-if="isSaving" class="saving-overlay">
         <div class="spinner"></div>
         <span>Guardando cambios...</span>
       </div>
 
-      <div class="form-grid-modal">
-        <!-- ... existing grid content ... -->
-        <div class="form-group span-2">
-          <label>Descripción del curso</label>
-          <InputBase v-model="form.CUR_DESCRIPCION" :disabled="modoVer" />
-          <small class="field-hint">Ej: Curso Básico de Primeros Auxilios</small>
+      <!-- TAB: INFO -->
+      <div v-show="activeTab === 'info'" class="tab-content">
+        <div class="form-grid">
+          <!-- Información General -->
+          <section class="form-section glass-panel">
+            <h3 class="section-title"><AppIcons name="book-open" :size="18" /> Información General</h3>
+            <div class="field">
+              <label>Descripción del curso *</label>
+              <InputBase v-model="form.CUR_DESCRIPCION" :readonly="modoVer" required />
+              <small class="field-hint">Ej: Curso Básico de Primeros Auxilios</small>
+            </div>
+            <div class="fields-row">
+              <div class="field">
+                <label>Código *</label>
+                <InputBase v-model="form.CUR_CODIGO" :readonly="modoVer" required />
+              </div>
+              <div class="field">
+                <label>Tipo de Curso *</label>
+                <FilterSelect v-model="form.TCU_ID" :options="options.tiposCurso" label-key="text" value-key="value" :disabled="modoVer" />
+              </div>
+            </div>
+            <div class="fields-row">
+              <div class="field">
+                <label>Modalidad *</label>
+                <FilterSelect v-model="form.CUR_MODALIDAD" :options="options.modalidad" label-key="text" value-key="value" :disabled="modoVer" />
+              </div>
+              <div class="field">
+                <label>Tipo (Presencial/Online) *</label>
+                <FilterSelect v-model="form.CUR_TIPO_CURSO" :options="options.tipoPresencial" label-key="text" value-key="value" :disabled="modoVer" />
+              </div>
+            </div>
+          </section>
+
+          <!-- Responsabilidad -->
+          <section class="form-section glass-panel">
+            <h3 class="section-title"><AppIcons name="users" :size="18" /> Responsabilidad y Adm.</h3>
+            <div class="fields-row">
+              <div class="field">
+                <label>Responsable</label>
+                <FilterSelect v-model="form.PER_ID_RESPONSABLE" :options="options.personas" label-key="text" value-key="value" :disabled="modoVer" />
+              </div>
+              <div class="field">
+                <label>Cargo Responsable</label>
+                <FilterSelect v-model="form.CAR_ID_RESPONSABLE" :options="options.cargos" label-key="text" value-key="value" :disabled="modoVer" />
+              </div>
+            </div>
+            <div class="fields-row">
+              <div class="field">
+                <label>Administra</label>
+                <FilterSelect v-model="form.CUR_ADMINISTRA" :options="options.administra" label-key="text" value-key="value" :disabled="modoVer" />
+              </div>
+              <div class="field">
+                <label>Fecha Solicitud</label>
+                <InputBase type="date" v-model="form.CUR_FECHA_SOLICITUD" :readonly="modoVer" />
+              </div>
+            </div>
+            <div class="field">
+              <label>Observaciones</label>
+              <textarea v-model="form.CUR_OBSERVACION" rows="3" :readonly="modoVer" class="premium-textarea"></textarea>
+            </div>
+          </section>
+
+          <!-- Ubicación -->
+          <section class="form-section glass-panel map-section">
+            <h3 class="section-title"><AppIcons name="map-pin" :size="18" /> Ubicación</h3>
+            <div class="fields-row">
+              <div class="field">
+                <label>Comuna (lugar) *</label>
+                <FilterSelect v-model="form.COM_ID_LUGAR" :options="options.comunas" label-key="text" value-key="value" :disabled="modoVer" />
+              </div>
+              <div class="field" style="flex: 2;">
+                <label>Lugar Específico *</label>
+                <div class="input-with-action">
+                  <InputBase v-model="form.CUR_LUGAR" :readonly="modoVer" placeholder="Ej: Sede Central" style="flex: 1;" />
+                  <BaseButton 
+                    v-if="!modoVer" 
+                    @click="handleValidarDireccion" 
+                    variant="secondary" 
+                    size="sm" 
+                    class="btn-validate"
+                  >
+                    <AppIcons name="search" :size="14" /> Validar
+                  </BaseButton>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mapa Interactivo -->
+            <div class="field map-container" :style="modoVer ? 'pointer-events: none; opacity: 0.8;' : ''">
+              <label>Ubicación (haz clic en el mapa o arrastra el marcador)</label>
+              <MapEmbed
+                ref="mapRef"
+                :lat="form.CUR_COORD_LATITUD"
+                :lng="form.CUR_COORD_LONGITUD"
+                @update:lat="form.CUR_COORD_LATITUD = $event"
+                @update:lng="form.CUR_COORD_LONGITUD = $event"
+                @update:address="handleAddressUpdate"
+              />
+            </div>
+            <div class="fields-row">
+              <div class="field">
+                <label>Latitud *</label>
+                <InputBase v-model="form.CUR_COORD_LATITUD" :readonly="modoVer" />
+              </div>
+              <div class="field">
+                <label>Longitud *</label>
+                <InputBase v-model="form.CUR_COORD_LONGITUD" :readonly="modoVer" />
+              </div>
+            </div>
+          </section>
         </div>
-        <div class="form-group"><label>Código</label><InputBase v-model="form.CUR_CODIGO" :disabled="modoVer" /></div>
-        <div class="form-group">
-          <label>Tipo de Curso</label>
-          <FilterSelect v-model="form.TCU_ID" :options="options.tiposCurso" labelKey="text" valueKey="value" :disabled="modoVer" />
-          <small class="field-hint">Selecciona el tipo de curso</small>
+      </div>
+
+      <!-- TAB: FECHAS Y CUOTAS -->
+      <div v-show="activeTab === 'fechas'" class="tab-content">
+        <div v-if="!esEdicion" class="no-history">
+          <AppIcons name="calendar" :size="48" />
+          <p>Guarda el curso primero para gestionar fechas y cuotas.</p>
         </div>
-        <div class="form-group">
-          <label>Responsable</label>
-          <FilterSelect v-model="form.PER_ID_RESPONSABLE" :options="options.personas" labelKey="text" valueKey="value" :disabled="modoVer" />
-          <small class="field-hint">Selecciona a la persona responsable</small>
-        </div>
-        <div class="form-group">
-          <label>Cargo</label>
-          <FilterSelect v-model="form.CAR_ID_RESPONSABLE" :options="options.cargos" labelKey="text" valueKey="value" :disabled="modoVer" />
-          <small class="field-hint">Selecciona el cargo del responsable</small>
-        </div>
-        <div class="form-group">
-          <label>Fecha de Solicitud</label>
-          <InputBase type="date" v-model="form.CUR_FECHA_SOLICITUD" :disabled="modoVer" />
-          <small class="field-hint">Formato: AAAA-MM-DD (Ej: 2025-11-12)</small>
-        </div>
-        <div class="form-group">
-          <label>Modalidad</label>
-          <FilterSelect v-model="form.CUR_MODALIDAD" :options="options.modalidad" labelKey="text" valueKey="value" :disabled="modoVer" />
-          <small class="field-hint">Selecciona la modalidad</small>
-        </div>
-        <div class="form-group">
-          <label>Tipo (Presencial/Online)</label>
-          <FilterSelect v-model="form.CUR_TIPO_CURSO" :options="options.tipoPresencial" labelKey="text" valueKey="value" :disabled="modoVer" />
-          <small class="field-hint">Selecciona si es presencial u online</small>
-        </div>
-        <div class="form-group">
-          <label>Administra</label>
-          <FilterSelect v-model="form.CUR_ADMINISTRA" :options="options.administra" labelKey="text" valueKey="value" :disabled="modoVer" />
-          <small class="field-hint">Indica quién administra el curso</small>
-        </div>
-        <div class="form-group">
-          <label>Comuna (lugar)</label>
-          <FilterSelect v-model="form.COM_ID_LUGAR" :options="options.comunas" labelKey="text" valueKey="value" :disabled="modoVer" />
-          <small class="field-hint">Selecciona la comuna donde se realiza</small>
-        </div>
-        <div class="form-group span-2">
-          <label>Lugar</label>
-          <div class="input-with-action">
-            <InputBase v-model="form.CUR_LUGAR" :disabled="modoVer" placeholder="Ej: Sede Central, Sala 3 o una dirección completa" />
-            <BaseButton 
-              v-if="!modoVer" 
-              @click="handleValidarDireccion" 
-              variant="secondary" 
-              size="sm" 
-              class="btn-validate"
-              title="Buscar en el mapa"
-            >
-              <AppIcons name="search" :size="14" /> Validar
-            </BaseButton>
-          </div>
-          <small class="field-hint">Ej: Sede Central, Sala 3</small>
-        </div>
-        
-        <!-- Mapa Interactivo -->
-        <div class="form-group span-2" :style="modoVer ? 'pointer-events: none; opacity: 0.8;' : ''">
-          <label>Ubicación (haz clic en el mapa o arrastra el marcador)</label>
-          <MapEmbed
-            ref="mapRef"
-            :lat="form.CUR_COORD_LATITUD"
-            :lng="form.CUR_COORD_LONGITUD"
-            @update:lat="form.CUR_COORD_LATITUD = $event"
-            @update:lng="form.CUR_COORD_LONGITUD = $event"
-            @update:address="handleAddressUpdate"
+        <div v-else class="tab-sections">
+          <CursoFechas 
+            :modelValue="lists.fechas"
+            @update:modelValue="$emit('update:lists', { ...lists, fechas: $event })"
+            :modoVer="modoVer" 
+            @show-alert="$emit('show-alert', $event)"
+          />
+          <CursoCuotas 
+            :modelValue="lists.cuotas"
+            @update:modelValue="$emit('update:lists', { ...lists, cuotas: $event })"
+            :modoVer="modoVer" 
+            @show-alert="$emit('show-alert', $event)"
           />
         </div>
-        <div class="form-group"><label>Latitud</label><InputBase v-model="form.CUR_COORD_LATITUD" placeholder="Lat" :disabled="modoVer" /><small class="field-hint">Ej: -36.827 (Concepción)</small></div>
-        <div class="form-group"><label>Longitud</label><InputBase v-model="form.CUR_COORD_LONGITUD" placeholder="Lng" :disabled="modoVer" /><small class="field-hint">Ej: -73.050 (Concepción)</small></div>
-
-        <div class="form-group span-2"><label>Observaciones</label><textarea v-model="form.CUR_OBSERVACION" rows="3" :disabled="modoVer" class="base-textarea"></textarea><small class="field-hint">Notas internas, ej: traer proyector</small></div>
       </div>
 
-      <!-- Sección de Gestión de Fechas -->
-      <CursoFechas 
-        v-if="esEdicion" 
-        :modelValue="lists.fechas"
-        @update:modelValue="$emit('update:lists', { ...lists, fechas: $event })"
-        :modoVer="modoVer" 
-        @show-alert="$emit('show-alert', $event)"
-      />
-
-      <!-- Sección de Gestión de Secciones -->
-      <CursoSecciones 
-        v-if="esEdicion" 
-        :modelValue="lists.secciones"
-        @update:modelValue="$emit('update:lists', { ...lists, secciones: $event })"
-        :modoVer="modoVer" 
-        :ramasOptions="options.ramas"
-        @show-alert="$emit('show-alert', $event)"
-      />
-
-      <!-- Sección Equipo Formadores -->
-      <CursoFormadores 
-        v-if="esEdicion" 
-        :modelValue="lists.formadores"
-        @update:modelValue="$emit('update:lists', { ...lists, formadores: $event })"
-        :modoVer="modoVer" 
-        :personasOptions="options.personas"
-        :rolesOptions="options.roles"
-        :seccionesOptions="options.secciones"
-        @show-alert="$emit('show-alert', $event)"
-      />
-
-      <CursoAlimentacion 
-        v-if="esEdicion" 
-        :modelValue="lists.alimentaciones"
-        @update:modelValue="$emit('update:lists', { ...lists, alimentaciones: $event })"
-        :modoVer="modoVer" 
-        :alimentacionOptions="options.alimentacion"
-        @show-alert="$emit('show-alert', $event)"
-      />
-
-      <!-- Sección Cuotas del Curso -->
-      <CursoCuotas 
-        v-if="esEdicion" 
-        :modelValue="lists.cuotas"
-        @update:modelValue="$emit('update:lists', { ...lists, cuotas: $event })"
-        :modoVer="modoVer" 
-        @show-alert="$emit('show-alert', $event)"
-      />
-
-      <!-- Acciones del Formulario al final -->
-      <div class="form-actions" v-if="!modoVer">
-        <BaseButton @click="$emit('cancel')" variant="secondary" :disabled="isSaving">
-          <AppIcons name="close" :size="16" /> Cancelar
-        </BaseButton>
-        <BaseButton @click="$emit('save')" variant="primary" :disabled="isSaving">
-          <AppIcons :name="isSaving ? 'clock' : 'save'" :size="16" />
-          <span v-if="!isSaving">{{ isTrulyNew ? 'GUARDAR' : 'ACTUALIZAR' }}</span>
-          <span v-else>Procesando...</span>
-        </BaseButton>
-      </div>
-      <div class="form-actions" v-else>
-        <BaseButton @click="$emit('cancel')" variant="secondary">
-          <AppIcons name="close" :size="16" /> Cerrar
-        </BaseButton>
+      <!-- TAB: LOGISTICA Y EQUIPO -->
+      <div v-show="activeTab === 'logistica'" class="tab-content">
+        <div v-if="!esEdicion" class="no-history">
+          <AppIcons name="users" :size="48" />
+          <p>Guarda el curso primero para gestionar la logística y el equipo.</p>
+        </div>
+        <div v-else class="tab-sections">
+          <CursoSecciones 
+            :modelValue="lists.secciones"
+            @update:modelValue="$emit('update:lists', { ...lists, secciones: $event })"
+            :modoVer="modoVer" 
+            :ramasOptions="options.ramas"
+            @show-alert="$emit('show-alert', $event)"
+          />
+          <CursoFormadores 
+            :modelValue="lists.formadores"
+            @update:modelValue="$emit('update:lists', { ...lists, formadores: $event })"
+            :modoVer="modoVer" 
+            :personasOptions="options.personas"
+            :rolesOptions="options.roles"
+            :seccionesOptions="options.secciones"
+            @show-alert="$emit('show-alert', $event)"
+          />
+          <CursoAlimentacion 
+            :modelValue="lists.alimentaciones"
+            @update:modelValue="$emit('update:lists', { ...lists, alimentaciones: $event })"
+            :modoVer="modoVer" 
+            :alimentacionOptions="options.alimentacion"
+            @show-alert="$emit('show-alert', $event)"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -188,7 +230,33 @@ const props = defineProps({
 
 const emit = defineEmits(['save', 'cancel', 'show-alert', 'update:lists'])
 
+const activeTab = ref('info')
 const mapRef = ref(null)
+
+const validarYGuardar = () => {
+  if (!props.form.CUR_DESCRIPCION || !props.form.CUR_DESCRIPCION.trim()) {
+    activeTab.value = 'info'
+    return emit('show-alert', { message: 'La descripción del curso es obligatoria.', type: 'warning' })
+  }
+  if (!props.form.CUR_CODIGO || !props.form.CUR_CODIGO.trim()) {
+    activeTab.value = 'info'
+    return emit('show-alert', { message: 'El código del curso es obligatorio.', type: 'warning' })
+  }
+  if (!props.form.COM_ID_LUGAR) {
+    activeTab.value = 'info'
+    return emit('show-alert', { message: 'La comuna donde se realiza el curso es obligatoria.', type: 'warning' })
+  }
+  if (!props.form.CUR_LUGAR || !props.form.CUR_LUGAR.trim()) {
+    activeTab.value = 'info'
+    return emit('show-alert', { message: 'El lugar específico del curso es obligatorio.', type: 'warning' })
+  }
+  if (!props.form.CUR_COORD_LATITUD || !props.form.CUR_COORD_LONGITUD) {
+    activeTab.value = 'info'
+    return emit('show-alert', { message: 'Las coordenadas de latitud y longitud son obligatorias.', type: 'warning' })
+  }
+  
+  emit('save')
+}
 
 const handleAddressUpdate = (newAddress) => {
   if (newAddress && !props.modoVer) {
@@ -214,70 +282,128 @@ const handleValidarDireccion = async () => {
 </script>
 
 <style scoped>
-/* Copied from CRUDcursos.vue but scoped */
-.curso-form-container {
-  padding: 0;
-}
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 32px;
-  padding-top: 24px;
-  border-top: 1px solid #e5e7eb;
-}
-
-.modal-body-custom {
-  max-height: 75vh;
-}
-
-.form-grid-modal {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
-  margin-bottom: 32px;
-}
-
-@media (max-width: 600px) {
-  .form-grid-modal {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-  .form-group.span-2 {
-    grid-column: auto;
-  }
-}
-
-.saving-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.8);
-  z-index: 50;
+/* Base Form Layout (PersonaForm style) */
+.persona-form {
   display: flex;
   flex-direction: column;
+  height: 90vh;
+  max-height: 850px;
+  background: #f8fafc;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.form-header {
+  padding: 20px 24px;
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
-  font-weight: 500;
-  color: #2563eb;
-  backdrop-filter: blur(2px);
 }
 
-.spinner {
-  width: 24px;
-  height: 24px;
-  border: 3px solid #e5e7eb;
-  border-top-color: #3b82f6;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+.header-content h2 { margin: 0; font-size: 1.5rem; color: #1a237e; }
+.header-content .subtitle { margin: 4px 0 0; color: #64748b; font-weight: 500; font-size: 0.95rem; }
+.header-actions { display: flex; gap: 12px; }
+
+.form-tabs {
+  display: flex;
+  background: white;
+  padding: 0 24px;
+  border-bottom: 1px solid #e2e8f0;
+  gap: 24px;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+.form-tabs button {
+  padding: 16px 4px;
+  background: none;
+  border: none;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.form-tabs button.active {
+  color: #1a237e;
+  border-bottom-color: #1a237e;
+}
+
+.form-scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.relative-area {
+  position: relative;
+}
+
+.tab-content { display: flex; flex-direction: column; gap: 24px; }
+
+.glass-panel {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.form-section { display: flex; flex-direction: column; gap: 16px; }
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+  color: #1e293b;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 12px;
+}
+
+.fields-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-size: 0.85rem; font-weight: 600; color: #64748b; }
+
+.premium-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  background: #ffffff;
+  transition: all 0.2s ease;
+  color: #0f172a;
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.premium-textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37,99,235,0.15);
+}
+
+.field-hint {
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+/* Helpers */
+.map-section {
+  grid-column: 1 / -1;
 }
 
 .input-with-action {
@@ -296,66 +422,63 @@ const handleValidarDireccion = async () => {
   flex-shrink: 0;
 }
 
-.input-with-action .base-input-container {
-  flex: 1;
-}
-
-.form-group {
+/* Empty State para Pestañas no editables aún */
+.no-history {
   display: flex;
   flex-direction: column;
-}
-
-.form-group.span-2 {
-  grid-column: span 2;
-}
-
-.form-group label {
-  font-weight: 600;
-  margin-bottom: 6px;
-  font-size: 0.875rem;
-  color: #1e293b;
-  display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  padding: 64px 20px;
+  color: #94a3b8;
+  background: white;
+  border-radius: 12px;
+  border: 1px dashed #cbd5e1;
+  text-align: center;
+  gap: 16px;
 }
 
-.form-group :deep(input), 
-.form-group :deep(select), 
-.form-group :deep(textarea),
-.form-group input,
-.form-group select,
-.form-group textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  background: #ffffff;
-  transition: all 0.2s ease;
-  color: #0f172a;
+.tab-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
-.form-group :deep(input:focus), .form-group :deep(select:focus), .form-group :deep(textarea:focus),
-.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-  outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 2px rgba(37,99,235,0.15);
+/* Modal Saving UI Overlay */
+.saving-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-weight: 500;
+  color: #2563eb;
+  backdrop-filter: blur(2px);
+  border-radius: 0 0 16px 16px;
 }
 
-.field-hint {
-  margin-top: 4px;
-  color: #6b7280;
-  font-size: 12px;
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 
-.base-textarea {
-  resize: vertical;
-  min-height: 80px;
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
-.section-divider {
-  border: none;
-  border-top: 1px solid #e5e7eb;
-  margin: 24px 0;
+@media (max-width: 1024px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .persona-form { height: 95vh; max-height: none; }
+  .fields-row { grid-template-columns: 1fr; }
 }
 </style>

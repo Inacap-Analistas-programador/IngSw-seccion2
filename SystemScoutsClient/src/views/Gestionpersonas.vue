@@ -270,10 +270,14 @@ export default {
         ])
         
         // Asignaciones optimizadas
-        options.roles = roles || []
-        options.grupos = grupos || []
+        options.roles = (roles?.results || roles || []).map(r => ({ value: r.value || r.ROL_ID || r.rol_id || r.id, label: r.label || r.ROL_DESCRIPCION || r.rol_descripcion || r.nombre }))
+        options.grupos = (grupos?.results || grupos || []).map(g => ({ value: g.value || g.GRU_ID || g.gru_id || g.id, label: g.label || g.GRU_DESCRIPCION || g.gru_descripcion || g.nombre }))
         options.cargos = (car?.results || car || []).map(c => ({ value: c.CAR_ID || c.car_id || c.id, label: c.CAR_DESCRIPCION || c.car_descripcion || c.nombre }))
-        options.distritos = (dis?.results || dis || []).map(d => ({ value: d.DIS_ID || d.dis_id || d.id, label: d.DIS_DESCRIPCION || d.dis_descripcion || d.nombre }))
+        options.distritos = (dis?.results || dis || []).map(d => ({ 
+          value: d.DIS_ID || d.dis_id || d.id, 
+          label: d.DIS_DESCRIPCION || d.dis_descripcion || d.nombre,
+          zon_id: d.ZON_ID || d.zon_id || (d.zon_id && d.zon_id.id) || (typeof d.zon_id === 'object' ? d.zon_id.zon_id : null)
+        }))
         options.zonas = (zon?.results || zon || []).map(z => ({ value: z.ZON_ID || z.zon_id || z.id, label: z.ZON_DESCRIPCION || z.zon_descripcion || z.nombre }))
         
         // Deduplicar cursos asegurándonos de que sea un array seguro
@@ -286,7 +290,7 @@ export default {
         })
         options.cursos = Array.from(uniqueCursos.values())
         
-        options.ramas = ramas || []
+        options.ramas = (ramas?.results || ramas || []).map(r => ({ value: r.value || r.RAM_ID || r.ram_id || r.id, label: r.label || r.RAM_DESCRIPCION || r.ram_descripcion || r.nombre }))
         options.regiones = (regiones?.results || regiones || []).map(r => ({ value: r.REG_ID || r.reg_id || r.id, label: r.REG_NOMBRE || r.reg_descripcion || r.nombre || r.REG_DESCRIPCION }))
         options.estadoCivil = (ec?.results || ec || []).map(e => ({ value: e.ESC_ID || e.esc_id || e.id, label: e.ESC_DESCRIPCION || e.esc_descripcion || e.nombre }))
         options.alimentacion = (ali?.results || ali || []).map(a => ({ value: a.ALI_ID || a.ali_id || a.id, label: a.ALI_NOMBRE || a.ali_descripcion || a.nombre }))
@@ -465,12 +469,14 @@ export default {
     }
 
     const cargarProvincias = async (regId) => {
+      if (!regId) return;
       const resp = await mantenedoresService.provincia.list({ region_id: regId })
       const list = resp.results || resp
       options.provincias = list.map(p => ({ value: p.PRO_ID || p.pro_id || p.id, label: p.PRO_DESCRIPCION || p.pro_descripcion || p.nombre || p.PRO_NOMBRE }))
     }
 
     const cargarComunas = async (proId) => {
+      if (!proId) return;
       const resp = await mantenedoresService.comuna.list({ provincia_id: proId })
       const list = resp.results || resp
       options.comunas = list.map(c => ({ value: c.COM_ID || c.com_id || c.id, label: c.COM_DESCRIPCION || c.com_descripcion || c.nombre || c.COM_NOMBRE }))

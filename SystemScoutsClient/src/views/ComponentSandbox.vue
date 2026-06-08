@@ -14,6 +14,7 @@
           <option value="FormularioDatosAsociacion">3. Datos Asociación</option>
           <option value="FormularioDatosSalud">4. Salud y Logística</option>
           <option value="FormularioDatosAdicional">5. Datos Adicionales</option>
+          <option value="PersonaFormLab">6. Persona Form Completo (Lab)</option>
         </select>
       </div>
     </div>
@@ -97,6 +98,7 @@ import FormularioDatosPersona from '@/components/formulario/FormularioDatosPerso
 import FormularioDatosAsociacion from '@/components/formulario/FormularioDatosAsociacion.vue';
 import FormularioDatosSalud from '@/components/formulario/FormularioDatosSalud.vue';
 import FormularioDatosAdicional from '@/components/formulario/FormularioDatosAdicional.vue';
+import PersonaFormLab from '@/views/PersonaFormLab.vue';
 
 const activeComponent = ref('FormularioDatosCurso');
 
@@ -105,7 +107,8 @@ const componentMap = {
   FormularioDatosPersona: markRaw(FormularioDatosPersona),
   FormularioDatosAsociacion: markRaw(FormularioDatosAsociacion),
   FormularioDatosSalud: markRaw(FormularioDatosSalud),
-  FormularioDatosAdicional: markRaw(FormularioDatosAdicional)
+  FormularioDatosAdicional: markRaw(FormularioDatosAdicional),
+  PersonaFormLab: markRaw(PersonaFormLab)
 };
 
 const formData = reactive({

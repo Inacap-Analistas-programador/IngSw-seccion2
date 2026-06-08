@@ -7,7 +7,7 @@
 
     <div class="form-outer">
       <form class="form-inner" @submit.prevent="enviarFormulario">
-        
+
         <!-- ProgressBar / Step Indicator -->
         <div class="wizard-progress">
           <div class="wizard-steps-container">
@@ -30,9 +30,33 @@
           </div>
         </div>
 
+        <!-- Banner "¿Ya te registraste?" — debajo de la barra, sólo en paso 2 y si no está activo el verificador -->
+        <transition name="desplegar">
+          <div v-if="currentStep === 2 && !mostrarVerificador" class="registro-previo-banner">
+            <AppIcons name="refresh-cw" :size="16" />
+            <span>¿Ya te has registrado anteriormente?
+              <button type="button" class="link-previo" @click="mostrarVerificador = true">
+                Haz clic aquí para cargar tus datos
+              </button>
+            </span>
+          </div>
+        </transition>
+
+        <!-- Verificador en modo focado: ocupa el área del step y centra el componente -->
         <transition name="slide-fade" mode="out-in">
-          <div :key="currentStep" class="wizard-step-content">
-            
+          <div v-if="currentStep === 2 && mostrarVerificador" class="verificador-focado" key="verificador-focado">
+            <VerificadorRUT
+              @verified="onIdentidadVerificada"
+              @cancel="mostrarVerificador = false"
+            />
+            <button type="button" class="link-previo cancelar-verificador" @click="mostrarVerificador = false">
+              <AppIcons name="chevron-left" :size="14" /> Volver al formulario de registro
+            </button>
+          </div>
+
+          <!-- Pasos normales del wizard (sólo cuando no está el verificador activo) -->
+          <div v-else :key="currentStep" class="wizard-step-content">
+
             <FormularioDatosCurso 
               v-if="currentStep === 1"
               v-model:cursoSeleccionado="cursoSeleccionado" 
@@ -40,6 +64,7 @@
               @seccion-change="handleSeccionChange"
             />
 
+            <!-- Paso 2: Datos de persona (se muestra cuando NO está activo el verificador) -->
             <FormularioDatosPersona
               v-if="currentStep === 2"
               v-model:nombres="nombres"
@@ -112,8 +137,7 @@
               v-model:profesion="profesion"
             />
 
-            <!-- WIZARD NAVIGATION -->
-            <!-- We only show navigation when a course is selected (except for Step 1, where course selection IS the step) -->
+            <!-- WIZARD NAVIGATION — oculta si está activo el verificador -->
             <div class="wizard-navigation-container" v-if="(cursoSeleccionado && seccionCurso) || currentStep === 1">
               
               <div class="wizard-nav-left">
@@ -170,8 +194,9 @@
 
           </div>
         </transition>
-      </form>
+        </form>
     </div>
+
 
     <NotificationToast 
       v-if="toast.visible" 
@@ -201,6 +226,7 @@ import FormularioDatosPersona from '@/components/formulario/FormularioDatosPerso
 import FormularioDatosAsociacion from '@/components/formulario/FormularioDatosAsociacion.vue';
 import FormularioDatosSalud from '@/components/formulario/FormularioDatosSalud.vue';
 import FormularioDatosAdicional from '@/components/formulario/FormularioDatosAdicional.vue';
+import VerificadorRUT from '@/components/formulario/VerificadorRUT.vue';
 
 // :::::::::::::::::: NOTIFICACIONES :::::::::::::::::::::::::
 const toast = reactive({
@@ -221,6 +247,27 @@ const showToast = (message, type = 'success', icon = 'check') => {
 };
 
 // :::::::::::::::::: FORM STATE (Orchestrated in parent) :::::::::::::::::::::::::
+// Verificador inline en paso 2
+const mostrarVerificador = ref(false);
+const personaVerificadaId = ref(null); // per_id del registro existente (si se usó el verificador)
+
+const onIdentidadVerificada = (persona) => {
+  mostrarVerificador.value = false;
+  if (persona) {
+    personaVerificadaId.value = persona.per_id || null;
+    nombres.value = persona.per_nombres || '';
+    apellidoPaterno.value = persona.per_apelpta || '';
+    apellidoMaterno.value = persona.per_apelmat || '';
+    rut.value = `${persona.per_run}-${persona.per_dv}`;
+    email.value = persona.per_mail || '';
+    fechaNacimiento.value = persona.per_fecha_nac || '';
+    direccion.value = persona.per_direccion || '';
+    apodoCredencial.value = persona.per_apodo || '';
+    comunaSeleccionada.value = persona.com_id || '';
+  }
+  showToast('Datos cargados desde tu registro anterior.', 'success', 'check');
+};
+
 // 0. Wizard Navigation
 const currentStep = ref(1);
 
@@ -403,6 +450,9 @@ function limpiarFormulario() {
   necesitaAlojamiento.value = "";
   consideraciones.value = "";
   profesion.value = "";
+  // Resetear estado del verificador
+  personaVerificadaId.value = null;
+  mostrarVerificador.value = false;
   
   showToast("Formulario vaciado correctamente.", "info", "trash");
 }
@@ -438,30 +488,33 @@ const enviarFormulario = async () => {
       }
     }
     
+    // Campos opcionales: convertir string vacío a null para campos que el API no acepta como blank
+    const nullIfBlank = (v) => (v === '' || v === undefined) ? null : v
+
     const personaData = {
       usu_id: currentUser.id,
       per_run: run,
       per_dv: dv || '',
       per_nombres: nombres.value,
       per_apelpta: apellidoPaterno.value,
-      per_apelmat: apellidoMaterno.value || '',
+      per_apelmat: nullIfBlank(apellidoMaterno.value),
       per_mail: email.value,
-      per_fecha_nac: fechaNacimiento.value ? `${fechaNacimiento.value}` : null,
-      per_direccion: direccion.value,
-      com_id: comunaSeleccionada.value,
-      esc_id: estadoCivil.value,
-      per_tipo_fono: parseInt(tipoContactoSeleccionado.value) || 2, // Default Celular
+      per_fecha_nac: fechaNacimiento.value || null,
+      per_direccion: direccion.value || '',
+      com_id: comunaSeleccionada.value || null,
+      esc_id: estadoCivil.value || null,
+      per_tipo_fono: parseInt(tipoContactoSeleccionado.value) || 2,
       per_fono: numeroContacto.value || '',
-      per_nom_emergencia: nombreEmergencia.value,
-      per_fono_emergencia: numeroEmergencia.value,
-      per_alergia_enfermedad: detalleAlergiaEnfermedad.value || '',
-      per_limitacion: detalleLimitacion.value || '',
-      per_profesion: profesion.value || '',
+      per_nom_emergencia: nullIfBlank(nombreEmergencia.value),
+      per_fono_emergencia: nullIfBlank(numeroEmergencia.value),
+      per_alergia_enfermedad: nullIfBlank(detalleAlergiaEnfermedad.value),
+      per_limitacion: nullIfBlank(detalleLimitacion.value),
+      per_profesion: nullIfBlank(profesion.value),
       per_tiempo_adulto: (añosTiempoBeneficiario.value || 0) + ' años ' + (mesesTiempoBeneficiario.value || 0) + ' meses',
       per_num_mma: parseInt(mmaaValor.value) || null,
-      per_religion: religion.value || '',
+      per_religion: nullIfBlank(religion.value),
       per_apodo: apodoCredencial.value || '',
-      per_otros: consideraciones.value || '',
+      per_otros: nullIfBlank(consideraciones.value),
       per_vigente: true
     };
     
@@ -530,7 +583,62 @@ const enviarFormulario = async () => {
 
     console.log("PAYLOAD A ENVIAR:", JSON.stringify(payloadFinal, null, 2));
 
-    await personasService.createPersonaWithCourseAndVehicle(payloadFinal);
+    // ─── Modo PATCH: persona previamente verificada ──────────────────────────
+    if (personaVerificadaId.value) {
+      // Solo enviar los campos que tienen valor real — excluir nulos que el backend rechaza
+      const patchData = {}
+      const patchFields = {
+        per_nombres: nombres.value,
+        per_apelpta: apellidoPaterno.value,
+        per_mail: email.value,
+        per_fecha_nac: fechaNacimiento.value || null,
+        per_direccion: direccion.value || null,
+        per_tipo_fono: parseInt(tipoContactoSeleccionado.value) || 2,
+        per_fono: numeroContacto.value || '',
+        per_apodo: apodoCredencial.value || '',
+        per_vigente: true,
+        // Opcionales: solo incluir si tienen valor
+        ...(apellidoMaterno.value     ? { per_apelmat:           apellidoMaterno.value }        : {}),
+        ...(estadoCivil.value         ? { esc_id:                Number(estadoCivil.value) }    : {}),
+        ...(comunaSeleccionada.value  ? { com_id:                Number(comunaSeleccionada.value) } : {}),
+        ...(nombreEmergencia.value    ? { per_nom_emergencia:    nombreEmergencia.value }        : {}),
+        ...(numeroEmergencia.value    ? { per_fono_emergencia:   numeroEmergencia.value }        : {}),
+        ...(detalleAlergiaEnfermedad.value ? { per_alergia_enfermedad: detalleAlergiaEnfermedad.value } : {}),
+        ...(detalleLimitacion.value   ? { per_limitacion:        detalleLimitacion.value }       : {}),
+        ...(profesion.value           ? { per_profesion:         profesion.value }               : {}),
+        ...(religion.value            ? { per_religion:          religion.value }                : {}),
+        ...(consideraciones.value     ? { per_otros:             consideraciones.value }         : {}),
+        ...(mmaaValor.value           ? { per_num_mma:           parseInt(mmaaValor.value) }     : {}),
+      }
+      Object.assign(patchData, patchFields)
+
+      await personasService.personas.partialUpdate(personaVerificadaId.value, patchData)
+
+      // Inscribir al curso si aplica
+      if (cursoData && cursoData.cus_id && cursoData.rol_id) {
+        const cursoPayload = {
+          per_id: personaVerificadaId.value,
+          cus_id: Number(cursoData.cus_id),
+          rol_id: Number(cursoData.rol_id),
+          ...(cursoData.ali_id ? { ali_id: Number(cursoData.ali_id) } : {}),
+          ...(cursoData.niv_id ? { niv_id: Number(cursoData.niv_id) } : {}),
+        }
+        try {
+          await personasService.personaCursos.create(cursoPayload)
+        } catch (e) {
+          console.warn('Advertencia al inscribir al curso (puede que ya esté inscrito):', e.message)
+        }
+      }
+
+    // ─── Modo POST: registro nuevo ────────────────────────────────────────────
+    } else {
+      // esc_id es obligatorio en creación
+      if (!estadoCivil.value) {
+        showToast('Selecciona un Estado Civil antes de enviar.', 'warning', 'alert')
+        return
+      }
+      await personasService.createPersonaWithCourseAndVehicle(payloadFinal)
+    }
 
     showToast("¡Formulario enviado exitosamente!", "success", "check");
     limpiarFormulario();
@@ -556,6 +664,8 @@ const enviarFormulario = async () => {
   padding: 24px 24px;
 }
 
+
+
 .form-outer {
   width: 100%;
   max-width: 1100px;
@@ -567,6 +677,71 @@ const enviarFormulario = async () => {
   display: flex;
   flex-direction: column;
   gap: 24px;
+}
+
+/* Banner de registro previo integrado en Paso 2 */
+.registro-previo-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 18px;
+  background: rgba(30, 64, 175, 0.05);
+  border: 1px solid rgba(30, 64, 175, 0.18);
+  border-radius: 12px;
+  color: #374151;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  margin-top: -8px;
+}
+
+.registro-previo-banner svg {
+  color: #1e40af;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.link-previo {
+  background: none;
+  border: none;
+  color: #1e40af;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.link-previo:hover {
+  color: #1e3a8a;
+}
+
+/* Contenedor centrado del verificador cuando está en modo focado */
+.verificador-focado {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 8px 0 16px;
+}
+
+.verificador-focado :deep(.verificador-rut) {
+  width: 100%;
+  max-width: 540px;
+}
+
+.cancelar-verificador {
+  font-size: 0.85rem;
+  color: #64748b !important;
+  font-weight: 500;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cancelar-verificador:hover {
+  color: #1e40af !important;
 }
 
 .botones-formulario-modern {

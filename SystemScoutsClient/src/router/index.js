@@ -104,6 +104,12 @@ const router = createRouter({
       meta: { requiresAuth: false } // Accessible for testing
     },
     {
+      path: '/personalab',
+      name: 'personalab',
+      component: () => import('@/views/PersonaFormLab.vue'),
+      meta: { requiresAuth: false } // Accessible for testing
+    },
+    {
       path: '/icons',
       name: 'icon-explorer',
       component: () => import('@/views/IconExplorer.vue'),

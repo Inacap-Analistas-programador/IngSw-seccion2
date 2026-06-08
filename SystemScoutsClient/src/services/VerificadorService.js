@@ -1,4 +1,4 @@
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { Html5Qrcode } from 'html5-qrcode'
 
 const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:8000').replace(/\/api\/?$/, '')
@@ -83,6 +83,8 @@ export function verificarUsuario() {
     await Acreditacion(text)
   }
 
+  let isUnmounted = false
+
   onMounted(async () => {
     if (lectorRef.value) {
       QR_Scanner = new Html5Qrcode("lector")
@@ -90,8 +92,9 @@ export function verificarUsuario() {
       const config = {
         fps: 10,
         qrbox: (w, h) => {
+          // Prevenir error "minimum size of 'config.qrbox' dimension value is 50px" si w/h son 0
           const s = Math.min(w, h) * 0.8
-          return { width: s, height: s }
+          return { width: Math.max(s, 50), height: Math.max(s, 50) }
         },
         aspectRatio: 1.0
       }
@@ -103,19 +106,34 @@ export function verificarUsuario() {
           config,
           EscaneoExitoso
         )
+
+        // Si se cambió de pantalla mientras la cámara inicializaba, detenerla inmediatamente
+        if (isUnmounted) {
+          try { await QR_Scanner.stop() } catch (e) {}
+          try { QR_Scanner.clear() } catch (e) {}
+        }
       } catch (err) {
-        console.error("Error al iniciar cámara:", err)
-        resultadoTexto.value = '❌ ERROR CAMARA'
+        if (!isUnmounted) {
+          console.error("Error al iniciar cámara:", err)
+          resultadoTexto.value = '❌ ERROR CAMARA'
+        }
       }
     }
   })
 
-  onUnmounted(async () => {
+  onBeforeUnmount(async () => {
+    isUnmounted = true
     if (QR_Scanner) {
       try {
+        // Verificar si está escaneando para evitar errores al intentar detener algo ya detenido
         await QR_Scanner.stop()
       } catch (error) {
-        console.warn('Error al detener al desmontar:', error)
+        console.warn('Error al detener scanner (puede que no estuviera iniciado):', error)
+      }
+      try {
+        QR_Scanner.clear()
+      } catch (error) {
+        console.warn('Error al limpiar DOM del scanner:', error)
       }
     }
   })

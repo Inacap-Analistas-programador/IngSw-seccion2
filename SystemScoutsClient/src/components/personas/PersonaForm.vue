@@ -4,7 +4,7 @@
       <div class="header-content">
         <h2>{{ isReadOnly ? 'Ver Persona' : (isEdit ? 'Editar Persona' : 'Nueva Persona') }}</h2>
         <p class="subtitle" v-if="formData.PER_NOMBRES">
-          {{ formData.PER_NOMBRES }} {{ formData.PER_APELPTA }}
+          {{ formData.PER_NOMBRES }} {{ formData.PER_APELPTA }} {{ formData.PER_APELMAT }}
         </p>
       </div>
       <div class="header-actions">
@@ -138,7 +138,6 @@
                   :disabled="isReadOnly"
                   value-key="value"
                   label-key="label"
-                  @update:modelValue="onRegionChange"
                 />
               </div>
               <div class="field">
@@ -149,7 +148,6 @@
                   :disabled="isReadOnly || !formData.REG_ID"
                   value-key="value"
                   label-key="label"
-                  @update:modelValue="onProvinciaChange"
                 />
               </div>
             </div>
@@ -224,21 +222,21 @@
             <!-- Condicional Individual: Distrito y Zona -->
             <div class="fields-row mt-2" v-if="formData.TIPO_ORGANIZACION === 'INDIVIDUAL'">
               <div class="field">
-                <label>Distrito</label>
+                <label>Zona</label>
                 <FilterSelect 
-                  v-model="formData.DIS_ID" 
-                  :options="options.distritos" 
+                  v-model="formData.ZON_ID" 
+                  :options="options.zonas" 
                   :disabled="isReadOnly"
                   value-key="value"
                   label-key="label"
                 />
               </div>
               <div class="field">
-                <label>Zona</label>
+                <label>Distrito</label>
                 <FilterSelect 
-                  v-model="formData.ZON_ID" 
-                  :options="options.zonas" 
-                  :disabled="isReadOnly"
+                  v-model="formData.DIS_ID" 
+                  :options="distritosFiltrados" 
+                  :disabled="isReadOnly || !formData.ZON_ID"
                   value-key="value"
                   label-key="label"
                 />
@@ -382,20 +380,6 @@
               <label>Limitaciones</label>
               <InputBase v-model="formData.PER_LIMITACION" :readonly="isReadOnly" />
             </div>
-            
-            <div class="sub-header mt-4">
-              <h4>Vehículo</h4>
-            </div>
-            <div class="fields-row">
-              <div class="field">
-                <label>Patente</label>
-                <InputBase v-model="formData.PEV_PATENTE" :readonly="isReadOnly" placeholder="AAAA00" />
-              </div>
-              <div class="field">
-                <label>Marca</label>
-                <InputBase v-model="formData.PEV_MARCA" :readonly="isReadOnly" />
-              </div>
-            </div>
           </section>
         </div>
       </div>
@@ -432,7 +416,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import InputBase from '@/components/InputBase.vue'
 import FilterSelect from '@/components/common/FilterSelect.vue'
 import BaseButton from '@/components/BaseButton.vue'
@@ -464,6 +448,11 @@ const fotoUrlDisplay = computed(() => {
   if (formData.PER_FOTO.startsWith('data:')) return formData.PER_FOTO
   if (formData.PER_FOTO.startsWith('http')) return formData.PER_FOTO
   return `${API_ROOT}${formData.PER_FOTO.startsWith('/') ? '' : '/'}${formData.PER_FOTO}`
+})
+
+const distritosFiltrados = computed(() => {
+  if (!formData.ZON_ID || !props.options.distritos) return []
+  return props.options.distritos.filter(d => d.zon_id === formData.ZON_ID)
 })
 
 /**
@@ -553,8 +542,51 @@ const onRutInput = (val) => {
   }
 }
 
-const onRegionChange = (val) => { emit('region-change', val) }
-const onProvinciaChange = (val) => { emit('provincia-change', val) }
+watch(() => formData.REG_ID, (newVal, oldVal) => {
+  if (newVal) {
+    emit('region-change', newVal)
+    if (oldVal !== undefined && oldVal !== newVal) {
+      formData.PRO_ID = null
+      formData.COM_ID = null
+    }
+  }
+})
+
+watch(() => formData.PRO_ID, (newVal, oldVal) => {
+  if (newVal) {
+    emit('provincia-change', newVal)
+    if (oldVal !== undefined && oldVal !== newVal) {
+      formData.COM_ID = null
+    }
+  }
+})
+
+watch(() => formData.ZON_ID, (newVal, oldVal) => {
+  if (oldVal !== undefined && newVal !== oldVal) {
+    formData.DIS_ID = null
+  }
+})
+
+watch(() => formData.TIPO_ORGANIZACION, (newVal, oldVal) => {
+  if (oldVal && newVal !== oldVal) {
+    if (newVal === 'GRUPO') {
+      formData.CAR_ID = null
+      formData.DIS_ID = null
+      formData.ZON_ID = null
+    } else {
+      formData.GRU_ID = null
+    }
+  }
+})
+
+watch(() => formData.IS_FORMADOR, (newVal, oldVal) => {
+  if (oldVal === true && newVal === false) {
+    formData.PEF_HAB_1 = false
+    formData.PEF_HAB_2 = false
+    formData.PEF_VERIF = false
+    formData.PEF_HISTORIAL = ''
+  }
+})
 
 const addRama = () => { formData.ramas.push({ NIV_ID: '', RAM_ID_NIVEL: '' }) }
 const removeRama = (idx) => { formData.ramas.splice(idx, 1) }

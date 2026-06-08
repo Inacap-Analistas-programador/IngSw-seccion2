@@ -21,6 +21,7 @@ from ApiCoreScouts.Views.Usuario_view import MyTokenObtainPairView
 
 from ApiCoreScouts.Views.Verificador_view import verificar_acreditacion_qr
 from ApiCoreScouts.Views.deploy_view import deploy_view
+from ApiCoreScouts.Views.VerificacionRut_view import solicitar_codigo_rut, confirmar_codigo_rut
 
 
 FRONTEND_DIST_EXISTS = False  # Desactivar para desarrollo
@@ -33,6 +34,9 @@ urlpatterns = [
     path('api/pagos/', include(pago_router.urls)),
     path('api/correos/', include(correos_router.urls)),
     path('api/verificar-qr/', verificar_acreditacion_qr, name='verificar_qr'),
+    # Verificación RUT + código por correo (formulario público)
+    path('api/verificar-rut/', solicitar_codigo_rut, name='verificar_rut_solicitar'),
+    path('api/verificar-rut/confirmar/', confirmar_codigo_rut, name='verificar_rut_confirmar'),
     # Lightweight persona search
     path('api/personas/search', persona_search),
     # Minimal catalogs for fast UI
