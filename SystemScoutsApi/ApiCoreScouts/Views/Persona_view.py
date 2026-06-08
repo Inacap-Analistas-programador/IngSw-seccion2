@@ -17,8 +17,11 @@ from django.db.models.functions import Concat
 import base64
 import uuid
 import os
+import logging
 from django.conf import settings
 from django.core.files.base import ContentFile
+
+logger = logging.getLogger(__name__)
 
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 100
@@ -578,8 +581,9 @@ class PersonaViewSet(viewsets.ModelViewSet):
             cursos_persona = persona.persona_curso_set.all()
             serializer = MU_S.PersonaCursoSerializer(cursos_persona, many=True)
             return Response(serializer.data)
-        except Exception as e:
-            return Response({'error': str(e)}, status=400)
+        except Exception:
+            logger.exception("Error al obtener cursos de la persona", extra={"persona_pk": pk})
+            return Response({'error': 'Ha ocurrido un error al obtener los cursos'}, status=400)
 
     @action(detail=False, methods=['post'], url_path='acreditacion_manual_acreditar')
     def acreditacion_manual_acreditar(self, request):
