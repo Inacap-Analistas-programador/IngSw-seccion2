@@ -38,7 +38,7 @@
         </div>
 
         <div class="ver-actions">
-          <BaseButton variant="primary" size="lg" :disabled="loading || !rutIngresado.trim()" @click="solicitarCodigo" class="full-width-btn">
+          <BaseButton type="button" variant="primary" size="lg" :disabled="loading || !rutIngresado.trim()" @click="solicitarCodigo" class="full-width-btn">
             <span v-if="loading" class="btn-spinner"></span>
             <AppIcons v-else name="send" :size="16" />
             {{ loading ? 'Verificando...' : 'Enviar código de verificación' }}
@@ -85,12 +85,13 @@
           <AppIcons :name="timerSecs > 0 ? 'clock' : 'alert-triangle'" :size="14" />
           <span v-if="timerSecs > 0">Código válido por <strong>{{ formatTimer(timerSecs) }}</strong></span>
           <span v-else>El código ha expirado —
-            <button class="link-btn" @click="solicitarCodigo" :disabled="loading">reenviar nuevo código</button>
+            <button type="button" class="link-btn" @click="solicitarCodigo" :disabled="loading">reenviar nuevo código</button>
           </span>
         </div>
 
         <div class="ver-actions">
           <BaseButton
+            type="button"
             variant="primary"
             size="lg"
             :disabled="loading || codigoCompleto.length < 6 || timerSecs === 0"
@@ -102,7 +103,7 @@
             {{ loading ? 'Verificando código...' : 'Confirmar código' }}
           </BaseButton>
 
-          <button class="link-btn back-btn" @click="volverPaso1" :disabled="loading">
+          <button type="button" class="link-btn back-btn" @click="volverPaso1" :disabled="loading">
             <AppIcons name="chevron-left" :size="14" /> Cambiar RUT
           </button>
         </div>
@@ -126,7 +127,7 @@
             <span class="persona-rut">RUT: {{ rutIngresado }}</span>
           </div>
         </div>
-        <BaseButton variant="primary" size="lg" @click="continuar" class="full-width-btn">
+        <BaseButton type="button" variant="primary" size="lg" @click="continuar" class="full-width-btn">
           Continuar con la inscripción
           <AppIcons name="chevron-right" :size="16" />
         </BaseButton>

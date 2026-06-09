@@ -459,6 +459,11 @@ function limpiarFormulario() {
 
 const enviarFormulario = async () => {
   try {
+    // Evitar envío prematuro si el usuario presiona Enter en un paso anterior
+    if (currentStep.value !== 5) {
+      return;
+    }
+
     const currentUser = await authService.getCurrentUser();
     if (!currentUser || !currentUser.id) {
       showToast("Error: No se pudo identificar al usuario.", "danger", "alert-circle");

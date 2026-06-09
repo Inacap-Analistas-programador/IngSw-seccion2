@@ -1,5 +1,6 @@
 <template>
   <button
+    :type="type"
     class="base-button"
     :class="[sizeClass, variantClass, { 'is-disabled': disabled, 'is-block': block }]"
     :disabled="disabled"
@@ -13,6 +14,10 @@
 export default {
   name: "BaseButton",
   props: {
+    type: {
+      type: String,
+      default: "button"
+    },
     variant: {
       type: String,
       default: "primary",
