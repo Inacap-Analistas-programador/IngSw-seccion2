@@ -71,7 +71,19 @@
             <div class="fields-row">
               <div class="field">
                 <label>Responsable</label>
-                <FilterSelect v-model="form.PER_ID_RESPONSABLE" :options="options.personas" label-key="text" value-key="value" :disabled="modoVer" />
+                <div class="input-with-action">
+                  <FilterSelect v-model="form.PER_ID_RESPONSABLE" :options="options.personas" label-key="text" value-key="value" :disabled="modoVer" style="flex:1;" />
+                  <BaseButton
+                    v-if="!modoVer"
+                    @click="$emit('crear-persona')"
+                    variant="secondary"
+                    size="sm"
+                    class="btn-validate"
+                    title="Crear nueva persona"
+                  >
+                    <AppIcons name="plus" :size="14" /> Crear
+                  </BaseButton>
+                </div>
               </div>
               <div class="field">
                 <label>Cargo Responsable</label>
@@ -228,7 +240,7 @@ const props = defineProps({
   isSaving: Boolean
 })
 
-const emit = defineEmits(['save', 'cancel', 'show-alert', 'update:lists'])
+const emit = defineEmits(['save', 'cancel', 'show-alert', 'update:lists', 'crear-persona'])
 
 const activeTab = ref('info')
 const mapRef = ref(null)
