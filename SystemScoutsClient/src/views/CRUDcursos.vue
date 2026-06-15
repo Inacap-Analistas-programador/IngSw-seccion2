@@ -907,6 +907,10 @@ async function guardarCurso() {
       mostrarAlerta('Debes seleccionar un tipo de curso.', 'warning')
       return
     }
+    if (!form.value.CUR_FECHA_SOLICITUD) {
+      mostrarAlerta('La fecha de solicitud es obligatoria.', 'warning')
+      return
+    }
 
     // Sync global quotas from local list before saving
     const quotaCon = cuotasCurso.value.find(q => Number(q.CUU_TIPO) === 1)
@@ -924,7 +928,7 @@ async function guardarCurso() {
     delete payload.coordinadores
     delete payload.CUR_FECHA_HORA
     
-    // Casteos
+    // Casteos y truncamiento
     payload.CUR_COTA_CON_ALMUERZO = Number(payload.CUR_COTA_CON_ALMUERZO)
     payload.CUR_COTA_SIN_ALMUERZO = Number(payload.CUR_COTA_SIN_ALMUERZO)
     payload.TCU_ID = Number(payload.TCU_ID)
@@ -935,6 +939,11 @@ async function guardarCurso() {
     payload.CUR_TIPO_CURSO = Number(payload.CUR_TIPO_CURSO || 1)
     payload.CUR_ADMINISTRA = Number(payload.CUR_ADMINISTRA || 1)
     
+    // Asegurar que CUR_LUGAR no exceda 100 caracteres (límite del backend)
+    if (payload.CUR_LUGAR) {
+      payload.CUR_LUGAR = payload.CUR_LUGAR.substring(0, 100)
+    }
+
     // Estado automático: si estaba Anulado (2), mantener; si no, calcular según períodos
     const originalEstado = originalCursoBackup.value?.CUR_ESTADO
     if (Number(originalEstado) === 2) {
@@ -954,8 +963,8 @@ async function guardarCurso() {
       }
     })
 
-    if (cleanPayload.CUR_FECHA_SOLICITUD === '') {
-      cleanPayload.CUR_FECHA_SOLICITUD = null
+    if (cleanPayload.CUR_FECHA_SOLICITUD === '' || cleanPayload.CUR_FECHA_SOLICITUD === null) {
+      delete cleanPayload.CUR_FECHA_SOLICITUD // Si el backend no acepta null, es mejor no enviarlo o validar antes
     }
 
     // Prepare payload for API (lowercase)
@@ -1066,7 +1075,26 @@ async function guardarCurso() {
 
   } catch (e) {
     console.error('Error al guardar el curso:', e)
-    mostrarAlerta(`Error al guardar: ${e.response?.data?.detail || e.message || 'Error desconocido'}`, 'error')
+    let errorMsg = e.response?.data?.detail || e.message || 'Error desconocido'
+    
+    if (e.message && e.message.includes('{')) {
+      try {
+        const jsonStr = e.message.substring(e.message.indexOf('{'))
+        const errObj = JSON.parse(jsonStr)
+        if (typeof errObj === 'object' && !errObj.detail) {
+          const fieldErrors = Object.entries(errObj)
+            .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
+            .join(' | ')
+          if (fieldErrors) {
+            errorMsg = fieldErrors
+          }
+        }
+      } catch (parseErr) {
+        // Ignorar si no es JSON válido
+      }
+    }
+    
+    mostrarAlerta(`Error al guardar: ${errorMsg}`, 'error')
   } finally {
     isSaving.value = false
   }

@@ -117,7 +117,7 @@
               <div class="field" style="flex: 2;">
                 <label>Lugar Específico *</label>
                 <div class="input-with-action">
-                  <InputBase v-model="form.CUR_LUGAR" :readonly="modoVer" placeholder="Ej: Sede Central" style="flex: 1;" />
+                  <InputBase v-model="form.CUR_LUGAR" :readonly="modoVer" placeholder="Ej: Sede Central" style="flex: 1;" maxlength="100" />
                   <BaseButton 
                     v-if="!modoVer" 
                     @click="handleValidarDireccion" 
@@ -272,7 +272,7 @@ const validarYGuardar = () => {
 
 const handleAddressUpdate = (newAddress) => {
   if (newAddress && !props.modoVer) {
-    props.form.CUR_LUGAR = newAddress
+    props.form.CUR_LUGAR = newAddress.substring(0, 100)
   }
 }
 
