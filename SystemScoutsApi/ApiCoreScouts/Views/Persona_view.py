@@ -631,8 +631,9 @@ class PersonaViewSet(viewsets.ModelViewSet):
                 'mensaje': 'Acreditación exitosa'
             })
 
-        except Exception as e:
-            return Response({'error': str(e)}, status=500)
+        except Exception:
+            logger.exception("Error inesperado en acreditacion_manual_acreditar")
+            return Response({'error': 'Error interno del servidor'}, status=500)
     @action(detail=False, methods=['get'])
     def min(self, request):
         """
