@@ -179,7 +179,7 @@ if DB_NAME and DB_HOST:
             'USER': config("DB_USER", default="MISSING_DB_USER"),
             'PASSWORD': config("DB_PASSWORD", default="MISSING_DB_PASSWORD"),
             'HOST': DB_HOST,
-            'PORT': config("PORT", default="3306"),
+            'PORT': config("PORT", default="3307"),
             'OPTIONS': {
                 # Ensure connection uses utf8mb4 to correctly handle accents and ñ
                 'init_command': "SET sql_mode='STRICT_TRANS_TABLES', NAMES 'utf8mb4'",
@@ -254,6 +254,9 @@ USE_TZ = True
 
 
 # Logging configuration
+LOGS_DIR = BASE_DIR / 'logs'
+LOGS_DIR.mkdir(parents=True, exist_ok=True)
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,

@@ -2,7 +2,7 @@
   <div class="alimentacion-section">
     <hr class="section-divider">
     <div class="section-box">
-      <h4>Cuotas y Alimentación</h4>
+      <h4>Alimentación</h4>
       
       
       <!-- Tabla Alimentación -->

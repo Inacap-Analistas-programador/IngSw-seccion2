@@ -79,6 +79,7 @@
           @save="guardarCurso"
           @cancel="cerrarModal"
           @show-alert="mostrarAlerta($event.message, $event.type)"
+          @crear-persona="mostrarModalCrearPersona = true"
         />
       </template>
     </BaseModal>
@@ -110,6 +111,25 @@
         :cursoId="cursoIdDashboard" 
         @close="cerrarDashboard"
       />
+    </div>
+  </Teleport>
+
+  <!-- Modal Crear Persona rápido desde Curso -->
+  <Teleport to="body">
+    <div v-if="mostrarModalCrearPersona" class="modal-overlay-basic" @mousedown.self="mostrarModalCrearPersona = false" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:white;border-radius:16px;padding:32px;max-width:480px;width:100%;box-shadow:0 25px 50px rgba(0,0,0,0.3);">
+        <h3 style="margin:0 0 8px;color:#1a237e;font-size:1.2rem;">Crear Nueva Persona</h3>
+        <p style="color:#64748b;margin:0 0 20px;font-size:0.9rem;">Usa el módulo Gestión de Personas para crear un registro completo. Al guardar, vuelve aquí y recarga el selector de Responsable.</p>
+        <div style="display:flex;gap:12px;justify-content:flex-end;">
+          <BaseButton variant="secondary" @click="mostrarModalCrearPersona = false">Cancelar</BaseButton>
+          <BaseButton variant="primary" @click="irACrearPersona">
+            <AppIcons name="external-link" :size="16" style="margin-right:6px;" /> Ir a Personas
+          </BaseButton>
+          <BaseButton variant="primary" @click="recargarPersonas">
+            <AppIcons name="refresh" :size="16" style="margin-right:6px;" /> Recargar lista
+          </BaseButton>
+        </div>
+      </div>
     </div>
   </Teleport>
   </div>
@@ -712,6 +732,17 @@ async function abrirModalEditar(cursoMin) {
   }
   originalCursoBackup.value = JSON.parse(JSON.stringify(form.value))
   mostrarModal.value = true
+
+  // FIX bugs 1, 3, 4, 5, 7: cargar catálogos si aún no están disponibles
+  if (
+    cargosList.value.length === 0 ||
+    comunasList.value.length === 0 ||
+    ramaslist.value.length === 0 ||
+    rolesList.value.length === 0 ||
+    alimentacionCatalogo.value.length === 0
+  ) {
+    try { await cargarCatalogos() } catch (e) { console.warn('No se pudieron cargar catálogos al editar:', e) }
+  }
   
   // Cargar datos completos EN BACKGROUND (sin afectar la tabla)
   isLoadingModal.value = true // ← USAR ESTA EN LUGAR DE isLoading
@@ -876,6 +907,10 @@ async function guardarCurso() {
       mostrarAlerta('Debes seleccionar un tipo de curso.', 'warning')
       return
     }
+    if (!form.value.CUR_FECHA_SOLICITUD) {
+      mostrarAlerta('La fecha de solicitud es obligatoria.', 'warning')
+      return
+    }
 
     // Sync global quotas from local list before saving
     const quotaCon = cuotasCurso.value.find(q => Number(q.CUU_TIPO) === 1)
@@ -893,7 +928,7 @@ async function guardarCurso() {
     delete payload.coordinadores
     delete payload.CUR_FECHA_HORA
     
-    // Casteos
+    // Casteos y truncamiento
     payload.CUR_COTA_CON_ALMUERZO = Number(payload.CUR_COTA_CON_ALMUERZO)
     payload.CUR_COTA_SIN_ALMUERZO = Number(payload.CUR_COTA_SIN_ALMUERZO)
     payload.TCU_ID = Number(payload.TCU_ID)
@@ -904,6 +939,11 @@ async function guardarCurso() {
     payload.CUR_TIPO_CURSO = Number(payload.CUR_TIPO_CURSO || 1)
     payload.CUR_ADMINISTRA = Number(payload.CUR_ADMINISTRA || 1)
     
+    // Asegurar que CUR_LUGAR no exceda 100 caracteres (límite del backend)
+    if (payload.CUR_LUGAR) {
+      payload.CUR_LUGAR = payload.CUR_LUGAR.substring(0, 100)
+    }
+
     // Estado automático: si estaba Anulado (2), mantener; si no, calcular según períodos
     const originalEstado = originalCursoBackup.value?.CUR_ESTADO
     if (Number(originalEstado) === 2) {
@@ -923,8 +963,8 @@ async function guardarCurso() {
       }
     })
 
-    if (cleanPayload.CUR_FECHA_SOLICITUD === '') {
-      cleanPayload.CUR_FECHA_SOLICITUD = null
+    if (cleanPayload.CUR_FECHA_SOLICITUD === '' || cleanPayload.CUR_FECHA_SOLICITUD === null) {
+      delete cleanPayload.CUR_FECHA_SOLICITUD // Si el backend no acepta null, es mejor no enviarlo o validar antes
     }
 
     // Prepare payload for API (lowercase)
@@ -1035,7 +1075,26 @@ async function guardarCurso() {
 
   } catch (e) {
     console.error('Error al guardar el curso:', e)
-    mostrarAlerta(`Error al guardar: ${e.response?.data?.detail || e.message || 'Error desconocido'}`, 'error')
+    let errorMsg = e.response?.data?.detail || e.message || 'Error desconocido'
+    
+    if (e.message && e.message.includes('{')) {
+      try {
+        const jsonStr = e.message.substring(e.message.indexOf('{'))
+        const errObj = JSON.parse(jsonStr)
+        if (typeof errObj === 'object' && !errObj.detail) {
+          const fieldErrors = Object.entries(errObj)
+            .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
+            .join(' | ')
+          if (fieldErrors) {
+            errorMsg = fieldErrors
+          }
+        }
+      } catch (parseErr) {
+        // Ignorar si no es JSON válido
+      }
+    }
+    
+    mostrarAlerta(`Error al guardar: ${errorMsg}`, 'error')
   } finally {
     isSaving.value = false
   }
@@ -1139,7 +1198,7 @@ const tiposCursoOptions = computed(() =>
 
 const comunasList = ref([])
 const cargosList = ref([])
-const comunasOptions = computed(() => comunasList.value.filter(c => c.COM_VIGENTE === true).map(c => ({ value: c.COM_ID, text: c.COM_DESCRIPCION })))
+const comunasOptions = computed(() => comunasList.value.filter(c => c.COM_VIGENTE === true || c.COM_VIGENTE === 1).map(c => ({ value: c.COM_ID, text: c.COM_DESCRIPCION })))
 
 // Ubicar mapa según comuna seleccionada
 
@@ -1159,7 +1218,7 @@ watch(() => form.value.COM_ID_LUGAR, (newComunaId) => {
   }
 })
 
-const cargosOptions = computed(() => cargosList.value.filter(c => c.CAR_VIGENTE === true).map(c => ({ value: c.CAR_ID, text: c.CAR_DESCRIPCION })))
+const cargosOptions = computed(() => cargosList.value.filter(c => c.CAR_VIGENTE === true || c.CAR_VIGENTE === 1).map(c => ({ value: c.CAR_ID, text: c.CAR_DESCRIPCION })))
 
 function formatDates(curso) {
   if (curso.fechas && curso.fechas.length > 0) {
@@ -1209,9 +1268,9 @@ function getEstadoClass(e) {
 }
 
 
-const rolesOptions = computed(() => rolesList.value.filter(r => r.ROL_VIGENTE === true).map(r => ({ value: r.ROL_ID, text: r.ROL_DESCRIPCION })))
-const ramasOptions = computed(() => ramaslist.value.filter(r => r.RAM_VIGENTE === true).map(r => ({ value: r.RAM_ID, text: r.RAM_DESCRIPCION })))
-const alimentacionOptions = computed(() => alimentacionCatalogo.value.filter(a => a.ALI_VIGENTE === true).map(a => ({ value: a.ALI_ID, text: a.ALI_DESCRIPCION })))
+const rolesOptions = computed(() => rolesList.value.filter(r => r.ROL_VIGENTE === true || r.ROL_VIGENTE === 1).map(r => ({ value: r.ROL_ID, text: r.ROL_DESCRIPCION })))
+const ramasOptions = computed(() => ramaslist.value.filter(r => r.RAM_VIGENTE === true || r.RAM_VIGENTE === 1).map(r => ({ value: r.RAM_ID, text: r.RAM_DESCRIPCION })))
+const alimentacionOptions = computed(() => alimentacionCatalogo.value.filter(a => a.ALI_VIGENTE === true || a.ALI_VIGENTE === 1).map(a => ({ value: a.ALI_ID, text: a.ALI_DESCRIPCION })))
 
 const seccionesOptions = computed(() => seccionesCurso.value.map(s => {
   const rama = ramaslist.value.find(r => r.RAM_ID === s.RAM_ID)
@@ -1227,6 +1286,30 @@ function abrirDashboard(curso) {
 function cerrarDashboard() {
   mostrarDashboard.value = false
   cursoIdDashboard.value = null
+}
+
+// --- FIX BUG 2: Botón "Crear Persona" junto al select de Responsable ---
+const mostrarModalCrearPersona = ref(false)
+
+function irACrearPersona() {
+  // Navegar al módulo de personas en una nueva pestaña para no perder el formulario de curso
+  mostrarModalCrearPersona.value = false
+  const routeUrl = router.resolve({ path: '/personas' }).href
+  window.open(routeUrl, '_blank')
+}
+
+async function recargarPersonas() {
+  // Refresca la lista de personas desde el servidor y cierra el mini-modal
+  try {
+    mostrarModalCrearPersona.value = false
+    const resp = await personasService.personas.list({ page: 1, page_size: 200 })
+    const raw = Array.isArray(resp?.results) ? resp.results : (Array.isArray(resp) ? resp : [])
+    personasList.value = raw.map(toUpperKeys)
+    localStorage.setItem('personas_min_cache', JSON.stringify({ timestamp: Date.now(), data: raw }))
+    mostrarAlerta('Lista de personas actualizada.', 'success')
+  } catch (e) {
+    mostrarAlerta('No se pudo recargar la lista de personas.', 'error')
+  }
 }
 </script>
 
