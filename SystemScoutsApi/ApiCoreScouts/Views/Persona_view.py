@@ -420,7 +420,8 @@ class PersonaViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
 
         except Exception as e:
-            return Response({'error': str(e)}, status=500)
+            logger.exception("Error en acreditacion_manual_acreditar: %s", e)
+            return Response({'error': 'Error interno del servidor'}, status=500)
     
     @action(detail=False, methods=['get'])
     def para_correos(self, request):
