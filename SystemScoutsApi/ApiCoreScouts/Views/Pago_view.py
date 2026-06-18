@@ -132,8 +132,9 @@ class PagoPersonaViewSet(viewsets.ModelViewSet):
             return Response({'status': 'ok', 'nuevo_id': nuevp.pap_id})
         except Pago_Persona.DoesNotExist:
             return Response({'error': 'Pago no encontrado'}, status=404)
-        except Exception as e:
-            return Response({'error': str(e)}, status=500)
+        except Exception:
+            logger.exception("Error inesperado en PagoPersonaViewSet.transferir")
+            return Response({'error': 'Error interno del servidor'}, status=500)
 
 class PrepagoViewSet(viewsets.ModelViewSet):
     queryset = Prepago.objects.all()
