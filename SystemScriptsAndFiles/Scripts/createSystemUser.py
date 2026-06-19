@@ -52,7 +52,7 @@ def create_admin_user():
         print("\n" + "="*40)
         print(f"✅ USER CREATED/UPDATED")
         print(f"Username: {username}")
-        print(f"Password: {password}")
+        print("Password: [REDACTED]")
         print("="*40)
         return True
         
