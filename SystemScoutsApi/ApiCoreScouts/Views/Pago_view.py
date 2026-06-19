@@ -1,3 +1,4 @@
+import logging
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -10,6 +11,8 @@ from ..Serializers import Pago_serializer as MP_S
 from ..Models.pago_model import *
 from ..Filters.pagos_filter import PagoPersonaFilter
 from ..Permissions import PerfilPermission
+
+logger = logging.getLogger(__name__)
 
 class ProveedorViewSet(viewsets.ModelViewSet):
     queryset = Proveedor.objects.all()
@@ -89,8 +92,9 @@ class PagoPersonaViewSet(viewsets.ModelViewSet):
                     pagos.append(pago.pap_id)
             
             return Response({'message': 'Pagos masivos creados', 'ids': pagos}, status=201)
-        except Exception as e:
-            return Response({'error': str(e)}, status=500)
+        except Exception:
+            logger.exception("Error al crear pagos masivos")
+            return Response({'error': 'Ha ocurrido un error interno'}, status=500)
 
     @action(detail=False, methods=['post'])
     def transferir(self, request):
@@ -128,8 +132,9 @@ class PagoPersonaViewSet(viewsets.ModelViewSet):
             return Response({'status': 'ok', 'nuevo_id': nuevp.pap_id})
         except Pago_Persona.DoesNotExist:
             return Response({'error': 'Pago no encontrado'}, status=404)
-        except Exception as e:
-            return Response({'error': str(e)}, status=500)
+        except Exception:
+            logger.exception("Error inesperado en PagoPersonaViewSet.transferir")
+            return Response({'error': 'Error interno del servidor'}, status=500)
 
 class PrepagoViewSet(viewsets.ModelViewSet):
     queryset = Prepago.objects.all()
