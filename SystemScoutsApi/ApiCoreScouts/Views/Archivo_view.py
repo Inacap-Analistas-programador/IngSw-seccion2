@@ -7,7 +7,10 @@ from rest_framework.response import Response
 from django.core.files.storage import default_storage
 import os
 import uuid
+import logging
 from ..Permissions import PerfilPermission
+
+logger = logging.getLogger(__name__)
 
 class ArchivoViewSet(viewsets.ModelViewSet):
     queryset = Archivo.objects.all()
@@ -54,7 +57,8 @@ class ArchivoViewSet(viewsets.ModelViewSet):
             # Clean up file if DB record creation fails
             if default_storage.exists(path):
                 default_storage.delete(path)
-            return Response({'error': f'Error al crear registro de archivo: {str(e)}'}, status=500)
+            logger.exception("Error al crear registro de archivo en upload")
+            return Response({'error': 'Error interno al crear registro de archivo'}, status=500)
         
         serializer = MA_S.ArchivoSerializer(archivo)
         return Response(serializer.data, status=201)
