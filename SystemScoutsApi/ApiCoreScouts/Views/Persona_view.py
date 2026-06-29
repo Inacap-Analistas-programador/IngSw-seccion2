@@ -50,14 +50,27 @@ class PersonaViewSet(viewsets.ModelViewSet):
 
         try:
             format, imgstr = foto_data.split(';base64,')
-            ext = format.split('/')[-1]
-            filename = f"{rut}_{uuid.uuid4().hex[:8]}.{ext}"
+            ext = format.split('/')[-1].lower()
+            allowed_exts = {'jpg', 'jpeg', 'png', 'gif', 'webp'}
+            if ext not in allowed_exts:
+                return None
+            if ext == 'jpeg':
+                ext = 'jpg'
+
+            safe_rut = ''.join(c for c in str(rut) if c.isalnum() or c in ('_', '-')).strip('_-')
+            if not safe_rut:
+                safe_rut = 'nuevo'
+
+            filename = f"{safe_rut}_{uuid.uuid4().hex[:8]}.{ext}"
             
             # Directorio de fotos dentro de MEDIA_ROOT
             fotos_dir = os.path.join(settings.MEDIA_ROOT, 'fotos_perfil')
             os.makedirs(fotos_dir, exist_ok=True)
-            
-            file_path = os.path.join(fotos_dir, filename)
+
+            base_dir = os.path.realpath(fotos_dir)
+            file_path = os.path.realpath(os.path.join(base_dir, filename))
+            if os.path.commonpath([base_dir, file_path]) != base_dir:
+                return None
             
             with open(file_path, 'wb') as f:
                 f.write(base64.b64decode(imgstr))
@@ -420,7 +433,8 @@ class PersonaViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
 
         except Exception as e:
-            return Response({'error': str(e)}, status=500)
+            logger.exception("Error en acreditacion_manual_acreditar: %s", e)
+            return Response({'error': 'Error interno del servidor'}, status=500)
     
     @action(detail=False, methods=['get'])
     def para_correos(self, request):
@@ -631,8 +645,9 @@ class PersonaViewSet(viewsets.ModelViewSet):
                 'mensaje': 'Acreditación exitosa'
             })
 
-        except Exception as e:
-            return Response({'error': str(e)}, status=500)
+        except Exception:
+            logger.exception("Error inesperado en acreditacion_manual_acreditar")
+            return Response({'error': 'Error interno del servidor'}, status=500)
     @action(detail=False, methods=['get'])
     def min(self, request):
         """
