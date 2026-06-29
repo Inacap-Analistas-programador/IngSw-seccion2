@@ -61,8 +61,9 @@ class PersonaViewSet(viewsets.ModelViewSet):
             if not safe_rut:
                 safe_rut = 'nuevo'
 
-            filename = f"{safe_rut}_{uuid.uuid4().hex[:8]}.{ext}"
-            
+            # Nombre de archivo controlado por servidor (sin segmentos de ruta de entrada)
+            filename = f"perfil_{safe_rut}_{uuid.uuid4().hex}.{ext}"
+
             # Directorio de fotos dentro de MEDIA_ROOT
             fotos_dir = os.path.join(settings.MEDIA_ROOT, 'fotos_perfil')
             os.makedirs(fotos_dir, exist_ok=True)
@@ -71,10 +72,11 @@ class PersonaViewSet(viewsets.ModelViewSet):
             file_path = os.path.realpath(os.path.join(base_dir, filename))
             if os.path.commonpath([base_dir, file_path]) != base_dir:
                 return None
-            
+
+            decoded_img = base64.b64decode(imgstr, validate=True)
             with open(file_path, 'wb') as f:
-                f.write(base64.b64decode(imgstr))
-                
+                f.write(decoded_img)
+
             return f"/media/fotos_perfil/{filename}"
         except Exception as e:
             print(f"Error procesando foto base64: {e}")
